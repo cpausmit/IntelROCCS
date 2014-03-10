@@ -22,10 +22,10 @@ os.chdir(os.environ.get('DETOX_BASE'))
 
 debug = 0
 
-getPhedexCache = False
-getPopularityCache = False
-extractUsedDatasets = False
-rankDatasets = False
+getPhedexCache = True
+getPopularityCache = True
+extractUsedDatasets = True
+rankDatasets = True
 makeDeletionLists = True
 
 #====================================================================================================
