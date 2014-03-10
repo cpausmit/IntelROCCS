@@ -1,0 +1,48 @@
+#!/bin/bash
+# --------------------------------------------------------------------------------------------------
+# Process to keep detox alive and well.
+#
+# v1.0                                                                         C.Paus (Mar 09, 2014)
+# --------------------------------------------------------------------------------------------------
+# initialize environment variables
+source /usr/local/IntelROCCS/Detox/setupDetox.sh
+
+while [ 1 ]
+do
+
+  # make sure the log directory exists
+  mkdir -p $DETOX_DB
+  if [ -e "$DETOX_DB" ]
+  then
+    #echo " Detox log area exists. Let's start!"
+    sleep 1
+  else
+    echo ""
+    echo " Detox database area could not be found ($DETOX_DB). EXIT!"
+    echo ""
+    exit 1
+  fi
+
+  # generate specific log file
+  tag=`date "+%s"`
+  logFile=$DETOX_DB/detox-$tag.log
+  touch $logFile
+
+  # ten loops over the process with one logfile (keep it small)
+  for index in `echo 0 1 2 3 4 5 6 7 8 9`
+  do
+    # period 3600 * nHours
+    let wait=3600*$DETOX_CYCLE_HOURS
+
+    echo " "                                                   >> $logFile
+    echo " detox loop $index  -- $tag (seconds to wait $wait)" >> $logFile
+    echo " "                                                   >> $logFile
+
+    $DETOX_BASE/detox.py                                       >> $logFile
+
+    sleep $wait
+  done
+
+done
+
+exit 0;

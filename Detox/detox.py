@@ -18,6 +18,8 @@ if not os.environ.get('DETOX_DB'):
 	print '\n ERROR - DETOX environment not defined: source setup.sh\n'
 	sys.exit(0)
 
+os.chdir(os.environ.get('DETOX_BASE'))
+
 debug = 0
 
 getPhedexCache = False

@@ -27,7 +27,7 @@ else:
 allDatasets = {}
 datasetsAtSites = {}
 skipDataset = []
-renewMinInterval = 6                                            # number of hours until it will rerun 
+renewMinInterval = os.environ.get('DETOX_CYCLE_HOURS')          # number of hours until it will rerun
 
 #====================================================================================================
 #  H E L P E R S

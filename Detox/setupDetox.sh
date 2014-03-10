@@ -29,6 +29,7 @@ export DETOX_DATASETS_TO_DELETE=DatasetsToDelete.txt
 
 # Parameters for cleaning
 
+export DETOX_CYCLE_HOURS=6
 export DETOX_USAGE_MAX=0.75
 export DETOX_USAGE_MIN=0.65
 export DETOX_NCOPY_MIN=2
@@ -39,7 +40,7 @@ export DETOX_X509UP=/tmp/x509up_u`id -u`
 
 # Paths
 
-export DETOX_BASE="/home/cmsprod/cms/IntelROCCS/Detox"
+export DETOX_BASE="/usr/local/IntelROCCS/Detox"
 export DETOX_PYTHONPATH="$DETOX_BASE/python"
 
 # Python path (careful it might not be set)

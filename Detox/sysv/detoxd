@@ -1,0 +1,82 @@
+#!/bin/bash
+# --------------------------------------------------------------------------------------------------
+# detoxd       Startup script for the detox Server
+#
+# chkconfig: - 70 15
+# description: Detox is a server to receive request for file downloads and \
+#              manage those requests using the local batch infrastructure.
+#
+# processname: detoxd
+# config:      /etc/detoxd.conf
+# pidfile:     /var/run/detoxd.pid
+# --------------------------------------------------------------------------------------------------
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+# This will prevent initlog from swallowing up a pass-phrase prompt if
+# mod_ssl needs a pass-phrase from the user.
+INITLOG_ARGS=""
+
+# Path to the running script, server binary, and short-form for messages.
+#detoxd=/usr/sbin/detoxd
+detoxd=/usr/local/IntelROCCS/Detox/detoxd
+prog=detoxd
+pidfile=${PIDFILE-/var/run/detoxd.pid}
+lockfile=${LOCKFILE-/var/lock/subsys/detoxd}
+
+RETVAL=0
+STOP_TIMEOUT=${STOP_TIMEOUT-10}
+
+# Start detox daemon (detoxd)
+start() {
+    echo -n $"Starting $prog:"
+    daemon --user=cmsprod --pidfile=${pidfile} $detoxd \&
+    RETVAL=$?
+    echo
+    [ $RETVAL = 0 ] && touch ${lockfile}
+    
+    # this seems like a hack, but I do not know how to do it differently
+    pid=`ps auxw | grep "/bin/bash $detoxd" |tr -s ' '|cut -d' ' -f2`
+    echo $pid > $pidfile
+    
+    return $RETVAL
+}
+
+# Stop detox daemon (detoxd)
+stop() {
+    echo -n $"Stopping $prog: "
+    killproc -p ${pidfile} -d ${STOP_TIMEOUT} $detoxd
+    RETVAL=$?
+    echo
+    [ $RETVAL = 0 ] && rm -f ${lockfile} ${pidfile}
+}
+
+# See how we were called.
+case "$1" in
+  start)
+    start
+    ;;
+  stop)
+    stop
+    ;;
+  status)
+    status -p ${pidfile} $detoxd
+    RETVAL=$?
+    ;;
+  restart)
+    stop
+    start
+    ;;
+  condrestart|try-restart)
+    if status -p ${pidfile} $detoxd >&/dev/null
+    then
+      stop
+      start
+    fi
+    ;;
+  *)
+    echo $"Usage: $prog {start|stop|restart|status|help}"
+    RETVAL=2
+esac
+
+exit $RETVAL
