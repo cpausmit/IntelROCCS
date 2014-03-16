@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 #----------------------------------------------------------------------------------------------------
 #
 # This script looks at the unified information from PhEDEx database and popularity servive and ranks

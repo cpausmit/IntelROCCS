@@ -43,10 +43,12 @@ export DETOX_X509UP=/tmp/x509up_u`id -u`
 export DETOX_BASE="/usr/local/IntelROCCS/Detox"
 export DETOX_PYTHONPATH="$DETOX_BASE/python"
 
-# Python path (careful it might not be set)
+# Python path etc (careful it might not be set)
 
-if [ -z "$PTHONPATH" ] 
+export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:/usr/lib"
+
+if [ -z "$PYTHONPATH" ] 
 then
-  export PYTHONPATH="/usr/lib64/python2.4:/usr/lib64/python2.4/site-packages:/usr/lib/python2.4:/usr/lib/python2.4/site-packages"
+  export PYTHONPATH="/usr/lib/python2.7:/usr/lib/python2.7/site-packages"
 fi
 export PYTHONPATH="${DETOX_PYTHONPATH}:$PYTHONPATH"

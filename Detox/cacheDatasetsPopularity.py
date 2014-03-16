@@ -17,7 +17,7 @@
 # - important to clarify the password issue!! (there is a temporary but not too safe fix)
 #
 #----------------------------------------------------------------------------------------------------
-import pexpect, sys, os, re, glob, time
+import subprocess, sys, os, re, glob, time
 import datetime
 from   datetime import date, timedelta
 
@@ -62,11 +62,16 @@ def getDatasetsPopularity():
 
         if getPopularityData:
 
-            child = pexpect.spawn(cmd,timeout=600)
-            # the trick is that you have to create a key file without password
-            # better would be to get a cern sso cookie, but that so far fails
-            child.expect (pexpect.EOF)
-            strout = child.before
+	    # launch the shell command
+	    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+				       shell=True)
+	    strout, error = process.communicate()
+
+            #child = pexpect.spawn(cmd,timeout=600)
+            ## the trick is that you have to create a key file without password
+            ## better would be to get a cern sso cookie, but that so far fails
+            #child.expect (pexpect.EOF)
+            #strout = child.before
             
             fileHandle = open(outputFile, "w")
             fileHandle.write(strout)

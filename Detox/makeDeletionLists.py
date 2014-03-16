@@ -1,7 +1,7 @@
 #!/usr/bin/python
 #----------------------------------------------------------------------------------------------------
 #
-# This script takes ech site's ranked list and comes up with lists of datasets to be deleted. It
+# This script takes each site's ranked list and comes up with lists of datasets to be deleted. It
 # makes sure that each dataset exists on at least 2 sites (there are datasets that currently exist
 # on only one Tier2).
 #
@@ -12,7 +12,7 @@
 #
 # Issue: printing of the deletion lists should be mode more compact
 #----------------------------------------------------------------------------------------------------
-import pexpect, sys, os, re, glob, time, glob, shutil, MySQLdb
+import sys, os, re, glob, time, glob, shutil, MySQLdb
 import datetime
 from   datetime import date, timedelta
 
@@ -45,7 +45,6 @@ excludedSites = {}
 #====================================================================================================
 #  H E L P E R S
 #====================================================================================================
-
 def sortByProtected(item1,item2):
 	r1 = sites[item1].spaceFree()
 	r2 = sites[item2].spaceFree()
@@ -70,7 +69,7 @@ def getSiteSize(site):
 
 	# open database connection
 	if debug>0:
-		print ' Access quota table (%s) in site storage database (%s) to find quota.'%(table,db)
+		print ' Access quota table (%s) in site storage database (%s).'%(table,db)
 	db = MySQLdb.connect(host=server,db=db, user=user,passwd=pw)
 	# prepare a cursor object using cursor() method
 	cursor = db.cursor()
@@ -137,7 +136,6 @@ def makeDeletionLists(iteration):
 #====================================================================================================
 #  M A I N
 #====================================================================================================
-
 # first look at the sites that we want to exclude from consideration
 
 if os.path.isfile(excludedSitesList):

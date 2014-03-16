@@ -10,7 +10,7 @@
 # example, enter T2. For Tier-2 and Tier-1 use arguments T1 T2.
 #
 #----------------------------------------------------------------------------------------------------
-import pexpect, sys, os, re, glob, time
+import subprocess, sys, os, re, glob, time
 import datetime
 from   datetime import datetime, timedelta
 
@@ -49,9 +49,15 @@ def getDatasetsInPhedexAtSites(federation):
     
     print ' Access phedexDb: ' + cmd 
 
-    child = pexpect.spawn(cmd,timeout=1200)
-    child.expect(pexpect.EOF)
-    strout = child.before
+    # setup the shell command
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+			       shell=True)
+    # Launch the shell command
+    strout, error = process.communicate()
+
+    #child = pexpect.spawn(cmd,timeout=1200)
+    #child.expect(pexpect.EOF)
+    #strout = child.before
 
     timeNow = time.time()
     print '   - Phedex query took: %d seconds'%(timeNow-timeStart) 

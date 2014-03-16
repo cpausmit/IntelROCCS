@@ -27,6 +27,7 @@ getPopularityCache = True
 extractUsedDatasets = True
 rankDatasets = True
 makeDeletionLists = True
+requestDeletions = True
 
 #====================================================================================================
 #  H E L P E R S
@@ -79,6 +80,7 @@ def createCacheAreas():
 #  M A I N
 #====================================================================================================
 # Retrieve all sites from the quota file
+timeInitial = time.time()
 
 allSites = getAllSites()
 
@@ -115,10 +117,20 @@ for site in allSites:
 timeNow = time.time()
 print ' - Collecting site information took: %d seconds'%(timeNow-timeStart) 
 
-# Run the final script that unifies all of sites and creates deletion suggestions
+# Run the script that unifies all of sites and creates deletion suggestions
 timeStart = time.time()
 print ' Create deletion lists.'
 if makeDeletionLists:
 	call(["./makeDeletionLists.py"])
 timeNow = time.time()
 print ' - Creation of deletion lists took: %d seconds'%(timeNow-timeStart) 
+
+# Run the script that makes the deletion request to phedex
+timeStart = time.time()
+print ' Make deletion request.'
+if requestDeletions:
+	call(["./requestDeletions.py"])
+timeNow = time.time()
+print ' - Deletion requests took: %d seconds'%(timeNow-timeStart) 
+
+print ' Total Cycle took: %d seconds'%(timeNow-timeInitial) 
