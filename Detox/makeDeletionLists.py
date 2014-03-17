@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/local/bin/python
 #----------------------------------------------------------------------------------------------------
 #
 # This script takes each site's ranked list and comes up with lists of datasets to be deleted. It

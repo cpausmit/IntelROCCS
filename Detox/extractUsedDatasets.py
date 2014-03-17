@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/local/bin/python
 #----------------------------------------------------------------------------------------------------
 #
 # This script unifies information extracted from the popularity service and phedex database. It

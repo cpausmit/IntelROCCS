@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/local/bin/python
 #----------------------------------------------------------------------------------------------------
 #
 # This script talks to the PhEDEx database and writes down the dataset name, group it belongs to,

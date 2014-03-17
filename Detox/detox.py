@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/local/bin/python
 #----------------------------------------------------------------------------------------------------
 #
 # This is the master script that user should run It runs all other auxilary scripts. At the end you

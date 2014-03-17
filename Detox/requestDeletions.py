@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/local/bin/python
 #----------------------------------------------------------------------------------------------------
 # This script looks at the results of deletion suggestions for a specified site and actually asks
 # PhEDEx for deletions.  The PhEDEx communications are handled inside PhEDExAPI class.

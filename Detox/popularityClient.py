@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/local/bin/python
 """
 Popularity client.
 Perform SSO Authentication and retrieve data from API

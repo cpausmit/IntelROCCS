@@ -45,10 +45,10 @@ export DETOX_PYTHONPATH="$DETOX_BASE/python"
 
 # Python path etc (careful it might not be set)
 
-export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:/usr/lib"
+export LD_LIBRARY_PATH="/usr/local/lib:${LD_LIBRARY_PATH}"
 
 if [ -z "$PYTHONPATH" ] 
 then
-  export PYTHONPATH="/usr/lib/python2.7:/usr/lib/python2.7/site-packages"
+  export PYTHONPATH="/usr/local/lib/python2.7:/usr/local/lib/python2.7/site-packages"
 fi
 export PYTHONPATH="${DETOX_PYTHONPATH}:$PYTHONPATH"
