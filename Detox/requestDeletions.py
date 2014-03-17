@@ -37,7 +37,7 @@ def submitRequest(site, datasets=[]):
 	# here the request is really sent
 	check,response = phedex.delete(node=site,data=data,\
 				       comments='IntelROCCS -- Automatic Cache Release Request'+\
-				       '(if not acted upon will repeat in about 6 hours)',
+				       ' (if not acted upon will repeat in about 6 hours)',
 				       instance='prod')
 	if check:
 		print " ERROR - phedexApi.delete failed"
