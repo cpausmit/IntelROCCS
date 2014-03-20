@@ -19,9 +19,8 @@ class PhedexDataset:
             self.siteNames.append(site)
         if site in self.groupAtSite.keys():
             if self.groupAtSite[site] != group:
-                print "!!! Group mismatch !!!"
-                print self.dataset + ' ' + site + ' ' + self.groupAtSite[site] + \
-                                      ' ' + group
+                print " WARNING -- dataset duplicated, subscribed by different groups"
+                print self.dataset + ' ' + site + ' ' + self.groupAtSite[site] + ' ' + group
         self.groupAtSite[site] = group
 
         if site in self.sizeAtSite.keys():

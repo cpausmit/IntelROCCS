@@ -37,7 +37,7 @@ def submitRequest(site, datasets=[]):
     # here the request is really sent
     check,response = phedex.delete(node=site,data=data,\
                        comments='IntelROOCS -- Automatic Cache Release Request'+\
-                       '(if not acted upon will repeat in about %d hours)'\
+                       '(if not acted upon will repeat in about %s hours)'\
                                    %(os.environ['DETOX_CYCLE_HOURS']),
                        instance='prod')
     if check:
@@ -84,8 +84,8 @@ for member in allSubDirs:
 	# CP-CP this is bad decoding prone to failure
         if len(items) != 5 : 
             continue
-        print ' Found dataset: ' + dataset
         dataset = items[4]
+        print ' Found dataset: ' + dataset
         if not dataset.startswith('/'):
             continue
         if site in siteDeletionList.keys():

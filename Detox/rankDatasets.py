@@ -8,13 +8,9 @@
 # It prints the results in a format that is easily readable as web page The highiest ranks dayasets
 # will be targeted for deletions first.
 #
-#
 # Issues: printing needs to be put in more compact form
 #
 # WARNING: notice that rigth now it handles only one group: AnalysisOps (it is hardcoded)
-#
-# WARNING: the biggest subroutine that uses google plugins is not used at the moment, it can be
-#          turned on if desired for pretty web pages
 #----------------------------------------------------------------------------------------------------
 import os, sys, re, time, datetime
 
