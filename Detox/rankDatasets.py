@@ -19,8 +19,8 @@
 import os, sys, re, time, datetime
 
 if not os.environ.get('DETOX_DB'):
-	print '\n ERROR - DETOX environment not defined: source setup.sh\n'
-	sys.exit(0)
+    print '\n ERROR - DETOX environment not defined: source setup.sh\n'
+    sys.exit(0)
 
 if len(sys.argv) < 2:
     print '\n not enough arguments\n\n' # please add a more useful output with example
@@ -43,15 +43,6 @@ needsToClean = 40000
 now = float(time.time())
 groupLimits = {}
 
-table = {'tau-pflow':  'Physics',
-         'higgs':      'Physics',
-         'exotica':    'Physics',
-         'dqm':        'Physics',
-         'caf-phys':   'Physics',
-         'trigger':    'Physics',
-         'undef':      'Physics', 
-         'heavy-ions': 'Physics',
-         'caf-comm':   'Physics'}
 
 #====================================================================================================
 #  H E L P E R S
@@ -78,7 +69,7 @@ def printDatasets():
     outputFile = open(statusDirectory+'/'+site+'/'+os.environ['DETOX_DATASETS_TO_DELETE'],'w')
     for datasetName in sorted(allDatasets.keys(), cmp=compare):
         group = (allDatasets[datasetName])[0]
-	datasetRank = (allDatasets[datasetName])[3]
+        datasetRank = (allDatasets[datasetName])[3]
         size = (allDatasets[datasetName])[2]
         sites = sitesForDatasets[datasetName]
 
@@ -96,8 +87,6 @@ def printDatasets():
 #====================================================================================================
 #  M A I N
 #====================================================================================================
-mestrateg = 1
-fullPage = 1
 
 inputFile = statusDirectory + '/' + site + '/' + os.environ['DETOX_USED_DATASETS']
 
@@ -116,24 +105,28 @@ fileHandle.close()
 
 inputFile = statusDirectory + '/'+os.environ['DETOX_PHEDEX_CACHE']
 fileHandle = open(inputFile,"r")
-secondsPerDay = 60*60*24;
+secondsPerDay = 60*60*24
 
 for line in fileHandle.xreadlines():
     items = line.split()
     datasetName = items[0]
-    items.remove(datasetName);
-    if mestrateg == 2:
-        group = translate(items[0])
-    else:
-        group = items[0]
-        
+    items.remove(datasetName)
+    
+    group = items[0]
+    if group != "AnalysisOps":
+            continue
+    
     creationDate = int(items[1])
-    size = float(items[2]) 
-    t2Sites = items[3:]
-    sitesForDatasets[datasetName] = t2Sites
-#    if len(t2Sites) < 2:
-#        continue
-    if site not in t2Sites:
+    size = float(items[2])
+    t2Site = items[3]
+
+    if datasetName in sitesForDatasets.keys():
+        sitesForDatasets[datasetName].append(t2Site)
+    else:
+        sitesForDatasets[datasetName] = [t2Site]
+
+    
+    if t2Site != site:
         continue
 
     used = 1
@@ -141,50 +134,24 @@ for line in fileHandle.xreadlines():
     lastAccessed = now
     if datasetName in usedDatasets.keys():
         nAccessed = float ((usedDatasets[datasetName])[0])
-        if (size > 1):
+        if size > 1:
             nAccessed = nAccessed/size
         date = (usedDatasets[datasetName])[1]
         dateTime = date+' 00:00:01'
         pattern = '%Y-%m-%d %H:%M:%S'
         lastAccessed = int(time.mktime(time.strptime(dateTime, pattern)))
         
-	if (now-creationDate)/secondsPerDay < ((now - lastAccessed)/secondsPerDay-nAccessed):
+        if (now-creationDate)/secondsPerDay < ((now - lastAccessed)/secondsPerDay-nAccessed):
             used = 0
     else:
         used = 0
 
     # calculate the rank of the given dataset according to its access patterns and size
     datasetRank = (1-used)*(now-creationDate)/(60*60*24) + \
-                  used*( (now-lastAccessed)/(60*60*24)-nAccessed) - size/100
-
-    allDatasets[datasetName] = [group,creationDate,size,datasetRank,used,len(t2Sites)]
-
-    if group in allGroups.keys():
-        pass
-    else:
-        allGroups[group] = 0
-
-    if group in groupSizes.keys():
-        groupSizes[group] = groupSizes[group] + size
-    else:
-        groupSizes[group] = size
-
-    if group in groupLimits:
-        pass
-    else:
-        groupLimits[group] = 0    
-
+		  used*( (now-lastAccessed)/(60*60*24)-nAccessed) - size/100
+    allDatasets[datasetName] = [group,creationDate,size,datasetRank,used]
+    
 fileHandle.close();
-
-# no idea what this does
-if mestrateg == 2:
-    needsToClean = 0
-    for group in groupSizes:
-        if groupLimits[group] < groupSizes[group]:
-            needsToClean = needsToClean + groupSizes[group] - groupLimits[group]
-
-# why is this piece commented?
-# strategy(mestrateg,fullPage);
 
 # printout the datasets
 printDatasets()

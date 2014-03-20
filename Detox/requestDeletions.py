@@ -20,29 +20,29 @@ from phedexApi import phedexApi
 #  H E L P E R S
 #====================================================================================================
 def submitRequest(site, datasets=[]):
-	
-	if len(datasets) < 1:
-		print " ERROR - Trying to submit empty request for " + site
-		return
+    
+    if len(datasets) < 1:
+        print " ERROR - Trying to submit empty request for " + site
+        return
 
-	phedex = phedexApi(logPath='./')
+    phedex = phedexApi(logPath='./')
 
-	# compose data for deletion request
-	check,data = phedex.xmlData(datasets=datasets,instance='prod')
+    # compose data for deletion request
+    check,data = phedex.xmlData(datasets=datasets,instance='prod')
 
-	if check: 
-		print " ERROR - phedexApi.xmlData failed"
-		sys.exit(1)
+    if check: 
+        print " ERROR - phedexApi.xmlData failed"
+        sys.exit(1)
 
-	# here the request is really sent
-	check,response = phedex.delete(node=site,data=data,\
-				       comments='IntelROOCS -- Automatic Cache Release Request'+\
-				       '(if not acted upon will repeat in about 6 hours)',
-				       instance='prod')
-	if check:
-		print " ERROR - phedexApi.delete failed"
-		print response
-		sys.exit(1)
+    # here the request is really sent
+    check,response = phedex.delete(node=site,data=data,\
+                       comments='IntelROOCS -- Automatic Cache Release Request'+\
+                       '(if not acted upon will repeat in about 6 hours)',
+                       instance='prod')
+    if check:
+        print " ERROR - phedexApi.delete failed"
+        print response
+        sys.exit(1)
 
 #====================================================================================================
 #  M A I N
@@ -54,8 +54,8 @@ __main__
 """
 
 if not os.environ.get('DETOX_DB'):
-	print '\n ERROR - DETOX environment not defined: source setup.sh\n'
-	sys.exit(0)
+    print '\n ERROR - DETOX environment not defined: source setup.sh\n'
+    sys.exit(0)
 
 # directories we work in
 statusDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS']
@@ -72,27 +72,32 @@ siteDeletionList = {}
 # look at the results, and for each site get a list to be deleted
 allSubDirs = glob.glob(resultDirectory + "/T*")
 for member in allSubDirs:
-	site = member.split('/')[-1]
-	inputFile = resultDirectory + '/' + site + '/' + deletionFile
-	fileHandle = open(inputFile,"r")
-	for line in fileHandle.xreadlines():
-		items = line.split()
-		if len(items) != 5 : 
-			continue
-		dataset = items[4]
-		if not dataset.startswith('/'):
-			continue
-		if site in siteDeletionList.keys():
-			siteDeletionList[site].append(dataset)
-		else:
-			siteDeletionList[site] = [dataset]
-	fileHandle.close()
+    site = member.split('/')[-1]
+    inputFile = resultDirectory + '/' + site + '/' + deletionFile
+
+    print " Looking at file: " + inputFile
+    fileHandle = open(inputFile,"r")
+    for line in fileHandle.xreadlines():
+        items = line.split()
+
+	# CP-CP this is bad decoding prone to failure
+        if len(items) != 5 : 
+            continue
+        print ' Found dataset: ' + dataset
+        dataset = items[4]
+        if not dataset.startswith('/'):
+            continue
+        if site in siteDeletionList.keys():
+            siteDeletionList[site].append(dataset)
+        else:
+            siteDeletionList[site] = [dataset]
+    fileHandle.close()
 
 # now submit actual requests
 for site in siteDeletionList.keys():
-	if site not in testSites:
-		continue
+    if site not in testSites:
+        continue
 
-	print "Deletion request for site " + site
-	print siteDeletionList[site]
-	submitRequest(site,siteDeletionList[site])
+    print "Deletion request for site " + site
+    print siteDeletionList[site]
+    submitRequest(site,siteDeletionList[site])

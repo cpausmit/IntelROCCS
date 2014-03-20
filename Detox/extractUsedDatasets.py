@@ -15,8 +15,8 @@
 import os, sys, re, glob, time, datetime
 
 if not os.environ.get('DETOX_DB'):
-	print '\n ERROR - DETOX environment not defined: source setup.sh\n'
-	sys.exit(0)
+    print '\n ERROR - DETOX environment not defined: source setup.sh\n'
+    sys.exit(0)
 
 if len(sys.argv) < 2:
     print 'not enough arguments\n'
@@ -28,17 +28,17 @@ debug = 0
 
 datasets = {}
 excludedSitesList = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS'] + '/' + \
-		    os.environ['DETOX_EXCLUDED_SITES']
+                    os.environ['DETOX_EXCLUDED_SITES']
 
 #====================================================================================================
 #  H E L P E R S
 #====================================================================================================
-
 def processFiles(fileName):
 
     date = (re.search(r"(\d+)-(\d+)-(\d+)", fileName)).group(0)  
 
     # make sure file is clean
+    rawinp = None
     isFileCorrupt = False
     inputFile = open(fileName,'r')
     for line in inputFile.xreadlines():
@@ -49,6 +49,20 @@ def processFiles(fileName):
         if "Error" in line:
             isFileCorrupt = True
     inputFile.close();
+
+    # >> CP-CP test that all variables are properly set
+    #
+    # one of the big issues with local ASCII caches are identification of failures. We have to check
+    # whether the output is empty because this seems to be one reason for failure. I am not sure
+    # what the best way is but this has to be handled better.
+    #
+    if rawinp == None:
+        isFileCorrupt = True
+    #
+    # this particular failure mode is not a file corruption but rather that there are no datasets
+    # we should not exclude this site....
+    # 
+    # << CP-CP test that all variables are properly set
 
     # deal with file corruption
     if isFileCorrupt:
@@ -69,7 +83,7 @@ def processFiles(fileName):
     # process good snapshots
     array = re.split('{',rawinp)
     for line in array:
-    	aka = re.split(',',line)
+        aka = re.split(',',line)
 	dataset = None
         nAccessed = None
 	
@@ -108,19 +122,21 @@ def processFiles(fileName):
 #====================================================================================================
 #  M A I N
 #====================================================================================================
-
+# always first reset the excluded sites (no site can be excluded before an error is found)
+os.system("rm -f " + excludedSitesList)
 if not os.path.exists(excludedSitesList):
-    open(excludedSitesList, 'a').close()
-
+    open(excludedSitesList,'a').close()
 
 workDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS']
 files = glob.glob(workDirectory + '/' + site + '/' + os.environ['DETOX_SNAPSHOTS'] + '/????-??-??')
 
+# process each snapshot
 for fileName in files:
     if debug>0:
         print ' File: ' + fileName
     processFiles(fileName)
 
+# write result into forseen cache
 outputFile = open(workDirectory+'/'+site+'/' + os.environ['DETOX_USED_DATASETS'], 'w')
 for fileName in datasets:
     nAccessed = (datasets[fileName])[0]

@@ -10,13 +10,13 @@
 # example, enter T2. For Tier-2 and Tier-1 use arguments T1 T2.
 #
 #----------------------------------------------------------------------------------------------------
-import subprocess, sys, os, re, glob, time
-import datetime
-from   datetime import datetime, timedelta
+import subprocess, sys, os, re, glob, time, datetime
+from datetime import datetime, timedelta
+from phedexDataset import PhedexDataset
 
 if not os.environ.get('DETOX_DB'):
-	print '\n ERROR - DETOX environment not defined: source setup.sh\n'
-	sys.exit(0)
+    print '\n ERROR - DETOX environment not defined: source setup.sh\n'
+    sys.exit(0)
 
 if len(sys.argv) < 2:
     print 'not enough arguments\n'
@@ -24,15 +24,12 @@ if len(sys.argv) < 2:
 else:
     federations = sys.argv[1:]
 
-allDatasets = {}
-datasetsAtSites = {}
-skipDataset = []
+phedexDatasets = {}
 renewMinInterval = int(os.environ.get('DETOX_CYCLE_HOURS'))     # number of hours until it will rerun
 
 #====================================================================================================
 #  H E L P E R S
 #====================================================================================================
-
 def getDatasetsInPhedexAtSites(federation):
 
     timeStart = time.time()
@@ -51,13 +48,9 @@ def getDatasetsInPhedexAtSites(federation):
 
     # setup the shell command
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-			       shell=True)
-    # Launch the shell command
+                   shell=True)
+    # launch the shell command
     strout, error = process.communicate()
-
-    #child = pexpect.spawn(cmd,timeout=1200)
-    #child.expect(pexpect.EOF)
-    #strout = child.before
 
     timeNow = time.time()
     print '   - Phedex query took: %d seconds'%(timeNow-timeStart) 
@@ -69,47 +62,48 @@ def getDatasetsInPhedexAtSites(federation):
         if "name" not in line:
             continue
 
-        group = None
-        size = None
-        creationTime = None
         datasetName = (re.findall(r"name='(\S+)'", line))[0]
 
         if "#" in datasetName:
             datasetName = (re.split("#",datasetName))[0]
 
-	complete = (re.findall(r"complete='(\w+)'",line))[0]
-        if complete == 'n':
-            skipDataset.append(datasetName)
-	    continue
+    phedexSet = None
+    if datasetName not in phedexDatasets.keys():
+        phedexSet = PhedexDataset(datasetName)
+        phedexDatasets[datasetName] = phedexSet
+    else:
+        phedexSet = phedexDatasets[datasetName]
 
-        res = re.findall(r"group='(\S+)'",line)
-
+    sublines = re.split("<replica\ ",line)
+    for subline in sublines[1:]:
+        
+        group = None
+        size = None
+        creationTime = None
+        isValid = True
+        isCustodial = False
+        
+        t2Site = re.findall(r"node='(\w+)'",subline)[0]
+        res = re.findall(r"group='(\S+)'",subline)
         if len(res) > 0:
             group = res[0]
         else:
             group = "undef"
-
-        creationTime = int((re.findall(r"time_update='(\d+)",line))[0])
-        size = float((re.findall(r"bytes='(\d+)'",line))[0])
-        size = size/1024/1024/1024
-
-	t2Site = re.findall(r"node='(\w+)'",line)
-	custodial = (re.findall(r"custodial='(\w+)'",line))[0]
+            
+        custodial = re.findall(r"custodial='(\w+)'",subline)
         if custodial == 'y':
-	    continue
-        
-        if datasetName in allDatasets.keys():
-            size = size + (allDatasets[datasetName])[2]
-            if creationTime < (allDatasets[datasetName])[1]:
-                creationTime = (allDatasets[datasetName])[1]
-        allDatasets[datasetName] = [group,creationTime,size]
+            isCustdial = True
 
-        if datasetName in datasetsAtSites.keys():
-            for esite in t2Site:
-                if esite not in (datasetsAtSites[datasetName]):
-                    datasetsAtSites[datasetName].append(esite)
-        else:
-            datasetsAtSites[datasetName] = t2Site
+        complete = re.findall(r"complete='(\w+)'",subline)
+        if complete == 'n':
+            isValid = False
+
+        creationTime = re.findall(r"time_update='(\d+)",subline)[0]
+        creationTime = int(re.findall(r"time_update='(\d+)",subline)[0])
+        size   = float(re.findall(r"bytes='(\d+)'",subline)[0])
+        size   = size/1024/1024/1024
+
+        phedexSet.updateForSite(t2Site,size,group,creationTime,isCustodial,isValid)
 
     timeNow = time.time()
     print '   - Analysis of phedex output took: %d seconds'%(timeNow-timeStart) 
@@ -117,7 +111,6 @@ def getDatasetsInPhedexAtSites(federation):
 #====================================================================================================
 #  M A I N
 #====================================================================================================
-
 statusDir = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS']
 filename = os.environ['DETOX_PHEDEX_CACHE']
 
@@ -147,19 +140,22 @@ print ' - Phedex access and analysis took: %d seconds'%(timeNow-timeStart)
 timeStart = time.time()
 
 outputFile = open(statusDir+'/'+filename, "w")
-for datasetName in allDatasets :
-    if datasetName in skipDataset:
+for datasetName in phedexDatasets :
+    phedexSet = phedexDatasets[datasetName]
+    allSites = phedexSet.locatedOnSites()
+    if(len(allSites) < 1):
         continue
 
-    group = (allDatasets[datasetName])[0]
-    creationTime = (allDatasets[datasetName])[1]
-    size = (allDatasets[datasetName])[2]
-    line = datasetName + " " + group + " " + str(creationTime) + " " + str(size) + " "
-    tmpar = datasetsAtSites[datasetName]
-    for i in range(len(tmpar)) :
-        line = line + str(tmpar[i]) + " "
-    outputFile.write(line)
-    outputFile.write("\n")
+    for site in allSites:
+    
+        size = phedexSet.size(site)
+        creationTime = phedexSet.creationTime(site)
+        group = phedexSet.group(site)
+        
+        line = datasetName + " " + group + " " + str(creationTime)
+        line = line + " "  + str(size) + " " +site
+        outputFile.write(line)
+        outputFile.write("\n")
 outputFile.close()
 
 timeNow = time.time()

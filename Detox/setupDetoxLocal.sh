@@ -40,7 +40,7 @@ export DETOX_X509UP=/tmp/x509up_u`id -u`
 
 # Paths
 
-export DETOX_BASE="/usr/local/IntelROCCS/Detox"
+export DETOX_BASE="./"
 export DETOX_PYTHONPATH="$DETOX_BASE/python"
 
 # Python path etc (careful it might not be set)

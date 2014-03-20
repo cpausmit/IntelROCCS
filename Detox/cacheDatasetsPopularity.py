@@ -13,8 +13,9 @@
 # information is combined with what is extracted from PhEDEx database.
 #
 # Issues:
-#
+# -------
 # - important to clarify the password issue!! (there is a temporary but not too safe fix)
+# - we need to cleanly separate main and helpers, please, no global variables
 #
 #----------------------------------------------------------------------------------------------------
 import subprocess, sys, os, re, glob, time
@@ -22,14 +23,14 @@ import datetime
 from   datetime import date, timedelta
 
 if not os.environ.get('DETOX_DB'):
-	print '\n ERROR - DETOX environment not defined: source setup.sh\n'
-	sys.exit(0)
+    print '\n ERROR - DETOX environment not defined: source setup.sh\n'
+    sys.exit(0)
 
 if len(sys.argv) < 2:
     print 'not enough arguments\n'
     sys.exit()
 else:
-    msite = str(sys.argv[1])
+    site = str(sys.argv[1])
 
 dates = [];
 getPopularityData = True
@@ -37,11 +38,10 @@ getPopularityData = True
 #====================================================================================================
 #  H E L P E R S
 #====================================================================================================
-
 def getDatasetsPopularity():
 
     dirname = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS'] + '/' + \
-              msite + '/' + os.environ['DETOX_SNAPSHOTS']
+              site + '/' + os.environ['DETOX_SNAPSHOTS']
 
     if not os.path.exists(dirname):
         os.makedirs(dirname)
@@ -53,45 +53,32 @@ def getDatasetsPopularity():
         # --> last snapshot has to be repeated
         if os.path.exists(outputFile):
             continue
-
-        tEnd = str(dates[i])
-        tStart = str(dates[i+1])
-
-        append = '\?\&sitename=' + msite + '\&tstart=' + tStart + '\&tstop=' + tEnd;
-        cmd = 'python popularityClient.py  /popularity/DSStatInTimeWindow/' + append;
-
         if getPopularityData:
-
-	    # launch the shell command
-	    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-				       shell=True)
-	    strout, error = process.communicate()
-
-            #child = pexpect.spawn(cmd,timeout=600)
-            ## the trick is that you have to create a key file without password
-            ## better would be to get a cern sso cookie, but that so far fails
-            #child.expect (pexpect.EOF)
-            #strout = child.before
-            
+            tEnd = str(dates[i])
+            tStart = str(dates[i+1])
+            cmd = 'python popularityClient.py  /popularity/DSStatInTimeWindow/' + \
+                  '\?\&sitename=' + site + '\&tstart=' + tStart + '\&tstop=' + tEnd
+            process = subprocess.Popen(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,shell=True)
+            strout, error = process.communicate()
             fileHandle = open(outputFile, "w")
             fileHandle.write(strout)
             fileHandle.close()
 
     files = glob.glob(dirname + '/??-??-??')
     for file in files:
-         yearm = (re.search(r"(\d+)-(\d+)-(\d+)", file)).group(0)
-         found = 0
-         for i in range(0,items-1):
-             dateTmp = str(dates[i])
-             if dateTmp == yearm:
-                 found = 1
-                 break
-         if found == 0:
-             print " removing file " + file 
-             os.remove(file)
+        yearm = (re.search(r"(\d+)-(\d+)-(\d+)", file)).group(0)
+        found = 0
+        for i in range(0,items-1):
+            dateTmp = str(dates[i])
+            if dateTmp == yearm:
+                found = 1
+                break
+        if found == 0:
+            print " removing file " + file
+            os.remove(file)
 
 def weekStartDate(year, week):
-    d = date(year, 1, 1)    
+    d = date(year, 1, 1)
     delta_days = d.isoweekday() - 1
     delta_weeks = week
     if year == d.isocalendar()[0]:
@@ -105,7 +92,6 @@ def firstDayOfMonth(d):
 #====================================================================================================
 #  M A I N
 #====================================================================================================
-
 # set the starting point
 now = datetime.datetime.now()
 thisYear,thisWeekNumber,DOW = now.isocalendar()
@@ -132,4 +118,4 @@ getDatasetsPopularity()
 
 # timing result
 timeNow = time.time()
-print '   - Popularity queries for %s took: %d seconds'%(msite,timeNow-timeStart) 
+print '   - Popularity queries for %s took: %d seconds'%(site,timeNow-timeStart)
