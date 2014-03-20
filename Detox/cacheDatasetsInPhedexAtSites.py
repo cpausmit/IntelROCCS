@@ -66,43 +66,43 @@ def getDatasetsInPhedexAtSites(federation):
         if "#" in datasetName:
             datasetName = (re.split("#",datasetName))[0]
 
-    phedexSet = None
-    if datasetName not in phedexDatasets.keys():
-        phedexSet = PhedexDataset(datasetName)
-        phedexDatasets[datasetName] = phedexSet
-    else:
-        phedexSet = phedexDatasets[datasetName]
-
-    sublines = re.split("<replica\ ",line)
-    for subline in sublines[1:]:
-        
-        group = None
-        size = None
-        creationTime = None
-        isValid = True
-        isCustodial = False
-        
-        t2Site = re.findall(r"node='(\w+)'",subline)[0]
-        res = re.findall(r"group='(\S+)'",subline)
-        if len(res) > 0:
-            group = res[0]
+        phedexSet = None
+        if datasetName not in phedexDatasets.keys():
+            phedexSet = PhedexDataset(datasetName)
+            phedexDatasets[datasetName] = phedexSet
         else:
-            group = "undef"
+            phedexSet = phedexDatasets[datasetName]
+
+        sublines = re.split("<replica\ ",line)
+        for subline in sublines[1:]:
             
-        custodial = re.findall(r"custodial='(\w+)'",subline)
-        if custodial == 'y':
-            isCustdial = True
-
-        complete = re.findall(r"complete='(\w+)'",subline)
-        if complete == 'n':
-            isValid = False
-
-        creationTime = re.findall(r"time_update='(\d+)",subline)[0]
-        creationTime = int(re.findall(r"time_update='(\d+)",subline)[0])
-        size   = float(re.findall(r"bytes='(\d+)'",subline)[0])
-        size   = size/1024/1024/1024
-
-        phedexSet.updateForSite(t2Site,size,group,creationTime,isCustodial,isValid)
+            group = None
+            size = None
+            creationTime = None
+            isValid = True
+            isCustodial = False
+            
+            t2Site = re.findall(r"node='(\w+)'",subline)[0]
+            res = re.findall(r"group='(\S+)'",subline)
+            if len(res) > 0:
+                group = res[0]
+            else:
+                group = "undef"
+                
+            custodial = re.findall(r"custodial='(\w+)'",subline)
+            if custodial == 'y':
+                isCustdial = True
+    
+            complete = re.findall(r"complete='(\w+)'",subline)
+            if complete == 'n':
+                isValid = False
+    
+            creationTime = re.findall(r"time_update='(\d+)",subline)[0]
+            creationTime = int(re.findall(r"time_update='(\d+)",subline)[0])
+            size   = float(re.findall(r"bytes='(\d+)'",subline)[0])
+            size   = size/1024/1024/1024
+    
+            phedexSet.updateForSite(t2Site,size,group,creationTime,isCustodial,isValid)
 
     timeNow = time.time()
     print '   - Analysis of phedex output took: %d seconds'%(timeNow-timeStart) 
