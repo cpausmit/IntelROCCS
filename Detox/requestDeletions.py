@@ -33,13 +33,11 @@ def submitRequest(site, datasets=[]):
     if check: 
         print " ERROR - phedexApi.xmlData failed"
         sys.exit(1)
-
+    
     # here the request is really sent
-    check,response = phedex.delete(node=site,data=data,\
-                       comments='IntelROOCS -- Automatic Cache Release Request'+\
-                       '(if not acted upon will repeat in about %s hours)'\
-                                   %(os.environ['DETOX_CYCLE_HOURS']),
-                       instance='prod')
+    message = 'IntelROOCS -- Automatic Cache Release Request (if not acted upon will repeat ' + \
+              'in about %s hours)'%(os.environ['DETOX_CYCLE_HOURS'])
+    check,response = phedex.delete(node=site,data=data,comments=message,instance='prod')
     if check:
         print " ERROR - phedexApi.delete failed"
         print response
@@ -76,7 +74,7 @@ for member in allSubDirs:
     site = member.split('/')[-1]
     inputFile = resultDirectory + '/' + site + '/' + deletionFile
 
-    print " Looking at file: " + inputFile
+    print " File: " + inputFile
     fileHandle = open(inputFile,"r")
     for line in fileHandle.xreadlines():
         items = line.split()
@@ -85,7 +83,7 @@ for member in allSubDirs:
         if len(items) != 5 : 
             continue
         dataset = items[4]
-        print ' Found dataset: ' + dataset
+        print ' -> ' + dataset
         if not dataset.startswith('/'):
             continue
         if site in siteDeletionList.keys():

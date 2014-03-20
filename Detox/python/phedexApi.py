@@ -90,7 +90,7 @@ class phedexApi:
         data = urllib.urlencode(values)
         opener = urllib2.build_opener(HTTPSGridAuthHandler())
         request = urllib2.Request(url, data)
-        print " URL: " + url + "\n ARGUMENTS: %s"%(str(values),)
+        #print " URL: " + url + "\n ARGUMENTS: %s"%(str(values),)
         try:
             response = opener.open(request)
         except urllib2.HTTPError, e:
