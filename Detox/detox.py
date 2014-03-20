@@ -44,8 +44,7 @@ def getAllSites():
     pw = os.environ.get('DETOX_SITESTORAGE_PW')
     table = os.environ.get('DETOX_QUOTAS')
     # open database connection
-    if debug>0:
-        print ' Access quota table (%s) in site storage database (%s) to find all sites.'%(table,db)
+    print ' Access quota table (%s) in site storage database (%s) to find all sites.'%(table,db)
     db = MySQLdb.connect(host=server,db=db, user=user,passwd=pw)
     # prepare a cursor object using cursor() method
     cursor = db.cursor()

@@ -47,8 +47,7 @@ def getDatasetsInPhedexAtSites(federation):
     print ' Access phedexDb: ' + cmd 
 
     # setup the shell command
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                   shell=True)
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,shell=True)
     # launch the shell command
     strout, error = process.communicate()
 

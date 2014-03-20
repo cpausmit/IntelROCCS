@@ -34,11 +34,10 @@ do
     # period 3600 * nHours
     let wait=3600*$DETOX_CYCLE_HOURS
 
-    echo " "                                                   >> $logFile
-    echo " detox loop $index  -- $tag (seconds to wait $wait)" >> $logFile
-    echo " "                                                   >> $logFile
-
-    $DETOX_BASE/detox.py                                       >> $logFile
+    echo " "                                                         >> $logFile
+    echo " detox loop $index started -- $tag (cycle wait $wait sec)" >> $logFile
+    echo " "                                                         >> $logFile
+    $DETOX_BASE/detox.py                                             >> $logFile
 
     sleep $wait
   done
