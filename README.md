@@ -1,6 +1,8 @@
 IntelROCCS -- Intelligent Resource Optimization for Complex Computing Systems
+=============================================================================
 
----+ Conceptual Description of the Cache Release Mechanism
+Conceptual Description of the Cache Release Mechanism
+=====================================================
 
 ---++ Some Initial Remarks
 
