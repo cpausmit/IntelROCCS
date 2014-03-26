@@ -1,14 +1,12 @@
-IntelROCCS -- Intelligent Resource Optimization for Complex Computing Systems
-=============================================================================
+#IntelROCCS -- Intelligent Resource Optimization for Complex Computing Systems
 
-Conceptual Description of the Cache Release Mechanism
-=====================================================
+##Conceptual Description of the Cache Release Mechanism
 
----++ Some Initial Remarks
+### Some Initial Remarks
 
 For most purposes we consider datasets as our basic unit of data but in principle the unit could be data blocks. Presently the majority of data we are considering on the Tier-2 and Tier-1 sites is stored in complete datasets which means all blocks of a given dataset are at the specific site.
 
----++ Motivation
+### Motivation
 
 CMS maintains a huge amount of data, O(50PB), which is conveniently ordered in datasets, which usually have some common properties and user tend to analyse entirely. Datasets are further subdivided into data blocks which each consists of one or more files. These subdivisions facilitates the handling of the datasets.
 
@@ -20,7 +18,7 @@ The automatic cache release process is supposed to optimize the usage of all ava
    0 always allow new data to be received at any site
    0 remove the least valuable data from the storage when the storage fills over a given level
 
----++ Cache Release Process
+### Cache Release Process
 
 The cache release is an operation that is performed on a given site separately but has to account for the status of the global CMS storage. Therefore it is an operation that has to be globally managed. The system is periodically reviewed to ensure there is free space for transfers at all sites. Usually little should have changed in the storage since the last review, so the first step will be to see whether cache release has to be triggered at any given site. The condition for the cache release is given by:
 
@@ -41,7 +39,7 @@ With the custodial datasets excluded and the the last dataset copies determined 
 To select the datasets for deletion we apply a ranking algorithm that assigns each dataset a rank. We will select datasets from the top of the descending ranked list adding the space they occupy until we have enough space to meet the above condition. The selected datasets are then removed from the storage. The ranking algorithm is used to evaluate the usefulness of the data. The ranking (floating point number) is roughly equivalent to the number of days passed since the dataset was last used. This algorithm ensures that datasets that are unpopular will automatically disappear from all sites in the system, except for the last and custodial copies of course. Last copies and custodial datasets have to be removed with other tools.
 
 
----++ Data Ranking Algorithm
+### Data Ranking Algorithm
 
 The ranking algorithm assigns each dataset a rank. The rank is roughly corresponding the the number of days the particular dataset has not been used. Thus the larger the rank the less useful are the data as they have not been accessed in so many days. There are a number of corrections applied to the number of days not used to account for the fact how often the dataset was used before or for how long it has been sitting on the disk to begin with, etc.
 
