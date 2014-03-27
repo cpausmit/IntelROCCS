@@ -17,3 +17,8 @@ The automatic cache release process and the dynamic data placement are supposed 
 * remove the least valuable data from the storage when the storage fills over a given level
 
 IntelROCCS is supposed to provide the necessary intelligence to optimize the resource usage at CMS.
+
+
+### Components
+
+So far implemented is the cache release. The package is called Detox (for site detoxification).
