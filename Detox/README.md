@@ -1,4 +1,4 @@
-# Detox - Site Detoxifying Agent
+# Detox - Site Detoxification Agent
 
 ## Conceptual Description of the Cache Release Mechanism
 

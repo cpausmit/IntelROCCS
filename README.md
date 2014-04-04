@@ -12,8 +12,13 @@ There are two essential components in Data Management: there is the placement of
 
 The automatic cache release process and the dynamic data placement are supposed to optimize the usage of all available disk storage and relieve the data managers of a large fraction of their work by:
 
-   0 keeping all storage filled to a high and safe level
-   0 always allow new data to be received at any site to be able to optimize data access
-   0 remove the least valuable data from the storage when the storage fills over a given level
+* keeping all storage filled to a high and safe level
+* always allow new data to be received at any site to be able to optimize data access
+* remove the least valuable data from the storage when the storage fills over a given level
 
 IntelROCCS is supposed to provide the necessary intelligence to optimize the resource usage at CMS.
+
+
+### Components
+
+So far implemented is the cache release. The package is called Detox (for site detoxification).
