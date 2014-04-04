@@ -38,6 +38,10 @@ export DETOX_NCOPY_MIN=2
 
 export DETOX_X509UP=/tmp/x509up_u`id -u`
 
+# Local logging database config file
+
+export DETOX_MYSQL_CONFIG=/etc/myIntelROCCS.cnf
+
 # Paths
 
 export DETOX_BASE="/usr/local/IntelROCCS/Detox"
