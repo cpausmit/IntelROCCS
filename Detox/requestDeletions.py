@@ -121,7 +121,8 @@ statusDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS']
 resultDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_RESULT']
 
 # define three test sites
-testSites = [ 'T2_US_MIT', 'T2_US_Nebraska', 'T2_DE_RWTH' ]
+testSites = [ 'T2_US_Caltech','T2_US_MIT','T2_US_Nebraska','T2_US_Wisconsin','T2_US_Florida',
+              'T2_ES_CIEMAT','T2_DE_RWTH' ]
 
 deletionFile = "DeleteDatasets.txt"
 
