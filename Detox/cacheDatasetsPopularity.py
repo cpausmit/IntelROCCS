@@ -1,5 +1,5 @@
 #!/usr/local/bin/python
-#----------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------
 #
 # This script talks to the popularity service and extracts usage information for a given site
 # (specified as an input parameter). The popularity service requires to specify a time window, hence
@@ -17,13 +17,13 @@
 # - important to clarify the password issue!! (there is a temporary but not too safe fix)
 # - we need to cleanly separate main and helpers, please, no global variables
 #
-#----------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------
 import subprocess, sys, os, re, glob, time
 import datetime
 from   datetime import date, timedelta
 
 if not os.environ.get('DETOX_DB'):
-    print '\n ERROR - DETOX environment not defined: source setup.sh\n'
+    print '\n ERROR - DETOX environment not defined: source setupDetox.sh\n'
     sys.exit(0)
 
 if len(sys.argv) < 2:
@@ -35,9 +35,9 @@ else:
 dates = [];
 getPopularityData = True
 
-#====================================================================================================
+#===================================================================================================
 #  H E L P E R S
-#====================================================================================================
+#===================================================================================================
 def getDatasetsPopularity():
 
     dirname = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS'] + '/' + \
@@ -58,6 +58,8 @@ def getDatasetsPopularity():
             tStart = str(dates[i+1])
             cmd = 'python popularityClient.py  /popularity/DSStatInTimeWindow/' + \
                   '\?\&sitename=' + site + '\&tstart=' + tStart + '\&tstop=' + tEnd
+            #print " CMD: " + cmd
+            #os.system(cmd)
             process = subprocess.Popen(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,shell=True)
             strout, error = process.communicate()
             fileHandle = open(outputFile, "w")
@@ -89,9 +91,9 @@ def weekStartDate(year, week):
 def firstDayOfMonth(d):
     return date(d.year, d.month, 1)
 
-#====================================================================================================
+#===================================================================================================
 #  M A I N
-#====================================================================================================
+#===================================================================================================
 # set the starting point
 now = datetime.datetime.now()
 thisYear,thisWeekNumber,DOW = now.isocalendar()

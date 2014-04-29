@@ -1,9 +1,9 @@
-#----------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------
 #
 # Here the main parameters for Detox are defined. This is probably not the way we want to do it on
 # the long run but let's start this way.
 #
-#----------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------
 # main directories
 
 export DETOX_DB="/local/cmsprod/IntelROCCS/Detox"
@@ -30,9 +30,9 @@ export DETOX_DATASETS_TO_DELETE=DatasetsToDelete.txt
 # Parameters for cleaning
 
 export DETOX_CYCLE_HOURS=12
-export DETOX_USAGE_MAX=0.75
-export DETOX_USAGE_MIN=0.65
-export DETOX_NCOPY_MIN=2
+export DETOX_USAGE_MAX=0.90
+export DETOX_USAGE_MIN=0.80
+export DETOX_NCOPY_MIN=1
 
 # Certificate location
 
@@ -47,7 +47,12 @@ export DETOX_MYSQL_CONFIG=/etc/myIntelROCCS.cnf
 export DETOX_BASE="./"
 export DETOX_PYTHONPATH="$DETOX_BASE/python"
 
-# Python path etc (careful it might not be set)
+# Python path etc. (careful it might not be set)
+
+if [ "`echo $PATH | grep /usr/local/bin`" == "" ] 
+then
+  export PATH="/usr/local/bin:${PATH}"
+fi
 
 export LD_LIBRARY_PATH="/usr/local/lib:${LD_LIBRARY_PATH}"
 

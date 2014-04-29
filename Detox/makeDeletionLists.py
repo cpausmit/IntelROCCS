@@ -1,5 +1,5 @@
 #!/usr/local/bin/python
-#----------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------
 #
 # This script takes each site's ranked list and comes up with lists of datasets to be deleted. It
 # makes sure that each dataset exists on at least 2 sites (there are datasets that currently exist
@@ -11,7 +11,7 @@
 # space target is reached. Normally only 2 iterations are needed.
 #
 # Issue: printing of the deletion lists should be mode more compact
-#----------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------
 import sys, os, re, glob, time, glob, shutil, MySQLdb
 import datetime
 from   datetime import date, timedelta
@@ -239,10 +239,10 @@ for site in sorted(sites.keys(), key=str.lower, reverse=False):
     outputFile.write("Lower Threshold     : %8.2f\n"%(DETOX_USAGE_MIN))
     outputFile.write("\n")
     outputFile.write("#- S P A C E  S U M M A R Y ----------------\n\n")
-    outputFile.write("Total Space     [TB]: %8.2f\n"%(siteObj.siteSizeGb()/1000))
-    outputFile.write("Space Used      [TB]: %8.2f\n"%(siteObj.spaceTaken()/1000))
-    outputFile.write("Space to delete [TB]: %8.2f\n"%(siteObj.spaceDeleted()/1000))
-    outputFile.write("Space last CP   [TB]: %8.2f\n"%(siteObj.spaceLastCp()/1000))
+    outputFile.write("Total Space     [TB]: %8.2f\n"%(siteObj.siteSizeGb()/1024))
+    outputFile.write("Space Used      [TB]: %8.2f\n"%(siteObj.spaceTaken()/1024))
+    outputFile.write("Space to delete [TB]: %8.2f\n"%(siteObj.spaceDeleted()/1024))
+    outputFile.write("Space last CP   [TB]: %8.2f\n"%(siteObj.spaceLastCp()/1024))
     outputFile.close()
 
     outputFile = open(file_delete,'w')

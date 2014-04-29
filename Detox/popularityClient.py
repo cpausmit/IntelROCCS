@@ -107,6 +107,7 @@ if __name__ == "__main__":
     x509_path = os.getenv("HOME") + "/.globus/usercert.pem"
     if os.path.exists(x509_path):
       ssl_cert_file = x509_path
+
   if not ssl_key_file or not os.path.exists(ssl_key_file):
     print >>stderr, "no certificate private key file found"
     exit(1)
@@ -116,10 +117,13 @@ if __name__ == "__main__":
     exit(1)
 
   # Authenticate to CERN SSO and retrieve document from the actual service
+
+
   pop_base_url = "https://cms-popularity.cern.ch/popdb/"
   pop_url = '%s/%s'%(pop_base_url,argv[1])  
 
   data = sso_auth(pop_url)
 
-  print data;
+  # print "# CERT: " + ssl_cert_file
+  print data
   exit(0)

@@ -1,5 +1,5 @@
 #!/usr/local/bin/python
-#----------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------
 #
 # This is the master script that user should run It runs all other auxilary scripts. At the end you
 # will have full set of deletion suggestions.
@@ -7,7 +7,7 @@
 # For now we get the list of all sites from the file with quotas because we need to know the
 # capacity of each site (and right now we use only one group as proxy).
 #
-#----------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------
 import sys, os, re, glob, time, MySQLdb
 import datetime
 from   datetime import date, timedelta
@@ -32,9 +32,9 @@ rankDatasets = True
 makeDeletionLists = True
 requestDeletions = True
 
-#====================================================================================================
+#===================================================================================================
 #  H E L P E R S
-#====================================================================================================
+#===================================================================================================
 def getAllSites():
     # we are looking for all relevant sites
     sites = []
@@ -67,6 +67,7 @@ def getAllSites():
                 sites.append(siteName)
     except:
         print ' Error(%s) -- could not retrieve sites'%(sql)
+        print sys.exc_info()
 
     return sites
 
@@ -134,4 +135,9 @@ if requestDeletions:
 timeNow = time.time()
 print ' - Deletion requests took: %d seconds'%(timeNow-timeStart) 
 
+# Run the script that makes the deletion request to phedex
+print ' Show cache release requests.'
+call(["./showCacheRequests.py"])
+
+# Final summary of timing
 print ' Total Cycle took: %d seconds'%(timeNow-timeInitial) 
