@@ -56,10 +56,9 @@ def getDatasetsPopularity():
         if getPopularityData:
             tEnd = str(dates[i])
             tStart = str(dates[i+1])
-            cmd = 'popularityClient.py  /popularity/DSStatInTimeWindow/' + \
+            cmd = os.environ['DETOX_BASE'] + '/' + \
+                  'popularityClient.py  /popularity/DSStatInTimeWindow/' + \
                   '\?\&sitename=' + site + '\&tstart=' + tStart + '\&tstop=' + tEnd
-            #print " CMD: " + cmd
-            #os.system(cmd)
             process = subprocess.Popen(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,shell=True)
             strout, error = process.communicate()
             fileHandle = open(outputFile, "w")

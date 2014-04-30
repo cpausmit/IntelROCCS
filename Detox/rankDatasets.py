@@ -129,7 +129,7 @@ for line in fileHandle.xreadlines():
     nAccessed = 0
     lastAccessed = now
     if datasetName in usedDatasets.keys():
-        nAccessed = float ((usedDatasets[datasetName])[0])
+        nAccessed = float((usedDatasets[datasetName])[0])
         if size > 1:
             nAccessed = nAccessed/size
         date = (usedDatasets[datasetName])[1]
