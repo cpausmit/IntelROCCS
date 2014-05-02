@@ -23,7 +23,6 @@ try:
     import json
 except ImportError:
     import simplejson as json
-
 from cmsDataLogger import cmsDataLogger
 
 #####################################################################################################
@@ -50,7 +49,6 @@ class phedexApi:
     # site = "T2_US_Nebraska"
     # dataset = "/BTau/GowdyTest10-Run2010Av3/RAW"
     # group = 'local' or 'AnalysisOps'
-
     def __init__(self, logPath=''):
         """
         __init__
@@ -58,16 +56,14 @@ class phedexApi:
         Set up class constants
         """
         statusDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS']
-        self.logger      = cmsDataLogger(statusDirectory+'/')
+        self.logger     = cmsDataLogger(statusDirectory+'/')
         self.phedexBase = "https://cmsweb.cern.ch/phedex/datasvc/"
-
 
     ############################################################################
     #                                                                          #
     #                           P h E D E x   C A L L                          #
     #                                                                          #
     ############################################################################
-
     def phedexCall(self, url, values):
         """
         _phedexCall_
@@ -85,12 +81,10 @@ class phedexApi:
         1 -- Status, 0 = everything went well, 1 = something went wrong
         2 -- IF status == 0 : HTTP response ELSE : Error message
         """
-
         name = "phedexCall"
         data = urllib.urlencode(values)
         opener = urllib2.build_opener(HTTPSGridAuthHandler())
         request = urllib2.Request(url, data)
-        #print " URL: " + url + "\n ARGUMENTS: %s"%(str(values),)
         try:
             response = opener.open(request)
         except urllib2.HTTPError, e:
@@ -104,14 +98,11 @@ class phedexApi:
             self.logger.error(name, "VALUES: %s" % (str(values),))
             return 1, " ERROR - urllib2.URLError"
         return 0, response
-
-
     ############################################################################
     #                                                                          #
     #                                  D A T A                                 #
     #                                                                          #
     ############################################################################
-
     def data(self, dataset='', block='', fileName='', level='block',
              createSince='', format='json', instance='prod'):
         """
@@ -145,10 +136,8 @@ class phedexApi:
         if not (dataset or block or fileName):
             self.logger.error(name, "Need to pass at least one of dataset/block/fileName")
             return 1, "Error"
-
         values = { 'dataset' : dataset, 'block' : block, 'file' : fileName,
                    'level' : level, 'create_since' : createSince }
-
         dataURL = urllib.basejoin(self.phedexBase, "%s/%s/data" % (format, instance))
         check, response = self.phedexCall(dataURL, values)
         if check:
@@ -168,14 +157,11 @@ class phedexApi:
         else:
             data = response.read()
         return 0, data
-
-
     ############################################################################
     #                                                                          #
     #                                 P A R S E                                #
     #                                                                          #
     ############################################################################
-
     def parse(self, data, xml):
         """
         _parse_
@@ -203,13 +189,11 @@ class phedexApi:
                     k == "bytes" or k== "checksum"):
                     xml = '%s %s="%s"' % (xml, k, v)
         return xml
-
     ############################################################################
     #                                                                          #
     #                             X M L   D A T A                              #
     #                                                                          #
     ############################################################################
-
     def xmlData(self, datasets=[], instance='prod'):
         """
         _xmlData_
@@ -247,14 +231,11 @@ class phedexApi:
         xml = "%s</%s>" % (xml, 'dbs')
         xml_data = "%s</data>" % (xml,)
         return 0, xml_data
-
-
     ############################################################################
     #                                                                          #
     #                             S U B S C R I B E                            #
     #                                                                          #
     ############################################################################
-
     def subscribe(self, node='', data='', level='dataset', priority='low',
                   move='n', static='n', custodial='n', group='local',
                   timeStart='', requestOnly='n', noMail='n', comments='',
@@ -268,13 +249,10 @@ class phedexApi:
         if not (node and data):
             self.logger.error(name, "Need to pass both node and data")
             return 1, "Error"
-
-        values = { 'node' : node, 'data' : data, 'level' : level,
-                   'priority' : priority, 'move' : move, 'static' : static,
-                   'custodial' : custodial, 'group' : group,
-                   'time_start' : timeStart, 'request_only' : requestOnly,
-                   'no_mail' : noMail, 'comments' : comments }
-
+        values = { 'node' : node, 'data' : data, 'level' : level, 'priority' : priority,
+                   'move' : move, 'static' : static, 'custodial' : custodial, 'group' : group,
+                   'time_start' : timeStart, 'request_only' : requestOnly, 'no_mail' : noMail,
+                   'comments' : comments }
         subscriptionURL = urllib.basejoin(self.phedexBase, "%s/%s/subscribe" % (format, instance))
         check, response = self.phedexCall(subscriptionURL, values)
         if check:
@@ -282,14 +260,11 @@ class phedexApi:
             self.logger.error(name, "Subscription call failed")
             return 1, "Error"
         return 0, response
-
-
     ############################################################################
     #                                                                          #
     #                                D E L E T E                               #
     #                                                                          #
     ############################################################################
-
     def delete(self, node='', data='', level='dataset', rmSubscriptions='y',
                comments='', format='json', instance='prod'):
         """
@@ -301,10 +276,8 @@ class phedexApi:
         if not (node and data):
             self.logger.error(name, "Need to pass both node and data")
             return 1, "Error"
-
         values = { 'node' : node, 'data' : data, 'level' : level,
                    'rm_subscriptions' : rmSubscriptions, 'comments' : comments }
-
         deleteURL = urllib.basejoin(self.phedexBase, "%s/%s/delete" % (format, instance))
         check, response = self.phedexCall(deleteURL, values)
         if check:
@@ -314,13 +287,11 @@ class phedexApi:
             return 1, "ERROR - self.phedexCall with response: " + response
         return 0, response
 
-
 #####################################################################################################
 #                                                                                                   #
 #                       H T T P S   G R I D   A U T H   H A N D L E R                               #
 #                                                                                                   #
 #####################################################################################################
-
 class HTTPSGridAuthHandler(urllib2.HTTPSHandler):
     """
     _HTTPSGridAuthHandler_
@@ -337,14 +308,11 @@ class HTTPSGridAuthHandler(urllib2.HTTPSHandler):
         urllib2.HTTPSHandler.__init__(self)
         self.key = self.getProxy()
         self.cert = self.key
-
     def https_open(self, req):
         return self.do_open(self.getConnection, req)
-
     def getProxy(self):
         proxy = os.environ['DETOX_X509UP']
         return proxy
-
     def getConnection(self, host, timeout=300):
         return httplib.HTTPSConnection(host, key_file=self.key, cert_file=self.cert)
 
@@ -359,18 +327,40 @@ if __name__ == '__main__':
 
     For testing purpose only
     """
-    #phedex_api = phedexApi(logPath='./')
-    #check, data = phedex_api.xmlData(datasets=['/MET/Run2012A-22Jan2013-v1/AOD'], instance='prod')
+
+    # Example for deletion
+
+    #phedexApi = phedexApi(logPath='./')
+    #check, data = phedexApi.xmlData(datasets=['/MET/Run2012A-22Jan2013-v1/AOD'], instance='prod')
     #if check:
     #    sys.exit(1)
     #print data
     #
     #check, response = \
-    #       phedex_api.delete(node='T2_US_MIT', data=data, instance='prod',
-    #                         comments='Just a test by Christoph Paus for Maxim Goncharov.')
+    #       phedexApi.delete(node='T2_US_MIT', data=data, instance='prod',
+    #                        comments='Just a test by Christoph Paus for Maxim Goncharov.')
     #if check:
     #    print "This is the response from phedexApi.delete: " + response
     #    sys.exit(1)
     #
     #print response.read()
+
+    # Example for subscription
+
+    #phedexApi = phedexApi(logPath='./')
+    #check, data = phedexApi.xmlData(
+    #    datasets=['/Muplus_Pt1_PositiveEta-gun/Muon2023Upg14-DES23_62_V1-v1/GEN-SIM'], instance='prod')
+    #if check:
+    #    sys.exit(1)
+    #print data
+    #
+    #check, response = \
+    #       phedexApi.subscribe(node='T2_US_MIT', data=data, instance='prod', group='AnalysisOps',
+    #                           comments='Just a test by Christoph Paus for Maxim Goncharov.')
+    #if check:
+    #    print "This is the response from phedexApi.delete: " + response
+    #    sys.exit(1)
+    #
+    #print response.read()
+
     #sys.exit(0)
