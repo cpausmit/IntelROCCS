@@ -5,7 +5,7 @@
 # dataset.
 #
 #----------------------------------------------------------------------------------------------------
-import os, sys, random, urllib, urllib2, httplib, json
+import os, sys, re, random, urllib, urllib2, httplib, json
 
 #====================================================================================================
 #  C L A S S E S
@@ -300,9 +300,9 @@ else:
 #---------------------------
 
 # check the user proxy
-if os.environ['X509_USER_PROXY'] != "":
+if os.environ.get('X509_USER_PROXY'):
     if debug > 0:
-        print ' Using user proxy: ' + os.environ['X509_USER_PROXY']
+        print ' Using user proxy: ' + os.environ.get('X509_USER_PROXY')
 else:
     print ' Error - no X509_USER_PROXY, please define the variable correctly. EXIT!'
     sys.exit(1)
@@ -327,17 +327,41 @@ for line in os.popen(cmd).readlines():
         line    = line[:-1]
 
 # this is the text including the size units, that needs to be converted)
-sizeGb = convertSizeToGb(line)
-
+if line != '':
+    sizeGb = convertSizeToGb(line)
+else:
+    print ' Error - no reasonable size found with das_client.py.'
+    sys.exit(1)
 print ' DAS information:  %.1f GB  %s'%(sizeGb,dataset)
-
-
-sys.exit(0)
 
 # has the dataset already been subscribed?
 #-----------------------------------------
+# - no test that the complete dataset has been subscribed (could be just one block)
+# - we test all Tier2s and check there is at least one block subscribed no completed required
+#
+# --> need to verify this is sufficicent
 
-# - NEEDS TO BE IMPLEMENED
+webServer = 'https://cmsweb.cern.ch/'
+phedexBlocks = 'phedex/datasvc/xml/prod/blockreplicas?subscribed=y&node=T2*&dataset=' + dataset
+cert = os.environ.get('X509_USER_PROXY')
+url = '"'+webServer+phedexBlocks + '"'
+cmd = 'curl --cert ' + cert + ' -k -H "Accept: text/xml" ' + url + ' 2> /dev/null'
+if debug > 1:
+    print ' Access phedexDb: ' + cmd 
+
+# setup the shell command
+siteNames = ''
+for line in os.popen(cmd).readlines():
+    if debug > 1:
+        print ' LINE: ' + line
+    # find the potential T2s
+    siteName = (re.findall(r"node='(\S+)'", line))[0]
+    siteNames += ' ' + siteName
+
+if siteNames != '':
+    print ' Already subscribed on Tier-2:' + siteNames
+    print '\n The job is done already: EXIT!\n'
+    sys.exit(0)
 
 # find a matching site
 #---------------------
@@ -360,11 +384,7 @@ print ' WARNING -- no test for cache size for now. Please update for real use.'
 
 # choose a site randomly
 iRan = random.randint(0,len(tier2Sites)-1)
-#site = tier2Sites[iRan]
-
-# HARDWIRE SITE FOR NOW
-print ' WARNING -- site is hardwired. Please update for real use.'
-site = 'T2_US_MIT'
+site = tier2Sites[iRan]
 print " Assign Tier-2 [%d]: %s"%(iRan,site)
 
 # make phedex subscription
