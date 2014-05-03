@@ -5,7 +5,7 @@
 # dataset.
 #
 #----------------------------------------------------------------------------------------------------
-import os, sys, re, random, urllib, urllib2, httplib, json
+import os, sys, getopt, re, random, urllib, urllib2, httplib, json
 
 #====================================================================================================
 #  C L A S S E S
@@ -258,6 +258,38 @@ def convertSizeToGb(sizeTxt):
     # return the size in GB as a float
     return sizeGb
     
+def getActiveSites():
+    # hardcoded fallback
+    tier2Base = [ 'T2_AT_Vienna','T2_BR_SPRACE','T2_CH_CSCS','T2_DE_DESY','T2_DE_RWTH',
+                  'T2_ES_CIEMAT','T2_ES_IFCA',
+                  'T2_FR_IPHC','T2_FR_GRIF_LLR',
+                  'T2_IT_Pisa','T2_IT_Bari','T2_IT_Rome',
+                  'T2_RU_JINR',
+                  'T2_UK_London_IC',
+                  'T2_US_Caltech','T2_US_Florida','T2_US_MIT','T2_US_Nebraska','T2_US_Purdue',
+                  'T2_US_Wisconsin'
+                  ]
+
+    # download list of active sites
+    sites = []
+
+    # get the active site list
+    cmd  = 'wget http://t3serv001.mit.edu/~cmsprod/IntelROCCS/Detox/ActiveSites.txt'
+    cmd += ' -O - 2> /dev/null'
+    for line in os.popen(cmd).readlines():
+        site = line[:-1]
+        if debug > 1:
+            print ' Adding site: ' + site
+        sites.append(site)
+
+    # something went wrong
+    if len(sites) < 10:
+        print ' WARNINIG - too few sites found, reverting to hardcoded list'
+        sites = tier2Base
+
+    # return the size in GB as a float
+    return sites
+    
 def submitSubscriptionRequest(site, datasets=[]):
     
     if len(datasets) < 1:
@@ -286,18 +318,49 @@ def submitSubscriptionRequest(site, datasets=[]):
 #====================================================================================================
 #  M A I N
 #====================================================================================================
-debug = 1
-usage  = '\n assignDatasetToSite.py  <dataset>\n'
-usage += '                          dataset - name of a CMS dataset.\n'
+# Define string to explain usage of the script
+usage =  " Usage: assignDatasetToSite.py   --dataset=<name of a CMS dataset>\n"
+usage += "                               [ --debug=0 ]\n"
+usage += "                               [ --exec ]\n"
+usage += "                               [ --help ]\n\n"
 
-if len(sys.argv) < 2:
+# Define the valid options which can be specified and check out the command line
+valid = ['dataset=','debug=','exec','help']
+try:
+    opts, args = getopt.getopt(sys.argv[1:], "", valid)
+except getopt.GetoptError, ex:
     print usage
-    sys.exit()
-else:
-    dataset = str(sys.argv[1])
+    print str(ex)
+    sys.exit(1)
+
+# --------------------------------------------------------------------------------------------------
+# Get all parameters for the production
+# --------------------------------------------------------------------------------------------------
+# Set defaults for each command line parameter/option
+debug = 0
+dataset = ''
+exe = False
+
+# Read new values from the command line
+for opt, arg in opts:
+    if opt == "--help":
+        print usage
+        sys.exit(0)
+    if opt == "--dataset":
+        dataset = arg
+    if opt == "--debug":
+        debug = arg
+    if opt == "--exec":
+        exe = True
 
 # inspecting the local setup
 #---------------------------
+
+# check the input parameters
+if dataset == '':
+    print ' Error - no dataset specified. EXIT!\n'
+    print usage
+    sys.exit(1)
 
 # check the user proxy
 if os.environ.get('X509_USER_PROXY'):
@@ -307,6 +370,7 @@ else:
     print ' Error - no X509_USER_PROXY, please define the variable correctly. EXIT!'
     sys.exit(1)
     
+# check das_client.py tool
 cmd = 'which das_client.py'
 for line in os.popen(cmd).readlines():
     line    = line[:-1]
@@ -355,8 +419,11 @@ for line in os.popen(cmd).readlines():
     if debug > 1:
         print ' LINE: ' + line
     # find the potential T2s
-    siteName = (re.findall(r"node='(\S+)'", line))[0]
-    siteNames += ' ' + siteName
+    try:
+        siteName = (re.findall(r"node='(\S+)'", line))[0]
+        siteNames += ' ' + siteName
+    except:
+        siteName = ''
 
 if siteNames != '':
     print ' Already subscribed on Tier-2:' + siteNames
@@ -366,26 +433,32 @@ if siteNames != '':
 # find a matching site
 #---------------------
 
-# find all dynamically managed sites (hardwired for now)
-tier2Sites = [ 'T2_AT_Vienna','T2_BR_SPRACE','T2_CH_CSCS','T2_DE_DESY','T2_DE_RWTH',
-               'T2_ES_CIEMAT','T2_ES_IFCA',
-               'T2_FR_IPHC','T2_FR_GRIF_LLR',
-               'T2_IT_Pisa','T2_IT_Bari','T2_IT_Rome',
-               'T2_RU_JINR',
-               'T2_UK_London_IC',
-               'T2_US_Caltech','T2_US_Florida','T2_US_MIT','T2_US_Nebraska','T2_US_Purdue',
-               'T2_US_Wisconsin'
-               ]
+# find all dynamically managed sites
+tier2Sites = getActiveSites()
 
-# exclude sites that are too small
+# choose a site randomly and exclude sites that are too small
+quota = 0
+nTrials = 0
+while sizeGb > 0.1*quota:
+    iRan = random.randint(0,len(tier2Sites)-1)
+    site = tier2Sites[iRan]
+    cmd  = 'wget http://t3serv001.mit.edu/~cmsprod/IntelROCCS/Detox/result/'+site+'/Summary.txt'
+    cmd += ' -O - 2> /dev/null | grep ^Total'
+    for line in os.popen(cmd).readlines():
+        line = line[:-1]
+        f = line.split(' ')
+        quota = float(f[-1]) * 1024.  # make sure it is GB
+    print ' Trying to fit %.1f GB into Tier-2 [%d]: %s with quota of %.1f GB (use 0.1 max)'%\
+          (sizeGb,iRan,site,quota)
 
-# - NEEDS TO BE IMPLEMENTED
-print ' WARNING -- no test for cache size for now. Please update for real use.'
+    if nTrials > 20:
+        print ' Error - no matching site could be found. Dataset too big? EXIT!'
+        sys.exit(1)
 
-# choose a site randomly
-iRan = random.randint(0,len(tier2Sites)-1)
-site = tier2Sites[iRan]
-print " Assign Tier-2 [%d]: %s"%(iRan,site)
+    nTrials += 1
+
+print ''
+print ' SUCCESS - Assigned to Tier-2 [%d]: %s (quota: %.1f GB)'%(iRan,site,quota)
 
 # make phedex subscription
 #-------------------------
@@ -395,4 +468,8 @@ datasets = []
 datasets.append(dataset)
 
 # subscribe them
-submitSubscriptionRequest(site,datasets)
+if exe:
+    print ' -> subscribing ....'
+    submitSubscriptionRequest(site,datasets)
+else:
+    print ' -> not subscribing .... please use  --exec  option.'

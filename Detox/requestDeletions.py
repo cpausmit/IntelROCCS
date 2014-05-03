@@ -121,7 +121,7 @@ if not os.environ.get('DETOX_DB'):
 statusDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS']
 resultDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_RESULT']
 
-# define three test sites
+# define test sites
 testSites = [ 'T2_AT_Vienna','T2_BR_SPRACE','T2_CH_CSCS','T2_DE_DESY','T2_DE_RWTH',
               'T2_ES_CIEMAT','T2_ES_IFCA',
               'T2_FR_IPHC','T2_FR_GRIF_LLR',
@@ -132,6 +132,14 @@ testSites = [ 'T2_AT_Vienna','T2_BR_SPRACE','T2_CH_CSCS','T2_DE_DESY','T2_DE_RWT
               'T2_US_Wisconsin'
               ]
 
+# record active sites in a file
+activeSites = os.environ['DETOX_DB'] + '/ActiveSites.txt'
+fileHandle = open(activeSites,"w")
+for site in testSites:
+    fileHandle.write(site + "\n")
+fileHandle.close()
+
+# prepare for deletion by site
 deletionFile = "DeleteDatasets.txt"
 
 # hash of sites and corresponding dataset deletion list
