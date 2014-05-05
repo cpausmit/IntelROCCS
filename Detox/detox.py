@@ -69,6 +69,7 @@ def getAllSites():
         print ' Error(%s) -- could not retrieve sites'%(sql)
         print sys.exc_info()
 
+    sites.sort()
     return sites
 
 def createCacheAreas():
@@ -119,13 +120,17 @@ for site in allSites:
 timeNow = time.time()
 print ' - Collecting site information took: %d seconds'%(timeNow-timeStart) 
 
+# For global ranking we will read all local rankings, calculate global rank for each dataset, and
+# update the files.
+call(["./rankDatasetsGlobally.py"])
+
 # Run the script that unifies all of sites and creates deletion suggestions
 timeStart = time.time()
 print ' Create deletion lists.'
 if makeDeletionLists:
     call(["./makeDeletionLists.py"])
 timeNow = time.time()
-print ' - Creation of deletion lists took: %d seconds'%(timeNow-timeStart) 
+print ' - Creation of deletion lists took: %d seconds'%(timeNow-timeStart)
 
 # Run the script that makes the deletion request to phedex
 timeStart = time.time()

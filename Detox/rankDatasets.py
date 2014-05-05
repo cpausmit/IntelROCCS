@@ -12,7 +12,7 @@
 #
 # WARNING: notice that rigth now it handles only one group: AnalysisOps (it is hardcoded)
 #----------------------------------------------------------------------------------------------------
-import os, sys, re, time, datetime
+import os, sys, re, time, datetime, shutil
 
 if not os.environ.get('DETOX_DB'):
     print '\n ERROR - DETOX environment not defined: source setup.sh\n'
@@ -77,6 +77,10 @@ def printDatasets():
              outputFile.write(siteName + " ");
         outputFile.write(" \n");
     outputFile.close();
+
+    origFile = statusDirectory+'/'+site+'/'+os.environ['DETOX_DATASETS_TO_DELETE']
+    copyFile = statusDirectory+'/'+site+'/'+os.environ['DETOX_DATASETS_TO_DELETE']+'-back'
+    shutil.copy2(origFile,copyFile)
    
     return;
 

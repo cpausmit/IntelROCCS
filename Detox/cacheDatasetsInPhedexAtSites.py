@@ -114,7 +114,7 @@ statusDir = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS']
 filename = os.environ['DETOX_PHEDEX_CACHE']
 
 timeNow = datetime.now()
-deltaNhours = timedelta(seconds = 60*60*renewMinInterval)
+deltaNhours = timedelta(seconds = 60*60*(renewMinInterval-1))
 modTime = datetime.fromtimestamp(0)
 if os.path.isfile(statusDir+'/'+filename):
     modTime = datetime.fromtimestamp(os.path.getmtime(statusDir+'/'+filename))
