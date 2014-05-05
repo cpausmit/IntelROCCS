@@ -39,7 +39,6 @@ needsToClean = 40000
 now = float(time.time())
 groupLimits = {}
 
-
 #====================================================================================================
 #  H E L P E R S
 #====================================================================================================
@@ -59,7 +58,6 @@ def compare(item1, item2):
         return -1
     else:
         return 0
-
 
 def printDatasets():
     outputFile = open(statusDirectory+'/'+site+'/'+os.environ['DETOX_DATASETS_TO_DELETE'],'w')
