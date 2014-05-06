@@ -420,8 +420,10 @@ for line in os.popen(cmd).readlines():
         print ' LINE: ' + line
     # find the potential T2s
     try:
-        siteName = (re.findall(r"node='(\S+)'", line))[0]
-        siteNames += ' ' + siteName
+        sublines = re.split("<replica\ ",line)
+        for subline in sublines[1:]:
+            siteName = (re.findall(r"node='(\S+)'",subline))[0]
+            siteNames += ' ' + siteName
     except:
         siteName = ''
 
