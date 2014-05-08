@@ -266,7 +266,6 @@ def testLocalSetup(dataset,debug=0):
         print ' Error - das_client.py in your path, please find it and add it to PATH. EXIT!'
         sys.exit(1)
 
-
 def convertSizeToGb(sizeTxt):
     # this is the text including the size units, that need to be converted)
     sizeGb  = float(sizeTxt[0:-2])
