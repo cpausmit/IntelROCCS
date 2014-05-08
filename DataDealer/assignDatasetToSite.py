@@ -5,7 +5,7 @@
 # dataset.
 #
 #----------------------------------------------------------------------------------------------------
-import os, sys, getopt, re, random, urllib, urllib2, httplib, json
+import os, sys, subprocess, getopt, re, random, urllib, urllib2, httplib, json
 
 #====================================================================================================
 #  C L A S S E S
@@ -240,6 +240,33 @@ class HTTPSGridAuthHandler(urllib2.HTTPSHandler):
 #====================================================================================================
 #  H E L P E R S
 #====================================================================================================
+def testLocalSetup(dataset,debug=0):
+    # check the input parameters
+    if dataset == '':
+        print ' Error - no dataset specified. EXIT!\n'
+        print usage
+        sys.exit(1)
+    
+    # check the user proxy
+    if os.environ.get('X509_USER_PROXY'):
+        if debug > 0:
+            print ' Using user proxy: ' + os.environ.get('X509_USER_PROXY')
+    else:
+        print ' Error - no X509_USER_PROXY, please define the variable correctly. EXIT!'
+        sys.exit(1)
+        
+    # check das_client.py tool
+    cmd = 'which das_client.py'
+    for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
+        line    = line[:-1]
+    if line != "":
+        if debug > 0:
+            print ' Using das_client.py from: ' + line
+    else:
+        print ' Error - das_client.py in your path, please find it and add it to PATH. EXIT!'
+        sys.exit(1)
+
+
 def convertSizeToGb(sizeTxt):
     # this is the text including the size units, that need to be converted)
     sizeGb  = float(sizeTxt[0:-2])
@@ -258,7 +285,33 @@ def convertSizeToGb(sizeTxt):
     # return the size in GB as a float
     return sizeGb
     
-def getActiveSites():
+def findExistingSubscriptions(dataset,debug=0):
+
+    webServer = 'https://cmsweb.cern.ch/'
+    phedexBlocks = 'phedex/datasvc/xml/prod/blockreplicas?subscribed=y&node=T2*&dataset=' + dataset
+    cert = os.environ.get('X509_USER_PROXY')
+    url = '"'+webServer+phedexBlocks + '"'
+    cmd = 'curl --cert ' + cert + ' -k -H "Accept: text/xml" ' + url + ' 2> /dev/null'
+    if debug > 1:
+        print ' Access phedexDb: ' + cmd 
+    
+    # setup the shell command
+    siteNames = ''
+    for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
+        if debug > 1:
+            print ' LINE: ' + line
+        # find the potential T2s
+        try:
+            sublines = re.split("<replica\ ",line)
+            for subline in sublines[1:]:
+                siteName = (re.findall(r"node='(\S+)'",subline))[0]
+                siteNames += ' ' + siteName
+        except:
+            siteName = ''
+
+    return siteNames
+    
+def getActiveSites(debug=0):
     # hardcoded fallback
     tier2Base = [ 'T2_AT_Vienna','T2_BR_SPRACE','T2_CH_CSCS','T2_DE_DESY','T2_DE_RWTH',
                   'T2_ES_CIEMAT','T2_ES_IFCA',
@@ -276,7 +329,7 @@ def getActiveSites():
     # get the active site list
     cmd  = 'wget http://t3serv001.mit.edu/~cmsprod/IntelROCCS/Detox/ActiveSites.txt'
     cmd += ' -O - 2> /dev/null'
-    for line in os.popen(cmd).readlines():
+    for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
         site = line[:-1]
         if debug > 1:
             print ' Adding site: ' + site
@@ -289,6 +342,33 @@ def getActiveSites():
 
     # return the size in GB as a float
     return sites
+
+def chooseMatchingSite(tier2Sites,sizeGb,debug):
+
+    iRan = -1
+    quota = 0
+    nTrials = 0
+
+    while sizeGb > 0.1*quota:
+        iRan = random.randint(0,len(tier2Sites)-1)
+        site = tier2Sites[iRan]
+        # not elegant or reliable (should use database directly)
+        cmd  = 'wget http://t3serv001.mit.edu/~cmsprod/IntelROCCS/Detox/result/'+site+'/Summary.txt'
+        cmd += ' -O - 2> /dev/null | grep ^Total'
+        for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
+            line = line[:-1]
+            f = line.split(' ')
+            quota = float(f[-1]) * 1024.  # make sure it is GB
+        print ' Trying to fit %.1f GB into Tier-2 [%d]: %s with quota of %.1f GB (use 0.1 max)'%\
+              (sizeGb,iRan,site,quota)
+    
+        if nTrials > 20:
+            print ' Error - no matching site could be found. Dataset too big? EXIT!'
+            sys.exit(1)
+    
+        nTrials += 1
+
+    return iRan,site,quota
     
 def submitSubscriptionRequest(site, datasets=[]):
     
@@ -306,7 +386,7 @@ def submitSubscriptionRequest(site, datasets=[]):
         return
     
     # here the request is really sent
-    message = 'IntelROCCS -- Automatic Dataset Subscription. CP is testing please ignore.'
+    message = 'IntelROCCS -- Automatic Dataset Subscription by Computing Operations.'
     print " Message: " + message
     print " --> check,response = phedex.subscribe(node=site,data=data,comments=message,instance='prod')"
     check,response = phedex.subscribe(node=site,data=data,comments=message,instance='prod')
@@ -356,38 +436,15 @@ for opt, arg in opts:
 # inspecting the local setup
 #---------------------------
 
-# check the input parameters
-if dataset == '':
-    print ' Error - no dataset specified. EXIT!\n'
-    print usage
-    sys.exit(1)
+testLocalSetup(dataset,debug)
 
-# check the user proxy
-if os.environ.get('X509_USER_PROXY'):
-    if debug > 0:
-        print ' Using user proxy: ' + os.environ.get('X509_USER_PROXY')
-else:
-    print ' Error - no X509_USER_PROXY, please define the variable correctly. EXIT!'
-    sys.exit(1)
-    
-# check das_client.py tool
-cmd = 'which das_client.py'
-for line in os.popen(cmd).readlines():
-    line    = line[:-1]
-if line != "":
-    if debug > 0:
-        print ' Using das_client.py from: ' + line
-else:
-    print ' Error - das_client.py in your path, please find it and add it to PATH. EXIT!'
-    sys.exit(1)
-
-# the the provided datasets
-#---------------------------------
+# size of provided dataset
+#-------------------------
 
 # use das client to find the present size of the dataset
 cmd = 'das_client.py --format=plain --limit=0 --query="file dataset=' + \
       dataset + ' | sum(file.size)" |tail -1 | cut -d= -f2'
-for line in os.popen(cmd).readlines():
+for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
         line    = line[:-1]
 
 # this is the text including the size units, that needs to be converted)
@@ -396,36 +453,16 @@ if line != '':
 else:
     print ' Error - no reasonable size found with das_client.py.'
     sys.exit(1)
-print ' DAS information:  %.1f GB  %s'%(sizeGb,dataset)
+print '\n DAS information:  %.1f GB  %s'%(sizeGb,dataset)
 
 # has the dataset already been subscribed?
 #-----------------------------------------
-# - no test that the complete dataset has been subscribed (could be just one block)
-# - we test all Tier2s and check there is at least one block subscribed no completed required
+# - no test that the complete dataset has been subscribed (could be just one block?)
+# - we test all Tier2s and check there is at least one block subscribed no completed bit required
 #
-# --> need to verify this is sufficicent
+# --> need to verify this is sufficient
 
-webServer = 'https://cmsweb.cern.ch/'
-phedexBlocks = 'phedex/datasvc/xml/prod/blockreplicas?subscribed=y&node=T2*&dataset=' + dataset
-cert = os.environ.get('X509_USER_PROXY')
-url = '"'+webServer+phedexBlocks + '"'
-cmd = 'curl --cert ' + cert + ' -k -H "Accept: text/xml" ' + url + ' 2> /dev/null'
-if debug > 1:
-    print ' Access phedexDb: ' + cmd 
-
-# setup the shell command
-siteNames = ''
-for line in os.popen(cmd).readlines():
-    if debug > 1:
-        print ' LINE: ' + line
-    # find the potential T2s
-    try:
-        sublines = re.split("<replica\ ",line)
-        for subline in sublines[1:]:
-            siteName = (re.findall(r"node='(\S+)'",subline))[0]
-            siteNames += ' ' + siteName
-    except:
-        siteName = ''
+siteNames = findExistingSubscriptions(dataset,debug)
 
 if siteNames != '':
     print ' Already subscribed on Tier-2:' + siteNames
@@ -436,28 +473,10 @@ if siteNames != '':
 #---------------------
 
 # find all dynamically managed sites
-tier2Sites = getActiveSites()
+tier2Sites = getActiveSites(debug)
 
 # choose a site randomly and exclude sites that are too small
-quota = 0
-nTrials = 0
-while sizeGb > 0.1*quota:
-    iRan = random.randint(0,len(tier2Sites)-1)
-    site = tier2Sites[iRan]
-    cmd  = 'wget http://t3serv001.mit.edu/~cmsprod/IntelROCCS/Detox/result/'+site+'/Summary.txt'
-    cmd += ' -O - 2> /dev/null | grep ^Total'
-    for line in os.popen(cmd).readlines():
-        line = line[:-1]
-        f = line.split(' ')
-        quota = float(f[-1]) * 1024.  # make sure it is GB
-    print ' Trying to fit %.1f GB into Tier-2 [%d]: %s with quota of %.1f GB (use 0.1 max)'%\
-          (sizeGb,iRan,site,quota)
-
-    if nTrials > 20:
-        print ' Error - no matching site could be found. Dataset too big? EXIT!'
-        sys.exit(1)
-
-    nTrials += 1
+iRan,site,quota = chooseMatchingSite(tier2Sites,sizeGb,debug)
 
 print ''
 print ' SUCCESS - Assigned to Tier-2 [%d]: %s (quota: %.1f GB)'%(iRan,site,quota)
@@ -471,7 +490,7 @@ datasets.append(dataset)
 
 # subscribe them
 if exe:
-    print ' -> subscribing ....'
+    print ' -> subscribing  %s  to %s'%(dataset,site)
     submitSubscriptionRequest(site,datasets)
 else:
     print ' -> not subscribing .... please use  --exec  option.'
