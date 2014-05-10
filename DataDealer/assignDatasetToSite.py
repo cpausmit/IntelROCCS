@@ -358,8 +358,9 @@ def chooseMatchingSite(tier2Sites,sizeGb,debug):
             line = line[:-1]
             f = line.split(' ')
             quota = float(f[-1]) * 1024.  # make sure it is GB
-        print ' Trying to fit %.1f GB into Tier-2 [%d]: %s with quota of %.1f GB (use 0.1 max)'%\
-              (sizeGb,iRan,site,quota)
+        if debug > 0:
+            print ' Trying to fit %.1f GB into Tier-2 [%d]: %s with quota of %.1f GB (use 0.1 max)'%\
+                  (sizeGb,iRan,site,quota)
     
         if nTrials > 20:
             print ' Error - no matching site could be found. Dataset too big? EXIT!'
@@ -386,8 +387,9 @@ def submitSubscriptionRequest(site, datasets=[]):
     
     # here the request is really sent
     message = 'IntelROCCS -- Automatic Dataset Subscription by Computing Operations.'
-    print " Message: " + message
-    print " --> check,response = phedex.subscribe(node=site,data=data,comments=message,instance='prod')"
+    if not exe:
+        print " Message: " + message
+        print " --> check,response = phedex.subscribe(node=site,data=data,comments=message,instance='prod')"
     check,response = phedex.subscribe(node=site,data=data,comments=message,instance='prod')
     if check:
         print " ERROR - phedexApi.subscribe failed"
@@ -452,7 +454,9 @@ if line != '':
 else:
     print ' Error - no reasonable size found with das_client.py.'
     sys.exit(1)
-print '\n DAS information:  %.1f GB  %s'%(sizeGb,dataset)
+
+if not exe:
+    print '\n DAS information:  %.1f GB  %s'%(sizeGb,dataset)
 
 # has the dataset already been subscribed?
 #-----------------------------------------
@@ -477,8 +481,9 @@ tier2Sites = getActiveSites(debug)
 # choose a site randomly and exclude sites that are too small
 iRan,site,quota = chooseMatchingSite(tier2Sites,sizeGb,debug)
 
-print ''
-print ' SUCCESS - Assigned to Tier-2 [%d]: %s (quota: %.1f GB)'%(iRan,site,quota)
+if not exe:
+    print ''
+    print ' SUCCESS - Assigned to Tier-2 [%d]: %s (quota: %.1f GB)'%(iRan,site,quota)
 
 # make phedex subscription
 #-------------------------
@@ -489,7 +494,7 @@ datasets.append(dataset)
 
 # subscribe them
 if exe:
-    print ' -> subscribing  %s  to %s'%(dataset,site)
+    print ' -> initial subscribtion of  %s  to %s'%(dataset,site)
     submitSubscriptionRequest(site,datasets)
 else:
     print ' -> not subscribing .... please use  --exec  option.'
