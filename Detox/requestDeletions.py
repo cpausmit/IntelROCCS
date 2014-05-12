@@ -62,7 +62,7 @@ def submitRequest(site, datasets=[]):
         sys.exit(1)
     
     # here the request is really sent
-    message = 'IntelROOCS -- Automatic Cache Release Request (if not acted upon will repeat ' + \
+    message = 'IntelROCCS -- Automatic Cache Release Request (if not acted upon will repeat ' + \
               'in about %s hours).'%(os.environ['DETOX_CYCLE_HOURS']) + \
               ' Summary at: http://t3serv001.mit.edu/~cmsprod/IntelROCCS/Detox/result/'
     check,response = phedex.delete(node=site,data=data,comments=message,instance='prod')
@@ -120,7 +120,7 @@ statusDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS']
 resultDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_RESULT']
 
 # define test sites
-testSites = [ 'T2_AT_Vienna'
+testSites = [ 'T2_AT_Vienna',
               'T2_BE_IIHE','T2_BE_UCL',
               'T2_BR_SPRACE','T2_BR_UERJ',
               'T2_CH_CSCS',
@@ -171,7 +171,7 @@ for member in allSubDirs:
         items = line.split()
 
 	# CP-CP this is bad decoding prone to failure
-        if len(items) != 5 : 
+       i f len(items) != 5:
             continue
         dataset = items[4]
         print ' -> ' + dataset
