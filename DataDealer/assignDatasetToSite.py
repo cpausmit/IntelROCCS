@@ -389,8 +389,11 @@ def submitSubscriptionRequest(site, datasets=[]):
     message = 'IntelROCCS -- Automatic Dataset Subscription by Computing Operations.'
     if not exe:
         print " Message: " + message
-        print " --> check,response = phedex.subscribe(node=site,data=data,comments=message,instance='prod')"
-    check,response = phedex.subscribe(node=site,data=data,comments=message,group='AnalysisOps',instance='prod')
+        print " --> check,response \ "
+        print " = phedex.subscribe(node=site,data=data,comments=message,group='AnalysisOps', \ "
+        print "                    instance='prod')"
+    check,response = phedex.subscribe(node=site,data=data,comments=message,group='AnalysisOps',
+                                      instance='prod')
     if check:
         print " ERROR - phedexApi.subscribe failed"
         print response
