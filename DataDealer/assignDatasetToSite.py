@@ -174,7 +174,7 @@ class phedexApi:
         return 0, xml_data
 
     def subscribe(self, node='', data='', level='dataset', priority='low', move='n', static='n',
-                  custodial='n', group='local', timeStart='', requestOnly='n', noMail='n',
+                  custodial='n', group='AnalysisOps', timeStart='', requestOnly='n', noMail='n',
                   comments='', format='json', instance='prod'):
         """
         _subscribe_
@@ -196,7 +196,7 @@ class phedexApi:
     def delete(self, node='', data='', level='dataset', rmSubscriptions='y',
                comments='', format='json', instance='prod'):
         """
-        _subscribe_
+        _delete_
 
         Set up subscription call to PhEDEx API.
         """
@@ -390,15 +390,15 @@ def submitSubscriptionRequest(site, datasets=[]):
     if not exe:
         print " Message: " + message
         print " --> check,response = phedex.subscribe(node=site,data=data,comments=message,instance='prod')"
-    check,response = phedex.subscribe(node=site,data=data,comments=message,instance='prod')
+    check,response = phedex.subscribe(node=site,data=data,comments=message,group='AnalysisOps',instance='prod')
     if check:
         print " ERROR - phedexApi.subscribe failed"
         print response
         return
 
-#====================================================================================================
+#===================================================================================================
 #  M A I N
-#====================================================================================================
+#===================================================================================================
 # Define string to explain usage of the script
 usage =  " Usage: assignDatasetToSite.py   --dataset=<name of a CMS dataset>\n"
 usage += "                               [ --debug=0 ]\n"

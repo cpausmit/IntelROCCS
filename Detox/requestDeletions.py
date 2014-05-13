@@ -171,7 +171,7 @@ for member in allSubDirs:
         items = line.split()
 
 	# CP-CP this is bad decoding prone to failure
-       i f len(items) != 5:
+        if len(items) != 5:
             continue
         dataset = items[4]
         print ' -> ' + dataset
