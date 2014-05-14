@@ -8,12 +8,8 @@
 # capacity of each site (and right now we use only one group as proxy).
 #
 #---------------------------------------------------------------------------------------------------
-import sys, os, subprocess, re, glob, time, MySQLdb
-import datetime
-#from   datetime import date, timedelta
-import pickle
+import sys, os, subprocess, re, glob, time, pickle, MySQLdb
 import siteStatus
-#from siteStatus import SiteStatus
 
 # setup definitions
 if not os.environ.get('DETOX_DB'):
@@ -22,9 +18,6 @@ if not os.environ.get('DETOX_DB'):
 
 # make sure we start in the right directory
 os.chdir(os.environ.get('DETOX_BASE'))
-
-# debug flag
-debug = 0
 
 # allow to switch each piece of the code on and off for faster debugging
 getPhedexCache = True

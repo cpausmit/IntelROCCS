@@ -12,7 +12,6 @@
 import sys, os, re, glob, time, glob, shutil, pickle
 import phedexApi, siteStatus
 
-
 if len(sys.argv) < 2:
     allSites = siteStatus.getAllSites()
 else:

@@ -91,11 +91,8 @@ datasets = {}
 nBefore = 0
 for fileName in files:
     if debug > 0:
-        print ' File: ' + fileName
-    nBefore = len(datasets)
+        print ' DEBUGGING -- File: ' + fileName
     processFiles(fileName,datasets)
-    nAfter = len(datasets)
-    print ' DEBUGGING -- Before/After: %d / %d: '%(nBefore,nAfter)
 
 # write result into forseen cache
 outputFile = open(workDirectory+'/'+site+'/' + os.environ['DETOX_USED_DATASETS'], 'w')

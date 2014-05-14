@@ -6,8 +6,7 @@
 # recent requests will be shown.
 #
 #---------------------------------------------------------------------------------------------------
-import sys, os, re, glob, time, shutil
-import MySQLdb
+import sys, os, re, glob, time, shutil, MySQLdb
 
 #===================================================================================================
 #  M A I N

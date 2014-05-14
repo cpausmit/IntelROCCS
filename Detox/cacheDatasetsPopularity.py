@@ -18,9 +18,7 @@
 # - we need to cleanly separate main and helpers, please, no global variables
 #
 #---------------------------------------------------------------------------------------------------
-import subprocess, sys, os, re, glob, time
-import datetime
-from   datetime import date, timedelta
+import subprocess, sys, os, re, glob, time, datetime
 
 if not os.environ.get('DETOX_DB'):
     print '\n ERROR - DETOX environment not defined: source setupDetox.sh\n'
@@ -107,16 +105,16 @@ def getDatasetsPopularity():
             os.remove(file)
 
 def weekStartDate(year, week):
-    d = date(year, 1, 1)
+    d = datetime.date(year, 1, 1)
     delta_days = d.isoweekday() - 1
     delta_weeks = week
     if year == d.isocalendar()[0]:
         delta_weeks -= 1
-    delta = timedelta(days=-delta_days, weeks=delta_weeks)
+    delta = datetime.timedelta(days=-delta_days, weeks=delta_weeks)
     return d + delta
 
 def firstDayOfMonth(d):
-    return date(d.year, d.month, 1)
+    return datetime.date(d.year, d.month, 1)
 
 #===================================================================================================
 #  M A I N
@@ -135,7 +133,7 @@ beginningOfWeek = firstDayOfMonth(beginningOfWeek)
 dates.append(beginningOfWeek)
 
 for i in range(0,9):
-    delta = timedelta(days=-2)
+    delta = datetime.timedelta(days=-2)
     beginningOfWeek = firstDayOfMonth(beginningOfWeek+delta)
     dates.append(beginningOfWeek)
 

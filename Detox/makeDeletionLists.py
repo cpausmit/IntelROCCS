@@ -85,13 +85,13 @@ def makeDeletionLists(iteration):
             nprotected = 0
             for site in sorted(sites.keys(), cmp=sortByProtected):
                 siteObj = sites[site]
-                if debug>0:
-                    print site
-                    print datasetName
-                    print dataset.mySites()
+                if debug > 0:
+                    print " DEBUGGING - " + site
+                    print " DEBUGGING - " + datasetName
+                    print " DEBUGGING - " + dataset.mySites()
                 if site in dataset.mySites():
-                    if debug>0:
-                        print siteObj.datasetSizes.keys()
+                    if debug > 0:
+                        print " DEBUGGING - " + siteObj.datasetSizes.keys()
                     if siteObj.pinDataset(datasetName):
                         nprotected = nprotected + 1
                         if nprotected >= DETOX_NCOPY_MIN:
@@ -112,8 +112,8 @@ def makeDeletionLists(iteration):
 inputFiles = glob.glob(statusDirectory + '/*/' + os.environ['DETOX_DATASETS_TO_DELETE'])
 for inputFile in inputFiles:
     site = inputFile.split('/')[-2]
-    if debug>0:
-        print " File: %s  Site: %s"%(inputFile,site)
+    if debug > 0:
+        print " DEBUGGING - File: %s  Site: %s"%(inputFile,site)
     if site not in allSites.keys() or allSites[site].getStatus() == 0:
         continue
     sites[site] = siteProperties.SiteProperties(site)

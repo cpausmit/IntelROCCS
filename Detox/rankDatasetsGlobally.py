@@ -11,10 +11,8 @@
 #
 # It handles only one group: AnalysisOps
 #----------------------------------------------------------------------------------------------------
-import os, sys, re, time, datetime, glob
-import datasetProperties
-import siteStatus
-import pickle
+import os, sys, re, time, datetime, glob, pickle
+import datasetProperties, siteStatus
 
 if not os.environ.get('DETOX_DB'):
     print '\n ERROR - DETOX environment not defined: source setup.sh\n'
