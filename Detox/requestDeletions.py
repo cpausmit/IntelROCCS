@@ -1,19 +1,23 @@
 #!/usr/local/bin/python
 #----------------------------------------------------------------------------------------------------
-# This script looks at the results of deletion suggestions for a specified site and actually asks
-# PhEDEx for deletions.  The PhEDEx communications are handled inside PhEDExAPI class.
 #
-# The deletion request would have to approved by sysadmins At the moment deletion requests will go
-# to T2_US_MIT, T2_US_Nebraska, and T2_DE_RWTH.
+# This script looks at the results of deletion suggestions for a specified site and actually asks
+# PhEDEx for deletions.  The PhEDEx communications are handled inside phedexApi class.
 #
 # ToDo: If needed, we will add a mechanism to maintain a local list of submitted subscriptions so
 # that we will NOT ask again if it looks like there is orginal request submitted earlier still
 # pending for approval.
 #
 #----------------------------------------------------------------------------------------------------
-import sys, os, re, glob, time, glob, shutil
-import phedexApi
-import MySQLdb
+import sys, os, re, glob, time, glob, shutil, pickle
+import phedexApi, siteStatus
+
+
+if len(sys.argv) < 2:
+    allSites = siteStatus.getAllSites()
+else:
+    strAllSites = str(sys.argv[1])
+    allSites = pickle.loads(strAllSites)
 
 datasetInfo = {}
 datasetGroup = {}
@@ -24,7 +28,8 @@ datasetGroup = {}
 def getDatasetGroup(site):
     datasetGroup.clear();
     groupName = ''
-    #need to open phedex infor to access group info
+
+    # need to open phedex info to access group info
     statusDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS']
     inputFile = statusDirectory + '/'+os.environ['DETOX_PHEDEX_CACHE']
     fileHandle = open(inputFile,"r")
@@ -39,7 +44,7 @@ def getDatasetGroup(site):
         size = float(items[2])
         t2Site = items[3]
         
-        if(site != t2Site):
+        if site != t2Site:
             continue
         datasetGroup[datasetName] = group
 
@@ -119,38 +124,13 @@ if not os.environ.get('DETOX_DB'):
 statusDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS']
 resultDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_RESULT']
 
-# define test sites
-testSites = [ 'T2_AT_Vienna',
-              'T2_BE_IIHE','T2_BE_UCL',
-              'T2_BR_SPRACE','T2_BR_UERJ',
-              'T2_CH_CSCS',
-              'T2_CN_Beijing',
-              'T2_DE_DESY','T2_DE_RWTH',
-              'T2_EE_Estonia',
-              'T2_ES_CIEMAT','T2_ES_IFCA',
-              'T2_FI_HIP',
-              'T2_FR_CCIN2P3','T2_FR_GRIF_IRFU','T2_FR_GRIF_LLR','T2_FR_IPHC',
-              'T2_GR_Ioannina',
-              'T2_HU_Budapest',
-              'T2_IN_TIFR',
-              'T2_IT_Bari','T2_IT_Legnaro','T2_IT_Pisa','T2_IT_Rome',
-              'T2_KR_KNU',
-              'T2_PL_Warsaw',
-              'T2_PT_NCG_Lisbon',
-              'T2_RU_IHEP','T2_RU_INR','T2_RU_ITEP','T2_RU_JINR','T2_RU_SINP',
-              'T2_TR_METU',
-              'T2_TW_Taiwan',
-              'T2_UA_KIPT',
-              'T2_UK_London_Brunel','T2_UK_London_IC','T2_UK_SGrid_RALPP',
-              'T2_US_Caltech','T2_US_Florida','T2_US_MIT','T2_US_Nebraska','T2_US_Purdue',
-              'T2_US_UCSD','T2_US_Vanderbilt','T2_US_Wisconsin'
-              ]
 
 # record active sites in a file
 activeSites = os.environ['DETOX_DB'] + '/ActiveSites.txt'
 fileHandle = open(activeSites,"w")
-for site in testSites:
-    fileHandle.write(site + "\n")
+for site in allSites.keys():
+    if allSites[site].getStatus() == 1:
+        fileHandle.write(site + "\n")
 fileHandle.close()
 
 # prepare for deletion by site
@@ -186,7 +166,10 @@ for member in allSubDirs:
 
 # now submit actual requests
 for site in siteDeletionList.keys():
-    if site not in testSites:
+
+    if site not in allSites.keys():
+        continue
+    if allSites[site].getStatus() == 0:
         continue
 
     getDatasetGroup(site)

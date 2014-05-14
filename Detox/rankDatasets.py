@@ -77,7 +77,7 @@ def printDatasets():
     outputFile.close();
 
     origFile = statusDirectory+'/'+site+'/'+os.environ['DETOX_DATASETS_TO_DELETE']
-    copyFile = statusDirectory+'/'+site+'/'+os.environ['DETOX_DATASETS_TO_DELETE']+'-back'
+    copyFile = statusDirectory+'/'+site+'/'+os.environ['DETOX_DATASETS_TO_DELETE']+'-local'
     shutil.copy2(origFile,copyFile)
    
     return;

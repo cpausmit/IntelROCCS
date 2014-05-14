@@ -8,10 +8,12 @@
 # capacity of each site (and right now we use only one group as proxy).
 #
 #---------------------------------------------------------------------------------------------------
-import sys, os, re, glob, time, MySQLdb
+import sys, os, subprocess, re, glob, time, MySQLdb
 import datetime
-from   datetime import date, timedelta
-from subprocess import call
+#from   datetime import date, timedelta
+import pickle
+import siteStatus
+#from siteStatus import SiteStatus
 
 # setup definitions
 if not os.environ.get('DETOX_DB'):
@@ -35,43 +37,6 @@ requestDeletions = True
 #===================================================================================================
 #  H E L P E R S
 #===================================================================================================
-def getAllSites():
-    # we are looking for all relevant sites
-    sites = []
-    db = os.environ.get('DETOX_SITESTORAGE_DB')
-    server = os.environ.get('DETOX_SITESTORAGE_SERVER')
-    user = os.environ.get('DETOX_SITESTORAGE_USER')
-    pw = os.environ.get('DETOX_SITESTORAGE_PW')
-    table = os.environ.get('DETOX_QUOTAS')
-    # open database connection
-    print ' Access quota table (%s) in site storage database (%s) to find all sites.'%(table,db)
-    db = MySQLdb.connect(host=server,db=db, user=user,passwd=pw)
-    # prepare a cursor object using cursor() method
-    cursor = db.cursor()
-    # define sql
-    sql = "select * from " + table
-    # go ahead and try
-    try:
-        # Execute the SQL command
-        if debug>0:
-            print '\n Mysql> ' + sql
-        cursor.execute(sql)
-        # Fetch all the rows in a list of lists.
-        results = cursor.fetchall()
-        for row in results:
-            siteName = row[0]
-            groupName = row[1]
-            if not siteName in sites:
-                if debug>0:
-                    print ' Appending: ' + siteName
-                sites.append(siteName)
-    except:
-        print ' Error(%s) -- could not retrieve sites'%(sql)
-        print sys.exc_info()
-
-    sites.sort()
-    return sites
-
 def createCacheAreas():
     # create directory structure where to cache our input and analysis output
     if not os.path.exists(os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS']):
@@ -85,7 +50,7 @@ def createCacheAreas():
 # Retrieve all sites from the quota file
 timeInitial = time.time()
 
-allSites = getAllSites()
+allSites = siteStatus.getAllSites()
 
 # Make directories to hold cache data
 
@@ -96,7 +61,10 @@ createCacheAreas()
 timeStart = time.time()
 print ' Cache phedex information.'
 if getPhedexCache:
-    call(["./cacheDatasetsInPhedexAtSites.py", "T2"])
+    retValue = subprocess.call(["./cacheDatasetsInPhedexAtSites.py", "T2"])
+    if(retValue != 0):
+	print "Call to cacheDatasetsInPhedexAtSites.py failed with exit code " + str(retValue)
+        sys.exit(1)
 timeNow = time.time()
 print ' - Renewing phedex cache took: %d seconds'%(timeNow-timeStart) 
     
@@ -104,31 +72,38 @@ print ' - Renewing phedex cache took: %d seconds'%(timeNow-timeStart)
 
 timeStart = time.time()
 print ' Collect site information information.'
-for site in allSites:
+for site in sorted(allSites):
+    if allSites[site].getStatus() == 0:
+        continue
 
     # extract usage data from popularity service
     if getPopularityCache:
-        call(["./cacheDatasetsPopularity.py",site])
+        retValue = subprocess.call(["./cacheDatasetsPopularity.py",site])
+        if(retValue != 0):
+            allSites[site].setValid(0)
+            sys.exit(1)
 
     # unify datasets as given by the popularity service and phedex
     if extractUsedDatasets:
-        call(["./extractUsedDatasets.py",site])
+        subprocess.call(["./extractUsedDatasets.py",site])
 
     # rank datasets for each site
     if rankDatasets:
-        call(["./rankDatasets.py",site])
+        subprocess.call(["./rankDatasets.py",site])
 timeNow = time.time()
 print ' - Collecting site information took: %d seconds'%(timeNow-timeStart) 
 
+strAllSites = pickle.dumps(allSites)
+
 # For global ranking we will read all local rankings, calculate global rank for each dataset, and
 # update the files.
-call(["./rankDatasetsGlobally.py"])
+subprocess.call(["./rankDatasetsGlobally.py",strAllSites])
 
 # Run the script that unifies all of sites and creates deletion suggestions
 timeStart = time.time()
 print ' Create deletion lists.'
 if makeDeletionLists:
-    call(["./makeDeletionLists.py"])
+    subprocess.call(["./makeDeletionLists.py",strAllSites])
 timeNow = time.time()
 print ' - Creation of deletion lists took: %d seconds'%(timeNow-timeStart)
 
@@ -136,13 +111,13 @@ print ' - Creation of deletion lists took: %d seconds'%(timeNow-timeStart)
 timeStart = time.time()
 print ' Make deletion request.'
 if requestDeletions:
-    call(["./requestDeletions.py"])
+    subprocess.call(["./requestDeletions.py",strAllSites])
 timeNow = time.time()
 print ' - Deletion requests took: %d seconds'%(timeNow-timeStart) 
 
 # Run the script that makes the deletion request to phedex
 print ' Show cache release requests.'
-call(["./showCacheRequests.py"])
+subprocess.call(["./showCacheRequests.py"])
 
 # Final summary of timing
 print ' Total Cycle took: %d seconds'%(timeNow-timeInitial) 

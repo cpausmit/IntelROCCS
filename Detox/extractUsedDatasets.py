@@ -24,63 +24,21 @@ if len(sys.argv) < 2:
 else:
     site = str(sys.argv[1])
 
-debug = 0
-
-datasets = {}
-excludedSitesList = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS'] + '/' + \
-                    os.environ['DETOX_EXCLUDED_SITES']
-
 #====================================================================================================
 #  H E L P E R S
 #====================================================================================================
-def processFiles(fileName):
+def processFiles(fileName,datasets):
 
     date = (re.search(r"(\d+)-(\d+)-(\d+)", fileName)).group(0)  
-
-    # make sure file is clean
+    
     rawinp = None
-    isFileCorrupt = False
     inputFile = open(fileName,'r')
     for line in inputFile.xreadlines():
         if "SITENAME" in line:
             rawinp = line
-        if "Traceback" in line:
-            isFileCorrupt = True
-        if "Error" in line:
-            isFileCorrupt = True
     inputFile.close();
-
-    # >> CP-CP test that all variables are properly set
-    #
-    # one of the big issues with local ASCII caches are identification of failures. We have to check
-    # whether the output is empty because this seems to be one reason for failure. I am not sure
-    # what the best way is but this has to be handled better.
-    #
-    if rawinp == None:
-        isFileCorrupt = True
-    #
-    # this particular failure mode is not a file corruption but rather that there are no datasets
-    # we should not exclude this site....
-    # 
-    # << CP-CP test that all variables are properly set
-
-    # deal with file corruption
-    if isFileCorrupt:
-        print fileName + " has corrupted snapshot"
-        foundline = False
-        outputFile = open(excludedSitesList,'r+')
-        while True:
-            line = outputFile.readline()
-            if re.search(site, line):
-                foundline = True
-            if not line:
-                if not foundline:
-                    outputFile.write(site+"\n")
-                outputFile.close()
-                sys.exit(0)
-        outputFile.close()
     
-    # process good snapshots
+    # process snapshots
     array = re.split('{',rawinp)
     for line in array:
         aka = re.split(',',line)
@@ -122,19 +80,22 @@ def processFiles(fileName):
 #====================================================================================================
 #  M A I N
 #====================================================================================================
-# always first reset the excluded sites (no site can be excluded before an error is found)
-os.system("rm -f " + excludedSitesList)
-if not os.path.exists(excludedSitesList):
-    open(excludedSitesList,'a').close()
+debug = 0
 
 workDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS']
 files = glob.glob(workDirectory + '/' + site + '/' + os.environ['DETOX_SNAPSHOTS'] + '/????-??-??')
 
-# process each snapshot
+# process each snapshot and create a list of datasets
+datasets = {}
+
+nBefore = 0
 for fileName in files:
-    if debug>0:
+    if debug > 0:
         print ' File: ' + fileName
-    processFiles(fileName)
+    nBefore = len(datasets)
+    processFiles(fileName,datasets)
+    nAfter = len(datasets)
+    print ' DEBUGGING -- Before/After: %d / %d: '%(nBefore,nAfter)
 
 # write result into forseen cache
 outputFile = open(workDirectory+'/'+site+'/' + os.environ['DETOX_USED_DATASETS'], 'w')

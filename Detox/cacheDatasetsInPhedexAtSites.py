@@ -50,6 +50,10 @@ def getDatasetsInPhedexAtSites(federation):
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,shell=True)
     # launch the shell command
     strout, error = process.communicate()
+    # deal with non-zero return code
+    if process.returncode != 0:
+        print " Received non-zero exit status: " + str(process.returncode)
+	raise Exception(" FATAL -- Call to PhEDEx failed, stopping")
 
     timeNow = time.time()
     print '   - Phedex query took: %d seconds'%(timeNow-timeStart) 
@@ -138,7 +142,8 @@ print ' - Phedex access and analysis took: %d seconds'%(timeNow-timeStart)
 # New zero for timing
 timeStart = time.time()
 
-outputFile = open(statusDir+'/'+filename, "w")
+# Create our local cache files of the status per site
+outputFile = open(statusDir + '/' + filename, "w")
 for datasetName in phedexDatasets :
     phedexSet = phedexDatasets[datasetName]
     allSites = phedexSet.locatedOnSites()
@@ -156,6 +161,10 @@ for datasetName in phedexDatasets :
         outputFile.write(line)
         outputFile.write("\n")
 outputFile.close()
+
+# check at this point whether phedex cache has non-zero size
+if os.stat(statusDir + '/' + filename).st_size == 0:
+    raise Exception(" FATAL -- PhEDEx cache file is empty, stopping")
 
 timeNow = time.time()
 print ' - Creating phedex cache took: %d seconds'%(timeNow-timeStart) 

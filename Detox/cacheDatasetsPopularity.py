@@ -33,26 +33,36 @@ else:
     site = str(sys.argv[1])
 
 dates = [];
-getPopularityData = True
 
 #===================================================================================================
 #  H E L P E R S
 #===================================================================================================
 def getDatasetsPopularity():
-
+ 
+    getPopularityData = True
+    
     dirname = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS'] + '/' + \
               site + '/' + os.environ['DETOX_SNAPSHOTS']
 
     if not os.path.exists(dirname):
         os.makedirs(dirname)
 
+    # 
+
     items = len(dates)
-    for i in range(0,items-1):
+    for i in range(items-1):
         outputFile = dirname + '/' + str(dates[i])
-        # if snapshot exists move on (dangerous as this script might run several times per day
-        # --> last snapshot has to be repeated
+
         if os.path.exists(outputFile):
-            continue
+            if i == items-2:
+                # last snapshot is always remade if the file is older than one day
+                if time.time() - os.path.getmtime(outputFile) < (24 * 60 * 60):
+                    continue
+            else:
+                # always attempt to remake empty snapshots
+                if os.path.getsize(outputFile) > 0:
+                    continue
+
         if getPopularityData:
             tEnd = str(dates[i])
             tStart = str(dates[i+1])
@@ -61,9 +71,27 @@ def getDatasetsPopularity():
                   '\?\&sitename=' + site + '\&tstart=' + tStart + '\&tstop=' + tEnd
             process = subprocess.Popen(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,shell=True)
             strout, error = process.communicate()
+            if process.returncode != 0:
+                print " Received exit status " + str(process.returncode)
+                raise Exception(" FATAL - Failed to extract popularity for site " + site)
+
             fileHandle = open(outputFile, "w")
             fileHandle.write(strout)
             fileHandle.close()
+
+            # make sure file is clean
+            isFileCorrupt = False
+            inputFile = open(outputFile,'r')
+            for line in inputFile.xreadlines():
+                if "Traceback" in line:
+                    isFileCorrupt = True
+                if "Error" in line:
+                    isFileCorrupt = True
+            inputFile.close();
+
+            # deal with file corruption
+            if isFileCorrupt:
+                raise Exception(" FATAL - Found corrupted snapshot for site " + site)
 
     files = glob.glob(dirname + '/??-??-??')
     for file in files:

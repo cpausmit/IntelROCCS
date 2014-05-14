@@ -22,10 +22,9 @@ export DETOX_RESULT="result"
 
 # standard filenames
 
-export DETOX_EXCLUDED_SITES=ExcludedSites.txt
 export DETOX_PHEDEX_CACHE=DatasetsInPhedexAtSites.dat
 export DETOX_USED_DATASETS=UsedDatasets.txt
-export DETOX_DATASETS_TO_DELETE=DatasetsToDelete.txt
+export DETOX_DATASETS_TO_DELETE=RankedDatasets.txt
 
 # Parameters for cleaning
 

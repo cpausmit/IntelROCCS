@@ -3,7 +3,7 @@
 #
 # This script looks at the results for deletion and prints the history stored in the database in the
 # form that makes it easy for sites to track rquests that were made by the system only 20 most
-# recent requests wil be shown
+# recent requests will be shown.
 #
 #---------------------------------------------------------------------------------------------------
 import sys, os, re, glob, time, shutil
@@ -65,6 +65,10 @@ db.close()
 resultDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_RESULT']
 
 for site in siteRequests.keys():
+
+    if not os.path.isfile(resultDirectory + '/' + site + '/DeletionHistory.txt'):
+        continue
+
     outputFile = open(resultDirectory + '/' + site + '/DeletionHistory.txt','w')
 
     counter = 0

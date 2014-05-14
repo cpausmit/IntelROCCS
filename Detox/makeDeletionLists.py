@@ -14,6 +14,8 @@
 #---------------------------------------------------------------------------------------------------
 import sys, os, re, glob, time, glob, shutil, MySQLdb
 import datetime
+import pickle
+import siteStatus
 from   datetime import date, timedelta
 
 import siteProperties, datasetProperties
@@ -37,10 +39,11 @@ datasets = {}
 statusDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS']
 resultDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_RESULT']
 
-excludedSitesList = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS'] + '/' + \
-            os.environ['DETOX_EXCLUDED_SITES']
-
-excludedSites = {}
+if len(sys.argv) < 2:
+    allSites = siteStatus.getAllSites()
+else:
+    strAllSites = str(sys.argv[1])
+    allSites = pickle.loads(strAllSites)
 
 #====================================================================================================
 #  H E L P E R S
@@ -54,46 +57,6 @@ def sortByProtected(item1,item2):
         return -1
     else:
         return 0
-
-def getSiteSize(site):
-    siteSizeGb = -1
-
-    # for a group of choosing read quota file and return quotas
-    group = "AnalysisOps"
-
-    db = os.environ.get('DETOX_SITESTORAGE_DB')
-    server = os.environ.get('DETOX_SITESTORAGE_SERVER')
-    user = os.environ.get('DETOX_SITESTORAGE_USER')
-    pw = os.environ.get('DETOX_SITESTORAGE_PW')
-    table = os.environ.get('DETOX_QUOTAS')
-
-    # open database connection
-    if debug>0:
-        print ' Access quota table (%s) in site storage database (%s).'%(table,db)
-    db = MySQLdb.connect(host=server,db=db, user=user,passwd=pw)
-    # prepare a cursor object using cursor() method
-    cursor = db.cursor()
-    # define sql
-    sql = "select * from " + table + \
-          ' where SiteName=\'' + site + '\' and GroupName=\'' + group +'\''
-    # go ahead and try
-    try:
-        # Execute the SQL command
-        if debug>0:
-            print '\n Mysql> ' + sql
-        cursor.execute(sql)
-        # Fetch all the rows in a list of lists.
-        results = cursor.fetchall()
-        for row in results:
-            siteName = row[0]
-            groupName = row[1]
-            sizeTb = row[2]
-            siteSizeGb = sizeTb * 1024
-    except:
-        print ' Error(%s) -- could not retrieve sites'%(sql)
-        sys.exit(0)
-
-    return siteSizeGb
 
 def makeDeletionLists(iteration):
 
@@ -142,14 +105,6 @@ def makeDeletionLists(iteration):
 #====================================================================================================
 #  M A I N
 #====================================================================================================
-# first look at the sites that we want to exclude from consideration
-
-if os.path.isfile(excludedSitesList):
-    fileHandle = open(excludedSitesList,"r")
-    for site in fileHandle.xreadlines():
-        if site not in excludedSites.keys():
-            excludedSites[site] = 1
-    fileHandle.close()
 
 
 # all sites that participate and create their objects
@@ -159,7 +114,7 @@ for inputFile in inputFiles:
     site = inputFile.split('/')[-2]
     if debug>0:
         print " File: %s  Site: %s"%(inputFile,site)
-    if site in excludedSites.keys():
+    if site not in allSites.keys() or allSites[site].getStatus() == 0:
         continue
     sites[site] = siteProperties.SiteProperties(site)
 
@@ -195,7 +150,7 @@ for inputFile in inputFiles:
 # to be deleted
 
 for site in sites:
-    size = getSiteSize(site)
+    size = allSites[site].getSize()
     siteObj = sites[site]
     siteObj.setSiteSize(size)
     taken = siteObj.spaceTaken()

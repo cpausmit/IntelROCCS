@@ -13,12 +13,20 @@
 #----------------------------------------------------------------------------------------------------
 import os, sys, re, time, datetime, glob
 import datasetProperties
+import siteStatus
+import pickle
 
 if not os.environ.get('DETOX_DB'):
     print '\n ERROR - DETOX environment not defined: source setup.sh\n'
     sys.exit(0)
 
 statusDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS']
+
+if len(sys.argv) < 2:
+    allSites = siteStatus.getAllSites()
+else:
+    strAllSites = str(sys.argv[1])
+    allSites = pickle.loads(strAllSites)
 
 now = float(time.time())
 
@@ -44,14 +52,7 @@ def compare(item1, item2):
 # find all sites that ranked this dataset locally and contruct global ranking and substitute local
 # ranking for global ones.
 
-allSites = []
 datasets = {}
-
-# find all sites
-inputFiles = glob.glob(statusDirectory + '/T2*/')
-for inputFile in inputFiles:
-    site = inputFile.split('/')[-2]
-    allSites.append(site)
 
 # look inside phedex output and log in all datasets
 inputFile = statusDirectory + '/'+os.environ['DETOX_PHEDEX_CACHE']
@@ -81,9 +82,11 @@ fileHandle.close()
 
 # now for each site read in the local ranks and update datasets
 for site in allSites:
-    inputFile = statusDirectory+'/'+site+'/'+os.environ['DETOX_DATASETS_TO_DELETE']+'-back'
-    if not os.path.exists(inputFile):
+    if allSites[site].getStatus() == 0:
         continue
+    inputFile = statusDirectory+'/'+site+'/'+os.environ['DETOX_DATASETS_TO_DELETE']+'-local'
+#    if not os.path.exists(inputFile):
+#        continue
 
     fileHandle = open(inputFile, "r" )
     for line in fileHandle.xreadlines():
@@ -100,17 +103,21 @@ for datasetName in datasets.keys():
     sumweight = 0 
     sites = datasets[datasetName].mySites()
     for site in sites:
-        try:
-            rank = datasets[datasetName].myRankAtSites(site)
-            weight = datasets[datasetName].myWeightAtSites(site)
-            globalRank = globalRank + weight*rank
-            sumweight = sumweight + weight
-        except:
-            pass
-    datasets[datasetName].setGlobalRank(globalRank/sumweight)
+        if site not in allSites.keys() or allSites[site].getStatus() == 0:
+            continue
+        rank = datasets[datasetName].myRankAtSites(site)
+        weight = datasets[datasetName].myWeightAtSites(site)
+        globalRank = globalRank + weight*rank
+        sumweight = sumweight + weight
+    if sumweight == 0:
+        datasets[datasetName].setGlobalRank(globalRank)
+    else:
+        datasets[datasetName].setGlobalRank(globalRank/sumweight)
 
 # now we update the file with ranks that used downstream
 for site in allSites:
+    if allSites[site].getStatus() == 0:
+        continue
     outputFile = open(statusDirectory+'/'+site+'/'+os.environ['DETOX_DATASETS_TO_DELETE'],'w')
     for datasetName in sorted(datasets.keys(), cmp=compare):
         sites = datasets[datasetName].mySites()
