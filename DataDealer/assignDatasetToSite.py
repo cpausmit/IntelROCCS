@@ -267,10 +267,16 @@ def testLocalSetup(dataset,debug=0):
         sys.exit(1)
 
 def convertSizeToGb(sizeTxt):
-    # this is the text including the size units, that need to be converted)
+
+    # first make sure string has proper basic format
+    if len(sizeTxt) < 3:
+        print ' ERROR - string for sample size (%s) not compliant. EXIT.'%(sizeTxt)
+        sys.exit(1)
+
+    # this is the text including the size units, that need to be converted
     sizeGb  = float(sizeTxt[0:-2])
     units   = sizeTxt[-2:]
-    # decide what t do for the given unit
+    # decide what to do for the given unit
     if   units == 'MB':
         sizeGb = sizeGb/1024.
     elif units == 'GB':
@@ -372,6 +378,7 @@ def chooseMatchingSite(tier2Sites,sizeGb,debug):
     
 def submitSubscriptionRequest(site, datasets=[]):
     
+    # make sure we have datasets to subscribe
     if len(datasets) < 1:
         print " ERROR - Trying to submit empty request for " + site
         return
