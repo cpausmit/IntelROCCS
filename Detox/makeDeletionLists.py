@@ -216,7 +216,7 @@ for site in sorted(sites.keys(), key=str.lower, reverse=False):
     outputFile.close()
 
     outputFile = open(file_remain,'w')
-    outputFile.write("# -- " + today + " " + ttime + "\n\n")
+    outputFile.write("# -- " + today + " " + ttime + "\n#\n")
     outputFile.write("#   Rank      Size nsites nsites  DatasetName \n")
     outputFile.write("#[~days]      [GB] before after               \n")
     outputFile.write("#---------------------------------------------\n")
