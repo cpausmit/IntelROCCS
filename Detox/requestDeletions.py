@@ -9,7 +9,7 @@
 # pending for approval.
 #
 #----------------------------------------------------------------------------------------------------
-import sys, os, re, glob, time, glob, shutil, pickle
+import sys, os, re, glob, time, glob, shutil, pickle, MySQLdb
 import phedexApi, siteStatus
 
 if len(sys.argv) < 2:
