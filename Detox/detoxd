@@ -47,6 +47,7 @@ do
 
     echo " "                                                         >> $logFile
     echo " detox loop $index started -- $tag (cycle wait $wait sec)" >> $logFile
+    echo "       date                -- "`date`                      >> $logFile
     echo " "                                                         >> $logFile
     $DETOX_BASE/detox.py                                             >> $logFile
 
