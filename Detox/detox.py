@@ -26,6 +26,7 @@ extractUsedDatasets = True
 rankDatasets = True
 makeDeletionLists = True
 requestDeletions = True
+# requestDeletions = False
 
 #===================================================================================================
 #  H E L P E R S
@@ -55,12 +56,12 @@ timeStart = time.time()
 print ' Cache phedex information.'
 if getPhedexCache:
     retValue = subprocess.call(["./cacheDatasetsInPhedexAtSites.py", "T2"])
-    if(retValue != 0):
-	print "Call to cacheDatasetsInPhedexAtSites.py failed with exit code " + str(retValue)
+    if retValue != 0:
+	print " ERROR - Call to cacheDatasetsInPhedexAtSites.py failed, exit code %d"%(retValue)
         sys.exit(1)
 timeNow = time.time()
 print ' - Renewing phedex cache took: %d seconds'%(timeNow-timeStart) 
-    
+
 # For each site update popularity, rank datasets, perform the necessary release list
 
 timeStart = time.time()
@@ -72,7 +73,7 @@ for site in sorted(allSites):
     # extract usage data from popularity service
     if getPopularityCache:
         retValue = subprocess.call(["./cacheDatasetsPopularity.py",site])
-        if(retValue != 0):
+        if retValue != 0:
             allSites[site].setValid(0)
             sys.exit(1)
 
@@ -108,9 +109,14 @@ if requestDeletions:
 timeNow = time.time()
 print ' - Deletion requests took: %d seconds'%(timeNow-timeStart) 
 
-# Run the script that makes the deletion request to phedex
+# Run the script that lists the last x deletion requests to phedex
 print ' Show cache release requests.'
-subprocess.call(["./showCacheRequests.py"])
+for site in sorted(allSites):
+    if allSites[site].getStatus() == 0:
+        print ' Site not active, status=%d  - %s'%(allSites[site].getStatus(),site)
+    else:
+        print ' Site --- active, status=%d  - %s'%(allSites[site].getStatus(),site)
+        subprocess.call(["./showCacheRequests.py",site])
 
 # Final summary of timing
 print ' Total Cycle took: %d seconds'%(timeNow-timeInitial) 

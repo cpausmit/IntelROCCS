@@ -46,12 +46,11 @@ do
     let wait=3600*$DETOX_CYCLE_HOURS
 
     echo " "                                                         >> $logFile
-    echo " detox loop $index started -- $tag (cycle wait $wait sec)" >> $logFile
-    echo "       date                -- "`date`                      >> $logFile
+    echo " detox $index -- $tag (cycle wait $wait sec) -> "`date`    >> $logFile
     echo " "                                                         >> $logFile
     $DETOX_BASE/detox.py                                             >> $logFile
 
-    # insure that the log information is updated
+    # ensure that the log information is updated
     rsync -Cavz --delete /local/cmsprod/IntelROCCS /home/cmsprod/public_html/ >& /dev/null
 
     sleep $wait

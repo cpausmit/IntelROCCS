@@ -28,10 +28,11 @@ def getAllSites():
         # Fetch all the rows in a list of lists.
         results = cursor.fetchall()
         for row in results:
-            siteName = row[0]
+            siteName   = row[0]
+            sizeTb     = row[2]
             willBeUsed = row[4]
-            sizeTb = row[2]
-            siteSizeGb = sizeTb * 1024
+
+            siteSizeGb      = sizeTb * 1024
             sites[siteName] = SiteStatus(siteName)
             sites[siteName].setStatus(willBeUsed)
             sites[siteName].setSize(siteSizeGb)
@@ -49,7 +50,7 @@ Stores flags for each site.
 """
 #---------------------------------------------------------------------------------------------------
 class SiteStatus:
-    "A SiteStatus defines the ststua of the site."
+    "A SiteStatus defines the status of the site."
 
     def __init__(self, siteName):
         self.name = siteName
