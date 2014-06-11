@@ -19,6 +19,7 @@ export DETOX_QUOTAS="Quotas"
 export DETOX_STATUS="status"
 export DETOX_SNAPSHOTS="snapshots"
 export DETOX_RESULT="result"
+export DETOX_MONITOR="monitor"
 
 # standard filenames
 

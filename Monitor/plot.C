@@ -17,17 +17,17 @@
 #include <TH1D.h>
 #include <TLegend.h>
 #include <TText.h>
-
-//#include "MitPlots/Style/interface/MitStyle.h"
-
 using namespace std;
-//using namespace mithep;
 
 void overlayFrame(TString text);
 
 //--------------------------------------------------------------------------------------------------
 void plot()
 {
+  TString  styleMacro = gSystem->Getenv("MIT_ROOT_STYLE");
+  long int rc = gROOT->LoadMacro(styleMacro+"+");
+  printf(" Return code of loading styles: %d\n",rc);
+
   TString fileName = gSystem->Getenv("MONITOR_FILE");
 
   TDatime date;
@@ -36,10 +36,7 @@ void plot()
   TString inputFile = fileName;
 
   // Make sure we have the right styles
-  //MitStyle::Init();
-  //gStyle->SetPadTopMargin(0.055); // to make sure the exponent is on the picture
-
-  // will execute a shell command to get the data
+  MitRootStyle::Init();
 
   // Now open our database output
   printf(" Input file: %s\n",inputFile.Data());
@@ -79,24 +76,27 @@ void plot()
   printf(" \n");
 
   // book our histogram
-  xMaxTb = 1000.;
+  xMaxTb = 999.;
   xMax   = 1.2;
 
-  TH1D *hTotal    = new TH1D("Total",   "Total Space",     1000./20,xMin,xMaxTb);
-  TH1D *hUsed     = new TH1D("Used",    "Used Space",      1000./20,xMin,xMaxTb);
-  TH1D *hToDelete = new TH1D("ToDelete","To Delete Space", 1000./20,xMin,xMaxTb);
-  TH1D *hLastCp   = new TH1D("LastCp",  "Last CP Space",   1000./20,xMin,xMaxTb);
-  TH1D *hLastCpFr = new TH1D("LastCpFr","Last CP fraction",20,      xMin,xMax);
-
-  //MitStyle::InitHist(h,"","",kBlack);  
   TString titles;
-  titles = TString("; Size [TB]; Number of Sites");
-  hTotal   ->SetTitle(titles.Data());
-  hUsed    ->SetTitle(titles.Data());
-  hToDelete->SetTitle(titles.Data());
-  hLastCp  ->SetTitle(titles.Data());
-  titles = TString("; Last CP Filling Fraction; Number of Sites");
-  hLastCpFr->SetTitle(titles.Data());
+  titles = TString();
+
+  TH1D *hTotal    = new TH1D("Total",   "Total Space",     1000./20,xMin,xMaxTb);
+  MitRootStyle::InitHist(hTotal,"","",kBlack);
+  hTotal->SetTitle("; Total Storage [TB]; Number of Sites");
+  TH1D *hUsed     = new TH1D("Used",    "Used Space",      1000./20,xMin,xMaxTb);
+  MitRootStyle::InitHist(hUsed,    "","",kBlack);
+  hUsed    ->SetTitle("; Used Storage [TB]; Number of Sites");
+  TH1D *hToDelete = new TH1D("ToDelete","Space to Release", 1000./20,xMin,xMaxTb);
+  MitRootStyle::InitHist(hToDelete,"","",kBlack);
+  hToDelete->SetTitle("; Space to Release [TB]; Number of Sites");
+  TH1D *hLastCp   = new TH1D("LastCp",  "Last Copy space", 1000./20,xMin,xMaxTb);
+  MitRootStyle::InitHist(hLastCp,  "","",kBlack);
+  hLastCp  ->SetTitle("; Last Copy Size [TB]; Number of Sites");
+  TH1D *hLastCpFr = new TH1D("LastCpFr","Last CP fraction",20,      xMin,xMax);
+  MitRootStyle::InitHist(hLastCpFr,"","",kBlack);
+  hLastCpFr->SetTitle("; Last Copy Filling Fraction; Number of Sites");
 
   input.open(inputFile.Data());
   while (1) {
@@ -113,6 +113,13 @@ void plot()
     hToDelete->Fill(toDelete);
     hLastCp  ->Fill(lastCp);
     hLastCpFr->Fill(lastCp/total);
+
+    // print some warnings
+    if (lastCp/total > 0.7) {
+      printf(" WARNING - Last copy space too large: %3.0f%% at  %s\n",
+	     lastCp/total*100.,siteName.Data());
+    }
+
 
     nLines++;
   }
@@ -165,7 +172,7 @@ void overlayFrame(TString text)
 
   // overlay the text in a well defined frame
   TText *plotText = new TText(0.01,0.01,text.Data());
-  plotText->SetTextSize(0.04);
+  plotText->SetTextSize(0.02);
   plotText->SetTextColor(kBlue);
   plotText->Draw();
 

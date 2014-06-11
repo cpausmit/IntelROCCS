@@ -6,13 +6,15 @@
 #
 #                                                                             C.Paus (June 10, 2014)
 # --------------------------------------------------------------------------------------------------
-
+# check if detox package is propeerly setup
 if [ -z "$DETOX_DB" ]
 then
   echo " ERROR - logfile base is not defined: DETOX_DB = \"$DETOX_DB\""
   exit 0
 fi
 
+# define relevant environment variables
+export MIT_ROOT_STYLE=/home/cmsprod/MitRootStyle/MitRootStyle.C
 export MONITOR_FILE=$DETOX_DB/MonitorSummary.txt
 rm -f $MONITOR_FILE
 touch $MONITOR_FILE
@@ -23,7 +25,6 @@ echo " Extracting log file monitoring data from DETOX_DB = $DETOX_DB."
 echo ""
 
 # find present site quotas
-
 for site in `ls -1 $DETOX_DB/$DETOX_RESULT | grep ^T[0-3]`
 do
 
@@ -36,10 +37,15 @@ do
 
 done
 
+# show our raw data
 cat $MONITOR_FILE
+echo ""
 
-#gnuplot histograms.gpl
-
+# make nice histograms
 root -q -b -l plot.C
+
+# move them tot he log file area
+mkdir -p    $DETOX_DB/$DETOX_MONITOR
+mv    *.png $DETOX_DB/$DETOX_MONITOR
 
 exit 0
