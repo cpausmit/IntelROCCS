@@ -6,7 +6,7 @@
 #
 #                                                                             C.Paus (June 10, 2014)
 # --------------------------------------------------------------------------------------------------
-# check if detox package is propeerly setup
+# check if detox package is properly setup
 if [ -z "$DETOX_DB" ]
 then
   echo " ERROR - logfile base is not defined: DETOX_DB = \"$DETOX_DB\""
