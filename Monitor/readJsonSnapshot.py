@@ -1,11 +1,11 @@
 #!/usr/local/bin/python
-#---------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------------
 #
 # This script reads the information from a set of JSON snapshot files that we use to cache our
 # popularity information.
 #
 #---------------------------------------------------------------------------------------------------
-import os, sys, re, glob, subprocess, json, pprint
+import os, sys, re, glob, subprocess, json, pprint, MySQLdb
 #import pyroot
 
 if not os.environ.get('DETOX_DB'):
@@ -99,7 +99,7 @@ def findDatasetSize(dataset,debug=0):
     # and its size in GB
 
     cmd = './findDatasetProperties.py ' + dataset + ' short | tail -1'
-    if debug>0:
+    if debug>-1:
         print ' CMD: ' + cmd
     nFiles = 0
     sizeGb = 0.
@@ -116,6 +116,47 @@ def findDatasetSize(dataset,debug=0):
             pass
     
     return nFiles, sizeGb
+
+def getDbCursor():
+    # configuration
+    db = os.environ.get('DETOX_SITESTORAGE_DB')
+    server = os.environ.get('DETOX_SITESTORAGE_SERVER')
+    user = os.environ.get('DETOX_SITESTORAGE_USER')
+    pw = os.environ.get('DETOX_SITESTORAGE_PW')
+    # open database connection
+    db = MySQLdb.connect(host=server,db=db, user=user,passwd=pw)
+    # prepare a cursor object using cursor() method
+    return db.cursor()
+
+def readDatasetProperties():
+    sizesGb     = {}
+    fileNumbers = {}
+
+    #print " START reading database"
+    
+    # get access to the database
+    cursor = getDbCursor()
+    sql  = "select Datasets.DatasetName, DatasetProperties.NFiles, DatasetProperties.Size "
+    sql += "from Datasets join DatasetProperties "
+    sql += "on Datasets.DatasetId = DatasetProperties.DatasetId";
+    # go ahead and try
+    try:
+        cursor.execute(sql)
+        results = cursor.fetchall()
+        for row in results:
+            dataset = row[0]
+            nFiles  = row[1]
+            sizeGb  = row[2]
+            # add to our memory
+            fileNumbers[dataset] = int(nFiles)
+            sizesGb[dataset]     = float(sizeGb)
+    except:
+        pass
+
+    #print " DONE reading database"
+
+    return (fileNumbers, sizesGb)
+
 
 #===================================================================================================
 #  M A I N
@@ -150,8 +191,12 @@ files = glob.glob(workDirectory + '/' + site + '/' + os.environ['DETOX_SNAPSHOTS
 # process each snapshot and create a list of datasets
 nAllSkipped  = 0
 nAllAccessed = {}
+nSiteAccess  = {}
+
 sizesGb      = {}
 fileNumbers  = {}
+if sizeAnalysis:
+    (fileNumbers,sizesGb) = readDatasetProperties()
 
 print "\n = = = = S T A R T  A N A L Y S I S = = = =\n"
 print " Logfiles in:  %s"%(workDirectory) 
@@ -159,18 +204,26 @@ print " Site pattern: %s"%(site)
 print " Date pattern: %s"%(date) 
 if sizeAnalysis:
     print "\n Size Analysis is on. Please be patient, this might take a while!\n"
-    
 
 for fileName in files:
     if debug>0:
         print ' Analyzing: ' + fileName
 
+    # # need to find site = ?
+    # 
+    # if site in nSiteAccess:
+    #     nSiteAccessEntry = nSiteAccess[site]
+    # else:
+    #     nSiteAccessEntry = {}
+    #     nSiteAccess[site] = nSiteAccessEntry
+
     # analyze this file
     (nSkipped, nAccessed) = processFile(fileName,debug)
 
     # add the results to our 'all' record
-    nAllSkipped += nSkipped
-    nAllAccessed = addData(nAllAccessed,nAccessed,debug)
+    nAllSkipped      += nSkipped
+    # nSiteAccessEntry  = addData(nSiteAccessEntry,nAccessed,debug)
+    nAllAccessed      = addData(nAllAccessed,    nAccessed,debug)
 
 # create summary information and potentially print the contents
 nAll        = 0
@@ -185,10 +238,14 @@ for key in nAllAccessed:
         print " NAccess - %6d %s"%(value,key)
 
     if sizeAnalysis:
-        (nFiles,sizeGb) = findDatasetSize(key)
-        # add to our memory
-        fileNumbers[key] = nFiles
-        sizesGb[key]     = sizeGb
+        if not key in fileNumbers:
+            (nFiles,sizeGb) = findDatasetSize(key)
+            # add to our memory
+            fileNumbers[key] = nFiles
+            sizesGb[key]     = sizeGb
+        else:
+            nFiles = fileNumbers[key]
+            sizeGb = sizesGb[key]
         # add up the total data volume/nFiles
         sizeTotalGb     += sizeGb
         nFilesTotal     += nFiles
@@ -215,6 +272,13 @@ if sizeAnalysis:
 print " "
 
 # last step: produce monitoring information
+
+# ready to use: nAllAccessed[key], fileNumbers[key], sizesGb[key]
+
+#for dataset in nAllAccessed:
+#    nAccess = nAllAccessed[dataset]
+#    nFiles  = fileNumbers[dataset]
+#    sizeGb  = sizesGb[dataset]
 
 ## to be implemented
 

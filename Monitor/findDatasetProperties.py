@@ -141,6 +141,7 @@ def convertSizeToGb(sizeTxt):
 #===================================================================================================
 debug = 0
 
+# first make sure not to analyze any weird data (require /*/*/* name pattern)
 if not re.search(r'/.*/.*/.*',dataset,re.S):
     print ' Error: Dataset does NOT match expected pattern'
     sys.exit(0)
@@ -148,7 +149,7 @@ if not re.search(r'/.*/.*/.*',dataset,re.S):
 # test whether we know this dataset already
 (nFiles,sizeGb) = checkDatabase(dataset)
 
-# check failed so need to go top the source
+# check failed so need to go to the source
 if nFiles<0:
     # use das client to find the present size of the dataset
     cmd = 'das_client.py --format=plain --limit=0 --query="file dataset=' + \
@@ -157,17 +158,21 @@ if nFiles<0:
         print ' CMD: ' + cmd
     nFiles = 0
     sizeGb = 0.
-    for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
-        line = line[:-1]
-        if   re.search('file.name',line):
-            if debug>0:
-                print ' count ' + line
-            nFiles = int(line.split("=")[1])
-        elif re.search('file.size',line):
-            if debug>0:
-                print ' size  ' + line
-            size = line.split("=")[1]
-            sizeGb = convertSizeToGb(size)
+    try:
+        for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
+            line = line[:-1]
+            if   re.search('file.name',line):
+                if debug>0:
+                    print ' count ' + line
+                nFiles = int(line.split("=")[1])
+            elif re.search('file.size',line):
+                if debug>0:
+                    print ' size  ' + line
+                size = line.split("=")[1]
+                sizeGb = convertSizeToGb(size)
+    except:
+        print ' Error: output data not compliant.'
+        sys.exit(0)
 
     # add it to our database
     addDatasetProperties(dataset,nFiles,sizeGb)
