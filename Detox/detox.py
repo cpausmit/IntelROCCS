@@ -26,7 +26,6 @@ extractUsedDatasets = True
 rankDatasets = True
 makeDeletionLists = True
 requestDeletions = True
-# requestDeletions = False
 
 #===================================================================================================
 #  H E L P E R S
