@@ -15,10 +15,10 @@ fi
 
 # define relevant environment variables
 export MIT_ROOT_STYLE=/home/cmsprod/MitRootStyle/MitRootStyle.C
-export MONITOR_FILE=$DETOX_DB/MonitorSummary.txt
-rm -f $MONITOR_FILE
-touch $MONITOR_FILE
-#echo "# Site Quota Used ToDelete LastCp" >> $MONITOR_FILE
+export SITE_MONITOR_FILE=$DETOX_DB/monitor/MonitorSummary.txt
+rm -f $SITE_MONITOR_FILE
+touch $SITE_MONITOR_FILE
+#echo "# Site Quota Used ToDelete LastCp" >> $SITE_MONITOR_FILE
 
 echo ""
 echo " Extracting log file monitoring data from DETOX_DB = $DETOX_DB."
@@ -33,13 +33,19 @@ do
   used=`grep 'Space Used' $DETOX_DB/$DETOX_RESULT/$site/Summary.txt|cut -d: -f2|tr -d ' '`
   toDelete=`grep 'Space to delete' $DETOX_DB/$DETOX_RESULT/$site/Summary.txt|cut -d: -f2|tr -d ' '`
   lastCp=`grep 'Space last CP' $DETOX_DB/$DETOX_RESULT/$site/Summary.txt|cut -d: -f2|tr -d ' '`
-  echo "$site $quota $used $toDelete $lastCp" >> $MONITOR_FILE
+  echo "$site $quota $used $toDelete $lastCp" >> $SITE_MONITOR_FILE
 
 done
 
-# show our raw data
-cat $MONITOR_FILE
-echo ""
+## show our raw data
+#cat $SITE_MONITOR_FILE
+#echo ""
+
+# extract dataset info
+export DATASET_MONITOR_FILE=$DETOX_DB/monitor/DatasetSummary.txt
+$DETOX_BASE/../Monitor/readJsonSnapshot.py T2* 2014*
+
+ls -lhrt $DETOX_DB/monitor/DatasetSummary.txt
 
 # make nice histograms
 root -q -b -l plot.C

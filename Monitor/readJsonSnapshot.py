@@ -6,7 +6,7 @@
 #
 #---------------------------------------------------------------------------------------------------
 import os, sys, re, glob, subprocess, json, pprint, MySQLdb
-#import pyroot
+#import ROOT
 
 if not os.environ.get('DETOX_DB'):
     print '\n ERROR - DETOX environment not defined: source setup.sh\n'
@@ -69,6 +69,23 @@ def addData(nAllAccessed,nAccessed,debug=0):
 
     # return the updated all hash array
     return nAllAccessed
+
+
+def addSites(nSites,nAccessed,debug=0):
+    # adding up the number of sites for each dataset
+
+    # loop through the hash array
+    for key in nAccessed:
+        # add the entries to our all access hash array
+        
+        if key in nSites:
+            nSites[key] += 1
+        else:
+            nSites[key] = 1
+
+
+    # return the updated all hash array
+    return nSites
 
 def convertSizeToGb(sizeTxt):
 
@@ -209,21 +226,22 @@ for fileName in files:
     if debug>0:
         print ' Analyzing: ' + fileName
 
-    # # need to find site = ?
-    # 
-    # if site in nSiteAccess:
-    #     nSiteAccessEntry = nSiteAccess[site]
-    # else:
-    #     nSiteAccessEntry = {}
-    #     nSiteAccess[site] = nSiteAccessEntry
+    g = fileName.split("/")
+    siteName = g[-3]
+    
+    if siteName in nSiteAccess:
+        nSiteAccessEntry = nSiteAccess[siteName]
+    else:
+        nSiteAccessEntry = {}
+        nSiteAccess[siteName] = nSiteAccessEntry
 
     # analyze this file
     (nSkipped, nAccessed) = processFile(fileName,debug)
 
     # add the results to our 'all' record
     nAllSkipped      += nSkipped
-    # nSiteAccessEntry  = addData(nSiteAccessEntry,nAccessed,debug)
-    nAllAccessed      = addData(nAllAccessed,    nAccessed,debug)
+    nSiteAccessEntry = addData (nSiteAccessEntry,nAccessed,debug)
+    nAllAccessed     = addData (nAllAccessed,    nAccessed,debug)
 
 # create summary information and potentially print the contents
 nAll        = 0
@@ -271,14 +289,33 @@ if sizeAnalysis:
         print " - number of accesses/file:    %.2f"%(float(nAllAccess)/nFilesTotal)
 print " "
 
+# print summary for the various sites
+
+nSites = {}
+for key in sorted(nSiteAccess):
+    value = nSiteAccess[key]
+    print " - number of datasets:         %-8d at %s"%(len(value),key)
+    # count the number of sites carrying a given dataset
+    nSites = addSites(nSites,value,debug)
+
+
 # last step: produce monitoring information
 
 # ready to use: nAllAccessed[key], fileNumbers[key], sizesGb[key]
 
-#for dataset in nAllAccessed:
-#    nAccess = nAllAccessed[dataset]
-#    nFiles  = fileNumbers[dataset]
-#    sizeGb  = sizesGb[dataset]
+fileName = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_MONITOR'] + '/DatasetSummary.txt'
+print ' Output file: ' + fileName
+totalAccesses = open(fileName,'w')
+for dataset in nAllAccessed:
+    nAccess = nAllAccessed[dataset]
+    nFiles  = fileNumbers[dataset]
+    sizeGb  = sizesGb[dataset]
+    nSite   = nSites[dataset]
+    totalAccesses.write("%d %d %d %f\n"%(nSite,nAccess,nFiles,sizeGb))
+
+    if nSite>42:
+        print " WARNING - nSites suspicious: %3d %s"%(nSite,dataset)
+totalAccesses.close()
 
 ## to be implemented
 
