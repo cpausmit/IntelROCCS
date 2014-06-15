@@ -298,12 +298,12 @@ for key in sorted(nSiteAccess):
     # count the number of sites carrying a given dataset
     nSites = addSites(nSites,value,debug)
 
-
 # last step: produce monitoring information
+# ========================================
 
 # ready to use: nAllAccessed[key], fileNumbers[key], sizesGb[key]
 
-fileName = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_MONITOR'] + '/DatasetSummary.txt'
+fileName = 'DatasetSummary.txt'
 print ' Output file: ' + fileName
 totalAccesses = open(fileName,'w')
 for dataset in nAllAccessed:
@@ -316,7 +316,5 @@ for dataset in nAllAccessed:
     if nSite>42:
         print " WARNING - nSites suspicious: %3d %s"%(nSite,dataset)
 totalAccesses.close()
-
-## to be implemented
 
 sys.exit(0)
