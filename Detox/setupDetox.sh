@@ -36,7 +36,7 @@ export DETOX_NCOPY_MIN=1
 
 # Certificate location
 
-export DETOX_X509UP=/tmp/x509up_prod_u5407
+export DETOX_X509UP=/tmp/x509up_u5410
 
 # Local logging database config file
 
