@@ -240,8 +240,8 @@ for fileName in files:
 
     # add the results to our 'all' record
     nAllSkipped      += nSkipped
-    nSiteAccessEntry = addData (nSiteAccessEntry,nAccessed,debug)
-    nAllAccessed     = addData (nAllAccessed,    nAccessed,debug)
+    nSiteAccessEntry = addData(nSiteAccessEntry,nAccessed,debug)
+    nAllAccessed     = addData(nAllAccessed,    nAccessed,debug)
 
 # create summary information and potentially print the contents
 nAll        = 0

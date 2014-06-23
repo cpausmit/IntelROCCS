@@ -154,7 +154,7 @@ if nFiles<0:
     # use das client to find the present size of the dataset
     cmd = 'das_client.py --format=plain --limit=0 --query="file dataset=' + \
           dataset + ' | sum(file.size), count(file.name)" | sort -u'
-    if debug>0:
+    if debug>-1:
         print ' CMD: ' + cmd
     nFiles = 0
     sizeGb = 0.

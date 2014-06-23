@@ -31,7 +31,6 @@ now = float(time.time())
 #====================================================================================================
 #  H E L P E R S
 #====================================================================================================
-
 def compare(item1, item2):
     s1 = datasets[item1].getGlobalRank()
     s2 = datasets[item2].getGlobalRank()
@@ -46,6 +45,7 @@ def compare(item1, item2):
 #====================================================================================================
 # M A I N
 #====================================================================================================
+secondsPerDay = 60*60*24
 
 # find all sites that ranked this dataset locally and contruct global ranking and substitute local
 # ranking for global ones.
@@ -55,26 +55,35 @@ datasets = {}
 # look inside phedex output and log in all datasets
 inputFile = statusDirectory + '/'+os.environ['DETOX_PHEDEX_CACHE']
 fileHandle = open(inputFile,"r")
-secondsPerDay = 60*60*24
-
 for line in fileHandle.xreadlines():
+
     items = line.split()
     datasetName = items[0]
     items.remove(datasetName)
-    
+
+    # only consider datasets in the AnalysisOps space
     group = items[0]
     if group != "AnalysisOps":
-            continue
+        continue
     
+    # do not consider datasets made by USERs
+    user = re.findall(r"USER",datasetName)
+    if len(user) > 0:
+        continue
+
+    # read relevant information
     creationDate = int(items[1])
     size = float(items[2])
     t2Site = items[3]
 
+    # check whether we need to add another dataset
     if datasetName not in datasets.keys():
         datasets[datasetName] = datasetProperties.DatasetProperties(datasetName,size)
 
+    # update dataset with proper weight
     datasets[datasetName].append([t2Site])
     datasets[datasetName].setWeightAtSites(t2Site,1)
+
 fileHandle.close()
 
 
@@ -83,8 +92,6 @@ for site in allSites:
     if allSites[site].getStatus() == 0:
         continue
     inputFile = statusDirectory+'/'+site+'/'+os.environ['DETOX_DATASETS_TO_DELETE']+'-local'
-#    if not os.path.exists(inputFile):
-#        continue
 
     fileHandle = open(inputFile, "r" )
     for line in fileHandle.xreadlines():

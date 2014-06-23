@@ -8,9 +8,7 @@
 # It prints the results in a format that is easily readable as web page The highiest ranks dayasets
 # will be targeted for deletions first.
 #
-# Issues: printing needs to be put in more compact form
-#
-# WARNING: notice that rigth now it handles only one group: AnalysisOps (it is hardcoded)
+# WARNING -- notice that right now it handles only one group: AnalysisOps is hardcoded
 #----------------------------------------------------------------------------------------------------
 import os, sys, re, time, datetime, shutil
 
@@ -85,7 +83,7 @@ def printDatasets():
 #====================================================================================================
 #  M A I N
 #====================================================================================================
-
+secondsPerDay = 60*60*24
 inputFile = statusDirectory + '/' + site + '/' + os.environ['DETOX_USED_DATASETS']
 
 if not os.path.exists(inputFile):
@@ -101,29 +99,36 @@ for line in fileHandle.xreadlines():
     usedDatasets[datasetName] = items
 fileHandle.close()
 
+# read the phedex cache file
 inputFile = statusDirectory + '/'+os.environ['DETOX_PHEDEX_CACHE']
 fileHandle = open(inputFile,"r")
-secondsPerDay = 60*60*24
-
 for line in fileHandle.xreadlines():
     items = line.split()
     datasetName = items[0]
     items.remove(datasetName)
     
+    # only consider the AnalysisOps group
     group = items[0]
     if group != "AnalysisOps":
-            continue
-    
+        continue
+
+    # do not consider datasets that are USER defined
+    user = re.findall(r"USER",datasetName)
+    if len(user) > 0:
+        continue
+   
+    # store properties
     creationDate = int(items[1])
     size = float(items[2])
     t2Site = items[3]
 
+    # add the dataset to our list
     if datasetName in sitesForDatasets.keys():
         sitesForDatasets[datasetName].append(t2Site)
     else:
         sitesForDatasets[datasetName] = [t2Site]
-
     
+    # select the site we want
     if t2Site != site:
         continue
 
