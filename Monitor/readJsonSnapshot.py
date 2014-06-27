@@ -6,6 +6,7 @@
 #
 #---------------------------------------------------------------------------------------------------
 import os, sys, re, glob, subprocess, json, pprint, MySQLdb
+import datasetProperties
 #import ROOT
 
 if not os.environ.get('DETOX_DB'):
@@ -15,6 +16,43 @@ if not os.environ.get('DETOX_DB'):
 #===================================================================================================
 #  H E L P E R S
 #===================================================================================================
+def processPhedexCacheFile(fileName,debug=0):
+    # processing the contents of a simple file into a hash array
+
+    sizesPerSite = {}
+
+    iFile = open(fileName,'r')   
+    # loop through all lines
+    for line in iFile.xreadlines():
+        line = line[:-1]
+        f = line.split()
+        if len(f) == 5:
+            dataset = f[0]
+            group   = f[1]
+            date    = f[2]
+            size    = f[3]
+            site    = f[4]
+        else:
+            print 'Columns not equal 5: \n %s'%(line)
+            sys.exit(1)
+
+        # first step, find the sizes per site per dataset hash array
+        if site in sizesPerSite:
+            sizesPerSitePerDataset = sizesPerSite[site]
+        else:
+            sizesPerSitePerDataset = {}
+            sizesPerSite[site] = sizesPerSitePerDataset
+
+        if dataset in sizesPerSitePerDataset:
+            sizesPerSitePerDataset[dataset] += float(size)
+        else:
+            sizesPerSitePerDataset[dataset]  = float(size)
+
+    iFile.close();
+
+    # return the sizes per site
+    return sizesPerSite
+
 def processFile(fileName,debug=0):
     # processing the contents of a simple file into a hash array
 
@@ -180,9 +218,10 @@ def readDatasetProperties():
 #===================================================================================================
 debug = 0
 sizeAnalysis = True
+addNotAccessedDatasets = True
 
 usage  = "\n"
-usage += " readJsonSnapshot.py  <sitePattern [ <datePattern>=????-??-?? ]\n"
+usage += " readJsonSnapshot.py  <sitePattern> [ <datePattern>=????-??-?? ]\n"
 usage += "\n"
 usage += "   sitePattern  - pattern to select particular sites (ex. T2* or T2_U[SK]* etc.)\n"
 usage += "   datePattern  - pattern to select date pattern (ex. 201[34]-0[0-7]-??)\n\n"
@@ -201,27 +240,34 @@ else:
     print ' ERROR - too many arguments\n' + usage
     sys.exit(2)
 
-# figure out which files to consider
-workDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS']
-files = glob.glob(workDirectory + '/' + site + '/' + os.environ['DETOX_SNAPSHOTS'] + '/' + date)
-
-# process each snapshot and create a list of datasets
+# figure out which datases to consider using phedex cache as input
+if addNotAccessedDatasets:
+    file = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS'] + '/' + \
+           os.environ['DETOX_PHEDEX_CACHE']
+    sizesPerSite = processPhedexCacheFile(file,debug=0)
+   
+# initialize our variables
 nAllSkipped  = 0
 nAllAccessed = {}
 nSiteAccess  = {}
-
 sizesGb      = {}
 fileNumbers  = {}
 if sizeAnalysis:
     (fileNumbers,sizesGb) = readDatasetProperties()
 
+# --------------------------------------------------------------------------------------------------
+# loop through all matching snapshot files
+# --------------------------------------------------------------------------------------------------
+# figure out which snapshot files to consider
+workDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS']
+files = glob.glob(workDirectory + '/' + site + '/' + os.environ['DETOX_SNAPSHOTS'] + '/' + date)
+# say what we are goign to do
 print "\n = = = = S T A R T  A N A L Y S I S = = = =\n"
 print " Logfiles in:  %s"%(workDirectory) 
 print " Site pattern: %s"%(site) 
 print " Date pattern: %s"%(date) 
 if sizeAnalysis:
     print "\n Size Analysis is on. Please be patient, this might take a while!\n"
-
 for fileName in files:
     if debug>0:
         print ' Analyzing: ' + fileName
@@ -243,18 +289,70 @@ for fileName in files:
     nSiteAccessEntry = addData(nSiteAccessEntry,nAccessed,debug)
     nAllAccessed     = addData(nAllAccessed,    nAccessed,debug)
 
+# --------------------------------------------------------------------------------------------------
+# add all datasets that are in phedex but have never been used
+# --------------------------------------------------------------------------------------------------
+if addNotAccessedDatasets:
+    # these are number of non accessed samples with corresponding total size
+    nAddedSamples = 0
+    addedSize = 0.
+    # these are number of non AOD samples we exclude
+    nExcludedSamples = 0
+    excludedSize = 0.
+    for site in sizesPerSite:
+    
+        # get size specific record
+        sizesPerSitePerDataset = sizesPerSite[site]
+    
+        # make sure that we are really interested in this site at all
+        if site in nSiteAccess:
+            nSiteAccessEntry = nSiteAccess[site]
+        else:
+            continue
+    
+        # loop through all datasets at the site and check'em
+        for dataset in sizesPerSitePerDataset:
+            # exclude non AOD samples
+            if not re.search(r'/.*/.*/.*AOD.*',dataset):
+                # update our local counters
+                nExcludedSamples += 1
+                excludedSize += sizesPerSitePerDataset[dataset]
+                continue
+    
+            # only add information if the samples is not already available
+            if dataset in nAllAccessed:
+                if debug>1:
+                    print ' -> Not Adding : ' + dataset
+            else:
+                if debug>0:
+                    print ' -> Adding : ' + dataset
+    
+                # update our local counters
+                nAddedSamples += 1
+                addedSize += sizesPerSitePerDataset[dataset]
+    
+                # make an entry in all of the relevant records
+                nAllAccessed[dataset] = 0
+                nSiteAccessEntry[dataset] = 0
+    
+    print " "
+    print " - number of excluded datasets: %d"%(nExcludedSamples)
+    print " - excluded sample size:        %d"%(excludedSize)
+    print " "
+    print " - number of added datasets:    %d"%(nAddedSamples)
+    print " - added sample size:           %d"%(addedSize)
+
+# --------------------------------------------------------------------------------------------------
 # create summary information and potentially print the contents
-nAll        = 0
-nAllAccess  = 0
+# --------------------------------------------------------------------------------------------------
+nAll = 0
+nAllAccess = 0
 sizeTotalGb = 0.
 nFilesTotal = 0
 for key in nAllAccessed:
     value = nAllAccessed[key]
     nAllAccess += value
-    nAll       += 1
-    if debug>0:
-        print " NAccess - %6d %s"%(value,key)
-
+    nAll += 1
     if sizeAnalysis:
         if not key in fileNumbers:
             (nFiles,sizeGb) = findDatasetSize(key)
@@ -272,16 +370,17 @@ for key in nAllAccessed:
 print " "
 print " = = = = S U M M A R Y = = = = "
 print " "
-print " - number of datasets:         %d"%(nAll) 
-print " - number of accesses:         %d"%(nAllAccess) 
-print " - number of skipped datasets: %d"%(nAllSkipped) 
+print " - number of skipped datasets: %d"%(nAllSkipped)
+print " "
+print " - number of datasets:         %d"%(nAll)
+print " - number of accesses:         %d"%(nAllAccess)
 if sizeAnalysis:
-    print " - data volume [GB]:           %.3f"%(sizeTotalGb) 
+    print " - data volume [TB]:           %.3f"%(sizeTotalGb/1024.)
 
 # careful watch cases where no datasets were found
 if nAll>0:
     print " "
-    print " - number of accesses/dataset: %.2f"%(float(nAllAccess)/float(nAll)) 
+    print " - number of accesses/dataset: %.2f"%(float(nAllAccess)/float(nAll))
 if sizeAnalysis:
     if sizeTotalGb>0:
         print " - number of accesses/GB:      %.2f"%(float(nAllAccess)/sizeTotalGb)
@@ -289,28 +388,28 @@ if sizeAnalysis:
         print " - number of accesses/file:    %.2f"%(float(nAllAccess)/nFilesTotal)
 print " "
 
-# print summary for the various sites
-
+# need to figure out how many replicas are out there
 nSites = {}
-for key in sorted(nSiteAccess):
-    value = nSiteAccess[key]
-    print " - number of datasets:         %-8d at %s"%(len(value),key)
+for site in sorted(nSiteAccess):
+    nSiteAccessEntry = nSiteAccess[site]
+    ## print " - number of datasets:         %-8d at %s"%(len(nSiteAccessEntry),site)
     # count the number of sites carrying a given dataset
-    nSites = addSites(nSites,value,debug)
+    nSites = addSites(nSites,nSiteAccessEntry,debug)
 
 # last step: produce monitoring information
 # ========================================
-
-# ready to use: nAllAccessed[key], fileNumbers[key], sizesGb[key]
+# ready to use: nAllAccessed[dataset], fileNumbers[dataset], sizesGb[dataset], nSites[dataset]
 
 fileName = 'DatasetSummary.txt'
 print ' Output file: ' + fileName
 totalAccesses = open(fileName,'w')
 for dataset in nAllAccessed:
+    nSite = nSites[dataset]
     nAccess = nAllAccessed[dataset]
-    nFiles  = fileNumbers[dataset]
-    sizeGb  = sizesGb[dataset]
-    nSite   = nSites[dataset]
+    nFiles = fileNumbers[dataset]
+    sizeGb = sizesGb[dataset]
+    #if nAccess == 0:
+    #    print " NOT USED - %d %d %d %f"%(nSite,nAccess,nFiles,sizeGb)
     totalAccesses.write("%d %d %d %f\n"%(nSite,nAccess,nFiles,sizeGb))
 
     if nSite>42:

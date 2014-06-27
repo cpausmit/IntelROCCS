@@ -110,7 +110,8 @@ def processDb():
 #===================================================================================================
 debug = 0
 sizeAnalysis = True
-pagGroups = {"higgs":0,"exotica":0,"susy":0,"top":0,"SMP":0,"forward":0,"b-physics":0,"B2G":0}
+pagGroups = {"higgs":0,"exotica":0,"susy":0,"top":0,"SMP":0,"forward":0,"b-physics":0,"B2G":0,
+             "deprecated-undefined":0 }
 
 usage  = "\n"
 usage += " readPhedexCache.py  <sitePattern> [ <AnalysisGroupPattern>=????-??-?? ]\n"
