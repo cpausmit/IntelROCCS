@@ -1,5 +1,6 @@
 #!/bin/bash
 # --------------------------------------------------------------------------------------------------
+#
 # Installation script for IntelROCCS. There will be lots of things to test and to fix, but this is
 # the starting point. This installation has to be performed as user root.
 #
@@ -10,6 +11,7 @@ export INTELROCCS_USER=cmsprod
 export INTELROCCS_GROUP=zh
 
 source Detox/setupDetox.sh
+source Detox/setupMonitor.sh
 
 # make sure mysql is setup properly for server and clients otherwise this will not work
 # check out the README
@@ -20,6 +22,8 @@ INTELROCCS_BASE=`dirname $DETOX_BASE`
 TRUNC=`dirname $INTELROCCS_BASE`
 
 # copy the software
+#==================
+
 if [ -d "$INTELROCCS_BASE" ]
 then
   # make sure to remove completely the previous installed software
@@ -28,14 +32,18 @@ then
 fi
 cp -r ../IntelROCCS $TRUNC
 
-# create database file directory structure
-mkdir -p $DETOX_DB
 
-# the owner has to be $INTELROCCS_USER:$INTELROCCS_GROUP, this user runs the process
+# create log/db structure
+#========================
+
+# owner has to be $INTELROCCS_USER:$INTELROCCS_GROUP, this user runs the process
 INTELROCCS_DB=`dirname $DETOX_DB`
+mkdir -p $INTELROCCS_DB $DETOX_DB $MONITOR_DB
 chown ${INTELROCCS_USER}:${INTELROCCS_GROUP} -R $INTELROCCS_DB
 
-# install and start daemon (on server only)
+
+# install and start daemons
+#==========================
 
 # stop potentially existing server process
 if [ -e "/etc/init.d/detoxd" ]
@@ -54,5 +62,23 @@ sleep 2
 
 # start on boot
 chkconfig --level 345 detoxd on
+
+# stop potentially existing server process
+if [ -e "/etc/init.d/monitord" ]
+then
+  /etc/init.d/monitord stop
+fi
+
+# copy Monitor daemon
+cp /usr/local/IntelROCCS/Monitor/sysv/monitord /etc/init.d/
+
+# start new server
+/etc/init.d/monitord status
+/etc/init.d/monitord start
+sleep 2
+/etc/init.d/monitord status
+
+# start on boot
+chkconfig --level 345 monitord on
 
 exit 0

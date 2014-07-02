@@ -6,7 +6,7 @@
 #---------------------------------------------------------------------------------------------------
 # main directories
 
-export DETOX_DB="/local/cmsprod/IntelROCCS/Detox"
+export DETOX_DB="$HOME/log/IntelROCCS/Detox"
 
 export DETOX_SITESTORAGE_SERVER="t3btch039.mit.edu"
 export DETOX_SITESTORAGE_DB="SiteStorage"
@@ -44,7 +44,7 @@ export DETOX_MYSQL_CONFIG=/etc/myIntelROCCS.cnf
 
 # Paths
 
-export DETOX_BASE="./"
+export DETOX_BASE=`pwd`
 export DETOX_PYTHONPATH="$DETOX_BASE/python"
 
 # Python path etc. (careful it might not be set)

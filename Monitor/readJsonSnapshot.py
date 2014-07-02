@@ -355,6 +355,11 @@ for key in nAllAccessed:
     nAll += 1
     if sizeAnalysis:
         if not key in fileNumbers:
+            # update the dataset history
+            cmd = './findDatasetHistory.py ' + key + ' 2> /dev/null'
+            print ' CMD: ' + cmd
+            os.system(cmd)
+            # update the dataset properties
             (nFiles,sizeGb) = findDatasetSize(key)
             # add to our memory
             fileNumbers[key] = nFiles

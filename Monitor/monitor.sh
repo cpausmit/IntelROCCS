@@ -7,15 +7,15 @@
 #                                                                             C.Paus (June 10, 2014)
 # --------------------------------------------------------------------------------------------------
 # check if detox package is properly setup
-if [ -z "$DETOX_DB" ]
+if [ -z "$DETOX_DB" ] || [ -z "$MONITOR_DB" ]
 then
-  echo " ERROR - logfile base is not defined: DETOX_DB = \"$DETOX_DB\""
+  echo " ERROR - logfile base not defined: DETOX_DB = \"$DETOX_DB\"  MONITOR_DB = \"$MONITOR_DB\""
   exit 0
 fi
 
 # define relevant environment variables
 export MIT_ROOT_STYLE=/home/cmsprod/MitRootStyle/MitRootStyle.C
-export SITE_MONITOR_FILE=$DETOX_DB/monitor/MonitorSummary.txt
+export SITE_MONITOR_FILE=$MONITOR_DB/MonitorSummary.txt
 rm -f $SITE_MONITOR_FILE
 touch $SITE_MONITOR_FILE
 #echo "# Site Quota Used ToDelete LastCp" >> $SITE_MONITOR_FILE
@@ -41,13 +41,13 @@ done
 root -q -b -l plotSites.C
 
 # extract dataset info
-$DETOX_BASE/../Monitor/readJsonSnapshot.py T2*
+$MONITOR_BASE/readJsonSnapshot.py T2*
 mv DatasetSummary.txt DatasetSummaryAll.txt
 export DATASET_MONITOR_TEXT="since 07/2013"
 export DATASET_MONITOR_FILE=DatasetSummaryAll
 root -q -b -l plotDatasets.C
 
-$DETOX_BASE/../Monitor/readJsonSnapshot.py T2* 2014*
+$MONITOR_BASE/readJsonSnapshot.py T2* 2014*
 mv DatasetSummary.txt DatasetSummary2014.txt
 export DATASET_MONITOR_TEXT="Summary 2014"
 export DATASET_MONITOR_FILE=DatasetSummary2014
@@ -55,14 +55,14 @@ root -q -b -l plotDatasets.C
 
 for period in `echo 01 02 03 04 05 06`
 do
-  $DETOX_BASE/../Monitor/readJsonSnapshot.py T2* 2014-$period*
+  $MONITOR_BASE/readJsonSnapshot.py T2* 2014-$period*
   mv     DatasetSummary.txt DatasetSummary${period}-2014.txt
   export DATASET_MONITOR_TEXT="${period}/2014"
   export DATASET_MONITOR_FILE=DatasetSummary${period}-2014
   root -q -b -l plotDatasets.C
 done
 
-# move the results to the log file area
+# move the results to the log file area ( to be updated to the monitor areas )
 mkdir -p    $DETOX_DB/$DETOX_MONITOR
 mv    *.txt $DETOX_DB/$DETOX_MONITOR
 mv    *.png $DETOX_DB/$DETOX_MONITOR

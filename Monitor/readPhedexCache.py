@@ -110,8 +110,12 @@ def processDb():
 #===================================================================================================
 debug = 0
 sizeAnalysis = True
+
 pagGroups = {"higgs":0,"exotica":0,"susy":0,"top":0,"SMP":0,"forward":0,"b-physics":0,"B2G":0,
              "deprecated-undefined":0 }
+pogGroups = {"muon":0,"tracker-pog":0,"e-gamma_ecal":0,"jets-met_hcal":0,"tau-pflow":0,
+             "b-tagging":0}
+dpgGroups = {"trigger":0,"tracker-dpg":0}
 
 usage  = "\n"
 usage += " readPhedexCache.py  <sitePattern> [ <AnalysisGroupPattern>=????-??-?? ]\n"
@@ -145,22 +149,74 @@ print " Group pattern: %s"%(group)
 if debug>0:
     print ' Analyzing: ' + file
 
-quotasPerSite = processDb()
-sizesPerSite = processFile(file,debug=0)
+# read in all relevant data
+quotasPerSite = processDb()               # from our SiteStorage database
+sizesPerSite = processFile(file,debug=0)  # from the phedex cache
 
 # create summary information and potentially print the contents
 sizeTotalGb = 0.
+
+# looping over all sites and completing business per site
 for site in sizesPerSite:
     sizesPerSitePerGroup = sizesPerSite[site]
 
     print '\n SITE: ' + site
+
+    # keep track of the quota changes and the the additional size needed
+    addQuota = 0.
     addSize = 0.
+
+    # FIRST ADJUST QUOTAS
+
+    # do we need to update the quota based on the official group assignment?
+    if site in quotasPerSite:
+        quotasPerSitePerGroup = quotasPerSite[site]
+        if 'AnalysisOps' in quotasPerSitePerGroup and 'AnalysisOps' in sizesPerSitePerGroup:
+
+            print ' Existing quota: %d'%(quotasPerSite[site]['AnalysisOps']) 
+
+            for group in pagGroups:
+                if group in quotasPerSitePerGroup:
+                    addQuota += quotasPerSite[site][group]
+                    print ' PAG quota add:  %d -- %s'%(quotasPerSite[site][group],group)
+
+            for group in pogGroups:
+                if group in quotasPerSitePerGroup:
+                    addQuota += quotasPerSite[site][group]
+                    print ' POG quota add:  %d -- %s'%(quotasPerSite[site][group],group)
+
+            for group in dpgGroups:
+                if group in quotasPerSitePerGroup:
+                    addQuota += quotasPerSite[site][group]
+                    print ' DPG quota add:  %d -- %s'%(quotasPerSite[site][group],group)
+                    
+            if addQuota>0:
+                print " Added quota [TB]:  +%8.2f   %8.2f -->  %8.2f"%\
+                      (addQuota,quotasPerSite[site]['AnalysisOps'],
+                       quotasPerSite[site]['AnalysisOps']+addQuota)
+                quotasPerSite[site]['AnalysisOps'] += addQuota
+                print " update Quotas set SizeTb=%d where SiteName = '%s' and GroupName = '%s';"%\
+                      (quotasPerSite[site]['AnalysisOps'],site,'AnalysisOps')
+    
+    # NEXT ACCOUNT FOR ROGUE DATASETS (quota is already updated in memory)
+
     for group in sizesPerSitePerGroup:
         size = sizesPerSitePerGroup[group]
         sizeTotalGb += size
         print " - data volume [TB]:  %8.2f  %-s"%(size/1024.,group) 
+
         if group in pagGroups:
             #print ' found pagGroup: %s - %.3f'%(group,size)
+            addSize += size
+            print " update Quotas set SizeTb=0 where SiteName = '%s' and GroupName = '%s';"%\
+                  (site,group)
+        if group in pogGroups:
+            #print ' found pogGroup: %s - %.3f'%(group,size)
+            addSize += size
+            print " update Quotas set SizeTb=0 where SiteName = '%s' and GroupName = '%s';"%\
+                  (site,group)
+        if group in dpgGroups:
+            #print ' found dpgGroup: %s - %.3f'%(group,size)
             addSize += size
             print " update Quotas set SizeTb=0 where SiteName = '%s' and GroupName = '%s';"%\
                   (site,group)
@@ -172,9 +228,9 @@ for site in sizesPerSite:
 
             if (addSize+sizesPerSite[site]['AnalysisOps'])/1024. > \
                0.9*quotasPerSite[site]['AnalysisOps']:
-                print " TOO SMALL [TB]:  +%8.2f   %8.2f  %8.2f"%\
+                print " TOO SMALL [TB]:  +%8.2f   %8.2f  %8.2f  --> %8.2f at site %s"%\
                       (addSize/1024.,(addSize+sizesPerSite[site]['AnalysisOps'])/1024.,
-                       quotasPerSite[site]['AnalysisOps']) 
+                       quotasPerSite[site]['AnalysisOps'],1.12*(addSize+sizesPerSite[site]['AnalysisOps'])/1024.,site) 
                 print " update Quotas set SizeTb=%d where SiteName = '%s' and GroupName = '%s';"%\
                       (1.12*(addSize+sizesPerSite[site]['AnalysisOps'])/1024.,site,'AnalysisOps')
             

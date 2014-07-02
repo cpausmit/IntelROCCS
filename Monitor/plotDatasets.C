@@ -92,7 +92,7 @@ void plotDatasetUsage()
     // fill the histogram here
     h->Fill(value,weight);
 
-    if (nLines < 100)
+    if (nLines < 5)
       printf(" Value: %f weight: %f\n",value,weight);
     
     // keep track of the total size

@@ -1,14 +1,13 @@
 #!/bin/bash
 # --------------------------------------------------------------------------------------------------
-# detoxd       Startup script for the detox Server
+# monitord     Startup script for the monitor Server
 #
 # chkconfig: - 70 15
-# description: Detox is a process that will take a snapshot of the CMS computing system storage and\
-#              release dataset replicas based on a ranking that depends on dataset popularity.
+# description: Monitor is a process to produce monitoring information for the IntelROCCS package.
 #
-# processname: detoxd
-# config:      /etc/detoxd.conf
-# pidfile:     /var/run/detoxd.pid
+# processname: monitord
+# config:      /etc/monitord.conf
+# pidfile:     /var/run/monitord.pid
 # --------------------------------------------------------------------------------------------------
 # Source function library.
 . /etc/rc.d/init.d/functions
@@ -18,34 +17,34 @@
 INITLOG_ARGS=""
 
 # Path to the running script, server binary, and short-form for messages.
-#detoxd=/usr/sbin/detoxd
-detoxd=/usr/local/IntelROCCS/Detox/detoxd
-prog=detoxd
-pidfile=${PIDFILE-/var/run/detoxd.pid}
-lockfile=${LOCKFILE-/var/lock/subsys/detoxd}
+#monitord=/usr/sbin/monitord
+monitord=/usr/local/IntelROCCS/Monitor/monitord
+prog=monitord
+pidfile=${PIDFILE-/var/run/monitord.pid}
+lockfile=${LOCKFILE-/var/lock/subsys/monitord}
 
 RETVAL=0
 STOP_TIMEOUT=${STOP_TIMEOUT-10}
 
-# Start detox daemon (detoxd)
+# Start monitor daemon (monitord)
 start() {
     echo -n $"Starting $prog:"
-    daemon --user=cmsprod --pidfile=${pidfile} $detoxd \&
+    daemon --user=cmsprod --pidfile=${pidfile} $monitord \&
     RETVAL=$?
     echo
     [ $RETVAL = 0 ] && touch ${lockfile}
     
     # this seems like a hack, but I do not know how to do it differently
-    pid=`ps auxw | grep "/bin/bash $detoxd" |tr -s ' '|cut -d' ' -f2`
+    pid=`ps auxw | grep "/bin/bash $monitord" |tr -s ' '|cut -d' ' -f2`
     echo $pid > $pidfile
     
     return $RETVAL
 }
 
-# Stop detox daemon (detoxd)
+# Stop monitor daemon (monitord)
 stop() {
     echo -n $"Stopping $prog: "
-    killproc -p ${pidfile} -d ${STOP_TIMEOUT} $detoxd
+    killproc -p ${pidfile} -d ${STOP_TIMEOUT} $monitord
     RETVAL=$?
     echo
     [ $RETVAL = 0 ] && rm -f ${lockfile} ${pidfile}
@@ -60,7 +59,7 @@ case "$1" in
     stop
     ;;
   status)
-    status -p ${pidfile} $detoxd
+    status -p ${pidfile} $monitord
     RETVAL=$?
     ;;
   restart)
@@ -68,7 +67,7 @@ case "$1" in
     start
     ;;
   condrestart|try-restart)
-    if status -p ${pidfile} $detoxd >&/dev/null
+    if status -p ${pidfile} $monitord >&/dev/null
     then
       stop
       start
