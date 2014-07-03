@@ -15,6 +15,9 @@ class SiteProperties:
         self.name = siteName
         self.datasetRanks = {}
         self.datasetSizes = {}
+        self.dsetIsValid = {}
+        self.dsetIsCustodial = {}
+        self.dsetIsPartial = {}
         self.wishList = []
         self.datasetsToDelete = []
         self.protectedList = []
@@ -25,7 +28,10 @@ class SiteProperties:
         self.deleted = 0
         self.protected = 0
         
-    def addDataset(self,set,rank,size):
+    def addDataset(self,set,rank,size,valid,partial,custodial):
+        self.dsetIsValid[set] = valid
+        self.dsetIsPartial[set] = partial
+        self.dsetIsCustodial[set] = custodial
         self.datasetRanks[set] = rank
         self.datasetSizes[set] = size
         self.spaceTakenV = self.spaceTakenV + size
@@ -40,6 +46,13 @@ class SiteProperties:
                 continue
             if datasetName in self.protectedList:
                 continue
+            #custodial set can't be on deletion wish list
+            if self.dsetIsCustodial[datasetName] :
+                continue
+            #non-valid dataset can't be on deletion list
+            if not self.dsetIsValid[datasetName]:
+                continue
+            
             space = space + self.datasetSizes[datasetName]
             self.wishList.append(datasetName)
 
@@ -67,9 +80,22 @@ class SiteProperties:
         self.datasetsToDelete.append(set)
         self.deleted = self.deleted + self.datasetSizes[set]
 
+    def revokeWish(self,set):
+        if set in self.datasetsToDelete:
+            self.datasetsToDelete.remove(set)
+            self.deleted = self.deleted - self.datasetSizes[set]
+
     def pinDataset(self,set):
         if set in self.datasetsToDelete:
             return False
+        
+        #can't pin partial dataset
+        if self.dsetIsPartial[set] :
+            return False
+        #can't pin non-valid dataset
+        if not self.dsetIsValid[set]:
+            return False
+        
         self.protectedList.append(set)
         self.protected = self.protected + self.datasetSizes[set]
         if set in self.wishList:
@@ -99,6 +125,9 @@ class SiteProperties:
     def dsetRank(self,set):
 	return self.datasetRanks[set]
 
+    def dsetSize(self,set):
+        return self.datasetSizes[set]
+
     def siteName(self):
         return self.name
 
@@ -118,7 +147,7 @@ class SiteProperties:
         return self.spaceLCp
 
     def hasDataset(self,set):
-        if set in self.datasetRanks.keys():
+        if set in self.datasetRanks:
             return True
         else:
             return False

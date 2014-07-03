@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!/usr/bin/python
 #---------------------------------------------------------------------------------------------------
 #
 # This is the master script that user should run It runs all other auxilary scripts. At the end you
@@ -8,8 +8,9 @@
 # capacity of each site (and right now we use only one group as proxy).
 #
 #---------------------------------------------------------------------------------------------------
-import sys, os, subprocess, re, glob, time, pickle, MySQLdb
+import sys, os, subprocess, re, glob, time, MySQLdb
 import siteStatus
+import centralManager
 
 # setup definitions
 if not os.environ.get('DETOX_DB'):
@@ -19,13 +20,8 @@ if not os.environ.get('DETOX_DB'):
 # make sure we start in the right directory
 os.chdir(os.environ.get('DETOX_BASE'))
 
-# allow to switch each piece of the code on and off for faster debugging
-getPhedexCache = True
-getPopularityCache = True
-extractUsedDatasets = True
-rankDatasets = True
-makeDeletionLists = True
-requestDeletions = True
+# set this to turn off actual deletions for debugging
+requestDeletions = False
 
 #===================================================================================================
 #  H E L P E R S
@@ -40,10 +36,14 @@ def createCacheAreas():
 #====================================================================================================
 #  M A I N
 #====================================================================================================
+
+timeStart = time.time()
+
+centralManager = centralManager.CentralManager()
+centralManager.checkProxyValid()
+
 # Retrieve all sites from the quota file
 timeInitial = time.time()
-
-allSites = siteStatus.getAllSites()
 
 # Make directories to hold cache data
 
@@ -51,71 +51,36 @@ createCacheAreas()
 
 # Get a list of phedex datasets (goes to cache)
 
+print ' - Cache phedex information.'
 timeStart = time.time()
-print ' Cache phedex information.'
-if getPhedexCache:
-    retValue = subprocess.call(["./cacheDatasetsInPhedexAtSites.py", "T2"])
-    if retValue != 0:
-	print " ERROR - Call to cacheDatasetsInPhedexAtSites.py failed, exit code %d"%(retValue)
-        sys.exit(1)
+centralManager.extractPhedexData("T2")
+
 timeNow = time.time()
+print '   - Phedex query took: %d seconds'%(timeNow-timeStart)
 print ' - Renewing phedex cache took: %d seconds'%(timeNow-timeStart) 
 
-# For each site update popularity, rank datasets, perform the necessary release list
-
+# extract usage data from popularity service
 timeStart = time.time()
 print ' Collect site information information.'
-for site in sorted(allSites):
-    if allSites[site].getStatus() == 0:
-        continue
-
-    # extract usage data from popularity service
-    if getPopularityCache:
-        retValue = subprocess.call(["./cacheDatasetsPopularity.py",site])
-        if retValue != 0:
-            allSites[site].setValid(0)
-            sys.exit(1)
-
-    # unify datasets as given by the popularity service and phedex
-    if extractUsedDatasets:
-        subprocess.call(["./extractUsedDatasets.py",site])
-
-    # rank datasets for each site
-    if rankDatasets:
-        subprocess.call(["./rankDatasets.py",site])
+centralManager.extractPopularityData()
 timeNow = time.time()
-print ' - Collecting site information took: %d seconds'%(timeNow-timeStart) 
+print ' - Collecting site information took: %d seconds'%(timeNow-timeStart)
 
-strAllSites = pickle.dumps(allSites)
 
-# For global ranking we will read all local rankings, calculate global rank for each dataset, and
-# update the files.
-subprocess.call(["./rankDatasetsGlobally.py",strAllSites])
+#centralManager.showRunawayDatasets()
+#centralManager.printUsagePatterns()
 
-# Run the script that unifies all of sites and creates deletion suggestions
-timeStart = time.time()
-print ' Create deletion lists.'
-if makeDeletionLists:
-    subprocess.call(["./makeDeletionLists.py",strAllSites])
-timeNow = time.time()
-print ' - Creation of deletion lists took: %d seconds'%(timeNow-timeStart)
+centralManager.rankDatasetsLocally()
 
-# Run the script that makes the deletion request to phedex
-timeStart = time.time()
-print ' Make deletion request.'
+centralManager.rankDatasetsGlobally()
+
+centralManager.makeDeletionLists()
+
 if requestDeletions:
-    subprocess.call(["./requestDeletions.py",strAllSites])
-timeNow = time.time()
-print ' - Deletion requests took: %d seconds'%(timeNow-timeStart) 
+    centralManager.requestDeletions()
 
-# Run the script that lists the last x deletion requests to phedex
-print ' Show cache release requests.'
-for site in sorted(allSites):
-    if allSites[site].getStatus() == 0:
-        print ' Site not active, status=%d  - %s'%(allSites[site].getStatus(),site)
-    else:
-        print ' Site --- active, status=%d  - %s'%(allSites[site].getStatus(),site)
-        subprocess.call(["./showCacheRequests.py",site])
-
+centralManager.showCacheRequests()
+    
 # Final summary of timing
-print ' Total Cycle took: %d seconds'%(timeNow-timeInitial) 
+timeNow = time.time()
+print ' Total Cycle took: %d seconds'%(timeNow-timeStart) 

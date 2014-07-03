@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!/usr/bin/python
 #----------------------------------------------------------------------------------------------------
 #
 # This is an auxilary tool used for logging messages. Used mostly by the phedexApi class.

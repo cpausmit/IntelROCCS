@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!/usr/bin/python
 #----------------------------------------------------------------------------------------------------
 #
 # This script provide an API to PhEDEX communications one can delete or subscribe datasets using
