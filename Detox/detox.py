@@ -21,7 +21,7 @@ if not os.environ.get('DETOX_DB'):
 os.chdir(os.environ.get('DETOX_BASE'))
 
 # set this to turn off actual deletions for debugging
-requestDeletions = False
+requestDeletions = True
 
 #===================================================================================================
 #  H E L P E R S
@@ -42,9 +42,6 @@ timeStart = time.time()
 centralManager = centralManager.CentralManager()
 centralManager.checkProxyValid()
 
-# Retrieve all sites from the quota file
-timeInitial = time.time()
-
 # Make directories to hold cache data
 
 createCacheAreas()
@@ -56,15 +53,15 @@ timeStart = time.time()
 centralManager.extractPhedexData("T2")
 
 timeNow = time.time()
-print '   - Phedex query took: %d seconds'%(timeNow-timeStart)
 print ' - Renewing phedex cache took: %d seconds'%(timeNow-timeStart) 
+timePre = timeNow
 
 # extract usage data from popularity service
-timeStart = time.time()
 print ' Collect site information information.'
 centralManager.extractPopularityData()
 timeNow = time.time()
-print ' - Collecting site information took: %d seconds'%(timeNow-timeStart)
+print ' - Collecting site information took: %d seconds'%(timeNow-timePre)
+timePre = timeNow
 
 
 #centralManager.showRunawayDatasets()
@@ -76,8 +73,16 @@ centralManager.rankDatasetsGlobally()
 
 centralManager.makeDeletionLists()
 
+timeNow = time.time()
+print ' - Making deletion lists took: %d seconds'%(timeNow-timePre)
+timePre = timeNow 
+
 if requestDeletions:
     centralManager.requestDeletions()
+
+timeNow = time.time()
+print ' - Requesting deletions took: %d seconds'%(timeNow-timePre)
+timePre = timeNow 
 
 centralManager.showCacheRequests()
     
