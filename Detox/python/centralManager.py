@@ -300,14 +300,10 @@ class CentralManager:
                     nprotected = 0
                     for site in sorted(dataPr.mySites(), cmp=self.sortByProtected):              
                         sitePr = self.sitePropers[site]
-                    
-                        if datasetName == '/SingleElectron/Run2012C-EcalRecover_11Dec2012-v1/AOD' :
-                            print site
                             
                         if sitePr.pinDataset(datasetName):
                             nprotected = nprotected + 1
                             if nprotected >= self.DETOX_NCOPY_MIN:
-                                breakout = True
                                 break
 
                     #here could not find last copy site
@@ -394,6 +390,10 @@ class CentralManager:
     def requestDeletions(self):
         
         for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
+            if site != 'T2_US_MIT':
+                continue
+            print "deleting from " + site
+
             sitePr = self.sitePropers[site]
 
             datasets2del = sitePr.delTargets()
@@ -402,7 +402,7 @@ class CentralManager:
 
             totalSize = 0
             for dataset in datasets2del:
-                totalSize =  totalSize + self.dataPropers[dataset].mySize()
+                totalSize =  totalSize + sitePr.dsetSize(dataset)
             print "Deletion request for site " + site
             print " -- Number of datassetes     = " + str(len(datasets2del))
             print "%s %0.2f %s" %(" -- Total size to be deleted =",totalSize/1024,"TB")
@@ -435,12 +435,12 @@ class CentralManager:
             for dataset in datasets2del:
                 dataPr = self.dataPropers[dataset]
                 rank =   sitePr.dsetRank(dataset)
-                size =   dataPr.mySize()
+                size =   sitePr.dsetSize(dataset)
                 group = 'AnalysisOps'
         
                 #db = MySQLdb.connect(read_default_file=myCnf,read_default_group="mysql")
                 #cursor = db.cursor()
-                connection = self.getDbConnection()
+                connection = self.getDbConnection(os.environ.get('DETOX_HISTORY_DB'))
                 cursor = connection.cursor()
                 sql = "insert into Requests(RequestId,RequestType,SiteName,Dataset,Size,Rank,GroupName," + \
                       "TimeStamp) values ('%d', '%d', '%s', '%s', '%d', '%d', '%s', '%s' )" % \
@@ -474,6 +474,7 @@ class CentralManager:
         #db = MySQLdb.connect(read_default_file=myCnf,read_default_group="mysql")
         #cursor = db.cursor()
         connection = self.getDbConnection(os.environ.get('DETOX_HISTORY_DB'))
+        #connection = self.getDbConnection('DetoxHistory')
         cursor = connection.cursor()
         sql = "select  RequestId,SiteName,Dataset,Size,Rank,GroupName,TimeStamp from Requests " + \
               " where SiteName='" + site + "' order by RequestId DESC LIMIT 1000"
