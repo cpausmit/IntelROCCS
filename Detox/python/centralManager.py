@@ -390,10 +390,6 @@ class CentralManager:
     def requestDeletions(self):
         
         for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
-            if site != 'T2_US_MIT':
-                continue
-            print "deleting from " + site
-
             sitePr = self.sitePropers[site]
 
             datasets2del = sitePr.delTargets()
