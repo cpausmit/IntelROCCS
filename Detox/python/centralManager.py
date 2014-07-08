@@ -94,6 +94,12 @@ class CentralManager:
         # close connection to the database
         connection.close()
 
+        for site in sorted(self.allSites):
+            if self.allSites[site].getStatus() == 0:
+                print ' Site not active, status=%d  - %s'%(self.allSites[site].getStatus(),site)
+            else:
+                print ' Site --- active, status=%d  - %s'%(self.allSites[site].getStatus(),site)
+
         #siteName = "T2_US_CHECK"
         #self.allSites[siteName] = siteStatus.SiteStatus(siteName)
         #self.allSites[siteName].setStatus(1)
@@ -354,6 +360,8 @@ class CentralManager:
             outputFile.write("Space last CP   [TB]: %8.2f\n"%(sitePr.spaceLastCp()/1024))
             outputFile.close()
             
+            if len(sitePr.delTargets()) > 0:
+                print " File: " + file_delete
             outputFile = open(file_delete,'w')
             outputFile.write("# -- " + today + " " + ttime + "\n#\n")
             outputFile.write("#   Rank      Size nsites nsites  DatasetName \n")
@@ -367,6 +375,7 @@ class CentralManager:
                 ndeletes = dataPr.nBeDeleted()
                 outputFile.write("%8.1f %9.1f %6d %6d  %s\n"\
                                  %(rank,size,nsites,nsites-ndeletes,dset))
+                print '  -> ' + dset
             outputFile.close()
 
             outputFile = open(file_remain,'w')
