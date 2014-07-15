@@ -2,7 +2,7 @@
 #  C L A S S
 #====================================================================================================
 
-import os, subprocess, re, signal, sys, MySQLdb
+import os, subprocess, re, signal, sys, MySQLdb, json
 import datetime, time
 import phedexDataset
 
@@ -14,8 +14,9 @@ def alarm_handler(signum, frame):
     raise Alarm
 	
 class PhedexDataHandler:
-    def __init__(self):
+    def __init__(self,allSites):
         self.phedexDatasets = {}
+        self.allSites = allSites
    
     def shouldAccessPhedex(self):
         # number of hours until it will rerun
@@ -38,15 +39,14 @@ class PhedexDataHandler:
         
         return True
     
-    def extractPhedexData(self,federation,allSites):
+    def extractPhedexData(self,federation):
 
         webServer = 'https://cmsweb.cern.ch/'
-        phedexBlocks = 'phedex/datasvc/xml/prod/blockreplicas'
-        args = 'subscribed=y&node=' + federation + '*'
+        phedexBlocks = 'phedex/datasvc/json/prod/blockreplicas'
+        args = 'show_dataset=y&subscribed=y&node=' + federation + '*'
         
         cert = os.environ['DETOX_X509UP']
         url = '"'+webServer+phedexBlocks+'?'+args+'"'
-        #cmd = 'curl --cert ' + cert + ' -k -H "Accept: text/xml" ' + url
         cmd = 'curl -k -H "Accept: text/xml" ' + url
     
         print ' Access phedexDb: ' + cmd
@@ -73,65 +73,47 @@ class PhedexDataHandler:
         tmpfile = open(tmpname, "r")
         strout = tmpfile.readline()
         tmpfile.close()
-        #os.remove(tmpname)
+        os.remove(tmpname)
+        
+        dataJson = json.loads(strout)
+        datasets = (dataJson["phedex"])["dataset"]
+        for dset in datasets:
+            datasetName = dset["name"]
+            user = re.findall(r"USER",datasetName)
 
-        records = re.split("block\ bytes",strout)
-        for line in records:
-            
-            if "name" not in line:
-                continue
-            
-            datasetName = (re.findall(r"name='(\S+)'", line))[0]
-            
-            if "#" in datasetName:
-                datasetName = (re.split("#",datasetName))[0]
+            blocks = dset["block"]
+            for block in blocks:
+                replicas = block["replica"]
+                for siterpl in replicas:
 
-            if datasetName not in self.phedexDatasets:
-                self.phedexDatasets[datasetName] = phedexDataset.PhedexDataset(datasetName)
-            dataset = self.phedexDatasets[datasetName]
+                    group = siterpl["group"]
+                    if group != "AnalysisOps":
+                        continue
 
-            sublines = re.split("<replica\ ",line)
-            for subline in sublines[1:]:
-            
-                group = None
-                size = None
-                creationTime = None
-                isValid = 1
-                isCustodial = 0
-            
-                t2Site = re.findall(r"node='(\w+)'",subline)[0]
-                if t2Site not in allSites:
-                    continue
-                if allSites[t2Site].getStatus() == 0:
-                    continue
-                
-                res = re.findall(r"group='(\S+)'",subline)
-                if len(res) > 0:
-                    group = res[0]
-                else:
-                    group = "undef"
+                    site = str(siterpl["node"])
+                    if site not in self.allSites:
+                        continue
+                    if self.allSites[site].getStatus() == 0:
+                        continue
 
-                if group != "AnalysisOps":
-                    continue
-                    
-                custodial = re.findall(r"custodial='(\w+)'",subline)
-                if custodial == 'y':
-                    isCustdial = 1
-    
-                complete = re.findall(r"complete='(\w+)'",subline)
-                if complete == 'n':
-                    isValid = 0
+                    if datasetName not in self.phedexDatasets:
+                        self.phedexDatasets[datasetName] = phedexDataset.PhedexDataset(datasetName)
+                    dataset = self.phedexDatasets[datasetName]
 
-                user = re.findall(r"USER",datasetName)
-                if len(user) > 0:
-                    isCustodial = 1
-    
-                nfiles = int(re.findall(r"files='(\d+)",subline)[0])
-                creationTime = int(re.findall(r"time_update='(\d+)",subline)[0])
-                size   = float(re.findall(r"bytes='(\d+)'",subline)[0])
-                size   = size/1024/1024/1024
-
-                dataset.updateForSite(t2Site,size,group,creationTime,nfiles,isCustodial,isValid)
+                    size = float(siterpl["bytes"])/1024/1024/1024
+                    compl = siterpl["complete"]
+                    cust = siterpl["custodial"]
+                    made = int(float(siterpl["time_update"]))
+                    files = int(siterpl["files"])
+                    iscust = 0
+                    if len(user) > 0 or cust == 'y': 
+                        iscust = 1
+                    valid = 1
+                    if compl == 'n': 
+                        valid = 0
+                        
+                    dataset.updateForSite(site,size,group,made,files,iscust,valid)
+       
 
         # Create our local cache files of the status per site
         filename = os.environ['DETOX_PHEDEX_CACHE']
@@ -160,7 +142,7 @@ class PhedexDataHandler:
                 
             dataset = self.phedexDatasets[datasetName]
             dataset.fillFromLine(line)
-        inputFile.close();
+        inputFile.close()
 
     def findIncomplete(self):
         print "### These datasets have diffrent sizes at different sites:"

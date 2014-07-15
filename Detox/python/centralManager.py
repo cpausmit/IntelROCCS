@@ -24,7 +24,7 @@ class CentralManager:
         self.sitePropers = {}
         self.dataPropers = {}
 
-        self.phedexHandler = phedexDataHandler.PhedexDataHandler()
+        self.phedexHandler = phedexDataHandler.PhedexDataHandler(self.allSites)
         self.popularityHandler = popularityDataHandler.PopularityDataHandler(self.allSites)
         
 
@@ -43,7 +43,7 @@ class CentralManager:
     def extractPhedexData(self,federation):
         if self.phedexHandler.shouldAccessPhedex() :
             try:
-                self.phedexHandler.extractPhedexData(federation,self.allSites)
+                self.phedexHandler.extractPhedexData(federation)
             except:
                 self.sendEmail()
                 raise
@@ -220,6 +220,8 @@ class CentralManager:
             globalRank = 0
             nSites = 0
             for site in siteNames:
+                if site not in self.allSites:
+                    continue
                 if self.allSites[site].getValid() == 0:
                     continue
                 
