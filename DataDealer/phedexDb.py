@@ -60,6 +60,15 @@ class phedexDb():
                     groupName = replica.get('group')
                     cur.execute('INSERT INTO Replicas(SiteName, DatasetId, GroupName) VALUES(?, ?, ?)', (siteName, datasetId, groupName))
 
+    def getAllDatasets(self):
+        with self.dbCon:
+            cur = self.dbCon.cursor()
+            cur.execute('SELECT DatasetName FROM Datasets')
+            datasets = []
+            for row in cur:
+                datasets.append(row[0])
+            return datasets
+
     def getDatasetSize(self, datasetName):
         with self.dbCon:
             cur = self.dbCon.cursor()

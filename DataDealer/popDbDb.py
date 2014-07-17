@@ -51,7 +51,7 @@ class popDbDb():
                 for site in allSites:
                     popDbJsonData = self.popDbApi.DSStatInTimeWindow(tstart=date.strftime('%Y-%m-%d'), tstop=date.strftime('%Y-%m-%d'), sitename=site)
                     self.buildSitePopDb(popDbJsonData, date.strftime('%Y-%m-%d'))
-                date = date - td
+                date -= td
 
 #===================================================================================================
 #  H E L P E R S
