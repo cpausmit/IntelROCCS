@@ -64,7 +64,7 @@ class popDbDb():
             numberCpus = dataset.get('TOTCPU')
             with self.dbCon:
                 cur = self.dbCon.cursor()
-                cur.execute('INSERT INTO DatasetData(Day, DatasetName, NumberAccesses, NumberCpus) VALUES(?, ?. ?, ?)', (date, datasetName, numberAccesses, numberCpus))
+                cur.execute('INSERT INTO DatasetData(Day, DatasetName, NumberAccesses, NumberCpus) VALUES(?, ?, ?, ?)', (date, datasetName, numberAccesses, numberCpus))
 
     def buildSitePopDb(self, popDbJsonData, date):
         siteName = popDbJsonData.get('SITENAME')
@@ -76,7 +76,7 @@ class popDbDb():
             numberCpus += dataset.get('TOTCPU')
         with self.dbCon:
             cur = self.dbCon.cursor()
-            cur.execute('INSERT INTO SiteData(Day, SiteName, NumberAccesses, NumberCpus) VALUES(?, ?. ?, ?)', (date, siteName, numberAccesses, numberCpus))
+            cur.execute('INSERT INTO SiteData(Day, SiteName, NumberAccesses, NumberCpus) VALUES(?, ?, ?, ?)', (date, siteName, numberAccesses, numberCpus))
 
     def getDatasetAccesses(self, datasetName, date):
         with self.dbCon:
