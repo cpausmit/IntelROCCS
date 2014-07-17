@@ -18,7 +18,7 @@ class sites():
         #query = "SELECT Sites.SiteName FROM Sites INNER JOIN Quotas ON Sites.SiteId=Quotas.SiteId INNER JOIN Groups ON Quotas.GroupId=Groups.GroupId WHERE Groups.GroupName=%s"
         query = "SELECT SiteName FROM Quotas WHERE GroupName=%s"
         values = ["analysisOps"]
-        data = self.dbaccess.dbQuery(query, values=values)
+        data = self.dbApi.dbQuery(query, values=values)
         return [site[0] for site in data]
 
     def getBlacklistedSites(self):
@@ -34,7 +34,7 @@ class sites():
         #query = "SELECT Sites.SiteName FROM Sites INNER JOIN Quotas ON Sites.SiteId=Quotas.SiteId INNER JOIN Groups ON Quotas.GroupId=Groups.GroupId WHERE Groups.GroupName=%s AND Quotas.Status=%s"
         query = "SELECT SiteName FROM Quotas WHERE GroupName=%s AND Status=%s"
         values = ['AnalysisOps', '1']
-        data = self.dbaccess.dbQuery(query, values=values)
+        data = self.dbApi.dbQuery(query, values=values)
         return [site[0] for site in data]
 
 #===================================================================================================
