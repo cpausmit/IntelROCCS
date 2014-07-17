@@ -47,67 +47,64 @@ class popDbDb():
             date = datetime.date.today() - td
             while date > lastDate:
                 popDbJsonData = self.popDbData.getPopDbData("DSStatInTimeWindow", date.strftime('%Y-%m-%d'))
-                #self.buildPopDbDb(popDbJsonData)
-                #for site in allSites:
-                #    popDbJsonData = self.popDbApi.DSStatInTimeWindow(tstart=date.strftime('%Y-%m-%d'), tstop=date.strftime('%Y-%m-%d'), sitename=site)
+                self.buildDatasetPopDb(popDbJsonData, date.strftime('%Y-%m-%d'))
+                for site in allSites:
+                    popDbJsonData = self.popDbApi.DSStatInTimeWindow(tstart=date.strftime('%Y-%m-%d'), tstop=date.strftime('%Y-%m-%d'), sitename=site)
+                    self.buildSitePopDb(popDbJsonData, date.strftime('%Y-%m-%d'))
                 date = date - td
 
 #===================================================================================================
 #  H E L P E R S
 #===================================================================================================
-    def buildPopDbDb(self, popDbJsonData):
-        datasets = phedexJsonData.get('phedex').get('dataset')
+    def buildDatasetPopDb(self, popDbJsonData, date):
+        datasets = popDbJsonData.get('DATA')
         for dataset in datasets:
-            datasetName = dataset.get('name')
-            sizeGb = 0
-            size = dataset.get('bytes')
-            if not size:
-                for block in dataset.get('block'):
-                    sizeGb += int(block.get('bytes')/10**9)
-            else:
-                sizeGb = int(size/10**9)
+            datasetName = dataset.get('COLLNAME')
+            numberAccesses = dataset.get('NACC')
+            numberCpus = dataset.get('TOTCPU')
             with self.dbCon:
                 cur = self.dbCon.cursor()
-                cur.execute('INSERT INTO Datasets(DatasetName, SizeGb) VALUES(?, ?)', (datasetName, sizeGb))
-                datasetId = cur.lastrowid
-                for replica in dataset.get('block')[0].get('replica'):
-                    siteName = replica.get('node')
-                    groupName = replica.get('group')
-                    cur.execute('INSERT INTO Replicas(SiteName, DatasetId, GroupName) VALUES(?, ?, ?)', (siteName, datasetId, groupName))
+                cur.execute('INSERT INTO DatasetData(Day, DatasetName, NumberAccesses, NumberCpus) VALUES(?, ?. ?, ?)', (date, datasetName, numberAccesses, numberCpus))
 
-    def getDatasetSize(self, datasetName):
+    def buildSitePopDb(self, popDbJsonData, date):
+        siteName = popDbJsonData.get('SITENAME')
+        datasets = popDbJsonData.get('DATA')
+        numberAccesses = 0
+        numberCpus = 0
+        for dataset in datasets:
+            numberAccesses += dataset.get('NACC')
+            numberCpus += dataset.get('TOTCPU')
         with self.dbCon:
             cur = self.dbCon.cursor()
-            cur.execute('SELECT SizeGb FROM Datasets WHERE DatasetName=?', (datasetName,))
-            sizeGb = cur.fetchone()[0] # TODO : Check that something is returned
-            return sizeGb
+            cur.execute('INSERT INTO SiteData(Day, SiteName, NumberAccesses, NumberCpus) VALUES(?, ?. ?, ?)', (date, siteName, numberAccesses, numberCpus))
 
-    def getNumberReplicas(self, datasetName):
+    def getDatasetAccesses(self, datasetName, date):
         with self.dbCon:
             cur = self.dbCon.cursor()
-            cur.execute('SELECT SiteName, DatasetId FROM Replicas NATURAL JOIN Datasets WHERE Datasets.DatasetName=?', (datasetName,))
-            replicas = 0
-            for row in cur:
-                replicas += 1
-            return replicas
+            cur.execute('SELECT NumberAccesses FROM DatasetData WHERE DatasetName=? AND Day=?', (datasetName, date))
+            numberAccesses = cur.fetchone()[0] # TODO : Check that something is returned
+            return numberAccesses
 
-    def getSiteReplicas(self, datasetName):
+    def getDatasetCpus(self, datasetName, date):
         with self.dbCon:
             cur = self.dbCon.cursor()
-            cur.execute('SELECT SiteName FROM Replicas NATURAL JOIN Datasets WHERE Datasets.DatasetName=? AND Replicas.GroupName=?', (datasetName, 'AnalysisOps'))
-            sites = []
-            for row in cur:
-                sites.append(row[0])
-            return sites
+            cur.execute('SELECT NumberCpus FROM DatasetData WHERE DatasetName=? AND Day=?', (datasetName, date))
+            numberCpus = cur.fetchone()[0] # TODO : Check that something is returned
+            return numberCpus
 
-    def getSiteStorage(self, siteName):
+    def getSiteAccesses(self, siteName, date):
         with self.dbCon:
             cur = self.dbCon.cursor()
-            cur.execute('SELECT SizeGb FROM Datasets NATURAL JOIN Replicas WHERE Replicas.SiteName=? ANd Replicas.GroupName=?', (siteName, 'AnalysisOps'))
-            storageGb = 0
-            for row in cur:
-                storageGb += row[0]
-            return storageGb
+            cur.execute('SELECT NumberAccesses FROM SiteData WHERE SiteName=? AND Day=?', (siteName, date))
+            numberAccesses = cur.fetchone()[0] # TODO : Check that something is returned
+            return numberAccesses
+
+    def getSiteCpus(self, siteName, date):
+        with self.dbCon:
+            cur = self.dbCon.cursor()
+            cur.execute('SELECT NumberCpus FROM SiteData WHERE SiteName=? AND Day=?', (siteName, date))
+            numberCpus = cur.fetchone()[0] # TODO : Check that something is returned
+            return numberCpus
 
 if __name__ == '__main__':
     popDb = popDbDb("%s/Cache/PopDbCache" % (os.environ['INTELROCCS_BASE']), 12)
