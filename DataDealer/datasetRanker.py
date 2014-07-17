@@ -6,76 +6,45 @@
 # is thrown which is currently not caught.
 #---------------------------------------------------------------------------------------------------
 import sys, os, math, json, datetime
-from operator import itemgetter
 sys.path.append(os.path.dirname(os.environ['INTELROCCS_BASE']))
-import phedexDb
-import IntelROCCS.Api.popDb.popDbData as popDbData
+import phedexDb, popDbDb
 
-class datasetRanker():
+class datasetRanker(threshold):
     def __init__(self):
-        phedex = phedexDb.phedexDb(12)
-        #date = (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y-%m-%d')
-        #oneDayAgoPopDbJsonData = popDb.getPopDbData("DSStatInTimeWindow", date)
-        #oneDayAgoAccesses = popDbJsonDataParser(oneDayAgoPopDbJsonData)
-        #date = (datetime.date.today() - datetime.timedelta(days=2)).strftime('%Y-%m-%d')
-        #twoDaysAgoPopDbJsonData = popDb.getPopDbData("DSStatInTimeWindow", date)
-        #twoDaysAgoAccesses = popDbJsonDataParser(twoDaysAgoPopDbJsonData)
-        #self.datasetInfo = self.buildDatasetInfo(phedexJsonData, oneDayAgoAccesses, twoDaysAgoAccesses)
+        self.threshold
+        self.phedex = phedexDb.phedexDb("%s/Cache/PhedexCache" % (os.environ['INTELROCCS_BASE']), 12)
+        self.popDb = popDbDb.popDbDb("%s/Cache/PopDbCache" % (os.environ['INTELROCCS_BASE']), 12)
 
 #===================================================================================================
 #  H E L P E R S
 #===================================================================================================
-    def popDbJsonDataParser(self, popDbJsonData):
-        datasetAccesses = dict()
-        data = json_data.get('DATA')
-        for dataset in data:
-            datasetName = dataset.get('COLLNAME')
-            nAccesses = dataset.get('NACC')
-            datasetAccesses[datasetName] = nAccesses
-        return datasetAccesses
 
-    def buildDatasetInfo(self, phedexJsonData, oneDayAgoAccesses, twoDaysAgoAccesses):
-        datasetInfo = dict()
-        datasets = phedexJsonData.get('phedex').get('dataset')
-        for dataset in datasets:
-            datasetName = dataset.get('name')
-            sizeGb = int(dataset.get('bytes')/10**9)
-            replicas = 0
-            for replica in dataset.get('block')[0].get('replica'):
-                replicas += 1
-            nAccesses = 1
-            if datasetName in oneDayAgoAccesses:
-                nAccesses = oneDayAgoAccesses[datasetName]
-            dAccesses = 1
-            if datasetName in twoDaysAgoAccesses:
-                dAccesses = nAccesses - twoDaysAgoAccesses[DatasetName]
-            info = {'replicas':replicas, 'sizeGb':sizeGb, 'nAccesses':nAccesses, 'dAccesses':dAccesses}
-            datasetInfo[datasetName] = info
-        return datasetInfo
 
 #===================================================================================================
 #  M A I N
 #===================================================================================================
-    def getDatasetRankings(self, threshold):
+    def getDatasetRankings(self):
         # rank = (log(n_accesses)*d_accesses)/(size*relpicas^2)
         datasetRankings = dict()
-        for datasetName, info in self.datasetInfo.iteritems():
-            replicas = info['replicas']
-            sizeGb = info['sizeGb']
-            nAccesses = info['nAccesses']
-            dAccesses = max(info['dAccesses'], 1)
+        datasets = self.phedexDb.getAllDatasets()
+        date = datetime.date.today() - datetime.timedelta(days=1)
+        for datasetName in datasets:
+            replicas = self.phedexDb.getNumberReplicas(datasetName)
+            sizeGb = self.phedexDb.getDatasetSize(datasetName)
+            nAccesses = self.popDb.getDatasetAccesses(datasetName, date.strftime('%Y-%m-%d'))
+            dAccesses = nAccesses - self.popDb.getDatasetAccesses(datasetName, (date - datetime.timedelta(days=1)).strftime('%Y-%m-%d'))
             rank = (math.log10(nAccesses)*dAccesses)/(sizeGb*replicas**2)
-            if rank >= threshold:
-                datasetRankings[datasetName] = rank
+            #if rank >= threshold:
+            datasetRankings[datasetName] = rank
         return datasetRankings
         
 # Use this for testing purposes or as a script. 
-# Usage: python ./datasetRanking.py
+# Usage: python ./datasetRanker.py
 if __name__ == '__main__':
     if not (len(sys.argv) == 1):
-        print "Usage: python ./datasetRanking.py"
+        print "Usage: python ./datasetRanker.py"
         sys.exit(2)
-    datasetRanker = datasetRanker()
+    datasetRanker = datasetRanker(20)
     datasetRankings = datasetRanker.getDatasetRankings()
     print datasetRankings
     sys.exit(0)
