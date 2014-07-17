@@ -103,13 +103,15 @@ class PhedexDataHandler:
                     size = float(siterpl["bytes"])/1024/1024/1024
                     compl = siterpl["complete"]
                     cust = siterpl["custodial"]
+                    subs = int(float(siterpl["time_create"]))
                     made = int(float(siterpl["time_update"]))
                     files = int(siterpl["files"])
                     iscust = 0
+
                     if len(user) > 0 or cust == 'y': 
                         iscust = 1
                     valid = 1
-                    if compl == 'n': 
+                    if compl == 'n' and (made-subs) < 60*24*14: 
                         valid = 0
                         
                     dataset.updateForSite(site,size,group,made,files,iscust,valid)
@@ -122,6 +124,7 @@ class PhedexDataHandler:
         for datasetName in self.phedexDatasets:
             line = self.phedexDatasets[datasetName].printIntoLine()
             if(len(line) < 10):
+                print " SKIPING " + datasetName
                 continue
             outputFile.write(line)
             
