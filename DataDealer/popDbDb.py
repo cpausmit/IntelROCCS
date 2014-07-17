@@ -4,11 +4,13 @@
 #---------------------------------------------------------------------------------------------------
 import sys, os, json, sqlite3, datetime
 sys.path.append(os.path.dirname(os.environ['INTELROCCS_BASE']))
-import IntelROCCS.Api.phedex.phedexData as phedexData
+import sites
+import IntelROCCS.Api.popDb.popDbData as popDbData
+import IntelROCCS.Api.popDb.popDbApi as popDbApi
 
-class phedexDb():
+class popDbDb():
     def __init__(self, dbPath, oldestAllowedHours):
-        dbFile = "%s/blockReplicas.db" % (dbPath)
+        dbFile = "%s/DSStatInTimeWindow.db" % (dbPath)
         update = 0
         if not os.path.exists(dbPath):
             os.makedirs(dbPath)
@@ -17,9 +19,6 @@ class phedexDb():
         if os.path.isfile(dbFile):
             modTime = datetime.datetime.fromtimestamp(os.path.getmtime(dbFile))
             if os.path.getsize(dbFile) == 0:
-                os.remove(dbFile)
-                update = 1
-            elif (timeNow-deltaNhours) > modTime:
                 os.remove(dbFile)
                 update = 1
         else:
@@ -31,16 +30,32 @@ class phedexDb():
         if update == 1:
             with self.dbCon:
                 cur = self.dbCon.cursor()
-                cur.execute('CREATE TABLE Datasets (DatasetId INTEGER PRIMARY KEY AUTOINCREMENT, DatasetName TEXT UNIQUE, SizeGb INTEGER)')
-                cur.execute('CREATE TABLE Replicas (SiteName TEXT, DatasetId INTEGER, GroupName TEXT, FOREIGN KEY(DatasetId) REFERENCES Datasets(DatasetId))')
-                phedex = phedexData.phedexData(dbPath, oldestAllowedHours)
-                phedexJsonData = phedex.getPhedexData('blockReplicas')
-                self.buildPhedexDb(phedexJsonData)
+                cur.execute('CREATE TABLE DatasetData (Day TEXT, DatasetName TEXT, NumberAccesses INTEGER, NumberCpus INTEGER)')
+                cur.execute('CREATE TABLE SiteData (Day TEXT, SiteName TEXT, NumberAccesses INTEGER, NumberCpus INTEGER)')
+        popDb = popDbData.popDbData(dbPath, oldestAllowedHours)
+        popDbApi = popDbApi.popDbApi()
+        sites = sites.sites()
+        allSites = sites.getAllSites()
+        with self.dbCon:
+            cur.execute('SELECT Day FROM SiteData ORDER BY Day DESC LIMIT 1', (datasetName,))
+            day = cur.fetchone()
+            lastDate = datetime.date.today() - datetime.timedelta(days=22)
+            if day:
+                d = time.strptime(day[0], '%Y-%m-%d')
+                lastDate = datetime.date(d.tm_year, d.tm_mon, d.tm_mday)
+            td = datetime.timedelta(days=1)
+            date = datetime.date.today() - td
+            while date > lastDate:
+                popDbJsonData = popDbData.getPopDbData("DSStatInTimeWindow", date.strftime('%Y-%m-%d'))
+                #self.buildPopDbDb(popDbJsonData)
+                #for site in allSites:
+                #    popDbJsonData = popDbApi.DSStatInTimeWindow(tstart=date.strftime('%Y-%m-%d'), tstop=date.strftime('%Y-%m-%d'), sitename=site)
+                date = date - td
 
 #===================================================================================================
 #  H E L P E R S
 #===================================================================================================
-    def buildPhedexDb(self, phedexJsonData):
+    def buildPopDbDb(self, popDbJsonData):
         datasets = phedexJsonData.get('phedex').get('dataset')
         for dataset in datasets:
             datasetName = dataset.get('name')
@@ -95,7 +110,5 @@ class phedexDb():
             return storageGb
 
 if __name__ == '__main__':
-    phedexDb = phedexDb("%s/Cache/PhedexCache" % (os.environ['INTELROCCS_BASE']), 12)
-    storage = phedexDb.getSiteStorage("T2_CH_CERN")
-    print storage
+    popDb = popDbDb("%s/Cache/PopDbCache" % (os.environ['INTELROCCS_BASE']), 12)
     sys.exit(0)

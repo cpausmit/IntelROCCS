@@ -12,8 +12,8 @@ class siteRanker():
     def __init__(self):
         self.dbApi = dbApi.dbApi()
         # get sites
-        getSites = getSites.getSites()
-        availableSites = getSites.getAvailableSites()
+        sites = sites.sites()
+        availableSites = sites.getAvailableSites()
         # get max values
         maxSiteCpu = getMaxSiteCpu() # Only do one site at a time?
         maxSiteStorageGb = getMaxSiteStorageGb()

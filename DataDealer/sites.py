@@ -9,7 +9,7 @@ import sys, os
 sys.path.append(os.path.dirname(os.environ['INTELROCCS_BASE']))
 import IntelROCCS.Api.db.dbApi as dbApi
 
-class getSites():
+class sites():
     def __init__(self):
         self.dbApi = dbApi.dbApi()
 
@@ -44,13 +44,13 @@ class getSites():
 # Usage: python ./getSites.py <function>
 if __name__ == '__main__':
     if not (len(sys.argv) == 2):
-        print "Usage: python ./getSites.py <function>"
+        print "Usage: python ./sites.py <function>"
         sys.exit(2)
-    site_req = getSites()
+    site_req = sites()
     func = getattr(site_req, sys.argv[1], None)
     if not func:
         print "Function %s is not available" % (sys.argv[1])
-        print "Usage: python ./getSites.py <function>"
+        print "Usage: python ./sites.py <function>"
         sys.exit(3)
     data = func()
     print len(data)

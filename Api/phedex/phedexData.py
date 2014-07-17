@@ -9,9 +9,9 @@ import sys, os, json, datetime, subprocess
 import phedexApi
 
 class phedexData:
-    def __init__(self, oldestAllowedHours):
+    def __init__(self, cachePath, oldestAllowedHours):
         self.phedexApi = phedexApi.phedexApi()
-        self.cachePath = "%s/Cache/PhedexCache" % (os.environ['INTELROCCS_BASE'])
+        self.cachePath = cachePath
         self.oldestAllowedHours = oldestAllowedHours
 
 #===================================================================================================
@@ -60,6 +60,6 @@ class phedexData:
             return json.loads(cacheFile.read())
 
 if __name__ == '__main__':
-    phedexData = phedexData(12)
+    phedexData = phedexData("%s/Cache/PhedexCache" % (os.environ['INTELROCCS_BASE']), 12)
     phedexData.getPhedexData("blockReplicas")
     sys.exit(0)
