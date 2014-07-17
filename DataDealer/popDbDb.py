@@ -32,12 +32,12 @@ class popDbDb():
                 cur = self.dbCon.cursor()
                 cur.execute('CREATE TABLE DatasetData (Day TEXT, DatasetName TEXT, NumberAccesses INTEGER, NumberCpus INTEGER)')
                 cur.execute('CREATE TABLE SiteData (Day TEXT, SiteName TEXT, NumberAccesses INTEGER, NumberCpus INTEGER)')
-        popDb = popDbData.popDbData(dbPath, oldestAllowedHours)
-        popDbApi = popDbApi.popDbApi()
-        sites = sites.sites()
-        allSites = sites.getAllSites()
+        self.popDbData = popDbData.popDbData(dbPath, oldestAllowedHours)
+        self.popDbApi = popDbApi.popDbApi()
+        self.sites = sites.sites()
+        allSites = self.sites.getAllSites()
         with self.dbCon:
-            cur.execute('SELECT Day FROM SiteData ORDER BY Day DESC LIMIT 1', (datasetName,))
+            cur.execute('SELECT Day FROM SiteData ORDER BY Day DESC LIMIT 1')
             day = cur.fetchone()
             lastDate = datetime.date.today() - datetime.timedelta(days=22)
             if day:
@@ -46,10 +46,10 @@ class popDbDb():
             td = datetime.timedelta(days=1)
             date = datetime.date.today() - td
             while date > lastDate:
-                popDbJsonData = popDbData.getPopDbData("DSStatInTimeWindow", date.strftime('%Y-%m-%d'))
+                popDbJsonData = self.popDbData.getPopDbData("DSStatInTimeWindow", date.strftime('%Y-%m-%d'))
                 #self.buildPopDbDb(popDbJsonData)
                 #for site in allSites:
-                #    popDbJsonData = popDbApi.DSStatInTimeWindow(tstart=date.strftime('%Y-%m-%d'), tstop=date.strftime('%Y-%m-%d'), sitename=site)
+                #    popDbJsonData = self.popDbApi.DSStatInTimeWindow(tstart=date.strftime('%Y-%m-%d'), tstop=date.strftime('%Y-%m-%d'), sitename=site)
                 date = date - td
 
 #===================================================================================================
