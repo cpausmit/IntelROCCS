@@ -8,7 +8,7 @@ import sys, os, datetime
 sys.path.append(os.path.dirname(os.environ['INTELROCCS_BASE']))
 import getSites
 
-class siteRanking():
+class siteRanker():
     def __init__(self):
         self.dbApi = dbApi.dbApi()
         # get sites
@@ -88,7 +88,7 @@ if __name__ == '__main__':
     if not (len(sys.argv) == 1):
         print "Usage: python ./siteRanking.py"
         sys.exit(2)
-    siteRanking = siteRanking()
-    data = siteRanking.getSiteRankings()
+    siteRanker = siteRanker()
+    data = siteRanker.getSiteRankings()
     print data
     sys.exit(0)

@@ -8,8 +8,11 @@ import IntelROCCS.Api.phedex.phedexData as phedexData
 
 class phedexDb():
     def __init__(self, oldestAllowedHours):
-        dbFile = "%s/Cache/PhedexCache/blockReplicas.db" % (os.environ['INTELROCCS_BASE'])
+        dbPath = "%s/Cache/PhedexCache" % (os.environ['INTELROCCS_BASE'])
+        dbFile = "%s/blockReplicas.db" % (dbPath)
         update = 0
+        if not os.path.exists(dbPath):
+            os.makedirs(dbPath)
         timeNow = datetime.datetime.now()
         deltaNhours = datetime.timedelta(seconds = 60*60*(oldestAllowedHours))
         if os.path.isfile(dbFile):

@@ -5,21 +5,22 @@
 # TODO: Currently don't handle errors in popDB or Phedex, or if no data is returned an IndexError
 # is thrown which is currently not caught.
 #---------------------------------------------------------------------------------------------------
-import sys, os, math, json, datetime, itemgetter
+import sys, os, math, json, datetime
+from operator import itemgetter
 sys.path.append(os.path.dirname(os.environ['INTELROCCS_BASE']))
 import phedexDb
-import IntelROCCS.Api.popDb.getPopDbData as popDbData
+import IntelROCCS.Api.popDb.popDbData as popDbData
 
 class datasetRanker():
     def __init__(self):
         phedex = phedexDb.phedexDb(12)
-        date = (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y-%m-%d')
-        oneDayAgoPopDbJsonData = popDb.getPopDbData("DSStatInTimeWindow", date)
-        oneDayAgoAccesses = popDbJsonDataParser(oneDayAgoPopDbJsonData)
-        date = (datetime.date.today() - datetime.timedelta(days=2)).strftime('%Y-%m-%d')
-        twoDaysAgoPopDbJsonData = popDb.getPopDbData("DSStatInTimeWindow", date)
-        twoDaysAgoAccesses = popDbJsonDataParser(twoDaysAgoPopDbJsonData)
-        self.datasetInfo = self.buildDatasetInfo(phedexJsonData, oneDayAgoAccesses, twoDaysAgoAccesses)
+        #date = (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y-%m-%d')
+        #oneDayAgoPopDbJsonData = popDb.getPopDbData("DSStatInTimeWindow", date)
+        #oneDayAgoAccesses = popDbJsonDataParser(oneDayAgoPopDbJsonData)
+        #date = (datetime.date.today() - datetime.timedelta(days=2)).strftime('%Y-%m-%d')
+        #twoDaysAgoPopDbJsonData = popDb.getPopDbData("DSStatInTimeWindow", date)
+        #twoDaysAgoAccesses = popDbJsonDataParser(twoDaysAgoPopDbJsonData)
+        #self.datasetInfo = self.buildDatasetInfo(phedexJsonData, oneDayAgoAccesses, twoDaysAgoAccesses)
 
 #===================================================================================================
 #  H E L P E R S
