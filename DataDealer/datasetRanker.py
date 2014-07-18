@@ -9,10 +9,10 @@ import sys, os, math, json, datetime
 sys.path.append(os.path.dirname(os.environ['INTELROCCS_BASE']))
 import phedexDb, popDbDb
 
-class datasetRanker(threshold):
-    def __init__(self):
-        self.threshold
-        self.phedex = phedexDb.phedexDb("%s/Cache/PhedexCache" % (os.environ['INTELROCCS_BASE']), 12)
+class datasetRanker():
+    def __init__(self, threshold):
+        self.threshold = threshold
+        self.phedexDb = phedexDb.phedexDb("%s/Cache/PhedexCache" % (os.environ['INTELROCCS_BASE']), 12)
         self.popDb = popDbDb.popDbDb("%s/Cache/PopDbCache" % (os.environ['INTELROCCS_BASE']), 12)
 
 #===================================================================================================
@@ -29,12 +29,12 @@ class datasetRanker(threshold):
         datasets = self.phedexDb.getAllDatasets()
         date = datetime.date.today() - datetime.timedelta(days=1)
         for datasetName in datasets:
-            replicas = self.phedexDb.getNumberReplicas(datasetName)
-            sizeGb = self.phedexDb.getDatasetSize(datasetName)
-            nAccesses = self.popDb.getDatasetAccesses(datasetName, date.strftime('%Y-%m-%d'))
-            dAccesses = nAccesses - self.popDb.getDatasetAccesses(datasetName, (date - datetime.timedelta(days=1)).strftime('%Y-%m-%d'))
+            replicas = max(self.phedexDb.getNumberReplicas(datasetName), 1)
+            sizeGb = max(self.phedexDb.getDatasetSize(datasetName), 1)
+            nAccesses = max(self.popDb.getDatasetAccesses(datasetName, date.strftime('%Y-%m-%d')), 1)
+            dAccesses = max(nAccesses - self.popDb.getDatasetAccesses(datasetName, (date - datetime.timedelta(days=1)).strftime('%Y-%m-%d')), 1)
             rank = (math.log10(nAccesses)*dAccesses)/(sizeGb*replicas**2)
-            #if rank >= threshold:
+            #if rank >= self.threshold:
             datasetRankings[datasetName] = rank
         return datasetRankings
         

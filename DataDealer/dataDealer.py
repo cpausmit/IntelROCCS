@@ -19,7 +19,7 @@ budgetGb = 10000 # TODO : Decide on a budget
 #===================================================================================================
 # Get dataset rankings
 datasetRanker = datasetRanker.datasetRanker(threshold)
-datasetRankings = datasetRanker.getDatasetRankings(threshold)
+datasetRankings = datasetRanker.getDatasetRankings()
 
 # Get site rankings
 #siteRanker = siteRanker.siteRanker()

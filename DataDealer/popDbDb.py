@@ -2,7 +2,7 @@
 #---------------------------------------------------------------------------------------------------
 # 
 #---------------------------------------------------------------------------------------------------
-import sys, os, json, sqlite3, datetime
+import sys, os, json, time, sqlite3, datetime
 sys.path.append(os.path.dirname(os.environ['INTELROCCS_BASE']))
 import sites
 import IntelROCCS.Api.popDb.popDbData as popDbData
@@ -82,29 +82,41 @@ class popDbDb():
         with self.dbCon:
             cur = self.dbCon.cursor()
             cur.execute('SELECT NumberAccesses FROM DatasetData WHERE DatasetName=? AND Day=?', (datasetName, date))
-            numberAccesses = cur.fetchone()[0] # TODO : Check that something is returned
-            return numberAccesses
+            numberAccesses = cur.fetchone() # TODO : Check that something is returned
+            if numberAccesses:
+                return numberAccesses[0]
+            else:
+                return 1
 
     def getDatasetCpus(self, datasetName, date):
         with self.dbCon:
             cur = self.dbCon.cursor()
             cur.execute('SELECT NumberCpus FROM DatasetData WHERE DatasetName=? AND Day=?', (datasetName, date))
-            numberCpus = cur.fetchone()[0] # TODO : Check that something is returned
-            return numberCpus
+            numberCpus = cur.fetchone() # TODO : Check that something is returned
+            if numberCpus:
+                return numberCpus[0]
+            else:
+                return 1
 
     def getSiteAccesses(self, siteName, date):
         with self.dbCon:
             cur = self.dbCon.cursor()
             cur.execute('SELECT NumberAccesses FROM SiteData WHERE SiteName=? AND Day=?', (siteName, date))
-            numberAccesses = cur.fetchone()[0] # TODO : Check that something is returned
-            return numberAccesses
+            numberAccesses = cur.fetchone() # TODO : Check that something is returned
+            if numberAccesses:
+                return numberAccesses[0]
+            else:
+                return 1
 
     def getSiteCpus(self, siteName, date):
         with self.dbCon:
             cur = self.dbCon.cursor()
             cur.execute('SELECT NumberCpus FROM SiteData WHERE SiteName=? AND Day=?', (siteName, date))
-            numberCpus = cur.fetchone()[0] # TODO : Check that something is returned
-            return numberCpus
+            numberCpus = cur.fetchone() # TODO : Check that something is returned
+            if numberCpus:
+                return numberCpus[0]
+            else:
+                return 1
 
 if __name__ == '__main__':
     popDb = popDbDb("%s/Cache/PopDbCache" % (os.environ['INTELROCCS_BASE']), 12)
