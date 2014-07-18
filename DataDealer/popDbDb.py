@@ -108,7 +108,7 @@ class popDbDb():
             else:
                 return 1
 
-    def getSiteCpus(self, siteName, date):
+    def getSiteCpu(self, siteName, date):
         with self.dbCon:
             cur = self.dbCon.cursor()
             cur.execute('SELECT NumberCpus FROM SiteData WHERE SiteName=? AND Day=?', (siteName, date))

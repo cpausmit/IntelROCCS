@@ -8,7 +8,7 @@
 #---------------------------------------------------------------------------------------------------
 import sys, os, subprocess, datetime
 sys.path.append(os.path.dirname(os.environ['INTELROCCS_BASE']))
-import datasetRanker
+import datasetRanker, siteRanker
 
 # Setup parameters
 # We would like to make these easier to change in the future
@@ -18,11 +18,11 @@ budgetGb = 10000 # TODO : Decide on a budget
 #  M A I N
 #===================================================================================================
 # Get dataset rankings
-datasetRanker = datasetRanker.datasetRanker(threshold)
-datasetRankings = datasetRanker.getDatasetRankings()
+#datasetRanker = datasetRanker.datasetRanker(threshold)
+#datasetRankings = datasetRanker.getDatasetRankings()
 
 # Get site rankings
-#siteRanker = siteRanker.siteRanker()
+siteRanker = siteRanker.siteRanker()
 #siteRankings = siteRanker.getSiteRankings()
 
 # Select datasets and sites for subscriptions
