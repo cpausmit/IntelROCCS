@@ -45,7 +45,6 @@ class popDbData:
     def getPopDbData(self, apiCall, date):
         if self.shouldAccessPopDb(apiCall, date):
             # TODO : deal with if this fails
-            self.popDbApi.renewSSOCookie()
             return self.updateCache(apiCall, date)
         # access cache
         with open("%s/%s/%s" % (self.cachePath, apiCall, date), 'r') as cacheFile:
