@@ -6,14 +6,14 @@
 # 
 # At the end a summary is emailed out with what was done during the run.
 #---------------------------------------------------------------------------------------------------
-import sys, os, subprocess, datetime
+import sys, os, subprocess, datetime, operator
 sys.path.append(os.path.dirname(os.environ['INTELROCCS_BASE']))
 import datasetRanker, siteRanker
 import IntelROCCS.Api.popDb.popDbApi as popDbApi
 
 # Setup parameters
 # We would like to make these easier to change in the future
-threshold = 100 # TODO : Find threshold
+threshold = 1 # TODO : Find threshold
 budgetGb = 10000 # TODO : Decide on a budget
 popDbApi = popDbApi.popDbApi()
 popDbApi.renewSSOCookie()
@@ -21,12 +21,12 @@ popDbApi.renewSSOCookie()
 #  M A I N
 #===================================================================================================
 # Get dataset rankings
-#datasetRanker = datasetRanker.datasetRanker(threshold)
-#datasetRankings = datasetRanker.getDatasetRankings()
+datasetRanker = datasetRanker.datasetRanker(threshold)
+datasetRankings = datasetRanker.getDatasetRankings()
 
 # Get site rankings
 siteRanker = siteRanker.siteRanker()
-#siteRankings = siteRanker.getSiteRankings()
+siteRankings = siteRanker.getSiteRankings()
 
 # Select datasets and sites for subscriptions
 # subscriptions = dict()

@@ -97,7 +97,7 @@ class phedexDb():
     def getSiteStorage(self, siteName):
         with self.dbCon:
             cur = self.dbCon.cursor()
-            cur.execute('SELECT SizeGb FROM Datasets NATURAL JOIN Replicas WHERE Replicas.SiteName=? ANd Replicas.GroupName=?', (siteName, 'AnalysisOps'))
+            cur.execute('SELECT SizeGb FROM Datasets NATURAL JOIN Replicas WHERE Replicas.SiteName=? AND Replicas.GroupName=?', (siteName, 'AnalysisOps'))
             storageGb = 0
             for row in cur:
                 storageGb += row[0]

@@ -5,15 +5,16 @@
 #
 #---------------------------------------------------------------------------------------------------
 import sys, os, datetime
+from operator import itemgetter
 sys.path.append(os.path.dirname(os.environ['INTELROCCS_BASE']))
-import sites, popDbDb
+import sites, popDbDb, phedexDb
 import IntelROCCS.Api.db.dbApi as dbApi
 
 class siteRanker():
     def __init__(self):
         self.sites = sites.sites()
         self.phedexDb = phedexDb.phedexDb("%s/Cache/PhedexCache" % (os.environ['INTELROCCS_BASE']), 12)
-        self.popDb = popDbDb.popDbDb("%s/Cache/PopDbCache" % (os.environ['INTELROCCS_BASE']), 12)
+        self.popDbDb = popDbDb.popDbDb("%s/Cache/PopDbCache" % (os.environ['INTELROCCS_BASE']), 12)
         self.dbApi = dbApi.dbApi()
 #===================================================================================================
 #  H E L P E R S
@@ -22,45 +23,44 @@ class siteRanker():
         cpu = []
         for i in range(22):
             date = datetime.date.today() - datetime.timedelta(days=i+1)
-            usedCpu = getSiteCpu(site, date.strftime('%Y-%m-%d'))
+            usedCpu = self.popDbDb.getSiteCpu(site, date.strftime('%Y-%m-%d'))
             cpu.append((site, usedCpu))
         cpu = sorted(cpu, reverse=True, key=itemgetter(1))
         maxCpu = 0
         for i in range(3):
-            maxCpu += cpu[i][2]
+            maxCpu += cpu[i][1]
         maxCpu = maxCpu/3
         return maxCpu
     
     def getMaxStorage(self, site):
-        cpu = []
         query = "SELECT SizeTb FROM Quotas WHERE GroupName=%s AND SiteName=%s"
         values = ['AnalysisOps', site]
         data = self.dbApi.dbQuery(query, values=values)
-        maxStorage = data[0]
+        maxStorage = data[0][0]
         return maxStorage
 
     def getAvailableCpu(self, site):
         date = datetime.date.today() - datetime.timedelta(days=1)
-        maxCpu = getMaxCpu(site)
-        usedCpu = getSiteCpu(site, date.strftime('%Y-%m-%d'))
+        maxCpu = self.getMaxCpu(site)
+        usedCpu = self.popDbDb.getSiteCpu(site, date.strftime('%Y-%m-%d'))
         availableCpu = maxCpu - usedCpu
         return availableCpu
 
     def getAvailableStorage(self, site):
-        maxStorage = getMaxStorage(site)
+        maxStorage = self.getMaxStorage(site)
         usedStorage = self.phedexDb.getSiteStorage(site)
-        availableCpu = maxCpu - usedCpu
-        return availableCpu
+        availableStorage = maxStorage*10**3 - usedStorage
+        return availableStorage
 
     def getSiteRankings(self):
         # rank = availableSiteStorageGb * availableSiteCpu
         siteRankings = dict()
-        availableSites = sites.getAvailableSites()
+        availableSites = self.sites.getAvailableSites()
         for siteName in availableSites:
-            availableCpu = getAvailableCpu(siteName)
-            availableStorageGb = getAvailableStorage(siteName)
-            rank = (availableCpu*availableStorageGb)
-            siteRankings[SiteName] = rank
+            availableCpu = self.getAvailableCpu(siteName)
+            availableStorageGb = self.getAvailableStorage(siteName)
+            rank = (availableCpu + availableStorageGb)/10**3
+            siteRankings[siteName] = rank
         return siteRankings
 
 #===================================================================================================
