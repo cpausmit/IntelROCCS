@@ -334,10 +334,24 @@ class CentralManager:
         resultDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_RESULT']
         beDeleted = glob.glob(resultDirectory + "/*")
         for subd in beDeleted:
-            shutil.rmtree(subd)
+            if(os.path.isdir(subd)):
+                shutil.rmtree(subd)
+            else:
+                os.remove(subd)
             
         today = str(datetime.date.today())
         ttime = time.strftime("%H:%M")
+
+        outputFile = open(resultDirectory + "/SitesInfo.txt",'w')
+        outputFile.write('#- ' + today + " " + ttime + "\n\n")
+        outputFile.write("#- S I T E S  I N F O R M A T I O N ----\n\n")
+        outputFile.write("#  Active Quota[TB] SiteName \n")
+        for site in sorted(self.allSites):
+            theSite = self.allSites[site]
+            outputFile.write("   %-6d %-9d %-20s \n"\
+                             %(theSite.getStatus(), theSite.getSize()/1024, site))
+        outputFile.close()
+
         for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
             sitePr = self.sitePropers[site]
             sitedir = resultDirectory + "/" + site
