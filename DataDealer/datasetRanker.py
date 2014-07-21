@@ -26,6 +26,7 @@ class datasetRanker():
     def getDatasetRankings(self):
         # rank = (log(n_accesses)*d_accesses)/(size*relpicas^2)
         datasetRankings = dict()
+        datasetCandidates = dict()
         datasets = self.phedexDb.getAllDatasets()
         date = datetime.date.today() - datetime.timedelta(days=1)
         for datasetName in datasets:
@@ -34,9 +35,10 @@ class datasetRanker():
             nAccesses = max(self.popDb.getDatasetAccesses(datasetName, date.strftime('%Y-%m-%d')), 1)
             dAccesses = max(nAccesses - self.popDb.getDatasetAccesses(datasetName, (date - datetime.timedelta(days=1)).strftime('%Y-%m-%d')), 1)
             rank = (math.log10(nAccesses)*dAccesses)/(sizeGb*replicas**2)
-            #if rank >= self.threshold:
             datasetRankings[datasetName] = rank
-        return datasetRankings
+            if rank >= self.threshold:
+                datasetCandidates[datasetName] = rank
+        return datasetCandidates
         
 # Use this for testing purposes or as a script. 
 # Usage: python ./datasetRanker.py

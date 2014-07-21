@@ -8,7 +8,7 @@
 #---------------------------------------------------------------------------------------------------
 import sys, os, subprocess, datetime, operator
 sys.path.append(os.path.dirname(os.environ['INTELROCCS_BASE']))
-import datasetRanker, siteRanker
+import datasetRanker, siteRanker, select
 import IntelROCCS.Api.popDb.popDbApi as popDbApi
 
 # Setup parameters
@@ -29,16 +29,18 @@ siteRanker = siteRanker.siteRanker()
 siteRankings = siteRanker.getSiteRankings()
 
 # Select datasets and sites for subscriptions
-# subscriptions = dict()
-# while (selectedGB < budgetGB) and (sortedDatasetRankings):
-# 	dataset, rank = select.weightedChoice(sortedDatasetRankings)
-# 	site = select.weightedChoice(sortedSiteRankings)
-# 	if site in subscriptions:
-# 		subscriptions[site].append(dataset)
-# 	else:
-# 		subscriptions[site] = [dataset]
-# 	sortedDatasetRankings.remove((dataset, rank))
-# print subscriptions
+select = select.select()
+subscriptions = dict()
+selectedGb = 0
+while (selectedGB < budgetGB) and (datasetRankings):
+	datasetName = select.weightedChoice(datasetRankings)
+	siteName = select.weightedChoice(siteRankings)
+	if siteName in subscriptions:
+		subscriptions[siteName].append(datasetName)
+	else:
+		subscriptions[siteName] = [datasetName]
+	del datasetRankings[datasetName]
+print subscriptions
 
 # create subscriptions
 # for site in iter(subscriptions):
