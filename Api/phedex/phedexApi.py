@@ -30,6 +30,7 @@ class phedexApi:
         opener = urllib2.build_opener(HTTPSGridAuthHandler())
         request = urllib2.Request(url, data)
         fullUrl = request.get_full_url() + request.get_data()
+        print fullUrl
         strout = ""
         try:
             strout = opener.open(request)
@@ -162,7 +163,7 @@ if __name__ == '__main__':
         print "Usage: python ./phedexApi.py <apiCall> ['arg1_name=arg1' 'arg2_name=arg2' ...]"
         sys.exit(2)
     phedexApi = phedexApi()
-    func = getattr(phdx, sys.argv[1], None)
+    func = getattr(phedexApi, sys.argv[1], None)
     if not func:
         print "%s is not a valid phedex api call" % (sys.argv[1])
         print "Usage: python ./phedexApi.py <apiCall> ['arg1_name=arg1' 'arg2_name=arg2' ...]"
