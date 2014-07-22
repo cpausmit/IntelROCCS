@@ -6,7 +6,7 @@
 # 
 # At the end a summary is emailed out with what was done during the run.
 #---------------------------------------------------------------------------------------------------
-import sys, os, subprocess, datetime, operator
+import sys, os, copy, subprocess, datetime, operator
 sys.path.append(os.path.dirname(os.environ['INTELROCCS_BASE']))
 import datasetRanker, siteRanker, select
 import IntelROCCS.Api.popDb.popDbApi as popDbApi
@@ -44,11 +44,10 @@ while (selectedGb < budgetGb) and (datasetRankings):
 	else:
 		subscriptions[siteName] = [datasetName]
 	del datasetRankings[datasetName]
-print subscriptions
 
 # create subscriptions
 for siteName in iter(subscriptions):
- 	subscriptionData = phedexApi.xmlData(subscriptions[site])
+ 	subscriptionData = phedexApi.xmlData(subscriptions[siteName])
 	jsonData = phedexApi.subscribe(node=siteName, data=subscriptionData, level='file', group='AnalysisOps', request_only='y', comments='IntelROCCS DataDealer')
 	requestId = jsonData.get('phedex').get('request_created')[0].get('id')
 	print "Request Id : " + str(requestId)
