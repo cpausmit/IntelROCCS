@@ -366,8 +366,10 @@ class CentralManager:
             outputFile = open(file_timest,'w')
             outputFile.write('#- ' + today + " " + ttime + "\n\n")
             outputFile.write("#- D E L E T I O N  P A R A M E T E R S ----\n\n")
-            outputFile.write("Upper Threshold     : %8.2f\n"%(self.DETOX_USAGE_MAX))
-            outputFile.write("Lower Threshold     : %8.2f\n"%(self.DETOX_USAGE_MIN))
+            outputFile.write("Upper Threshold     : %8.2f / %4d [TB]\n" \
+                                 %(self.DETOX_USAGE_MAX, self.DETOX_USAGE_MAX*sitePr.siteSizeGb()/1024))
+            outputFile.write("Lower Threshold     : %8.2f / %4d [TB]\n" \
+                                 %(self.DETOX_USAGE_MIN, self.DETOX_USAGE_MIN*sitePr.siteSizeGb()/1024))
             outputFile.write("\n")
             outputFile.write("#- S P A C E  S U M M A R Y ----------------\n\n")
             outputFile.write("Total Space     [TB]: %8.2f\n"%(sitePr.siteSizeGb()/1024))
