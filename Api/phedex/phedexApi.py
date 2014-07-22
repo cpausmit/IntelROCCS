@@ -30,7 +30,6 @@ class phedexApi:
         opener = urllib2.build_opener(HTTPSGridAuthHandler())
         request = urllib2.Request(url, data)
         fullUrl = request.get_full_url() + request.get_data()
-        print fullUrl
         strout = ""
         try:
             strout = opener.open(request)
