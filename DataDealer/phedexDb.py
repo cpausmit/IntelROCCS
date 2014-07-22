@@ -63,9 +63,11 @@ class phedexDb():
     def getAllDatasets(self):
         with self.dbCon:
             cur = self.dbCon.cursor()
-            cur.execute('SELECT DatasetName FROM Datasets')
+            cur.execute('SELECT DISTINCT DatasetName FROM Datasets NATURAL JOIN Replicas WHERE GroupName=?', ('AnalysisOps',))
             datasets = []
             for row in cur:
+                if re.match('.+/USER', row[0]):
+                    continue
                 datasets.append(row[0])
             return datasets
 
