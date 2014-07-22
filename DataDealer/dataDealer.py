@@ -47,8 +47,9 @@ while (selectedGb < budgetGb) and (datasetRankings):
 
 # create subscriptions
 for siteName in iter(subscriptions):
+	print siteName
+	print subscriptions[siteName]
  	subscriptionData = phedexApi.xmlData(subscriptions[siteName])
- 	print subscriptionData
 	jsonData = phedexApi.subscribe(node=siteName, data=subscriptionData, level='file', move='n', custodial='n', group='AnalysisOps', request_only='y', no_mail='n', comments='IntelROCCS DataDealer')
 	requestId = jsonData.get('phedex').get('request_created')[0].get('id')
 	print "Request Id : " + str(requestId)

@@ -73,7 +73,7 @@ class phedexApi:
         xml = '<data version="2">'
         xml = '%s<%s name="https://cmsweb.cern.ch/dbs/%s/global/DBSReader">' % (xml, 'dbs', instance)
         for dataset in datasets:
-            jsonData = self.data(dataset=dataset, level='file', create_since='0', instance=instance)
+            jsonData = self.data(dataset=dataset, level='file', instance=instance)
             data = jsonData.get('phedex').get('dbs')
             xml = "%s<%s" % (xml, 'dataset')
             data = data[0].get('dataset')
