@@ -10,19 +10,23 @@ import sys, os, subprocess, datetime, operator
 sys.path.append(os.path.dirname(os.environ['INTELROCCS_BASE']))
 import datasetRanker, siteRanker, select
 import IntelROCCS.Api.popDb.popDbApi as popDbApi
+import IntelROCCS.Api.phedex.phedexApi as phedexApi
 
 # Setup parameters
 # We would like to make these easier to change in the future
 threshold = 1 # TODO : Find threshold
 budgetGb = 10000 # TODO : Decide on a budget
 popDbApi = popDbApi.popDbApi()
+phedexApi = phedexApi.phedexApi()
 popDbApi.renewSSOCookie()
+
 #===================================================================================================
 #  M A I N
 #===================================================================================================
 # Get dataset rankings
 datasetRanker = datasetRanker.datasetRanker(threshold)
 datasetRankings = datasetRanker.getDatasetRankings()
+datasetRankingsCopy = copy.deepcopy(datasetRankings)
 
 # Get site rankings
 siteRanker = siteRanker.siteRanker()
@@ -43,12 +47,19 @@ while (selectedGb < budgetGb) and (datasetRankings):
 print subscriptions
 
 # create subscriptions
-# for site in iter(subscriptions):
-# 	data = self.phdx.xmlData(subscriptions[site])
-	# TODO : Improve comments
-	# TODO : Check for errors
-	#json_data = self.phdx.subscribe(node=site, data=data, level='file', group='AnalysisOps', request_only='y', comments='IntelROCCS DataDealer')
-	# TODO : Insert subscription into db
+for siteName in iter(subscriptions):
+ 	subscriptionData = phedexApi.xmlData(subscriptions[site])
+	jsonData = phedexApi.subscribe(node=siteName, data=subscriptionData, level='file', group='AnalysisOps', request_only='y', comments='IntelROCCS DataDealer')
+	requestId = jsonData.get('phedex').get('request_created')[0].get('id')
+	print "Request Id : " + str(requestId)
+	print jsonData
+	print "Site : " + str(siteName)
+	#requestTime = jsonData.get('phedex').get('request_created')[0].get('id')
+	for datasetName in sibscriptions[siteName]:
+		# Insert into database
+		# Info: requestId, requestType(0), siteName, datasetName, rank, groupName('AnalysisOps'), requestTime
+		print "Dataset : " + str(datasetName)
+		print "Rank : " + str(datasetRankingsCopy[datasetName])
 	#self.updatedb(json_data)
 
 # Send summary report
