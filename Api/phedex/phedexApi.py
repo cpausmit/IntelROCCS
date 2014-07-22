@@ -3,7 +3,9 @@
 # Python interface to access PhEDEx online API. See website for API documentation
 # (https://cmsweb.cern.ch/phedex/datasvc/doc)
 #
-# Use grid-proxy-init to aquire a valid CERN proxy, proxy's are only valid for a limited time. grid-proxy-init requires usercert.pem and userkey.key in ~/.globus/
+# Use grid-proxy-init to aquire a valid CERN proxy, proxy's are only valid for a limited time. 
+# grid-proxy-init requires usercert.pem and userkey.key in ~/.globus/
+# Use the following code in your script to 
 # It is up to the caller to make sure a valid CERN proxy is available.
 #
 # The API doesn't check to make sure correct values are passed or that rquired parameters are 
@@ -151,19 +153,19 @@ class HTTPSGridAuthHandler(urllib2.HTTPSHandler):
         return httplib.HTTPSConnection(host, key_file=self.key, cert_file=self.cert)
 
 #===================================================================================================
-#  M A I N
+#  S C R I P T
 #===================================================================================================
 # Use this for testing purposes or as a script.
-# Usage: python ./phedex.py <apiCall> <instance> ['arg1_name:arg1' 'arg2_name:arg2' ...]
+# Usage: python ./phedexApi.py <apiCall> <instance> ['arg1_name:arg1' 'arg2_name:arg2' ...]
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print "Usage: python ./phedex.py <apiCall> ['arg1_name=arg1' 'arg2_name=arg2' ...]"
+        print "Usage: python ./phedexApi.py <apiCall> ['arg1_name=arg1' 'arg2_name=arg2' ...]"
         sys.exit(2)
-    phdx = phedex()
+    phedexApi = phedexApi()
     func = getattr(phdx, sys.argv[1], None)
     if not func:
         print "%s is not a valid phedex api call" % (sys.argv[1])
-        print "Usage: python ./phedex.py <apiCall> ['arg1_name=arg1' 'arg2_name=arg2' ...]"
+        print "Usage: python ./phedexApi.py <apiCall> ['arg1_name=arg1' 'arg2_name=arg2' ...]"
         sys.exit(3)
     args = dict()
     for arg in sys.argv[2:]:
@@ -171,14 +173,17 @@ if __name__ == '__main__':
             a, v = arg.split('=')
         except ValueError, e:
             print "Passed argument %s does not follow the correct usage" % (arg)
-            print "Usage: python ./phedex.py <apiCall> ['arg1_name=arg1' 'arg2_name=arg2' ...]"
+            print "Usage: python ./phedexApi.py <apiCall> ['arg1_name=arg1' 'arg2_name=arg2' ...]"
             sys.exit(2)
         args[a] = v
     try:
         data = func(**args)
+        print data
     except TypeError, e:
         print e
-        print "Usage: python ./phedex.py <apiCall> ['arg1_name=arg1' 'arg2_name=arg2' ...]"
-        sys.exit(3)
-    print data
+        print "Usage: python ./phedexApi.py <apiCall> ['arg1_name=arg1' 'arg2_name=arg2' ...]"
+        sys.exit(1)
+    except Exception, e:
+        print e
+        sys.exit(1)
     sys.exit(0)

@@ -3,9 +3,9 @@
 # Access to MIT database. IP address of machine where script is on need to have permission to access
 # the database.
 #
-# Returns a list with touples of the data requested. Example of what should be passed:
-# query="SELECT * WHERE DatasetName=%s", values=touple("Dataset1")
-# Values are optional
+# Returns a list with tuples of the data requested. Example of what should be passed:
+# query="SELECT * WHERE DatasetName=%s", values=["Dataset1"]
+# Values are optional and can be any sequency which can be converted to a tuple.
 #
 # In case of error an exception is thrown. This needs to be dealt with by the caller.
 #---------------------------------------------------------------------------------------------------
@@ -21,7 +21,7 @@ class dbApi():
         self.dbCon = MySQLdb.connect(host=host, user=user, passwd=passwd, db=db)
 
 #===================================================================================================
-#  H E L P E R S
+#  M A I N   F U N C T I O N
 #===================================================================================================
     def dbQuery(self, query, values=()):
         data = []
@@ -38,21 +38,24 @@ class dbApi():
         return data
 
 #===================================================================================================
-#  M A I N
+#  S C R I P T
 #===================================================================================================
 # Use this for testing purposes or as a script. 
-# Usage: python ./dbAccess.py <'db query'> ['value1', 'value2', ...]
+# Usage: python ./dbApi.py <'db query'> ['value1', 'value2', ...]
 # Example: $ python ./dbAccess.py 'SELECT * WHERE DatasetName=%s' 'Dataset1'
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print "Usage: python ./dbAccess.py <'db query'> ['value1', 'value2', ...]"
+        print "Usage: python ./dbApi.py <'db query'> ['value1', 'value2', ...]"
         sys.exit(2)
-    dbaccess = dbAccess()
+    dbApi = dbApi()
     query = sys.argv[1]
     values = []
     for v in sys.argv[2:]:
         values.append(v)
-    values = tuple(values)
-    data = dbaccess.dbQuery(query, values=values)
-    print data
+    try:
+        data = dbApi.dbQuery(query, values=values)
+        print data
+    except Exception, e:
+        print e
+        sys.exit(1)
     sys.exit(0)
