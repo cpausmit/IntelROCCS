@@ -32,7 +32,7 @@ siteRankings = siteRanker.getSiteRankings()
 select = select.select()
 subscriptions = dict()
 selectedGb = 0
-while (selectedGB < budgetGB) and (datasetRankings):
+while (selectedGb < budgetGb) and (datasetRankings):
 	datasetName = select.weightedChoice(datasetRankings)
 	siteName = select.weightedChoice(siteRankings)
 	if siteName in subscriptions:
