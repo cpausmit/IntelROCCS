@@ -51,8 +51,7 @@ do
     stdbuf -o0 -e0 $DETOX_BASE/detox.py                              >> $logFile 2>&1
 
     # insure that the log information is updated
-    rsync -Cavz --delete /local/cmsprod/IntelROCCS /home/cmsprod/public_html/ >& /dev/null
-
+    rsync -Cavz --delete /local/cmsprod/IntelROCCS/Detox/result/ /home/cmsprod/public_html/Detox >& /dev/null
     sleep $wait
   done
 

@@ -54,7 +54,7 @@ do
 
 
     # insure that the log information is updated (WARNING - hardwired, need something more general)
-    rsync -Cavz --delete /local/cmsprod/IntelROCCS /home/cmsprod/public_html/ >& /dev/null
+    rsync -Cavz --delete /local/cmsprod/IntelROCCS/Monitor/ /home/cmsprod/public_html/IntelROCCS/Monitor >& /dev/null
 
 
     sleep $wait
