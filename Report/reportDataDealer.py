@@ -7,7 +7,6 @@ import string
 import datetime
 
 import gratia_reporting.make_table as make_table
-import gratia_reporting.overflow_jobs_report as overflow_jobs_report
 
 transfer_query = """
 SELECT
