@@ -53,18 +53,18 @@ requestsDbFile = "%s/requests.db" % (requestsDbPath)
 requestsDbCon = sqlite3.connect(requestsDbFile)
 # create subscriptions
 for siteName in iter(subscriptions):
- 	subscriptionData = phedexApi.createXml(subscriptions[siteName], instance='prod')
-	jsonData = phedexApi.subscribe(node=siteName, data=subscriptionData, level='dataset', move='n', custodial='n', group='AnalysisOps', request_only='y', no_mail='n', comments='IntelROCCS DataDealer', instance='prod')
-	requestType = 0
-	groupName = 'AnalysisOps'
-	request = jsonData.get('phedex')
-	requestId = request.get('request_created')[0].get('id')
-	requestTimestamp = int(request.get('request_timestamp'))
-	for datasetName in subscriptions[siteName]:
-		datasetRank = datasetRankingsCopy[datasetName]
-		datasetSizeGb = 0
-		with phedexDbCon:
-            cur = phedexDbCon.cursor()
+    subscriptionData = phedexApi.createXml(subscriptions[siteName], instance='prod')
+    jsonData = phedexApi.subscribe(node=siteName, data=subscriptionData, level='dataset', move='n', custodial='n', group='AnalysisOps', request_only='y', no_mail='n', comments='IntelROCCS DataDealer', instance='prod')
+    requestType = 0
+    groupName = 'AnalysisOps'
+    request = jsonData.get('phedex')
+    requestId = request.get('request_created')[0].get('id')
+    requestTimestamp = int(request.get('request_timestamp'))
+    for datasetName in subscriptions[siteName]:
+        datasetRank = datasetRankingsCopy[datasetName]
+	datasetSizeGb = 0
+	with phedexDbCon:
+		cur = phedexDbCon.cursor()
             cur.execute('SELECT SizeGb FROM Datasets WHERE DatasetName=?', (datasetName,))
             datasetSizeGb = cur.fetchone()[0]
         with requestsDbCon:
