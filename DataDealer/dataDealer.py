@@ -6,7 +6,7 @@
 # 
 # At the end a summary is emailed out with what was done during the run.
 #---------------------------------------------------------------------------------------------------
-import sys, os, copy, subprocess, datetime, operator
+import sys, os, copy, sqlite3, subprocess, datetime, operator
 sys.path.append(os.path.dirname(os.environ['INTELROCCS_BASE']))
 import datasetRanker, siteRanker, select
 import IntelROCCS.Api.popDb.popDbApi as popDbApi
