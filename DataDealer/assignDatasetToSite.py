@@ -6,6 +6,7 @@
 #
 #---------------------------------------------------------------------------------------------------
 import os, sys, subprocess, getopt, re, random, urllib, urllib2, httplib, json
+import IntelROCCS.Api.phedex.phedexApi as phedexApi
 
 #===================================================================================================
 #  C L A S S E S
