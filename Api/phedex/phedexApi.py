@@ -45,43 +45,23 @@ class phedexApi:
             raise Exception("FATAL - phedex failure: %s\n - for url: %s" % (str(strout), str(fullUrl)))
         return jsonData
 
-    # the parser (parse and xmlData) is used to create an xml data structure which can be passed to 
-    # phedex calls subscribe and delete. currently it's based on source diving investigation of how
-    # phedex structures this data object, no documentation exists.
-    # TODO : Write example structure for better understanding
-    def parse(self, data, xml):
-        for k, v in data.iteritems():
-            k = k.replace("_", "-")
-            if type(v) is list:
-                xml = "%s>" % (xml,)
-                for v1 in v:
-                    xml = "%s<%s" % (xml, k)
-                    xml = self.parse(v1, xml)
-                    if (k == "file"):
-                        xml = "%s/>" % (xml,)
-                    else:
-                        xml = "%s</%s>" % (xml, k)
-            else:
-                if k == "lfn":
-                    k = "name"
-                elif k == "size":
-                    k = "bytes"
-                if (k == "name" or k == "is-open" or k == "is-transient" or k == "bytes" or k== "checksum"):
-                    xml = '%s %s="%s"' % (xml, k, v)
-        return xml
-
-    def xmlData(self, datasets=[], instance='prod'):
-        xml = '<data version="2">'
-        xml = '%s<%s name="https://cmsweb.cern.ch/dbs/%s/global/DBSReader">' % (xml, 'dbs', instance)
+    def createXml(self, datasets=[]):
+        xml = '<data version="2.0">'
+        xml = xml + '<dbs name="https://cmsdbsprod.cern.ch:8443/cms_dbs_prod_global_writer/servlet/DBSServlet", dls="dbs">'
         for dataset in datasets:
             jsonData = self.data(dataset=dataset, level='file', instance=instance)
-            data = jsonData.get('phedex').get('dbs')
-            xml = "%s<%s" % (xml, 'dataset')
-            data = data[0].get('dataset')
-            xml = self.parse(data[0], xml)
-            xml = "%s</%s>" % (xml, 'dataset')
-        xml = "%s</%s>" % (xml, 'dbs')
-        xmlData = "%s</data>" % (xml,)
+            data = jsonData.get('phedex').get('dbs').get('dataset')[0]
+            xml = xml + '<dataset name="%s" is-open="%s">' % (data.get('name'), data.get('is_open'))
+            blocks = data.get('block')
+            for block in blocks:
+                xml = xml + '<block name="%s" is-open="%s">' % (block.get('name'), block.get('is_open'))
+                files = block.get('file')
+                for file_ in files:
+                    xml = xml + '<file name="%s" bytes="%s" checksum="%s"/>' % (file_.get('name'), file_.get('size'), file_.get('checksum'))
+                xml = xml + "</block>"
+            xml = xml + "</dataset>"
+        xml = xml + "</dbs>"
+        xmlData = xml + "</data>"
         return xmlData
 
 #===================================================================================================
