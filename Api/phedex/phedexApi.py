@@ -34,6 +34,7 @@ class phedexApi:
         try:
             strout = opener.open(request)
         except urllib2.HTTPError, e:
+            print strout
             raise Exception("FATAL - phedex failure: %s\n- for url: %s" % (str(e), str(fullUrl)))
         except urllib2.URLError, e:
             raise Exception("FATAL - phedex failure: %s\n - for url: %s" % (str(e), str(fullUrl)))

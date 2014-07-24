@@ -2,7 +2,7 @@
 #---------------------------------------------------------------------------------------------------
 # 
 #---------------------------------------------------------------------------------------------------
-import sys, os, json, sqlite3, datetime
+import sys, os, re, json, sqlite3, datetime
 sys.path.append(os.path.dirname(os.environ['INTELROCCS_BASE']))
 import IntelROCCS.Api.phedex.phedexData as phedexData
 
