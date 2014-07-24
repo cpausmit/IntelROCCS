@@ -352,6 +352,25 @@ class CentralManager:
                              %(theSite.getStatus(), theSite.getSize()/1024, site))
         outputFile.close()
 
+        outputFile = open(resultDirectory + "/DeletionSummary.txt",'w')
+        outputFile.write('#- ' + today + " " + ttime + "\n\n")
+        outputFile.write("#- D E L E T I O N  R E Q U E S T S ----\n\n")
+        outputFile.write("#  NDatasets Size[TB] SiteName \n")
+        for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
+            sitePr = self.sitePropers[site]
+            datasets2del = sitePr.delTargets()
+            nsets =  len(datasets2del)
+            if nsets < 1:
+                continue
+
+            totalSize = 0
+            for dataset in datasets2del:
+                totalSize =  totalSize + sitePr.dsetSize(dataset)
+            outputFile.write("   %-9d %-8d %-20s \n"\
+                                 %(nsets,totalSize/1024,site))
+        outputFile.close()
+
+
         for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
             sitePr = self.sitePropers[site]
             sitedir = resultDirectory + "/" + site
