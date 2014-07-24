@@ -49,14 +49,14 @@ while (selectedGb < budgetGb) and (datasetRankings):
 for siteName in iter(subscriptions):
 	print siteName
 	print subscriptions[siteName]
- 	subscriptionData = phedexApi.createXml(subscriptions[siteName])
-	jsonData = phedexApi.subscribe(node=siteName, data=subscriptionData, level='file', move='n', custodial='n', group='AnalysisOps', request_only='y', no_mail='n', comments='IntelROCCS DataDealer')
+ 	subscriptionData = phedexApi.createXml(subscriptions[siteName], instance='prod')
+	jsonData = phedexApi.subscribe(node=siteName, data=subscriptionData, level='dataset', move='n', custodial='n', group='AnalysisOps', request_only='y', no_mail='n', comments='IntelROCCS DataDealer', instance='prod')
 	requestId = jsonData.get('phedex').get('request_created')[0].get('id')
 	print "Request Id : " + str(requestId)
 	print jsonData
 	print "Site : " + str(siteName)
 	#requestTime = jsonData.get('phedex').get('request_created')[0].get('id')
-	for datasetName in sibscriptions[siteName]:
+	for datasetName in subscriptions[siteName]:
 		# Insert into database
 		# Info: requestId, requestType(0), siteName, datasetName, rank, groupName('AnalysisOps'), requestTime
 		print "Dataset : " + str(datasetName)

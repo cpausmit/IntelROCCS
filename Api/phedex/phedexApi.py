@@ -34,30 +34,29 @@ class phedexApi:
         try:
             strout = opener.open(request)
         except urllib2.HTTPError, e:
-            print strout
-            raise Exception("FATAL - phedex failure: %s\n- for url: %s" % (str(e), str(fullUrl)))
+            raise Exception("FATAL - ERROR: %s ;PhEDEx failure: %s\n" % (str(e), str(e.read())))
         except urllib2.URLError, e:
-            raise Exception("FATAL - phedex failure: %s\n - for url: %s" % (str(e), str(fullUrl)))
+            raise Exception("FATAL - ERROR: %s ;PhEDEx failure: %s\n" % (str(e), str(e.read())))
         try:
             response = strout.read()
             jsonData = json.loads(response)
         except ValueError, e:
-            raise Exception("FATAL - phedex failure: %s\n - for url: %s" % (str(strout), str(fullUrl)))
+            raise Exception("FATAL - ERROR: %s ;PhEDEx failure: %s\n" % (str(e), str(e.read())))
         return jsonData
 
-    def createXml(self, datasets=[]):
+    def createXml(self, datasets=[], instance='prod'):
         xml = '<data version="2.0">'
-        xml = xml + '<dbs name="https://cmsdbsprod.cern.ch:8443/cms_dbs_prod_global_writer/servlet/DBSServlet", dls="dbs">'
+        xml = xml + '<dbs name="https://cmsweb.cern.ch/dbs/%s/global/DBSReader" dls="dbs">' % (instance)
         for dataset in datasets:
-            jsonData = self.data(dataset=dataset, level='file', instance=instance)
-            data = jsonData.get('phedex').get('dbs').get('dataset')[0]
+            jsonData = self.data(dataset=dataset, level='file', create_since='0')
+            data = jsonData.get('phedex').get('dbs')[0].get('dataset')[0]
             xml = xml + '<dataset name="%s" is-open="%s">' % (data.get('name'), data.get('is_open'))
             blocks = data.get('block')
             for block in blocks:
                 xml = xml + '<block name="%s" is-open="%s">' % (block.get('name'), block.get('is_open'))
                 files = block.get('file')
                 for file_ in files:
-                    xml = xml + '<file name="%s" bytes="%s" checksum="%s"/>' % (file_.get('name'), file_.get('size'), file_.get('checksum'))
+                    xml = xml + '<file name="%s" bytes="%s" checksum="%s"/>' % (file_.get('lfn'), file_.get('size'), file_.get('checksum'))
                 xml = xml + "</block>"
             xml = xml + "</dataset>"
         xml = xml + "</dbs>"
