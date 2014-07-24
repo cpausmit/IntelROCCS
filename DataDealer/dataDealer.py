@@ -65,8 +65,8 @@ for siteName in iter(subscriptions):
 	datasetSizeGb = 0
 	with phedexDbCon:
 		cur = phedexDbCon.cursor()
-			cur.execute('SELECT SizeGb FROM Datasets WHERE DatasetName=?', (datasetName,))
-			datasetSizeGb = cur.fetchone()[0]
+		cur.execute('SELECT SizeGb FROM Datasets WHERE DatasetName=?', (datasetName,))
+		datasetSizeGb = cur.fetchone()[0]
 		with requestsDbCon:
 			cur = requestsDbCon.cursor()
 			cur.execute('INSERT INTO Requests(RequestId, RequestType, DatasetName, SiteName, SizeGb, Rank, GroupName, Timestamp) VALUES(?, ?, ?, ?, ?, ?, ?, ?)', (requestId, requestType, datasetName, siteName, datasetSizeGb, datasetRank, groupName, requestTimestamp))
