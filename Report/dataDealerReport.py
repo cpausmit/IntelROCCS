@@ -1,35 +1,20 @@
-import re 
-import sys
-import math
-import time
-import types
-import string
-import datetime
+#!/usr/local/bin/python
+#---------------------------------------------------------------------------------------------------
+# 
+#---------------------------------------------------------------------------------------------------
+import sys, os, re, math, time, types, string, datetime
+import makeTable
 
-import gratia_reporting.make_table as make_table
+# Collect data
+# Amount of subscribed data today
+# Change in amount of subscribed data compared to yesterday and a week ago
+# Do this for the whole system and for each site
 
-transfer_query = """
-SELECT
-  M.StartTime,
-  T.SiteName,
-  M.CommonName,
-  M.RemoteSite,
-  sum(M.Njobs),
-  sum(M.TransferSize * Multiplier),
-  M.TransferDuration
-FROM
-  MasterTransferSummary M,
-  Probe P,
-  Site T,
-  SizeUnits su 
-WHERE
-  M.StorageUnit = su.Unit AND
-  P.siteid = T.siteid AND
-  M.ProbeName = P.Probename AND
-  (StartTime >= %s AND StartTime <= %s) AND
-  M.Protocol = "Xrootd"
-GROUP BY M.StartTime, P.siteid, M.CommonName, M.RemoteSite
-"""
+# Amount of data currently owned
+# Change in amount of owned data from yesterday and a week ago
+# Do this for the whole system and for each site
+
+# List of all subscriptions???
 
 def GB(bytes):
     try:
