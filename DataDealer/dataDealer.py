@@ -32,6 +32,8 @@ datasetRankingsCopy = copy.deepcopy(datasetRankings)
 siteRanker = siteRanker.siteRanker()
 siteRankings = siteRanker.getSiteRankings()
 
+sys.exit(0)
+
 # Select datasets and sites for subscriptions
 select = select.select()
 subscriptions = dict()
