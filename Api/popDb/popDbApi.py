@@ -35,10 +35,9 @@ class popDbApi():
         data = urllib.urlencode(values)
         request = urllib2.Request(url, data)
         full_url = request.get_full_url() + request.get_data()
-        process = subprocess.Popen(["curl", "-k", "-s", "-L", "--cookie", self.COOKIE, "--cookie-jar", self.COOKIE, full_url], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        process = subprocess.Popen(["curl", "-k", "-s", "-L", "--cookie", self.COOKIE, "--cookie-jar", self.COOKIE, full_url], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=False)
         strout, error = process.communicate()
         if process.returncode != 0:
-            
             return 0
         try:
             json_data = json.loads(strout)

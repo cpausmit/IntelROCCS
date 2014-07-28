@@ -19,7 +19,7 @@
 # If a valid call is made but no data was found a JSON structure is still returned, it is up to 
 # the caller to check for actual data.
 #---------------------------------------------------------------------------------------------------
-import sys, os, urllib, urllib2, httplib, json, datetime
+import sys, os, urllib, urllib2, httplib, json, datetime, subprocess
 
 class phedexApi:
     def __init__(self):
@@ -29,6 +29,15 @@ class phedexApi:
 #===================================================================================================
 #  H E L P E R S
 #===================================================================================================
+    def renewProxy(self):
+        process = subprocess.Popen(["grid-proxy-init", "-valid", "24:00"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=False)
+        strout = process.communicate()[0]
+        if process.returncode != 0:
+            with open(self.logFile, 'a') as logFile:
+                logFile.write("%s PhEDEx Cache ERROR: Cannot generate proxy\nError msg: %s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(strout)))
+            return 1
+        return 0
+
     def call(self, url, values):
         data = urllib.urlencode(values)
         opener = urllib2.build_opener(HTTPSGridAuthHandler())
