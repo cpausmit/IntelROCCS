@@ -35,14 +35,19 @@ class popDbApi():
         data = urllib.urlencode(values)
         request = urllib2.Request(url, data)
         full_url = request.get_full_url() + request.get_data()
-        process = subprocess.Popen(["curl", "-k", "-s", "-L", "--cookie", self.COOKIE, "--cookie-jar", self.COOKIE, full_url], stdout=subprocess.PIPE)
+        process = subprocess.Popen(["curl", "-k", "-s", "-L", "--cookie", self.COOKIE, "--cookie-jar", self.COOKIE, full_url], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         strout, error = process.communicate()
         if process.returncode != 0:
-            raise Exception("FATAL - popularity failure, exit status %s\n URL - %s" % (str(process.returncode), str(full_url)))
+            
+            return 0
         try:
             json_data = json.loads(strout)
         except ValueError, e:
-            raise Exception("FATAL - popularity failure, reason: %s\n URL - %s" % (str(strout), str(full_url)))
+            print "JSON Error"
+            print strout
+            #with open(os.environ['DATA_DEALER_LOG'], 'a') as logFile:
+            #    logFile.write("%s FATAL PopDB ERROR: No JSON data returned\nMost likely due to error in phedex url base: %s" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self.POPDB_BASE))
+            return 0
         return json_data
 
 #===================================================================================================
@@ -107,18 +112,18 @@ class popDbApi():
 #  M A I N
 #===================================================================================================
 # Use this for testing purposes or as a script. 
-# Usage: python ./popDB.py <APICall> ['arg1_name=arg1' 'arg2_name=arg2' ...]
+# Usage: python ./popDbApi.py <APICall> ['arg1_name=arg1' 'arg2_name=arg2' ...]
 if __name__ == '__main__':
     popDbApi = popDbApi()
-    popDbApi.renewSSOCookie()
-    print "Updated SSO cookie"
+    #popDbApi.renewSSOCookie()
+    #print "Updated SSO cookie"
     if len(sys.argv) < 2:
-        print "Usage: python ./popDB.py <APICall> ['arg1_name=arg1' 'arg2_name=arg2' ...]"
+        print "Usage: python ./popDbApi.py <APICall> ['arg1_name=arg1' 'arg2_name=arg2' ...]"
         sys.exit(2)
     func = getattr(popDbApi, sys.argv[1], None)
     if not func:
         print "%s is not a valid popularity db api call" % (sys.argv[1])
-        print "Usage: python ./popDB.py <APICall> ['arg1_name=arg1' 'arg2_name=arg2' ...]"
+        print "Usage: python ./popDbApi.py <APICall> ['arg1_name=arg1' 'arg2_name=arg2' ...]"
         sys.exit(3)
     args = dict()
     for arg in sys.argv[2:]:
@@ -126,14 +131,14 @@ if __name__ == '__main__':
             a, v = arg.split('=')
         except ValueError, e:
             print "Passed argument %s does not follow the correct usage" % (arg)
-            print "Usage: python ./popDB.py <APICall> ['arg1_name=arg1' 'arg2_name=arg2' ...]"
+            print "Usage: python ./popDbApi.py <APICall> ['arg1_name=arg1' 'arg2_name=arg2' ...]"
             sys.exit(2)
         args[a] = v
     try:
         data = func(**args)
     except TypeError, e:
         print e
-        print "Usage: python ./popDB.py <APICall> ['arg1_name=arg1' 'arg2_name=arg2' ...]"
+        print "Usage: python ./popDbApi.py <APICall> ['arg1_name=arg1' 'arg2_name=arg2' ...]"
         sys.exit(3)
     print data
     sys.exit(0)
