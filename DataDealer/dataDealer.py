@@ -11,10 +11,11 @@ sys.path.append(os.path.dirname(os.environ['INTELROCCS_BASE']))
 import datasetRanker, siteRanker, select
 import IntelROCCS.Api.popDb.popDbApi as popDbApi
 import IntelROCCS.Api.phedex.phedexApi as phedexApi
+import IntelROCCS.Report.dataDealerReport as dataDealerReport
 
 # Setup parameters
 # We would like to make these easier to change in the future
-threshold = 1 # TODO : Find threshold
+threshold = 1 # TODO : Find better threshold
 budgetGb = 10000 # TODO : Decide on a budget
 popDbApi = popDbApi.popDbApi()
 phedexApi = phedexApi.phedexApi()

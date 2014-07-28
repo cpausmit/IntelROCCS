@@ -34,14 +34,15 @@ class phedexApi:
         try:
             strout = opener.open(request)
         except urllib2.HTTPError, e:
-            raise Exception("FATAL - ERROR: %s ;PhEDEx failure: %s\n" % (str(e), str(e.read())))
+            with open(os.environ['DATA_DEALER_LOG'], 'a') as logFile:
+                logFile.write("FATAL PhEDEx ERROR: %s ;PhEDEx msg: %s\n" % (str(e), str(e.read())))
+            raise Exception("FATAL PhEDEx ERROR: %s ;PhEDEx msg: %s\n" % (str(e), str(e.read())))
         except urllib2.URLError, e:
-            raise Exception("FATAL - ERROR: %s ;PhEDEx failure: %s\n" % (str(e), str(e.read())))
-        try:
-            response = strout.read()
-            jsonData = json.loads(response)
-        except ValueError, e:
-            raise Exception("FATAL - ERROR: %s ;PhEDEx failure: %s\n" % (str(e), str(e.read())))
+            with open(os.environ['DATA_DEALER_LOG'], 'a') as logFile:
+                logFile.write("FATAL PhEDEx ERROR: %s ;PhEDEx msg: %s\n" % (str(e), str(e.read())))
+            raise Exception("FATAL PhEDEx ERROR: %s ;PhEDEx msg: %s\n" % (str(e), str(e.read())))
+        response = strout.read()
+        jsonData = json.loads(response)
         return jsonData
 
     def createXml(self, datasets=[], instance='prod'):
