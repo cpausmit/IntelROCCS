@@ -11,7 +11,7 @@
 # In case of error an error message is printed to the log, currently specified by environemental
 # variable INTELROCCS_LOG, and '0' is returned. User will have to check that something is returned.
 #---------------------------------------------------------------------------------------------------
-import sys, os, MySQLdb
+import sys, os, MySQLdb, datetime
 
 class dbApi():
     def __init__(self):
@@ -37,7 +37,10 @@ class dbApi():
                     data.append(row)
         except MySQLdb.Error, e:
             with open(self.logFile, 'a') as logFile:
-                logFile.write("%s DB ERROR: %s\nError msg: %s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(e.args[0]), str(e.args[1])))
+                logFile.write("%s DB ERROR: %s\nError msg: %s\n for query: %s\n and values: %s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(e.args[0]), str(e.args[1]), str(query), str(values)))
+        except TypeError, e:
+            with open(self.logFile, 'a') as logFile:
+                logFile.write("%s DB ERROR: %s\nMost likely caused by an incorrect number of values\n for query: %s\n and values: %s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(e), str(query), str(values)))            
             return 0
         return data
 
