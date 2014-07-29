@@ -21,16 +21,16 @@ budgetGb = 10000 # TODO : Decide on a budget
 phedexApi = phedexApi.phedexApi()
 error = phedexApi.renewProxy()
 if error:
-    with open(logFilePath, 'a') as logFile:
-        logFile.write("%s FATAL DataDealer ERROR: Couldn't renew proxy, exiting\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-    sys.exit(1)
+	with open(logFilePath, 'a') as logFile:
+		logFile.write("%s FATAL DataDealer ERROR: Couldn't renew proxy, exiting\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+	sys.exit(1)
 
 popDbApi = popDbApi.popDbApi()
 error = popDbApi.renewSsoCookie()
 if error:
-    with open(logFilePath, 'a') as logFile:
-        logFile.write("%s FATAL DataDealer ERROR: Couldn't renew SSO cookie, exiting\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-    sys.exit(1)
+	with open(logFilePath, 'a') as logFile:
+		logFile.write("%s FATAL DataDealer ERROR: Couldn't renew SSO cookie, exiting\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+	sys.exit(1)
 sys.exit(0)
 #===================================================================================================
 #  M A I N
@@ -49,13 +49,13 @@ select = select.select()
 subscriptions = dict()
 selectedGb = 0
 while (selectedGb < budgetGb) and (datasetRankings):
-    datasetName = select.weightedChoice(datasetRankings)
-    siteName = select.weightedChoice(siteRankings)
-    if siteName in subscriptions:
-        subscriptions[siteName].append(datasetName)
-    else:
+	datasetName = select.weightedChoice(datasetRankings)
+	siteName = select.weightedChoice(siteRankings)
+	if siteName in subscriptions:
+		subscriptions[siteName].append(datasetName)
+	else:
 	subscriptions[siteName] = [datasetName]
-    del datasetRankings[datasetName]
+	del datasetRankings[datasetName]
 
 phedexDbPath = "%s/Cache/PhedexCache" % (os.environ['INTELROCCS_BASE'])
 phedexDbFile = "%s/blockReplicas.db" % (phedexDbPath)
@@ -65,23 +65,23 @@ requestsDbFile = "%s/requests.db" % (requestsDbPath)
 requestsDbCon = sqlite3.connect(requestsDbFile)
 # create subscriptions
 for siteName in iter(subscriptions):
-    subscriptionData = phedexApi.createXml(subscriptions[siteName], instance='prod')
-    jsonData = phedexApi.subscribe(node=siteName, data=subscriptionData, level='dataset', move='n', custodial='n', group='AnalysisOps', request_only='y', no_mail='n', comments='IntelROCCS DataDealer', instance='prod')
-    requestType = 0
-    groupName = 'AnalysisOps'
-    request = jsonData.get('phedex')
-    requestId = request.get('request_created')[0].get('id')
-    requestTimestamp = int(request.get('request_timestamp'))
-    for datasetName in subscriptions[siteName]:
-	datasetRank = datasetRankingsCopy[datasetName]
-    datasetSizeGb = 0
-    with phedexDbCon:
-	cur = phedexDbCon.cursor()
-	cur.execute('SELECT SizeGb FROM Datasets WHERE DatasetName=?', (datasetName,))
-	datasetSizeGb = cur.fetchone()[0]
-	with requestsDbCon:
-            cur = requestsDbCon.cursor()
-	    cur.execute('INSERT INTO Requests(RequestId, RequestType, DatasetName, SiteName, SizeGb, Rank, GroupName, Timestamp) VALUES(?, ?, ?, ?, ?, ?, ?, ?)', (requestId, requestType, datasetName, siteName, datasetSizeGb, datasetRank, groupName, requestTimestamp))
+	subscriptionData = phedexApi.createXml(subscriptions[siteName], instance='prod')
+	jsonData = phedexApi.subscribe(node=siteName, data=subscriptionData, level='dataset', move='n', custodial='n', group='AnalysisOps', request_only='y', no_mail='n', comments='IntelROCCS DataDealer', instance='prod')
+	requestType = 0
+	groupName = 'AnalysisOps'
+	request = jsonData.get('phedex')
+	requestId = request.get('request_created')[0].get('id')
+	requestTimestamp = int(request.get('request_timestamp'))
+	for datasetName in subscriptions[siteName]:
+		datasetRank = datasetRankingsCopy[datasetName]
+	datasetSizeGb = 0
+	with phedexDbCon:
+		cur = phedexDbCon.cursor()
+		cur.execute('SELECT SizeGb FROM Datasets WHERE DatasetName=?', (datasetName,))
+		datasetSizeGb = cur.fetchone()[0]
+		with requestsDbCon:
+			cur = requestsDbCon.cursor()
+			cur.execute('INSERT INTO Requests(RequestId, RequestType, DatasetName, SiteName, SizeGb, Rank, GroupName, Timestamp) VALUES(?, ?, ?, ?, ?, ?, ?, ?)', (requestId, requestType, datasetName, siteName, datasetSizeGb, datasetRank, groupName, requestTimestamp))
 
 # Send summary report
 # TODO : Send daliy report

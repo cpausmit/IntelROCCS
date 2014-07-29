@@ -6,13 +6,16 @@
 # Returns a list with tuples of the data requested. Example of what should be passed:
 # query="SELECT * WHERE DatasetName=%s", values=["Dataset1"]
 # Values are optional and can be any sequency which can be converted to a tuple.
+# Example of returned data: [('Dataset1', 2), ('Dataset2', 5)]
 #
-# In case of error an exception is thrown. This needs to be dealt with by the caller.
+# In case of error an error message is printed to the log, currently specified by environemental
+# variable INTELROCCS_LOG, and '0' is returned. User will have to check that something is returned.
 #---------------------------------------------------------------------------------------------------
 import sys, os, MySQLdb
 
 class dbApi():
     def __init__(self):
+        self.logFile = os.environ['INTELROCCS_LOG']
         host = "t3btch039.mit.edu"
         #db = "IntelROCCS"
         db = "SiteStorage" # ^^Will switch database^^
@@ -30,11 +33,12 @@ class dbApi():
             with self.dbCon:
                 cur = self.dbCon.cursor()
                 cur.execute(query, values)
-                for i in range(cur.rowcount):
-                    row = cur.fetchone()
+                for row in cur:
                     data.append(row)
         except MySQLdb.Error, e:
-            raise Exception("FATAL - Database failure:  %d: %s" % (e.args[0],e.args[1]))
+            with open(self.logFile, 'a') as logFile:
+                logFile.write("%s DB ERROR: %s\nError msg: %s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(e.args[0]), str(e.args[1])))
+            return 0
         return data
 
 #===================================================================================================
@@ -42,7 +46,7 @@ class dbApi():
 #===================================================================================================
 # Use this for testing purposes or as a script. 
 # Usage: python ./dbApi.py <'db query'> ['value1', 'value2', ...]
-# Example: $ python ./dbAccess.py 'SELECT * WHERE DatasetName=%s' 'Dataset1'
+# Example: $ python ./dbApi.py 'SELECT * WHERE DatasetName=%s' 'Dataset1'
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         print "Usage: python ./dbApi.py <'db query'> ['value1', 'value2', ...]"
@@ -52,10 +56,9 @@ if __name__ == '__main__':
     values = []
     for v in sys.argv[2:]:
         values.append(v)
-    try:
-        data = dbApi.dbQuery(query, values=values)
-        print data
-    except Exception, e:
-        print e
+    data = dbApi.dbQuery(query, values=values)
+    if not data:
+        print "DB call failed, see log (%s) for more details" % (dbApi.logFile)
         sys.exit(1)
+    print data
     sys.exit(0)
