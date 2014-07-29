@@ -50,7 +50,7 @@ while (selectedGb < budgetGb) and (datasetRankings):
 	if siteName in subscriptions:
 		subscriptions[siteName].append(datasetName)
 	else:
-	subscriptions[siteName] = [datasetName]
+		subscriptions[siteName] = [datasetName]
 	del datasetRankings[datasetName]
 
 phedexDbPath = "%s/Cache/PhedexCache" % (os.environ['INTELROCCS_BASE'])
