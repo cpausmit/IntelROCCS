@@ -3,17 +3,17 @@
 # Python interface to access Popularity Database. See website for API documentation
 # (https://cms-popularity.cern.ch/popdb/popularity/apidoc)
 #
-# Use SSO cookie to avoid password 
+# Use SSO cookie to avoid password
 # (http://linux.web.cern.ch/linux/docs/cernssocookie.shtml)
 # It is up to the caller to make sure a valid SSO cookie is obtained before any calls are made. A
 # SSO cookie is valid for 24h. Requires usercert.pem and userkey.pem in ~/.globus/
 #
-# The API doesn't check to make sure correct values are passed or that rquired parameters are 
+# The API doesn't check to make sure correct values are passed or that rquired parameters are
 # passed. All such checks needs to be done by the caller. All data is returned as JSON.
 #
 # In case of error an error message is printed to the log, currently specified by environemental
 # variable INTELROCCS_LOG, and '0' is returned. User will have to check that something is returned.
-# If a valid call is made but no data was found a JSON structure is still returned, it is up to 
+# If a valid call is made but no data was found a JSON structure is still returned, it is up to
 # the caller to check for actual data.
 #---------------------------------------------------------------------------------------------------
 import sys, os, re, json, urllib, urllib2, datetime, subprocess
@@ -161,7 +161,7 @@ class popDbApi():
 #===================================================================================================
 #  M A I N
 #===================================================================================================
-# Use this for testing purposes or as a script. 
+# Use this for testing purposes or as a script.
 # Usage: python ./popDbApi.py <APICall> ['arg1_name=arg1' 'arg2_name=arg2' ...]
 if __name__ == '__main__':
     popDbApi = popDbApi()

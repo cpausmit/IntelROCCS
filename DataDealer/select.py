@@ -24,7 +24,7 @@ class select():
 #===================================================================================================
 #  M A I N
 #===================================================================================================
-# Use this for testing purposes or as a script. 
+# Use this for testing purposes or as a script.
 # Usage: python ./select.py
 if __name__ == '__main__':
     if not (len(sys.argv) == 1):

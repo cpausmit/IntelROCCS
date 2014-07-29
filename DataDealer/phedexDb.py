@@ -1,6 +1,6 @@
 #!/usr/local/bin/python
 #---------------------------------------------------------------------------------------------------
-# 
+#
 #---------------------------------------------------------------------------------------------------
 import sys, os, re, json, sqlite3, datetime
 sys.path.append(os.path.dirname(os.environ['INTELROCCS_BASE']))
@@ -8,6 +8,7 @@ import IntelROCCS.Api.phedex.phedexData as phedexData
 
 class phedexDb():
     def __init__(self, dbPath, oldestAllowedHours):
+        self.logFile = os.environ['INTELROCCS_LOG']
         dbFile = "%s/blockReplicas.db" % (dbPath)
         update = 0
         if not os.path.exists(dbPath):
@@ -36,7 +37,9 @@ class phedexDb():
                 phedex = phedexData.phedexData(dbPath, oldestAllowedHours)
                 jsonData = phedex.getPhedexData('blockReplicas')
                 if not jsonData:
-                    
+                    with open(self.logFile, 'a') as logFile:
+                        logFile.write("%s FATAL ERROR: Could not build local db\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+                raise Exception("FATAL ERROR: Could not build local db")
                 self.buildPhedexDb(phedexJsonData)
 
 #===================================================================================================
@@ -77,8 +80,12 @@ class phedexDb():
         with self.dbCon:
             cur = self.dbCon.cursor()
             cur.execute('SELECT SizeGb FROM Datasets WHERE DatasetName=?', (datasetName,))
-            sizeGb = cur.fetchone()[0] # TODO : Check that something is returned
-            return sizeGb
+            sizeGb = cur.fetchone() # TODO : Check that something is returned
+            if not sizeGb:
+                with open(self.logFile, 'a') as logFile:
+                    logFile.write("%s DB ERROR: Size for dataset %s returned nothing\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), datasetName))
+                return 1000000
+            return sizeGb[0]
 
     def getNumberReplicas(self, datasetName):
         with self.dbCon:

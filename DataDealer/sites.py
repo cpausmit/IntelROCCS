@@ -1,9 +1,7 @@
 #!/usr/local/bin/python
 #---------------------------------------------------------------------------------------------------
-#
 # Queries database to get all sites on which AnalysisOps have quota. Can also return only those that
 # are currently not blacklisted or those that are currently blacklisted.
-#
 #---------------------------------------------------------------------------------------------------
 import sys, os
 sys.path.append(os.path.dirname(os.environ['INTELROCCS_BASE']))
@@ -40,7 +38,7 @@ class sites():
 #===================================================================================================
 #  M A I N
 #===================================================================================================
-# Use this for testing purposes or as a script. 
+# Use this for testing purposes or as a script.
 # Usage: python ./getSites.py <function>
 if __name__ == '__main__':
     if not (len(sys.argv) == 2):

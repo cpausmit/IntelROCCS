@@ -1,10 +1,6 @@
 #!/usr/local/bin/python
 #---------------------------------------------------------------------------------------------------
-# This is the main script of the DataDealer. It will run all other scripts and functions. It will
-# generate a list of datasets to replicate and on which site to replicate onto and perform the
-# replication.
-# 
-# At the end a summary is emailed out with what was done during the run.
+# This is the main script of the DataDealer. See README.md for more information.
 #---------------------------------------------------------------------------------------------------
 import sys, os, copy, sqlite3, subprocess, datetime, operator
 sys.path.append(os.path.dirname(os.environ['INTELROCCS_BASE']))
@@ -31,7 +27,7 @@ if error:
 	with open(logFilePath, 'a') as logFile:
 		logFile.write("%s FATAL DataDealer ERROR: Couldn't renew SSO cookie, exiting\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
 	sys.exit(1)
-sys.exit(0)
+
 #===================================================================================================
 #  M A I N
 #===================================================================================================

@@ -45,14 +45,13 @@ class dbApi():
                 logFile.write("%s DB ERROR: %s\nError msg: %s\n for query: %s\n and values: %s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(e.args[0]), str(e.args[1]), str(query), str(values)))
         except TypeError, e:
             with open(self.logFile, 'a') as logFile:
-                logFile.write("%s DB ERROR: %s\nMost likely caused by an incorrect number of values\n for query: %s\n and values: %s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(e), str(query), str(values)))            
-            return 0
+                logFile.write("%s DB ERROR: %s\nMost likely caused by an incorrect number of values\n for query: %s\n and values: %s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(e), str(query), str(values)))
         return data
 
 #===================================================================================================
 #  S C R I P T
 #===================================================================================================
-# Use this for testing purposes or as a script. 
+# Use this for testing purposes or as a script.
 # Usage: python ./dbApi.py <'db query'> ['value1', 'value2', ...]
 # Example: $ python ./dbApi.py 'SELECT * WHERE DatasetName=%s' 'Dataset1'
 if __name__ == '__main__':

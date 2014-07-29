@@ -1,6 +1,6 @@
 #!/usr/local/bin/python
 #---------------------------------------------------------------------------------------------------
-# 
+#
 #---------------------------------------------------------------------------------------------------
 import sys, os, json, time, sqlite3, datetime
 sys.path.append(os.path.dirname(os.environ['INTELROCCS_BASE']))
@@ -10,6 +10,7 @@ import IntelROCCS.Api.popDb.popDbApi as popDbApi
 
 class popDbDb():
     def __init__(self, dbPath, oldestAllowedHours):
+        self.logFile = os.environ['INTELROCCS_LOG']
         dbFile = "%s/DSStatInTimeWindow.db" % (dbPath)
         update = 0
         if not os.path.exists(dbPath):
@@ -46,18 +47,26 @@ class popDbDb():
             td = datetime.timedelta(days=1)
             date = datetime.date.today() - td
             while date > lastDate:
-                popDbJsonData = self.popDbData.getPopDbData("DSStatInTimeWindow", date.strftime('%Y-%m-%d'))
-                self.buildDatasetPopDb(popDbJsonData, date.strftime('%Y-%m-%d'))
+                jsonData = self.popDbData.getPopDbData("DSStatInTimeWindow", date.strftime('%Y-%m-%d'))
+                if not jsonData:
+                    with open(self.logFile, 'a') as logFile:
+                        logFile.write("%s FATAL ERROR: Could not build local db\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+                    raise Exception("FATAL ERROR: Could not build local db")
+                self.buildDatasetPopDb(jsonData, date.strftime('%Y-%m-%d'))
                 for site in allSites:
-                    popDbJsonData = self.popDbApi.DSStatInTimeWindow(tstart=date.strftime('%Y-%m-%d'), tstop=date.strftime('%Y-%m-%d'), sitename=site)
-                    self.buildSitePopDb(popDbJsonData, date.strftime('%Y-%m-%d'))
+                    jsonData = self.popDbApi.DSStatInTimeWindow(tstart=date.strftime('%Y-%m-%d'), tstop=date.strftime('%Y-%m-%d'), sitename=site)
+                    if not jsonData:
+                        with open(self.logFile, 'a') as logFile:
+                            logFile.write("%s FATAL ERROR: Could not build local db\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+                        raise Exception("FATAL ERROR: Could not build local db")
+                    self.buildSitePopDb(jsonData, date.strftime('%Y-%m-%d'))
                 date -= td
 
 #===================================================================================================
 #  H E L P E R S
 #===================================================================================================
-    def buildDatasetPopDb(self, popDbJsonData, date):
-        datasets = popDbJsonData.get('DATA')
+    def buildDatasetPopDb(self, jsonData, date):
+        datasets = jsonData.get('DATA')
         for dataset in datasets:
             datasetName = dataset.get('COLLNAME')
             numberAccesses = dataset.get('NACC')
@@ -66,9 +75,9 @@ class popDbDb():
                 cur = self.dbCon.cursor()
                 cur.execute('INSERT INTO DatasetData(Day, DatasetName, NumberAccesses, NumberCpus) VALUES(?, ?, ?, ?)', (date, datasetName, numberAccesses, numberCpus))
 
-    def buildSitePopDb(self, popDbJsonData, date):
-        siteName = popDbJsonData.get('SITENAME')
-        datasets = popDbJsonData.get('DATA')
+    def buildSitePopDb(self, jsonData, date):
+        siteName = jsonData.get('SITENAME')
+        datasets = jsonData.get('DATA')
         numberAccesses = 0
         numberCpus = 0
         for dataset in datasets:
@@ -82,7 +91,7 @@ class popDbDb():
         with self.dbCon:
             cur = self.dbCon.cursor()
             cur.execute('SELECT NumberAccesses FROM DatasetData WHERE DatasetName=? AND Day=?', (datasetName, date))
-            numberAccesses = cur.fetchone() # TODO : Check that something is returned
+            numberAccesses = cur.fetchone()
             if numberAccesses:
                 return numberAccesses[0]
             else:
@@ -92,7 +101,7 @@ class popDbDb():
         with self.dbCon:
             cur = self.dbCon.cursor()
             cur.execute('SELECT NumberCpus FROM DatasetData WHERE DatasetName=? AND Day=?', (datasetName, date))
-            numberCpus = cur.fetchone() # TODO : Check that something is returned
+            numberCpus = cur.fetchone()
             if numberCpus:
                 return numberCpus[0]
             else:
@@ -102,7 +111,7 @@ class popDbDb():
         with self.dbCon:
             cur = self.dbCon.cursor()
             cur.execute('SELECT NumberAccesses FROM SiteData WHERE SiteName=? AND Day=?', (siteName, date))
-            numberAccesses = cur.fetchone() # TODO : Check that something is returned
+            numberAccesses = cur.fetchone()
             if numberAccesses:
                 return numberAccesses[0]
             else:
@@ -112,7 +121,7 @@ class popDbDb():
         with self.dbCon:
             cur = self.dbCon.cursor()
             cur.execute('SELECT NumberCpus FROM SiteData WHERE SiteName=? AND Day=?', (siteName, date))
-            numberCpus = cur.fetchone() # TODO : Check that something is returned
+            numberCpus = cur.fetchone()
             if numberCpus:
                 return numberCpus[0]
             else:

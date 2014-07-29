@@ -1,13 +1,13 @@
 #!/usr/local/bin/python
 #---------------------------------------------------------------------------------------------------
-# Middleware to access phedex data. To reduce access time we cache the data, this class checks if 
+# Middleware to access phedex data. To reduce access time we cache the data, this class checks if
 # the cache exists and is up to date. If it does then fetch it and return. If cache does not exist
 # then access phedex directly and get the data. First update the cache and then return the
 # data.
-# 
+#
 # Make sure there is a valid proxy before calling.
-# 
-# In case of an error a '0' will be returned, caller must check to make sure data is returned. 
+#
+# In case of an error a '0' will be returned, caller must check to make sure data is returned.
 #---------------------------------------------------------------------------------------------------
 import sys, os, json, datetime, subprocess
 import phedexApi

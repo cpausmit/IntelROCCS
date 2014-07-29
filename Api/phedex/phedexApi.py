@@ -3,12 +3,12 @@
 # Python interface to access PhEDEx online API. See website for API documentation
 # (https://cmsweb.cern.ch/phedex/datasvc/doc)
 #
-# Use grid-proxy-init to aquire a valid CERN proxy, proxy's are only valid for a limited time. 
+# Use grid-proxy-init to aquire a valid CERN proxy, proxy's are only valid for a limited time.
 # grid-proxy-init requires usercert.pem and userkey.pem in ~/.globus/
 # It is up to the caller to make sure a valid CERN proxy is available.
 # Example: grid-proxy-init -valid 24:00 (Generates a proxy valid for 24h)
 #
-# The API doesn't check to make sure correct values are passed or that rquired parameters are 
+# The API doesn't check to make sure correct values are passed or that rquired parameters are
 # passed. All such checks needs to be done by the caller.
 #
 # Functions only return data in form of JSON, never XML.
@@ -16,7 +16,7 @@
 #
 # In case of error an error message is printed to the log, currently specified by environemental
 # variable INTELROCCS_LOG, and '0' is returned. User will have to check that something is returned.
-# If a valid call is made but no data was found a JSON structure is still returned, it is up to 
+# If a valid call is made but no data was found a JSON structure is still returned, it is up to
 # the caller to check for actual data.
 #---------------------------------------------------------------------------------------------------
 import sys, os, urllib, urllib2, httplib, json, datetime, subprocess
