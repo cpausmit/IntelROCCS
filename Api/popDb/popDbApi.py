@@ -6,106 +6,157 @@
 # Use SSO cookie to avoid password 
 # (http://linux.web.cern.ch/linux/docs/cernssocookie.shtml)
 # It is up to the caller to make sure a valid SSO cookie is obtained before any calls are made. A
-# SSO cookie is valid for 24h. Requires myCert.key and myCert.pem stored in BASEDIR/certs/
+# SSO cookie is valid for 24h. Requires usercert.pem and userkey.pem in ~/.globus/
 #
 # The API doesn't check to make sure correct values are passed or that rquired parameters are 
-# passed. All such checks needs to be done by the caller.
+# passed. All such checks needs to be done by the caller. All data is returned as JSON.
 #
-# In case of error an exception is thrown. This needs to be dealt with by the caller.
+# In case of error an error message is printed to the log, currently specified by environemental
+# variable INTELROCCS_LOG, and '0' is returned. User will have to check that something is returned.
+# If a valid call is made but no data was found a JSON structure is still returned, it is up to 
+# the caller to check for actual data.
 #---------------------------------------------------------------------------------------------------
-import sys, os, re, urllib, urllib2, subprocess
-import json
+import sys, os, re, json, urllib, urllib2, datetime, subprocess
 
 class popDbApi():
     def __init__(self):
-        self.BASEDIR = os.path.split(os.path.dirname(os.path.realpath(__file__)))[0]
-        self.POPDB_BASE = "https://cms-popularity.cern.ch/popdb/popularity/"
-        self.CERT = "%s/.globus/usercert.pem" % (os.environ['HOME'])
-        self.KEY = "%s/.globus/userkey.pem" % (os.environ['HOME'])
-        self.COOKIE = "%s/.globus/ssocookie.txt" % (os.environ['HOME'])
+        self.logFile = os.environ['INTELROCCS_LOG']
+        self.popDbBase = "https://cms-popularity.cern.ch/popdb/popularity/"
+        self.cert = "%s/.globus/usercert.pem" % (os.environ['HOME'])
+        self.key = "%s/.globus/userkey.pem" % (os.environ['HOME'])
+        self.cookie = "%s/.globus/ssocookie.txt" % (os.environ['HOME'])
 
 #===================================================================================================
 #  H E L P E R S
 #===================================================================================================
-    def renewSSOCookie(self):
-        # TODO : what happens if this fails? deal with it
-        subprocess.call(["cern-get-sso-cookie", "--cert", self.CERT, "--key", self.KEY, "-u", self.POPDB_BASE, "-o", self.COOKIE])
+    def renewSsoCookie(self):
+        process = subprocess.Popen(["cern-get-sso-cookie", "--cert", self.cert, "--key", self.key, "-u", self.popDbBase, "-o", self.cookie], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=False)
+        strout = process.communicate()[0]
+        if process.returncode != 0:
+            with open(self.logFile, 'a') as logFile:
+                logFile.write("%s PopDB ERROR: Cannot generate SSO cookie\nError msg: %s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(strout)))
+            return 1
+        return 0
 
     def call(self, url, values):
         data = urllib.urlencode(values)
         request = urllib2.Request(url, data)
-        full_url = request.get_full_url() + request.get_data()
-        process = subprocess.Popen(["curl", "-k", "-s", "-L", "--cookie", self.COOKIE, "--cookie-jar", self.COOKIE, full_url], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=False)
-        strout, error = process.communicate()
+        fullUrl = request.get_full_url() + request.get_data()
+        process = subprocess.Popen(["curl", "-k", "-s", "-L", "--cookie", self.cookie, "--cookie-jar", self.cookie, fullUrl], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=False)
+        strout = process.communicate()[0]
         if process.returncode != 0:
+            with open(self.logFile, 'a') as logFile:
+                logFile.write("%s PopDB ERROR: Access to popularity database failed\nError msg: %s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(strout)))
             return 0
         try:
-            json_data = json.loads(strout)
+            jsonData = json.loads(strout)
         except ValueError, e:
-            print "JSON Error"
-            print strout
-            #with open(os.environ['DATA_DEALER_LOG'], 'a') as logFile:
-            #    logFile.write("%s FATAL PopDB ERROR: No JSON data returned\nMost likely due to error in phedex url base: %s" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self.POPDB_BASE))
+            with open(self.logFile, 'a') as logFile:
+                logFile.write("%s PopDB ERROR: No JSON data returned from popularity database failed\nError msg: %s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(strout)))
             return 0
-        return json_data
+        return jsonData
 
 #===================================================================================================
 #  A P I   C A L L S
 #===================================================================================================
-    def getDSdata(self, tstart='', tstop='', sitename='summary', aggr='', n='', orderby=''):
-        values = {'tstart':tstart, 'tstop':tstop, 'sitename':sitename, 'aggr':aggr, 'n':n, 'orderby':orderby}
-        url = urllib.basejoin(self.POPDB_BASE, "%s/?&" % ("getDSdata"))
-        return self.call(url, values)
-
-    def getDTdata(self, tstart='', tstop='', sitename='summary', aggr='', orderby=''):
-        values = {'tstart':tstart, 'tstop':tstop, 'sitename':sitename, 'aggr':aggr, 'n':n, 'orderby':orderby}
-        url = urllib.basejoin(self.POPDB_BASE, "%s/?&" % ("getDTdata"))
-        return self.call(url, values)
-
-    def getDSNdata(self, tstart='', tstop='', sitename='summary', aggr='', orderby=''):
-        values = {'tstart':tstart, 'tstop':tstop, 'sitename':sitename, 'aggr':aggr, 'n':n, 'orderby':orderby}
-        url = urllib.basejoin(self.POPDB_BASE, "%s/?&" % ("getDSNdata"))
-        return self.call(url, values)
-
-    def getSingleDSstat(self, name='', sitename='summary', aggr='', orderby=''):
-        values = {'name':name, 'sitename':sitename, 'aggr':aggr, 'orderby':orderby}
-        url = urllib.basejoin(self.POPDB_BASE, "%s/?&" % ("getSingleDSstat"))
-        return self.call(url, values)
-
-    def getSingleDTstat(self, name='', sitename='summary', aggr='', orderby=''):
-        values = {'name':name, 'sitename':sitename, 'aggr':aggr, 'orderby':orderby}
-        url = urllib.basejoin(self.POPDB_BASE, "%s/?&" % ("getSingleDTstat"))
-        return self.call(url, values)
-
-    def getSingleDNstat(self, name='', sitename='summary', aggr='', orderby=''):
-        values = {'name':name, 'sitename':sitename, 'aggr':aggr, 'orderby':orderby}
-        url = urllib.basejoin(self.POPDB_BASE, "%s/?&" % ("getSingleDNstat"))
-        return self.call(url, values)
-
-    def DSStatInTimeWindow(self, tstart='', tstop='', sitename='summary'):
-        values = {'tstart':tstart, 'tstop':tstop, 'sitename':sitename}
-        url = urllib.basejoin(self.POPDB_BASE, "%s/?&" % ("DSStatInTimeWindow"))
-        return self.call(url, values)
-
     def DataTierStatInTimeWindow(self, tstart='', tstop='', sitename='summary'):
         values = {'tstart':tstart, 'tstop':tstop, 'sitename':sitename}
         url = urllib.basejoin(self.POPDB_BASE, "%s/?&" % ("DataTierStatInTimeWindow"))
-        return self.call(url, values)
+        jsonData = self.call(url, values)
+        if not jsonData:
+            with open(self.logFile, 'a') as logFile:
+                logFile.write("%s PopDB ERROR: DataTierStatInTimeWindow call failed for values: tstart=%s, tstop=%s, sitename=%s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), tstart, tstop, sitename))
+        return jsonData
 
     def DSNameStatInTimeWindow(self, tstart='', tstop='', sitename='summary'):
         values = {'tstart':tstart, 'tstop':tstop, 'sitename':sitename}
         url = urllib.basejoin(self.POPDB_BASE, "%s/?&" % ("DSNameStatInTimeWindow"))
-        return self.call(url, values)
+        jsonData = self.call(url, values)
+        if not jsonData:
+            with open(self.logFile, 'a') as logFile:
+                logFile.write("%s PopDB ERROR: DSNameStatInTimeWindow call failed for values: tstart=%s, tstop=%s, sitename=%s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), tstart, tstop, sitename))
+        return jsonData
 
-    def getUserStat(self, tstart='', tstop='', collname='', orderby=''):
-        values = {'tstart':tstart, 'tstop':tstop, 'collname':collname, 'orderby':orderby}
-        url = urllib.basejoin(self.POPDB_BASE, "%s/?&" % ("getUserStat"))
-        return self.call(url, values)
+    def DSStatInTimeWindow(self, tstart='', tstop='', sitename='summary'):
+        values = {'tstart':tstart, 'tstop':tstop, 'sitename':sitename}
+        url = urllib.basejoin(self.POPDB_BASE, "%s/?&" % ("DSStatInTimeWindow"))
+        jsonData = self.call(url, values)
+        if not jsonData:
+            with open(self.logFile, 'a') as logFile:
+                logFile.write("%s PopDB ERROR: DSStatInTimeWindow call failed for values: tstart=%s, tstop=%s, sitename=%s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), tstart, tstop, sitename))
+        return jsonData
 
     def getCorruptedFiles(self, sitename='summary', orderby=''):
         values = {'sitename':sitename, 'orderby':orderby}
         url = urllib.basejoin(self.POPDB_BASE, "%s/?&" % ("getCorruptedFiles"))
-        return self.call(url, values)
+        jsonData = self.call(url, values)
+        if not jsonData:
+            with open(self.logFile, 'a') as logFile:
+                logFile.write("%s PopDB ERROR: getCorruptedFiles call failed for values: sitename=%s, orderby=%s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), sitename, orderby))
+        return jsonData
+
+    def getDSdata(self, tstart='', tstop='', sitename='summary', aggr='', n='', orderby=''):
+        values = {'tstart':tstart, 'tstop':tstop, 'sitename':sitename, 'aggr':aggr, 'n':n, 'orderby':orderby}
+        url = urllib.basejoin(self.POPDB_BASE, "%s/?&" % ("getDSdata"))
+        jsonData = self.call(url, values)
+        if not jsonData:
+            with open(self.logFile, 'a') as logFile:
+                logFile.write("%s PopDB ERROR: getDSdata call failed for values: tstart=%s, tstop=%s, sitename=%s, aggr=%s, n=%s, orderby=%s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), tstart, tstop, sitename, aggr, n, orderby))
+        return jsonData
+
+    def getDSNdata(self, tstart='', tstop='', sitename='summary', aggr='', n='', orderby=''):
+        values = {'tstart':tstart, 'tstop':tstop, 'sitename':sitename, 'aggr':aggr, 'n':n, 'orderby':orderby}
+        url = urllib.basejoin(self.POPDB_BASE, "%s/?&" % ("getDSNdata"))
+        jsonData = self.call(url, values)
+        if not jsonData:
+            with open(self.logFile, 'a') as logFile:
+                logFile.write("%s PopDB ERROR: getDSNdata call failed for values: tstart=%s, tstop=%s, sitename=%s, aggr=%s, n=%s, orderby=%s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), tstart, tstop, sitename, aggr, n, orderby))
+        return jsonData
+
+    def getDTdata(self, tstart='', tstop='', sitename='summary', aggr='', n='', orderby=''):
+        values = {'tstart':tstart, 'tstop':tstop, 'sitename':sitename, 'aggr':aggr, 'n':n, 'orderby':orderby}
+        url = urllib.basejoin(self.POPDB_BASE, "%s/?&" % ("getDTdata"))
+        jsonData = self.call(url, values)
+        if not jsonData:
+            with open(self.logFile, 'a') as logFile:
+                logFile.write("%s PopDB ERROR: getDTdata call failed for values: tstart=%s, tstop=%s, sitename=%s, aggr=%s, n=%s, orderby=%s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), tstart, tstop, sitename, aggr, n, orderby))
+        return jsonData
+
+    def getSingleDNstat(self, name='', sitename='summary', aggr='', orderby=''):
+        values = {'name':name, 'sitename':sitename, 'aggr':aggr, 'orderby':orderby}
+        url = urllib.basejoin(self.POPDB_BASE, "%s/?&" % ("getSingleDNstat"))
+        jsonData = self.call(url, values)
+        if not jsonData:
+            with open(self.logFile, 'a') as logFile:
+                logFile.write("%s PopDB ERROR: getSingleDNstat call failed for values: sitename=%s, aggr=%s, orderby=%s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), sitename, aggr, orderby))
+        return jsonData
+
+    def getSingleDSstat(self, name='', sitename='summary', aggr='', orderby=''):
+        values = {'name':name, 'sitename':sitename, 'aggr':aggr, 'orderby':orderby}
+        url = urllib.basejoin(self.POPDB_BASE, "%s/?&" % ("getSingleDSstat"))
+        jsonData = self.call(url, values)
+        if not jsonData:
+            with open(self.logFile, 'a') as logFile:
+                logFile.write("%s PopDB ERROR: getSingleDSstat call failed for values: name=%s, sitename=%s, aggr=%s, orderby=%s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), name, sitename, aggr, orderby))
+        return jsonData
+
+    def getSingleDTstat(self, name='', sitename='summary', aggr='', orderby=''):
+        values = {'name':name, 'sitename':sitename, 'aggr':aggr, 'orderby':orderby}
+        url = urllib.basejoin(self.POPDB_BASE, "%s/?&" % ("getSingleDTstat"))
+        jsonData = self.call(url, values)
+        if not jsonData:
+            with open(self.logFile, 'a') as logFile:
+                logFile.write("%s PopDB ERROR: getSingleDTstat call failed for values: name=%s, sitename=%s, aggr=%s, orderby=%s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), name, sitename, aggr, orderby))
+        return jsonData
+
+    def getUserStat(self, tstart='', tstop='', collname='', orderby=''):
+        values = {'tstart':tstart, 'tstop':tstop, 'collname':collname, 'orderby':orderby}
+        url = urllib.basejoin(self.POPDB_BASE, "%s/?&" % ("getUserStat"))
+        jsonData = self.call(url, values)
+        if not jsonData:
+            with open(self.logFile, 'a') as logFile:
+                logFile.write("%s PopDB ERROR: getUserStat call failed for values: tstart=%s, tstop=%s, collname=%s, orderby=%s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), tstart, tstop, collname, orderby))
+        return jsonData
 
 #===================================================================================================
 #  M A I N
@@ -114,8 +165,11 @@ class popDbApi():
 # Usage: python ./popDbApi.py <APICall> ['arg1_name=arg1' 'arg2_name=arg2' ...]
 if __name__ == '__main__':
     popDbApi = popDbApi()
-    #popDbApi.renewSSOCookie()
-    #print "Updated SSO cookie"
+    error = popDbApi.renewSsoCookie()
+    if error:
+        print "Failed to renew SSO cookie, see log (%s) for more details" % (popDbApi.logFile)
+        sys.exit(1)
+    print "Renewed SSO cookie"
     if len(sys.argv) < 2:
         print "Usage: python ./popDbApi.py <APICall> ['arg1_name=arg1' 'arg2_name=arg2' ...]"
         sys.exit(2)
@@ -133,11 +187,15 @@ if __name__ == '__main__':
             print "Usage: python ./popDbApi.py <APICall> ['arg1_name=arg1' 'arg2_name=arg2' ...]"
             sys.exit(2)
         args[a] = v
+    data = 0
     try:
         data = func(**args)
     except TypeError, e:
         print e
         print "Usage: python ./popDbApi.py <APICall> ['arg1_name=arg1' 'arg2_name=arg2' ...]"
         sys.exit(3)
+    if not data:
+        print "PopDB call failed, see log (%s) for more details" % (popDbApi.logFile)
+        sys.exit(1)
     print data
     sys.exit(0)

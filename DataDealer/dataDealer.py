@@ -22,12 +22,16 @@ phedexApi = phedexApi.phedexApi()
 error = phedexApi.renewProxy()
 if error:
     with open(logFilePath, 'a') as logFile:
-        logFile.write("%s FATAL DataDealer ERROR: Couldn't create proxy, exiting\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        logFile.write("%s FATAL DataDealer ERROR: Couldn't renew proxy, exiting\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
     sys.exit(1)
 
-#popDbApi = popDbApi.popDbApi()
-#popDbApi.renewSSOCookie()
-
+popDbApi = popDbApi.popDbApi()
+error = popDbApi.renewSsoCookie()
+if error:
+    with open(logFilePath, 'a') as logFile:
+        logFile.write("%s FATAL DataDealer ERROR: Couldn't renew SSO cookie, exiting\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    sys.exit(1)
+sys.exit(0)
 #===================================================================================================
 #  M A I N
 #===================================================================================================

@@ -34,7 +34,7 @@ class phedexApi:
         strout = process.communicate()[0]
         if process.returncode != 0:
             with open(self.logFile, 'a') as logFile:
-                logFile.write("%s PhEDEx Cache ERROR: Cannot generate proxy\nError msg: %s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(strout)))
+                logFile.write("%s PhEDEx ERROR: Cannot generate proxy\nError msg: %s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(strout)))
             return 1
         return 0
 
@@ -42,7 +42,6 @@ class phedexApi:
         data = urllib.urlencode(values)
         opener = urllib2.build_opener(HTTPSGridAuthHandler())
         request = urllib2.Request(url, data)
-        fullUrl = request.get_full_url() + request.get_data()
         strout = ""
         try:
             strout = opener.open(request)
@@ -210,6 +209,11 @@ if __name__ == '__main__':
         print "Usage: python ./phedexApi.py <apiCall> ['arg1_name=arg1' 'arg2_name=arg2' ...]"
         sys.exit(2)
     phedexApi = phedexApi()
+    error = phedexApi.renewProxy()
+    if error:
+        print "Failed to renew proxy, see log (%s) for more details" % (phedexApi.logFile)
+        sys.exit(1)
+    print "Renewed proxy"
     func = getattr(phedexApi, sys.argv[1], None)
     if not func:
         print "%s is not a valid phedex api call" % (sys.argv[1])
