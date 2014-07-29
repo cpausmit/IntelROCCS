@@ -34,7 +34,9 @@ class phedexDb():
                 cur.execute('CREATE TABLE Datasets (DatasetId INTEGER PRIMARY KEY AUTOINCREMENT, DatasetName TEXT UNIQUE, SizeGb INTEGER)')
                 cur.execute('CREATE TABLE Replicas (SiteName TEXT, DatasetId INTEGER, GroupName TEXT, FOREIGN KEY(DatasetId) REFERENCES Datasets(DatasetId))')
                 phedex = phedexData.phedexData(dbPath, oldestAllowedHours)
-                phedexJsonData = phedex.getPhedexData('blockReplicas')
+                jsonData = phedex.getPhedexData('blockReplicas')
+                if not jsonData:
+                    
                 self.buildPhedexDb(phedexJsonData)
 
 #===================================================================================================
