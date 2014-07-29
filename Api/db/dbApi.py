@@ -21,7 +21,12 @@ class dbApi():
         db = "SiteStorage" # ^^Will switch database^^
         user = "cmsSiteDb"
         passwd = "db78user?Cms"
-        self.dbCon = MySQLdb.connect(host=host, user=user, passwd=passwd, db=db)
+        try:
+            self.dbCon = MySQLdb.connect(host=host, user=user, passwd=passwd, db=db)
+        except MySQLdb.Error, e:
+            with open(self.logFile, 'a') as logFile:
+                logFile.write("%s DB ERROR: %s\nError msg: %s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(e.args[0]), str(e.args[1])))
+            raise Exception("FATAL DB ERROR - Could not connect to DB")
 
 #===================================================================================================
 #  M A I N   F U N C T I O N
