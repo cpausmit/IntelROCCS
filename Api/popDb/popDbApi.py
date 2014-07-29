@@ -61,7 +61,7 @@ class popDbApi():
 #===================================================================================================
     def DataTierStatInTimeWindow(self, tstart='', tstop='', sitename='summary'):
         values = {'tstart':tstart, 'tstop':tstop, 'sitename':sitename}
-        url = urllib.basejoin(self.POPDB_BASE, "%s/?&" % ("DataTierStatInTimeWindow"))
+        url = urllib.basejoin(self.popDbBase, "%s/?&" % ("DataTierStatInTimeWindow"))
         jsonData = self.call(url, values)
         if not jsonData:
             with open(self.logFile, 'a') as logFile:
@@ -70,7 +70,7 @@ class popDbApi():
 
     def DSNameStatInTimeWindow(self, tstart='', tstop='', sitename='summary'):
         values = {'tstart':tstart, 'tstop':tstop, 'sitename':sitename}
-        url = urllib.basejoin(self.POPDB_BASE, "%s/?&" % ("DSNameStatInTimeWindow"))
+        url = urllib.basejoin(self.popDbBase, "%s/?&" % ("DSNameStatInTimeWindow"))
         jsonData = self.call(url, values)
         if not jsonData:
             with open(self.logFile, 'a') as logFile:
@@ -79,7 +79,7 @@ class popDbApi():
 
     def DSStatInTimeWindow(self, tstart='', tstop='', sitename='summary'):
         values = {'tstart':tstart, 'tstop':tstop, 'sitename':sitename}
-        url = urllib.basejoin(self.POPDB_BASE, "%s/?&" % ("DSStatInTimeWindow"))
+        url = urllib.basejoin(self.popDbBase, "%s/?&" % ("DSStatInTimeWindow"))
         jsonData = self.call(url, values)
         if not jsonData:
             with open(self.logFile, 'a') as logFile:
@@ -88,7 +88,7 @@ class popDbApi():
 
     def getCorruptedFiles(self, sitename='summary', orderby=''):
         values = {'sitename':sitename, 'orderby':orderby}
-        url = urllib.basejoin(self.POPDB_BASE, "%s/?&" % ("getCorruptedFiles"))
+        url = urllib.basejoin(self.popDbBase, "%s/?&" % ("getCorruptedFiles"))
         jsonData = self.call(url, values)
         if not jsonData:
             with open(self.logFile, 'a') as logFile:
@@ -97,7 +97,7 @@ class popDbApi():
 
     def getDSdata(self, tstart='', tstop='', sitename='summary', aggr='', n='', orderby=''):
         values = {'tstart':tstart, 'tstop':tstop, 'sitename':sitename, 'aggr':aggr, 'n':n, 'orderby':orderby}
-        url = urllib.basejoin(self.POPDB_BASE, "%s/?&" % ("getDSdata"))
+        url = urllib.basejoin(self.popDbBase, "%s/?&" % ("getDSdata"))
         jsonData = self.call(url, values)
         if not jsonData:
             with open(self.logFile, 'a') as logFile:
@@ -106,7 +106,7 @@ class popDbApi():
 
     def getDSNdata(self, tstart='', tstop='', sitename='summary', aggr='', n='', orderby=''):
         values = {'tstart':tstart, 'tstop':tstop, 'sitename':sitename, 'aggr':aggr, 'n':n, 'orderby':orderby}
-        url = urllib.basejoin(self.POPDB_BASE, "%s/?&" % ("getDSNdata"))
+        url = urllib.basejoin(self.popDbBase, "%s/?&" % ("getDSNdata"))
         jsonData = self.call(url, values)
         if not jsonData:
             with open(self.logFile, 'a') as logFile:
@@ -115,7 +115,7 @@ class popDbApi():
 
     def getDTdata(self, tstart='', tstop='', sitename='summary', aggr='', n='', orderby=''):
         values = {'tstart':tstart, 'tstop':tstop, 'sitename':sitename, 'aggr':aggr, 'n':n, 'orderby':orderby}
-        url = urllib.basejoin(self.POPDB_BASE, "%s/?&" % ("getDTdata"))
+        url = urllib.basejoin(self.popDbBase, "%s/?&" % ("getDTdata"))
         jsonData = self.call(url, values)
         if not jsonData:
             with open(self.logFile, 'a') as logFile:
@@ -124,7 +124,7 @@ class popDbApi():
 
     def getSingleDNstat(self, name='', sitename='summary', aggr='', orderby=''):
         values = {'name':name, 'sitename':sitename, 'aggr':aggr, 'orderby':orderby}
-        url = urllib.basejoin(self.POPDB_BASE, "%s/?&" % ("getSingleDNstat"))
+        url = urllib.basejoin(self.popDbBase, "%s/?&" % ("getSingleDNstat"))
         jsonData = self.call(url, values)
         if not jsonData:
             with open(self.logFile, 'a') as logFile:
@@ -133,7 +133,7 @@ class popDbApi():
 
     def getSingleDSstat(self, name='', sitename='summary', aggr='', orderby=''):
         values = {'name':name, 'sitename':sitename, 'aggr':aggr, 'orderby':orderby}
-        url = urllib.basejoin(self.POPDB_BASE, "%s/?&" % ("getSingleDSstat"))
+        url = urllib.basejoin(self.popDbBase, "%s/?&" % ("getSingleDSstat"))
         jsonData = self.call(url, values)
         if not jsonData:
             with open(self.logFile, 'a') as logFile:
@@ -142,7 +142,7 @@ class popDbApi():
 
     def getSingleDTstat(self, name='', sitename='summary', aggr='', orderby=''):
         values = {'name':name, 'sitename':sitename, 'aggr':aggr, 'orderby':orderby}
-        url = urllib.basejoin(self.POPDB_BASE, "%s/?&" % ("getSingleDTstat"))
+        url = urllib.basejoin(self.popDbBase, "%s/?&" % ("getSingleDTstat"))
         jsonData = self.call(url, values)
         if not jsonData:
             with open(self.logFile, 'a') as logFile:
@@ -151,7 +151,7 @@ class popDbApi():
 
     def getUserStat(self, tstart='', tstop='', collname='', orderby=''):
         values = {'tstart':tstart, 'tstop':tstop, 'collname':collname, 'orderby':orderby}
-        url = urllib.basejoin(self.POPDB_BASE, "%s/?&" % ("getUserStat"))
+        url = urllib.basejoin(self.popDbBase, "%s/?&" % ("getUserStat"))
         jsonData = self.call(url, values)
         if not jsonData:
             with open(self.logFile, 'a') as logFile:

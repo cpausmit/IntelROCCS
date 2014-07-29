@@ -5,6 +5,8 @@
 # then access phedex directly and get the data. First update the cache and then return the
 # data.
 # 
+# Make sure there is a valid proxy before calling.
+# 
 # In case of an error a '0' will be returned, caller must check to make sure data is returned. 
 #---------------------------------------------------------------------------------------------------
 import sys, os, json, datetime, subprocess
@@ -42,7 +44,6 @@ class phedexData:
         jsonData = ""
         # can easily extend this to support more api calls
         if apiCall == "blockReplicas":
-            # TODO : deal with any exceptions from phedex
             jsonData = self.phedexApi.blockReplicas(node='T2*', subscribed='y', show_dataset='y', create_since='0')
             if not jsonData:
                 with open(self.logFile, 'a') as logFile:
@@ -61,9 +62,6 @@ class phedexData:
         jsonData = ""
         if self.shouldAccessPhedex(apiCall):
             # update
-            error = self.phedexApi.renewProxy()
-            if error:
-                return 0
             jsonData =  self.updateCache(apiCall)
         # access cache
         else:
@@ -77,10 +75,11 @@ class phedexData:
         return jsonData
 
 if __name__ == '__main__':
-    phedexData = phedexData("%s/Cache/PhedexCache" % (os.environ['INTELROCCS_BASE']), 12)
+    cachePath = "%s/Cache/PhedexCache" % (os.environ['INTELROCCS_BASE'])
+    phedexData = phedexData(cachePath, 12)
     jsonData = phedexData.getPhedexData("blockReplicas")
     if not jsonData:
-        print "ERROR: Could not fetch PhEDEx data"
+        print "ERROR: Could not fetch PhEDEx data, see log (%s) for more details" % (phedexApi.logFile)
         sys.exit(1)
     print "SUCCESS: PhEDEx data successfully fetched"
     sys.exit(0)
