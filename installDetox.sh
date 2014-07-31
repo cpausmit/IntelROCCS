@@ -1,8 +1,8 @@
 #!/bin/bash
 # --------------------------------------------------------------------------------------------------
 #
-# Installation script for IntelROCCS/Detox. There will be lots of things to test and to fix, but this is
-# the starting point. This installation has to be performed as user root.
+# Installation script for IntelROCCS/Detox. There will be lots of things to test and to fix, but
+# this is the starting point. This installation has to be performed as user root.
 #
 #                                                                Ch.Paus: Version 0.0 (Mar 09, 2014)
 # --------------------------------------------------------------------------------------------------
@@ -12,8 +12,8 @@ export INTELROCCS_GROUP=zh
 
 source Detox/setupDetox.sh
 
-# make sure mysql is setup properly for server and clients otherwise this will not work
-# check out the README
+# make sure mysql is setup properly for server and clients otherwise this will not work check out
+# the README
 
 # General installation (you have to be in the directory of install script and you have to be root)
 
