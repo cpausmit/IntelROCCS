@@ -342,14 +342,25 @@ class CentralManager:
         today = str(datetime.date.today())
         ttime = time.strftime("%H:%M")
 
+        # this file is needed in this fromat for the initial assignments
+        activeFile = open(resultDirectory + "/ActiveSites.txt",'w')
+
+        # file with more infortmation on all sites
         outputFile = open(resultDirectory + "/SitesInfo.txt",'w')
         outputFile.write('#- ' + today + " " + ttime + "\n\n")
         outputFile.write("#- S I T E S  I N F O R M A T I O N ----\n\n")
         outputFile.write("#  Active Quota[TB] SiteName \n")
         for site in sorted(self.allSites):
             theSite = self.allSites[site]
+
+            # first write out the active sites
+            if theSite.getStatus() != 0:
+                activeFile.write("%4d %s\n"%(theSite.getSize()/1024, site))
+
+            # summary of all sites
             outputFile.write("   %-6d %-9d %-20s \n"\
                              %(theSite.getStatus(), theSite.getSize()/1024, site))
+        activeFile.close()
         outputFile.close()
 
         outputFile = open(resultDirectory + "/DeletionSummary.txt",'w')

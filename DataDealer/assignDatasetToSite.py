@@ -6,7 +6,8 @@
 #
 #---------------------------------------------------------------------------------------------------
 import os, sys, subprocess, getopt, re, random, urllib, urllib2, httplib, json
-import IntelROCCS.Api.phedex.phedexApi as phedexApi
+
+## import IntelROCCS.Api.phedex.phedexApi as phedexApi
 
 #===================================================================================================
 #  C L A S S E S
@@ -320,14 +321,14 @@ def findExistingSubscriptions(dataset,debug=0):
 def getActiveSites(debug=0):
 	# hardcoded fallback
 	tier2Base = [ 'T2_AT_Vienna','T2_BR_SPRACE','T2_CH_CSCS','T2_DE_DESY','T2_DE_RWTH',
-				  'T2_ES_CIEMAT','T2_ES_IFCA',
-				  'T2_FR_IPHC','T2_FR_GRIF_LLR',
-				  'T2_IT_Pisa','T2_IT_Bari','T2_IT_Rome',
-				  'T2_RU_JINR',
-				  'T2_UK_London_IC',
-				  'T2_US_Caltech','T2_US_Florida','T2_US_MIT','T2_US_Nebraska','T2_US_Purdue',
-				  'T2_US_Wisconsin'
-				  ]
+		      'T2_ES_CIEMAT','T2_ES_IFCA',
+		      'T2_FR_IPHC','T2_FR_GRIF_LLR',
+		      'T2_IT_Pisa','T2_IT_Bari','T2_IT_Rome',
+		      'T2_RU_JINR',
+		      'T2_UK_London_IC',
+		      'T2_US_Caltech','T2_US_Florida','T2_US_MIT','T2_US_Nebraska','T2_US_Purdue',
+		      'T2_US_Wisconsin'
+		      ]
 
 	# download list of active sites
 	sites = []
