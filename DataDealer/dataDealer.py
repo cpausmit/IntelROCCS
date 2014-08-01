@@ -12,8 +12,8 @@ import IntelROCCS.Report.dataDealerReport as dataDealerReport
 # Setup parameters
 # We would like to make these easier to change in the future
 logFilePath = os.environ['INTELROCCS_LOG']
-threshold = 1 # TODO : Find better threshold
-budgetGb = 10000 # TODO : Decide on a budget
+threshold = 1
+budgetGb = 10000
 phedexApi = phedexApi.phedexApi()
 error = phedexApi.renewProxy()
 if error:
@@ -32,15 +32,23 @@ if error:
 #  M A I N
 #===================================================================================================
 # Get dataset rankings
+print "Dataset Ranking --- Start"
 datasetRanker = datasetRanker.datasetRanker(threshold)
 datasetRankings = datasetRanker.getDatasetRankings()
 datasetRankingsCopy = copy.deepcopy(datasetRankings)
+print "Dataset Ranking --- Stop"
 
 # Get site rankings
+print "Site Ranking --- Start"
 siteRanker = siteRanker.siteRanker()
 siteRankings = siteRanker.getSiteRankings()
+print "Dataset Ranking --- Stop"
 
 # Select datasets and sites for subscriptions
+print "Subscriptions --- Start"
+phedexDbPath = "%s/Cache/PhedexCache" % (os.environ['INTELROCCS_BASE'])
+phedexDbFile = "%s/blockReplicas.db" % (phedexDbPath)
+phedexDbCon = sqlite3.connect(phedexDbFile)
 select = select.select()
 subscriptions = dict()
 selectedGb = 0
@@ -52,32 +60,55 @@ while (selectedGb < budgetGb) and (datasetRankings):
 	else:
 		subscriptions[siteName] = [datasetName]
 	del datasetRankings[datasetName]
-
-phedexDbPath = "%s/Cache/PhedexCache" % (os.environ['INTELROCCS_BASE'])
-phedexDbFile = "%s/blockReplicas.db" % (phedexDbPath)
-phedexDbCon = sqlite3.connect(phedexDbFile)
-requestsDbPath = "%s/Cache" % (os.environ['INTELROCCS_BASE'])
-requestsDbFile = "%s/requests.db" % (requestsDbPath)
-requestsDbCon = sqlite3.connect(requestsDbFile)
-# create subscriptions
-for siteName in iter(subscriptions):
-	subscriptionData = phedexApi.createXml(subscriptions[siteName], instance='prod')
-	jsonData = phedexApi.subscribe(node=siteName, data=subscriptionData, level='dataset', move='n', custodial='n', group='AnalysisOps', request_only='y', no_mail='n', comments='IntelROCCS DataDealer', instance='prod')
-	requestType = 0
-	groupName = 'AnalysisOps'
-	request = jsonData.get('phedex')
-	requestId = request.get('request_created')[0].get('id')
-	requestTimestamp = int(request.get('request_timestamp'))
-	for datasetName in subscriptions[siteName]:
-		datasetRank = datasetRankingsCopy[datasetName]
-	datasetSizeGb = 0
 	with phedexDbCon:
 		cur = phedexDbCon.cursor()
 		cur.execute('SELECT SizeGb FROM Datasets WHERE DatasetName=?', (datasetName,))
-		datasetSizeGb = cur.fetchone()[0]
+		sizeGb = cur.fetchone()[0]
+	selectedGb += sizeGb
+print "Subscriptions --- Stop"
+
+print "Update DB --- Start"
+requestsDbPath = "%s/Cache" % (os.environ['INTELROCCS_BASE'])
+requestsDbFile = "%s/requests.db" % (requestsDbPath)
+requestsDbCon = sqlite3.connect(requestsDbFile)
+with requestsDbCon:
+	cur = requestsDbCon.cursor()
+	cur.execute('CREATE TABLE IF NOT EXISTS Requests (RequestId INTEGER, RequestType INTEGER, DatasetName TEXT, SiteName TEXT, SizeGb REAL, Rank REAL, GroupName TEXT, Timestamp TEXT)')
+
+# create subscriptions
+for siteName in iter(subscriptions):
+	subscriptionData = phedexApi.createXml(datasets=subscriptions[siteName], instance='prod')
+	if not subscriptionData:
+		with open(logFilePath, 'a') as logFile:
+			logFile.write("%s DataDealer ERROR: Creating PhEDEx XML data failed for datasets %s on site %s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(subscriptions[siteName]), siteName))
+		continue
+	jsonData = phedexApi.subscribe(node=siteName, data=subscriptionData, level='dataset', move='n', custodial='n', group='AnalysisOps', request_only='y', no_mail='n', comments='IntelROCCS DataDealer', instance='prod')
+	if not jsonData:
+		with open(logFilePath, 'a') as logFile:
+			logFile.write("%s DataDealer ERROR: Failed to create subscription for datasets %s on site %s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(subscriptions[siteName]), siteName))
+		continue
+	requestType = 0
+	requestId = 0
+	groupName = 'AnalysisOps'
+	request = jsonData.get('phedex')
+	try:
+		requestId = request.get('request_created')[0].get('id')
+	except IndexError, e:
+		with open(logFilePath, 'a') as logFile:
+			logFile.write("%s DataDealer ERROR: Failed to create subscription for datasets %s on site %s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(subscriptions[siteName]), siteName))
+		continue
+	requestTimestamp = int(request.get('request_timestamp'))
+	for datasetName in subscriptions[siteName]:
+		datasetRank = datasetRankingsCopy[datasetName]
+	sizeGb = 0
+	with phedexDbCon:
+		cur = phedexDbCon.cursor()
+		cur.execute('SELECT SizeGb FROM Datasets WHERE DatasetName=?', (datasetName,))
+		sizeGb = cur.fetchone()[0]
 		with requestsDbCon:
 			cur = requestsDbCon.cursor()
-			cur.execute('INSERT INTO Requests(RequestId, RequestType, DatasetName, SiteName, SizeGb, Rank, GroupName, Timestamp) VALUES(?, ?, ?, ?, ?, ?, ?, ?)', (requestId, requestType, datasetName, siteName, datasetSizeGb, datasetRank, groupName, requestTimestamp))
+			cur.execute('INSERT INTO Requests(RequestId, RequestType, DatasetName, SiteName, SizeGb, Rank, GroupName, Timestamp) VALUES(?, ?, ?, ?, ?, ?, ?, ?)', (requestId, requestType, datasetName, siteName, sizeGb, datasetRank, groupName, requestTimestamp))
+print "Update DB --- Stop"
 
 # Send summary report
 # TODO : Send daliy report
