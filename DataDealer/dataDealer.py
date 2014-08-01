@@ -77,8 +77,8 @@ with requestsDbCon:
 
 # create subscriptions
 for siteName in iter(subscriptions):
-	subscriptionData = phedexApi.createXml(datasets=subscriptions[siteName], instance='prod')
-	if not subscriptionData:
+	datasets, subscriptionData = phedexApi.createXml(datasets=subscriptions[siteName], instance='prod')
+	if not datasets:
 		with open(logFilePath, 'a') as logFile:
 			logFile.write("%s DataDealer ERROR: Creating PhEDEx XML data failed for datasets %s on site %s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(subscriptions[siteName]), siteName))
 		continue
@@ -98,16 +98,16 @@ for siteName in iter(subscriptions):
 			logFile.write("%s DataDealer ERROR: Failed to create subscription for datasets %s on site %s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(subscriptions[siteName]), siteName))
 		continue
 	requestTimestamp = int(request.get('request_timestamp'))
-	for datasetName in subscriptions[siteName]:
+	for datasetName in datasets:
 		datasetRank = datasetRankingsCopy[datasetName]
-	sizeGb = 0
-	with phedexDbCon:
-		cur = phedexDbCon.cursor()
-		cur.execute('SELECT SizeGb FROM Datasets WHERE DatasetName=?', (datasetName,))
-		sizeGb = cur.fetchone()[0]
-		with requestsDbCon:
-			cur = requestsDbCon.cursor()
-			cur.execute('INSERT INTO Requests(RequestId, RequestType, DatasetName, SiteName, SizeGb, Rank, GroupName, Timestamp) VALUES(?, ?, ?, ?, ?, ?, ?, ?)', (requestId, requestType, datasetName, siteName, sizeGb, datasetRank, groupName, requestTimestamp))
+		sizeGb = 0
+		with phedexDbCon:
+			cur = phedexDbCon.cursor()
+			cur.execute('SELECT SizeGb FROM Datasets WHERE DatasetName=?', (datasetName,))
+			sizeGb = cur.fetchone()[0]
+			with requestsDbCon:
+				cur = requestsDbCon.cursor()
+				cur.execute('INSERT INTO Requests(RequestId, RequestType, DatasetName, SiteName, SizeGb, Rank, GroupName, Timestamp) VALUES(?, ?, ?, ?, ?, ?, ?, ?)', (requestId, requestType, datasetName, siteName, sizeGb, datasetRank, groupName, requestTimestamp))
 print "Update DB --- Stop"
 
 # Send summary report
