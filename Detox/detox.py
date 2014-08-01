@@ -63,14 +63,8 @@ timeNow = time.time()
 print ' - Collecting site information took: %d seconds'%(timeNow-timePre)
 timePre = timeNow
 
-
-#centralManager.showRunawayDatasets()
-#centralManager.printUsagePatterns()
-
 centralManager.rankDatasetsLocally()
-
 centralManager.rankDatasetsGlobally()
-
 centralManager.makeDeletionLists()
 
 timeNow = time.time()

@@ -1,12 +1,10 @@
-#====================================================================================================
+#===================================================================================================
 #  C L A S S
-#====================================================================================================
-
+#===================================================================================================
 import sys, os, subprocess, re, time, datetime, smtplib, MySQLdb, shutil, string, glob
-import phedexDataHandler, popularityDataHandler
+import phedexDataHandler, popularityDataHandler, phedexApi
 import siteProperties, datasetProperties
 import siteStatus
-import phedexApi
 	
 class CentralManager:
     def __init__(self):
@@ -30,7 +28,6 @@ class CentralManager:
 
     def getDbConnection(self,db=os.environ.get('DETOX_SITESTORAGE_DB')):
         # configuration
-        #db = os.environ.get('DETOX_SITESTORAGE_DB')
         server = os.environ.get('DETOX_SITESTORAGE_SERVER')
         user = os.environ.get('DETOX_SITESTORAGE_USER')
         pw = os.environ.get('DETOX_SITESTORAGE_PW')
@@ -62,14 +59,9 @@ class CentralManager:
 
     def getAllSites(self):
         db = os.environ.get('DETOX_SITESTORAGE_DB')
-        server = os.environ.get('DETOX_SITESTORAGE_SERVER')
-        user = os.environ.get('DETOX_SITESTORAGE_USER')
-        pw = os.environ.get('DETOX_SITESTORAGE_PW')
         table = os.environ.get('DETOX_QUOTAS')
 
         print ' Access quota table (%s) in site storage database (%s) to find all sites.'%(table,db)
-        #db = MySQLdb.connect(host=server,db=db, user=user,passwd=pw)
-        #cursor = db.cursor()
         connection = self.getDbConnection()
         cursor = connection.cursor()
         
@@ -100,13 +92,8 @@ class CentralManager:
             else:
                 print ' Site --- active, status=%d  - %s'%(self.allSites[site].getStatus(),site)
 
-        #siteName = "T2_US_CHECK"
-        #self.allSites[siteName] = siteStatus.SiteStatus(siteName)
-        #self.allSites[siteName].setStatus(1)
-        #self.allSites[siteName].setSize(250*1024)
-
     def checkProxyValid(self):
-        process = subprocess.Popen(["/usr/bin/voms-proxy-info","-file",os.environ['DETOX_X509UP'] ],
+        process = subprocess.Popen(["/usr/bin/voms-proxy-info","-file",os.environ['DETOX_X509UP']],
                                    shell=True,stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         
         output, err = process.communicate()
@@ -287,13 +274,13 @@ class CentralManager:
 
         for datasetName in self.dataPropers.keys():
             dataPr = self.dataPropers[datasetName]
-            count_wishes = 0
+            countWishes = 0
             for site in self.sitePropers.keys():
                 sitePr = self.sitePropers[site]
                 if(sitePr.onWishList(datasetName)):
-                    count_wishes = count_wishes + 1
+                    countWishes = countWishes + 1
 
-            if dataPr.nSites()-dataPr.nBeDeleted() - count_wishes > (self.DETOX_NCOPY_MIN-1):
+            if dataPr.nSites()-dataPr.nBeDeleted() - countWishes > (self.DETOX_NCOPY_MIN-1):
                 # grant wishes to all sites
                 for site in self.sitePropers.keys():
                     sitePr = self.sitePropers[site]
@@ -342,14 +329,25 @@ class CentralManager:
         today = str(datetime.date.today())
         ttime = time.strftime("%H:%M")
 
+        # this file is needed in this fromat for the initial assignments
+        activeFile = open(resultDirectory + "/ActiveSites.txt",'w')
+
+        # file with more infortmation on all sites
         outputFile = open(resultDirectory + "/SitesInfo.txt",'w')
         outputFile.write('#- ' + today + " " + ttime + "\n\n")
         outputFile.write("#- S I T E S  I N F O R M A T I O N ----\n\n")
         outputFile.write("#  Active Quota[TB] SiteName \n")
         for site in sorted(self.allSites):
             theSite = self.allSites[site]
+
+            # first write out the active sites
+            if theSite.getStatus() != 0:
+                activeFile.write("%4d %s\n"%(theSite.getSize()/1024, site))
+
+            # summary of all sites
             outputFile.write("   %-6d %-9d %-20s \n"\
                              %(theSite.getStatus(), theSite.getSize()/1024, site))
+        activeFile.close()
         outputFile.close()
 
         outputFile = open(resultDirectory + "/DeletionSummary.txt",'w')
@@ -377,18 +375,21 @@ class CentralManager:
             if not os.path.exists(sitedir):
                 os.mkdir(sitedir)
                 
-            file_timest = sitedir + "/Summary.txt"
-            file_remain = sitedir + "/RemainingDatasets.txt"
-            file_delete = sitedir + "/DeleteDatasets.txt"
-            file_protected = sitedir + "/ProtectedDatasets.txt"
+            fileTimest = sitedir + "/Summary.txt"
+            fileRemain = sitedir + "/RemainingDatasets.txt"
+            fileDelete = sitedir + "/DeleteDatasets.txt"
 
-            outputFile = open(file_timest,'w')
+            # CP-  Max what is this file ? # fileProtected = sitedir + "/ProtectedDatasets.txt"
+
+            outputFile = open(fileTimest,'w')
             outputFile.write('#- ' + today + " " + ttime + "\n\n")
             outputFile.write("#- D E L E T I O N  P A R A M E T E R S ----\n\n")
-            outputFile.write("Upper Threshold     : %8.2f / %4d [TB]\n" \
-                                 %(self.DETOX_USAGE_MAX, self.DETOX_USAGE_MAX*sitePr.siteSizeGb()/1024))
-            outputFile.write("Lower Threshold     : %8.2f / %4d [TB]\n" \
-                                 %(self.DETOX_USAGE_MIN, self.DETOX_USAGE_MIN*sitePr.siteSizeGb()/1024))
+            outputFile.write("Upper Threshold     : %8.2f  ->  %4d [TB]\n" \
+                                 %(self.DETOX_USAGE_MAX,
+                                   self.DETOX_USAGE_MAX*sitePr.siteSizeGb()/1024))
+            outputFile.write("Lower Threshold     : %8.2f  ->  %4d [TB]\n" \
+                                 %(self.DETOX_USAGE_MIN,
+                                   self.DETOX_USAGE_MIN*sitePr.siteSizeGb()/1024))
             outputFile.write("\n")
             outputFile.write("#- S P A C E  S U M M A R Y ----------------\n\n")
             outputFile.write("Total Space     [TB]: %8.2f\n"%(sitePr.siteSizeGb()/1024))
@@ -398,8 +399,8 @@ class CentralManager:
             outputFile.close()
             
             if len(sitePr.delTargets()) > 0:
-                print " File: " + file_delete
-            outputFile = open(file_delete,'w')
+                print " File: " + fileDelete
+            outputFile = open(fileDelete,'w')
             outputFile.write("# -- " + today + " " + ttime + "\n#\n")
             outputFile.write("#   Rank      Size nsites nsites  DatasetName \n")
             outputFile.write("#[~days]      [GB] before after               \n")
@@ -415,7 +416,7 @@ class CentralManager:
                 print '  -> ' + dset
             outputFile.close()
 
-            outputFile = open(file_remain,'w')
+            outputFile = open(fileRemain,'w')
             outputFile.write("# -- " + today + " " + ttime + "\n\n")
             outputFile.write("#   Rank      Size nsites nsites  DatasetName \n")
             outputFile.write("#[~days]      [GB] before after               \n")
@@ -434,7 +435,6 @@ class CentralManager:
 
 
     def requestDeletions(self):
-        
         for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
             sitePr = self.sitePropers[site]
 
@@ -457,7 +457,7 @@ class CentralManager:
                 sys.exit(1)
                 
             # here the request is really sent
-            message = 'IntelROCCS -- Automatic Cache Release Request (if not acted upon will repeat ' + \
+            message = 'IntelROCCS -- Automatic Cache Release Request (next check ' + \
                       'in about %s hours).'%(os.environ['DETOX_CYCLE_HOURS']) + \
                       ' Summary at: http://t3serv001.mit.edu/~cmsprod/IntelROCCS/Detox/result/'
             check,response = phedex.delete(node=site,data=data,comments=message,instance='prod')
@@ -484,8 +484,8 @@ class CentralManager:
                 #cursor = db.cursor()
                 connection = self.getDbConnection(os.environ.get('DETOX_HISTORY_DB'))
                 cursor = connection.cursor()
-                sql = "insert into Requests(RequestId,RequestType,SiteName,Dataset,Size,Rank,GroupName," + \
-                      "TimeStamp) values ('%d', '%d', '%s', '%s', '%d', '%d', '%s', '%s' )" % \
+                sql = "insert into Requests(RequestId,RequestType,SiteName,Dataset,Size,Rank," \
+                      "GroupName,TimeStamp) values('%d','%d','%s','%s','%d','%d','%s','%s')" % \
                       (id, 1, site, dataset,size,rank,group,date)
                     
                 # ! this could be done in one line but it is just nice to see what is deleted !
@@ -557,12 +557,11 @@ class CentralManager:
         resultDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_RESULT']
         outputFile = open(resultDirectory + '/' + site + '/DeletionHistory.txt','w')
         
-        outputFile.write("# ======================================================================\n")
-        outputFile.write("# This is the list of the 20 last phedex deletion requests at this site.\n")
-        outputFile.write("#  ---- note: presently those requests are not necessarily approved.    \n")
-        outputFile.write("# ======================================================================\n")
+        outputFile.write("# ================================================================\n")
+        outputFile.write("#  List of at most 20 last phedex deletion requests at this site. \n")
+        outputFile.write("#  ---- note: those requests are not necessarily approved.        \n")
+        outputFile.write("# ================================================================\n")
 
-        
         counter = 0
         prevReqSize = 0
         for reqid in sorted(siteRequests,reverse=True):
