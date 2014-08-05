@@ -421,7 +421,7 @@ class CentralManager:
             for dataset in datasets2del:
                 totalSize =  totalSize + sitePr.dsetSize(dataset)
             print "Deletion request for site " + site
-            print " -- Number of datasets     = " + str(len(datasets2del))
+            print " -- Number of datasets       = " + str(len(datasets2del))
             print "%s %0.2f %s" %(" -- Total size to be deleted =",totalSize/1024,"TB")
             
             phedex = phedexApi.phedexApi(logPath='./')

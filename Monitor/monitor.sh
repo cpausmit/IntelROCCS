@@ -38,20 +38,21 @@ do
 done
 
 # make nice histograms
-root -q -b -l plotSites.C
+pwd
+root -q -b -l $MONITOR_BASE/plotSites.C
 
 # extract dataset info
 $MONITOR_BASE/readJsonSnapshot.py T2*
 mv DatasetSummary.txt DatasetSummaryAll.txt
 export DATASET_MONITOR_TEXT="since 07/2013"
 export DATASET_MONITOR_FILE=DatasetSummaryAll
-root -q -b -l plotDatasets.C
+root -q -b -l $MONITOR_BASE/plotDatasets.C
 
 $MONITOR_BASE/readJsonSnapshot.py T2* 2014*
 mv DatasetSummary.txt DatasetSummary2014.txt
 export DATASET_MONITOR_TEXT="Summary 2014"
 export DATASET_MONITOR_FILE=DatasetSummary2014
-root -q -b -l plotDatasets.C
+root -q -b -l $MONITOR_BASE/plotDatasets.C
 
 for period in `echo 01 02 03 04 05 06`
 do
@@ -59,12 +60,12 @@ do
   mv     DatasetSummary.txt DatasetSummary${period}-2014.txt
   export DATASET_MONITOR_TEXT="${period}/2014"
   export DATASET_MONITOR_FILE=DatasetSummary${period}-2014
-  root -q -b -l plotDatasets.C
+  root -q -b -l $MONITOR_BASE/plotDatasets.C
 done
 
 # move the results to the log file area ( to be updated to the monitor areas )
-mkdir -p    $DETOX_DB/$DETOX_MONITOR
-mv    *.txt $DETOX_DB/$DETOX_MONITOR
-mv    *.png $DETOX_DB/$DETOX_MONITOR
+mkdir -p    $MONITOR_DB
+mv    *.txt $MONITOR_DB
+mv    *.png $MONITOR_DB
 
 exit 0

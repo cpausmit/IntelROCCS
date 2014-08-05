@@ -1,8 +1,7 @@
-#!/usr/local/bin/python
+#!/usr/bin/python
 #---------------------------------------------------------------------------------------------------
 #
-# This script uses das_client.py to extract the given dataset properties. It will determine the
-# number of files and the dataset size.
+# This script uses the phedex database to extract the transfer/deletion history of a given dataset.
 #
 #---------------------------------------------------------------------------------------------------
 import os, sys, re, subprocess, MySQLdb

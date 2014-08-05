@@ -43,6 +43,7 @@ chown ${INTELROCCS_USER}:${INTELROCCS_GROUP} -R $DETOX_DB
 # stop potentially existing server process
 if [ -e "/etc/init.d/detoxd" ]
 then
+  /etc/init.d/detoxd status
   /etc/init.d/detoxd stop
 fi
 
