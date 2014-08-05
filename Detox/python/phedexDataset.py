@@ -123,7 +123,6 @@ class PhedexDataset:
         if len(self.siteNames.keys()) < 1:
             return
 
-        different = False
         fullSize = (sorted(self.sizeAtSite.values(),reverse=True))[0]
         fullFiles = (sorted(self.filesAtSite.values(),reverse=True))[0]
         self.filesFull = fullFiles
@@ -132,11 +131,6 @@ class PhedexDataset:
                 #only valid dataset can be taged as partial
                 if self.isValid(site):
                     self.partialAtSite[site] = True
-                    different = True
-
-        if different:
-            print self.dataset
-            print self.filesAtSite
 
     def printIntoLine(self):
         if(len(self.siteNames.keys()) < 1):
