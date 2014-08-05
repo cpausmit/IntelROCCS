@@ -42,7 +42,8 @@ class CentralManager:
             try:
                 self.phedexHandler.extractPhedexData(federation)
             except:
-                self.sendEmail()
+                self.sendEmail("Problems detected while running Cache Release",\
+                                   "Execution was terminated, check log to correct problems.")
                 raise
         else:
             self.phedexHandler.readPhedexData()
@@ -54,7 +55,8 @@ class CentralManager:
         try:
             self.popularityHandler.extractPopularityData()
         except :
-            self.sendEmail()
+            self.sendEmail("Problems detected while running Cache Release",\
+                               "Execution was terminated, check log to correct problems.")
             raise
 
     def getAllSites(self):
@@ -99,7 +101,8 @@ class CentralManager:
         output, err = process.communicate()
         p_status = process.wait()
         if p_status != 0:
-            self.sendEmail()
+            self.sendEmail("Problems detected while running Cache Release",\
+                               "Execution was terminated, check log to correct problems.")
             raise Exception(" FATAL -- Bad proxy file " + os.environ['DETOX_X509UP'])
 
         m = (re.findall(r"timeleft\s+:\s+(\d+):(\d+):(\d+)",output))[0]
@@ -108,7 +111,8 @@ class CentralManager:
         if hours > 0:
             pass
         elif mins < 10:
-            self.sendEmail()
+            self.sendEmail("Problems detected while running Cache Release",\
+                               "Execution was terminated, check log to correct problems.")
             raise Exception(" FATAL -- Bad proxy file " + os.environ['DETOX_X509UP'])
 
     def rankDatasetsLocally(self):
@@ -435,6 +439,8 @@ class CentralManager:
 
 
     def requestDeletions(self):
+
+        numberRequests = 0
         for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
             sitePr = self.sitePropers[site]
 
@@ -442,6 +448,7 @@ class CentralManager:
             if len(datasets2del) < 1:
                 continue
 
+            numberRequests = numberRequests + 1
             totalSize = 0
             for dataset in datasets2del:
                 totalSize =  totalSize + sitePr.dsetSize(dataset)
@@ -498,6 +505,10 @@ class CentralManager:
                     ## connection.rollback()
                 # close the connection to the database
                 connection.close()
+
+        if(numberRequests > 0):
+            self.sendEmail("report from CacheRelease",\
+                               "Submitted deletion requests, check log for details.")
 
     def showCacheRequests(self):
         for site in sorted(self.allSites.keys()):
@@ -590,42 +601,12 @@ class CentralManager:
 
         outputFile.close()
 
-    def showRunawayDatasets(self):
-         for site in sorted(self.allSites.keys()):
-             if self.allSites[site].getStatus() != 0:
-                 self.showRunawaysForSite(site)
-                 
-    def showRunawaysForSite(self,site):
-        print "\n" + site
-        phedexSets = self.phedexHandler.getPhedexDatasetsAtSite(site)
-        groups = {}
-        for dataset in phedexSets:
-            groupName = dataset.group(site)
-            if groupName=='AnalysisOps':
-                continue
-            if groupName=='DataOps':
-                continue
-            if groupName=='FacOps':
-                continue
-            if groupName=='local':
-                continue
-            if groupName=='heavy-ions':
-                continue
-            
-            if groupName not in groups.keys():
-                groups[groupName] = dataset.size(site)
-            else:
-                groups[groupName] = groups[groupName] + dataset.size(site)
-
-        for groupName in sorted(groups.keys(), key=groups.get, reverse=True):
-            print "%-14s %0.1f " %(groupName,groups[groupName])
-
-    def sendEmail(self):
+    def sendEmail(self,subject,body):
         emails = os.environ['DETOX_EMAIL_LIST']
         To = emails.split(",")
         From = "maxi@t3btch039.mit.edu"
-        Subj = "Problems detected while running Cache Release"
-        Text = """Execution was terminated, check log to correct problems."""
+        Subj = subject
+        Text = "" + body + ""
         
         Body = string.join((
             "From: %s" % From,
