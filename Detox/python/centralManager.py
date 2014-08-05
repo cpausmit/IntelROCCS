@@ -330,10 +330,10 @@ class CentralManager:
         ttime = time.strftime("%H:%M")
 
         # this file is needed in this fromat for the initial assignments
-        activeFile = open(resultDirectory + "/ActiveSites.txt",'w')
+        activeFile = open(os.environ['DETOX_DB'] + "/ActiveSites.txt",'w')
 
         # file with more infortmation on all sites
-        outputFile = open(resultDirectory + "/SitesInfo.txt",'w')
+        outputFile = open(os.environ['DETOX_DB'] + "/SitesInfo.txt",'w')
         outputFile.write('#- ' + today + " " + ttime + "\n\n")
         outputFile.write("#- S I T E S  I N F O R M A T I O N ----\n\n")
         outputFile.write("#  Active Quota[TB] SiteName \n")
@@ -350,7 +350,7 @@ class CentralManager:
         activeFile.close()
         outputFile.close()
 
-        outputFile = open(resultDirectory + "/DeletionSummary.txt",'w')
+        outputFile = open(os.environ['DETOX_DB'] + "/DeletionSummary.txt",'w')
         outputFile.write('#- ' + today + " " + ttime + "\n\n")
         outputFile.write("#- D E L E T I O N  R E Q U E S T S ----\n\n")
         outputFile.write("#  NDatasets Size[TB] SiteName \n")
@@ -446,7 +446,7 @@ class CentralManager:
             for dataset in datasets2del:
                 totalSize =  totalSize + sitePr.dsetSize(dataset)
             print "Deletion request for site " + site
-            print " -- Number of datassetes     = " + str(len(datasets2del))
+            print " -- Number of datasets       = " + str(len(datasets2del))
             print "%s %0.2f %s" %(" -- Total size to be deleted =",totalSize/1024,"TB")
             
             phedex = phedexApi.phedexApi(logPath='./')

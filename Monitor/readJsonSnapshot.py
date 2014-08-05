@@ -1,5 +1,5 @@
-#!/usr/local/bin/python
-#--------------------------------------------------------------------------------------------------
+#!/usr/bin/python
+#-------------------------------------------------------------------------------------------------
 #
 # This script reads the information from a set of JSON snapshot files that we use to cache our
 # popularity information.
@@ -9,7 +9,7 @@ import os, sys, re, glob, subprocess, json, pprint, MySQLdb
 import datasetProperties
 #import ROOT
 
-if not os.environ.get('DETOX_DB'):
+if not os.environ.get('DETOX_DB') or not os.environ.get('MONITOR_DB'):
     print '\n ERROR - DETOX environment not defined: source setup.sh\n'
     sys.exit(0)
 
@@ -26,14 +26,18 @@ def processPhedexCacheFile(fileName,debug=0):
     for line in iFile.xreadlines():
         line = line[:-1]
         f = line.split()
-        if len(f) == 5:
+        if len(f) == 8:
             dataset = f[0]
             group   = f[1]
-            date    = f[2]
-            size    = f[3]
-            site    = f[4]
+            date    = int(f[2])
+            size    = float(f[3])
+            nFiles  = int(f[4])
+            valid   = int(f[5])
+            custd   = int(f[6])
+            site    = f[7]
+
         else:
-            print 'Columns not equal 5: \n %s'%(line)
+            print 'Columns not equal 8: \n %s'%(line)
             sys.exit(1)
 
         # first step, find the sizes per site per dataset hash array
@@ -44,9 +48,9 @@ def processPhedexCacheFile(fileName,debug=0):
             sizesPerSite[site] = sizesPerSitePerDataset
 
         if dataset in sizesPerSitePerDataset:
-            sizesPerSitePerDataset[dataset] += float(size)
+            sizesPerSitePerDataset[dataset] += size
         else:
-            sizesPerSitePerDataset[dataset]  = float(size)
+            sizesPerSitePerDataset[dataset]  = size
 
     iFile.close();
 
@@ -153,7 +157,7 @@ def findDatasetSize(dataset,debug=0):
     # find the file size of a given data set (dataset) and return the number of files in the dataset
     # and its size in GB
 
-    cmd = './findDatasetProperties.py ' + dataset + ' short | tail -1'
+    cmd = os.environ.get('MONITOR_BASE') + '/findDatasetProperties.py ' + dataset + ' short | tail -1'
     if debug>-1:
         print ' CMD: ' + cmd
     nFiles = 0
@@ -356,7 +360,7 @@ for key in nAllAccessed:
     if sizeAnalysis:
         if not key in fileNumbers:
             # update the dataset history
-            cmd = './findDatasetHistory.py ' + key + ' 2> /dev/null'
+            cmd = os.environ.get('MONITOR_BASE') + '/findDatasetHistory.py ' + key + ' 2> /dev/null'
             print ' CMD: ' + cmd
             os.system(cmd)
             # update the dataset properties

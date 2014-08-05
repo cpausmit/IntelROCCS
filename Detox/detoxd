@@ -48,6 +48,8 @@ do
     echo " "                                                         >> $logFile
     echo " detox loop $index started -- $tag (cycle wait $wait sec)" >> $logFile
     echo " "                                                         >> $logFile
+    echo "   --> "`date`                                             >> $logFile
+    echo " "                                                         >> $logFile
     stdbuf -o0 -e0 $DETOX_BASE/detox.py                              >> $logFile 2>&1
 
     # insure that the log information is updated

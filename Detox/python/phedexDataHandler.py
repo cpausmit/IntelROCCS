@@ -120,9 +120,13 @@ class PhedexDataHandler:
                           + filename, "w")
         for datasetName in self.phedexDatasets:
             line = self.phedexDatasets[datasetName].printIntoLine()
+
+            # CP- Max I do not understand this test, what are you trying to catch here?
             if len(line) < 10:
                 print " SKIPING " + datasetName
                 continue
+
+
             outputFile.write(line)
             
         outputFile.close()
