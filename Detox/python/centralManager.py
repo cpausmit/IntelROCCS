@@ -49,7 +49,6 @@ class CentralManager:
             self.phedexHandler.readPhedexData()
 
         self.phedexHandler.findIncomplete()
-        #self.phedexHandler.checkDataComplete()
 
     def extractPopularityData(self):
         try:
@@ -165,37 +164,6 @@ class CentralManager:
         origFile = statusDirectory+'/'+site+'/'+os.environ['DETOX_DATASETS_TO_DELETE']
         copyFile = statusDirectory+'/'+site+'/'+os.environ['DETOX_DATASETS_TO_DELETE']+'-local'
         shutil.copy2(origFile,copyFile)
-
-
-    def printUsagePatterns(self):
-        phedexSets = self.phedexHandler.getPhedexDatasets()
-        usedSets = self.popularityHandler.getUsedDatasets()
-
-        today = time.time()
-        for datasetName in sorted(phedexSets.keys()):
-            phedexDset = phedexSets[datasetName]
-            siteNames = phedexDset.locatedOnSites()
-            nSites = 0
-            nFiles = 0
-            size = 0
-            nUsed = 0
-            for site in siteNames:
-                if self.allSites[site].getStatus() == 0:
-                    continue
-                crDate = phedexDset.creationTime(site)
-                #pick datasets based on when they were created
-                if (today-crDate) < 90*24*60*60 :
-                    continue
-
-                nSites = nSites + 1
-                size = phedexDset.size(site)
-                nFiles = phedexDset.getNfiles(site)
-                if datasetName in usedSets.keys():
-                    usedDset = usedSets[datasetName]
-                    if usedDset.isOnSite(site):
-                        nUsed = nUsed + usedDset.timesUsed(site)
-            if nSites > 0:
-                print str(nSites) + " " + str(size) + " " + str(nFiles) + " " + str(nUsed)
         
     def rankDatasetsGlobally(self):
         secsPerDay = 60*60*24
@@ -334,10 +302,10 @@ class CentralManager:
         ttime = time.strftime("%H:%M")
 
         # this file is needed in this fromat for the initial assignments
-        activeFile = open(resultDirectory + "/ActiveSites.txt",'w')
+        activeFile = open(os.environ['DETOX_DB'] + "/ActiveSites.txt",'w')
 
         # file with more infortmation on all sites
-        outputFile = open(resultDirectory + "/SitesInfo.txt",'w')
+        outputFile = open(os.environ['DETOX_DB'] + "/SitesInfo.txt",'w')
         outputFile.write('#- ' + today + " " + ttime + "\n\n")
         outputFile.write("#- S I T E S  I N F O R M A T I O N ----\n\n")
         outputFile.write("#  Active Quota[TB] SiteName \n")
@@ -354,7 +322,7 @@ class CentralManager:
         activeFile.close()
         outputFile.close()
 
-        outputFile = open(resultDirectory + "/DeletionSummary.txt",'w')
+        outputFile = open(os.environ['DETOX_DB'] + "/DeletionSummary.txt",'w')
         outputFile.write('#- ' + today + " " + ttime + "\n\n")
         outputFile.write("#- D E L E T I O N  R E Q U E S T S ----\n\n")
         outputFile.write("#  NDatasets Size[TB] SiteName \n")
@@ -453,7 +421,7 @@ class CentralManager:
             for dataset in datasets2del:
                 totalSize =  totalSize + sitePr.dsetSize(dataset)
             print "Deletion request for site " + site
-            print " -- Number of datassetes     = " + str(len(datasets2del))
+            print " -- Number of datasets     = " + str(len(datasets2del))
             print "%s %0.2f %s" %(" -- Total size to be deleted =",totalSize/1024,"TB")
             
             phedex = phedexApi.phedexApi(logPath='./')

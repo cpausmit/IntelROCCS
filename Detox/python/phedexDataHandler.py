@@ -76,6 +76,7 @@ class PhedexDataHandler:
         datasets = (dataJson["phedex"])["dataset"]
         for dset in datasets:
             datasetName = dset["name"]
+
             user = re.findall(r"USER",datasetName)
 
             blocks = dset["block"]
@@ -84,8 +85,10 @@ class PhedexDataHandler:
                 for siterpl in replicas:
 
                     group = siterpl["group"]
-                    if group != "AnalysisOps":
-                        continue
+                    if group == 'IB RelVal':
+                        group = 'IB-RelVal'
+#                    if group != "AnalysisOps":
+#                        continue
 
                     site = str(siterpl["node"])
                     if site not in self.allSites:

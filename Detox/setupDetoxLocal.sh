@@ -6,7 +6,7 @@
 #---------------------------------------------------------------------------------------------------
 # main directories
 
-export DETOX_DB="$PWD/IntelROCCS/Detox"
+export DETOX_DB="/home/maxi/IntelROCCS/Detox"
 
 export DETOX_SITESTORAGE_SERVER="t3btch039.mit.edu"
 export DETOX_SITESTORAGE_DB="SiteStorage"
@@ -30,8 +30,8 @@ export DETOX_DATASETS_TO_DELETE=RankedDatasets.txt
 # Parameters for cleaning
 
 export DETOX_CYCLE_HOURS=12
-export DETOX_USAGE_MAX=0.70
-export DETOX_USAGE_MIN=0.68
+export DETOX_USAGE_MAX=0.90
+export DETOX_USAGE_MIN=0.80
 export DETOX_NCOPY_MIN=1
 
 # What time window (in months) will be used for counting usage
