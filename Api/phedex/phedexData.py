@@ -44,7 +44,7 @@ class phedexData:
 		jsonData = ""
 		# can easily extend this to support more api calls
 		if apiCall == "blockReplicas":
-			jsonData = self.phedexApi.blockReplicas(node='T2*', subscribed='y', show_dataset='y', create_since='0')
+			jsonData = self.phedexApi.blockReplicas(node='T2*', subscribed='y', show_dataset='y')
 			if not jsonData:
 				with open(self.logFile, 'a') as logFile:
 					logFile.write("%s PhEDEx Cache ERROR: Cannot update cache due to PhEDEx error\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))

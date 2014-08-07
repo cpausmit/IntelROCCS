@@ -32,7 +32,7 @@ class siteRanker():
 			maxCpu += cpu[i][1]
 		if not maxCpu:
 			with open(self.logFile, 'a') as logFile:
-				logFile.write("%s Site Rank ERROR: Max CPU for site %s returned nothing\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), siteName))
+				logFile.write("%s Site Rank ERROR: Max CPU for site %s returned nothing\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), site))
 		maxCpu = maxCpu/3
 		return maxCpu
 
@@ -42,7 +42,8 @@ class siteRanker():
 		data = self.dbApi.dbQuery(query, values=values)
 		if not data:
 			with open(self.logFile, 'a') as logFile:
-				logFile.write("%s Site Rank ERROR: Max storage for site %s returned nothing\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), siteName))
+				logFile.write("%s Site Rank ERROR: Max storage for site %s returned nothing\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), site))
+			return 10
 		maxStorage = data[0][0]
 		return maxStorage
 
@@ -50,18 +51,12 @@ class siteRanker():
 		date = datetime.date.today() - datetime.timedelta(days=1)
 		maxCpu = self.getMaxCpu(site)
 		usedCpu = self.popDbDb.getSiteCpu(site, date.strftime('%Y-%m-%d'))
-		if not usedCpu:
-			with open(self.logFile, 'a') as logFile:
-				logFile.write("%s Site Rank ERROR: Used CPU for site %s returned nothing\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), siteName))
 		availableCpu = maxCpu - usedCpu
 		return availableCpu
 
 	def getAvailableStorage(self, site):
 		maxStorage = self.getMaxStorage(site)
 		usedStorage = self.phedexDb.getSiteStorage(site)
-		if not data:
-			with open(self.logFile, 'a') as logFile:
-				logFile.write("%s Site Rank ERROR: Used storage for site %s returned nothing\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), siteName))
 		availableStorage = maxStorage*10**3 - usedStorage
 		return availableStorage
 

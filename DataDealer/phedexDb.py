@@ -39,24 +39,25 @@ class phedexDb():
 				if not jsonData:
 					with open(self.logFile, 'a') as logFile:
 						logFile.write("%s FATAL ERROR: Could not build local db\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-				raise Exception("FATAL ERROR: Could not build local db")
-				self.buildPhedexDb(phedexJsonData)
+					raise Exception("FATAL ERROR: Could not build local db")
+				self.buildPhedexDb(jsonData)
 
 #===================================================================================================
 #  H E L P E R S
 #===================================================================================================
-	def buildPhedexDb(self, phedexJsonData):
-		datasets = phedexJsonData.get('phedex').get('dataset')
+	def buildPhedexDb(self, jsonData):
+		datasets = jsonData.get('phedex').get('dataset')
 		for dataset in datasets:
 			datasetName = dataset.get('name')
-			sizeGb = 0
-			size = dataset.get('bytes')
-			if not size:
+			if re.match('.+/USER', datasetName):
+				continue
+			sizeGb = dataset.get('bytes')
+			if not sizeGb:
+				sizeGb = 0
 				for block in dataset.get('block'):
-					sizeGb += int(block.get('bytes')/10**9)
-			else:
-				sizeGb = int(size/10**9)
+					sizeGb += int(block.get('bytes'))
 			with self.dbCon:
+				sizeGb = float(sizeGb)/10**9
 				cur = self.dbCon.cursor()
 				cur.execute('INSERT INTO Datasets(DatasetName, SizeGb) VALUES(?, ?)', (datasetName, sizeGb))
 				datasetId = cur.lastrowid
@@ -71,8 +72,6 @@ class phedexDb():
 			cur.execute('SELECT DISTINCT DatasetName FROM Datasets NATURAL JOIN Replicas WHERE GroupName=?', ('AnalysisOps',))
 			datasets = []
 			for row in cur:
-				if re.match('.+/USER', row[0]):
-					continue
 				datasets.append(row[0])
 			return datasets
 
@@ -80,7 +79,7 @@ class phedexDb():
 		with self.dbCon:
 			cur = self.dbCon.cursor()
 			cur.execute('SELECT SizeGb FROM Datasets WHERE DatasetName=?', (datasetName,))
-			sizeGb = cur.fetchone() # TODO : Check that something is returned
+			sizeGb = cur.fetchone()
 			if not sizeGb:
 				with open(self.logFile, 'a') as logFile:
 					logFile.write("%s DB ERROR: Size for dataset %s returned nothing\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), datasetName))
@@ -90,10 +89,13 @@ class phedexDb():
 	def getNumberReplicas(self, datasetName):
 		with self.dbCon:
 			cur = self.dbCon.cursor()
-			cur.execute('SELECT SiteName, DatasetId FROM Replicas NATURAL JOIN Datasets WHERE Datasets.DatasetName=?', (datasetName,))
-			replicas = 0
-			for row in cur:
-				replicas += 1
+			cur.execute('SELECT count(*) FROM Replicas NATURAL JOIN Datasets WHERE Datasets.DatasetName=?', (datasetName,))
+			data = cur.fetchone()
+			if not data:
+				with open(self.logFile, 'a') as logFile:
+					logFile.write("%s DB ERROR: Replicas for dataset %s returned nothing\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), datasetName))
+				return 100
+			replicas = data[0]
 			return replicas
 
 	def getSiteReplicas(self, datasetName):

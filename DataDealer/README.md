@@ -1,5 +1,7 @@
-# DataDealer
+# DataDealer - Dataset Subscription Agent
 
-The data dealer is the package that is responsible to distribute data according to certain algorithms that are designed to optimize the performance of our overall computing system.
+## Description of Data Replication Process
 
-The initial tool is a standalone tool that allows to subscribe a dataset to a matching Tier-2 site.
+### Introduction
+
+We consider all datasets in the system which has at least one replica owned by AnalysisOps. However when calculating number of replicas we consider all replicas in the whole system regordless of owner. Local space is however not included.

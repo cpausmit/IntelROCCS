@@ -69,8 +69,9 @@ class phedexApi:
 	def createXml(self, datasets=[], instance='prod'):
 		xml = '<data version="2.0">'
 		xml = xml + '<dbs name="https://cmsweb.cern.ch/dbs/%s/global/DBSReader" dls="dbs">' % (instance)
+		successDatasets = []
 		for dataset in datasets:
-			jsonData = self.data(dataset=dataset, level='file', create_since='0')
+			jsonData = self.data(dataset=dataset, level='file')
 			if not jsonData:
 				with open(self.logFile, 'a') as logFile:
 					logFile.write("%s PhEDEx ERROR: Couldn't create xml data for dataset %s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), dataset))
@@ -81,6 +82,7 @@ class phedexApi:
 				with open(self.logFile, 'a') as logFile:
 					logFile.write("%s PhEDEx ERROR: Couldn't create xml data for dataset %s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), dataset))
 				continue
+			successDatasets.append(dataset)
 			xml = xml + '<dataset name="%s" is-open="%s">' % (data.get('name'), data.get('is_open'))
 			blocks = data.get('block')
 			for block in blocks:
@@ -92,7 +94,7 @@ class phedexApi:
 			xml = xml + "</dataset>"
 		xml = xml + "</dbs>"
 		xmlData = xml + "</data>"
-		return xmlData
+		return successDatasets, xmlData
 
 #===================================================================================================
 #  A P I   C A L L S
@@ -121,7 +123,7 @@ class phedexApi:
 		jsonData = self.call(url, values)
 		if not jsonData:
 			with open(self.logFile, 'a') as logFile:
-				logFile.write("%s PhEDEx ERROR: delete call failed for values: node=%s, data=%s, level=%s, rm_subscriptions=%s, comments=%s, instance=%s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), node, data, level, rm_subscriptions, comments, instance))
+				logFile.write("%s PhEDEx ERROR: delete call failed for values: node=%s, level=%s, rm_subscriptions=%s, comments=%s, instance=%s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), node, level, rm_subscriptions, comments, instance))
 		return jsonData
 
 	def deleteRequests(self, request='', node='', create_since='', limit='', approval='', requested_by='', instance='prod'):
@@ -157,7 +159,7 @@ class phedexApi:
 		jsonData = self.call(url, values)
 		if not jsonData:
 			with open(self.logFile, 'a') as logFile:
-				logFile.write("%s PhEDEx ERROR: subscribe call failed for values: node=%s, data=%s, level=%s, priority=%s, move=%s, static=%s, custodial=%s, group=%s, time_start=%s, request_only=%s, no_mail=%s, comments=%s, instance=%s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), node, data, level, priority, move, static, custodial, group, time_start, request_only, no_mail, comments, instance))
+				logFile.write("%s PhEDEx ERROR: subscribe call failed for values: node=%s, level=%s, priority=%s, move=%s, static=%s, custodial=%s, group=%s, time_start=%s, request_only=%s, no_mail=%s, comments=%s, instance=%s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), node, level, priority, move, static, custodial, group, time_start, request_only, no_mail, comments, instance))
 		return jsonData
 
 	def transferRequests(self, request='', node='', group='', create_since='', limit='', approval='', requested_by='', instance='prod'):
