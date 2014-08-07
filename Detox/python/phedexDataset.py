@@ -1,8 +1,8 @@
-#----------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------
 #
 # This class provides support for storing datasets information extracted from PhEDEx
 #
-#----------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------
 class PhedexDataset:
 
     def __init__(self, dataset):
@@ -10,7 +10,6 @@ class PhedexDataset:
         self.siteNames = {}
         self.groupAtSite = {}
         self.sizeAtSite = {}
-        self.filesFull = 0
         self.validAtSite = {}
         self.custodialAtSite = {}
         self.makeTimeAtSite = {}
@@ -20,6 +19,12 @@ class PhedexDataset:
         self.globalRank = 9999.0
 
     def updateForSite(self,site,size,group,mtime,files,custodial,valid):
+        if site in self.groupAtSite:
+            if self.groupAtSite[site] != group:
+                print " WARNING -- dataset duplicated, subscribed by different groups"
+                print self.dataset + ' ' + site + ' ' + self.groupAtSite[site] + ' ' + group
+                return
+
         if site not in self.siteNames:
             self.siteNames[site] = 1
             self.sizeAtSite[site] = size
@@ -30,19 +35,17 @@ class PhedexDataset:
             self.filesAtSite[site] = self.filesAtSite[site] + files
             if mtime < self.makeTimeAtSite[site]:
                 self.makeTimeAtSite[site] = mtime
-            
-        if site in self.groupAtSite:
-            if self.groupAtSite[site] != group:
-                print " WARNING -- dataset duplicated, subscribed by different groups"
-                print self.dataset + ' ' + site + ' ' + self.groupAtSite[site] + ' ' + group
 
         self.groupAtSite[site] = group   
         self.setValid(site,valid)
         self.setCustodial(site,custodial)
 
-    def locatedOnSites(self):
+    def locatedOnSites(self,groups=['AnalysisOps']):
         validSites = []
         for site in self.siteNames:
+            grp =  self.groupAtSite[site]
+            if grp not in groups:
+                continue
             if self.validAtSite[site]:
                 validSites.append(site)
         return validSites
@@ -88,9 +91,6 @@ class PhedexDataset:
             return self.sizeAtSite[site]
         return 0
 
-    def filesGlobal(self):
-        return self.filesFull
-
     def group(self,site):
         if site in self.groupAtSite:
             return self.groupAtSite[site]
@@ -123,20 +123,13 @@ class PhedexDataset:
         if len(self.siteNames.keys()) < 1:
             return
 
-        different = False
         fullSize = (sorted(self.sizeAtSite.values(),reverse=True))[0]
         fullFiles = (sorted(self.filesAtSite.values(),reverse=True))[0]
-        self.filesFull = fullFiles
         for site,size in self.sizeAtSite.items():
             if size != fullSize:
                 #only valid dataset can be taged as partial
                 if self.isValid(site):
                     self.partialAtSite[site] = True
-                    different = True
-
-        if different:
-            print self.dataset
-            print self.filesAtSite
 
     def printIntoLine(self):
         if(len(self.siteNames.keys()) < 1):

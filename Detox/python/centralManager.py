@@ -42,19 +42,20 @@ class CentralManager:
             try:
                 self.phedexHandler.extractPhedexData(federation)
             except:
-                self.sendEmail()
+                self.sendEmail("Problems detected while running Cache Release",\
+                                   "Execution was terminated, check log to correct problems.")
                 raise
         else:
             self.phedexHandler.readPhedexData()
 
         self.phedexHandler.findIncomplete()
-        #self.phedexHandler.checkDataComplete()
 
     def extractPopularityData(self):
         try:
             self.popularityHandler.extractPopularityData()
         except :
-            self.sendEmail()
+            self.sendEmail("Problems detected while running Cache Release",\
+                               "Execution was terminated, check log to correct problems.")
             raise
 
     def getAllSites(self):
@@ -99,7 +100,8 @@ class CentralManager:
         output, err = process.communicate()
         p_status = process.wait()
         if p_status != 0:
-            self.sendEmail()
+            self.sendEmail("Problems detected while running Cache Release",\
+                               "Execution was terminated, check log to correct problems.")
             raise Exception(" FATAL -- Bad proxy file " + os.environ['DETOX_X509UP'])
 
         m = (re.findall(r"timeleft\s+:\s+(\d+):(\d+):(\d+)",output))[0]
@@ -108,7 +110,8 @@ class CentralManager:
         if hours > 0:
             pass
         elif mins < 10:
-            self.sendEmail()
+            self.sendEmail("Problems detected while running Cache Release",\
+                               "Execution was terminated, check log to correct problems.")
             raise Exception(" FATAL -- Bad proxy file " + os.environ['DETOX_X509UP'])
 
     def rankDatasetsLocally(self):
@@ -161,37 +164,6 @@ class CentralManager:
         origFile = statusDirectory+'/'+site+'/'+os.environ['DETOX_DATASETS_TO_DELETE']
         copyFile = statusDirectory+'/'+site+'/'+os.environ['DETOX_DATASETS_TO_DELETE']+'-local'
         shutil.copy2(origFile,copyFile)
-
-
-    def printUsagePatterns(self):
-        phedexSets = self.phedexHandler.getPhedexDatasets()
-        usedSets = self.popularityHandler.getUsedDatasets()
-
-        today = time.time()
-        for datasetName in sorted(phedexSets.keys()):
-            phedexDset = phedexSets[datasetName]
-            siteNames = phedexDset.locatedOnSites()
-            nSites = 0
-            nFiles = 0
-            size = 0
-            nUsed = 0
-            for site in siteNames:
-                if self.allSites[site].getStatus() == 0:
-                    continue
-                crDate = phedexDset.creationTime(site)
-                #pick datasets based on when they were created
-                if (today-crDate) < 90*24*60*60 :
-                    continue
-
-                nSites = nSites + 1
-                size = phedexDset.size(site)
-                nFiles = phedexDset.getNfiles(site)
-                if datasetName in usedSets.keys():
-                    usedDset = usedSets[datasetName]
-                    if usedDset.isOnSite(site):
-                        nUsed = nUsed + usedDset.timesUsed(site)
-            if nSites > 0:
-                print str(nSites) + " " + str(size) + " " + str(nFiles) + " " + str(nUsed)
         
     def rankDatasetsGlobally(self):
         secsPerDay = 60*60*24
@@ -330,10 +302,10 @@ class CentralManager:
         ttime = time.strftime("%H:%M")
 
         # this file is needed in this fromat for the initial assignments
-        activeFile = open(resultDirectory + "/ActiveSites.txt",'w')
+        activeFile = open(os.environ['DETOX_DB'] + "/ActiveSites.txt",'w')
 
         # file with more infortmation on all sites
-        outputFile = open(resultDirectory + "/SitesInfo.txt",'w')
+        outputFile = open(os.environ['DETOX_DB'] + "/SitesInfo.txt",'w')
         outputFile.write('#- ' + today + " " + ttime + "\n\n")
         outputFile.write("#- S I T E S  I N F O R M A T I O N ----\n\n")
         outputFile.write("#  Active Quota[TB] SiteName \n")
@@ -350,7 +322,7 @@ class CentralManager:
         activeFile.close()
         outputFile.close()
 
-        outputFile = open(resultDirectory + "/DeletionSummary.txt",'w')
+        outputFile = open(os.environ['DETOX_DB'] + "/DeletionSummary.txt",'w')
         outputFile.write('#- ' + today + " " + ttime + "\n\n")
         outputFile.write("#- D E L E T I O N  R E Q U E S T S ----\n\n")
         outputFile.write("#  NDatasets Size[TB] SiteName \n")
@@ -435,6 +407,8 @@ class CentralManager:
 
 
     def requestDeletions(self):
+
+        numberRequests = 0
         for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
             sitePr = self.sitePropers[site]
 
@@ -442,11 +416,12 @@ class CentralManager:
             if len(datasets2del) < 1:
                 continue
 
+            numberRequests = numberRequests + 1
             totalSize = 0
             for dataset in datasets2del:
                 totalSize =  totalSize + sitePr.dsetSize(dataset)
             print "Deletion request for site " + site
-            print " -- Number of datassetes     = " + str(len(datasets2del))
+            print " -- Number of datasets       = " + str(len(datasets2del))
             print "%s %0.2f %s" %(" -- Total size to be deleted =",totalSize/1024,"TB")
             
             phedex = phedexApi.phedexApi(logPath='./')
@@ -498,6 +473,10 @@ class CentralManager:
                     ## connection.rollback()
                 # close the connection to the database
                 connection.close()
+
+        if(numberRequests > 0):
+            self.sendEmail("report from CacheRelease",\
+                               "Submitted deletion requests, check log for details.")
 
     def showCacheRequests(self):
         for site in sorted(self.allSites.keys()):
@@ -590,42 +569,12 @@ class CentralManager:
 
         outputFile.close()
 
-    def showRunawayDatasets(self):
-         for site in sorted(self.allSites.keys()):
-             if self.allSites[site].getStatus() != 0:
-                 self.showRunawaysForSite(site)
-                 
-    def showRunawaysForSite(self,site):
-        print "\n" + site
-        phedexSets = self.phedexHandler.getPhedexDatasetsAtSite(site)
-        groups = {}
-        for dataset in phedexSets:
-            groupName = dataset.group(site)
-            if groupName=='AnalysisOps':
-                continue
-            if groupName=='DataOps':
-                continue
-            if groupName=='FacOps':
-                continue
-            if groupName=='local':
-                continue
-            if groupName=='heavy-ions':
-                continue
-            
-            if groupName not in groups.keys():
-                groups[groupName] = dataset.size(site)
-            else:
-                groups[groupName] = groups[groupName] + dataset.size(site)
-
-        for groupName in sorted(groups.keys(), key=groups.get, reverse=True):
-            print "%-14s %0.1f " %(groupName,groups[groupName])
-
-    def sendEmail(self):
+    def sendEmail(self,subject,body):
         emails = os.environ['DETOX_EMAIL_LIST']
         To = emails.split(",")
         From = "maxi@t3btch039.mit.edu"
-        Subj = "Problems detected while running Cache Release"
-        Text = """Execution was terminated, check log to correct problems."""
+        Subj = subject
+        Text = "" + body + ""
         
         Body = string.join((
             "From: %s" % From,

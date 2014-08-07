@@ -76,6 +76,7 @@ class PhedexDataHandler:
         datasets = (dataJson["phedex"])["dataset"]
         for dset in datasets:
             datasetName = dset["name"]
+
             user = re.findall(r"USER",datasetName)
 
             blocks = dset["block"]
@@ -84,8 +85,10 @@ class PhedexDataHandler:
                 for siterpl in replicas:
 
                     group = siterpl["group"]
-                    if group != "AnalysisOps":
-                        continue
+                    if group == 'IB RelVal':
+                        group = 'IB-RelVal'
+#                    if group != "AnalysisOps":
+#                        continue
 
                     site = str(siterpl["node"])
                     if site not in self.allSites:
@@ -120,9 +123,13 @@ class PhedexDataHandler:
                           + filename, "w")
         for datasetName in self.phedexDatasets:
             line = self.phedexDatasets[datasetName].printIntoLine()
+
+            # CP- Max I do not understand this test, what are you trying to catch here?
             if len(line) < 10:
                 print " SKIPING " + datasetName
                 continue
+
+
             outputFile.write(line)
             
         outputFile.close()
@@ -145,11 +152,9 @@ class PhedexDataHandler:
         inputFile.close()
 
     def findIncomplete(self):
-        print "### These datasets have diffrent sizes at different sites:"
         for datasetName in self.phedexDatasets:
             dataset = self.phedexDatasets[datasetName]
             dataset.findIncomplete()
-        print "###" 
 
     def getPhedexDatasets(self):
         return self.phedexDatasets
@@ -177,35 +182,6 @@ class PhedexDataHandler:
             if dataset.isOnSite(site):
                 dsets[datasetName] = dataset.getLocalRank(site)
         return sorted(dsets,key=dsets.get,reverse=True)
-
-    def checkDataComplete(self):
-        # this is not called at the moment because there is no reason to do so
-        
-        # we will access local dataset that has info from central database checks if dataset is
-        # indeed complete
-
-        db = os.environ.get('DETOX_SITESTORAGE_DB')
-        server = os.environ.get('DETOX_SITESTORAGE_SERVER')
-        user = os.environ.get('DETOX_SITESTORAGE_USER')
-        pw = os.environ.get('DETOX_SITESTORAGE_PW')
-        db = MySQLdb.connect(host=server,db=db, user=user,passwd=pw)
-        cursor = db.cursor()
-
-        sql  = "select Datasets.DatasetName,DatasetProperties.NFiles from "
-        sql += "DatasetProperties,Datasets where DatasetProperties.DatasetId=Datasets.DatasetId "
-        try:
-            cursor.execute(sql)
-            results = cursor.fetchall()
-            for row in results:
-                name = row[0]
-                nFilesDb = int(row[1])
-                nFiles = 0
-                if name in self.phedexDatasets:
-                    nFiles = self.phedexDatasets[name].filesGlobal()
-                    if nFilesDb > 0 and nFiles < nFilesDb:
-                        print "%3d %5d %-s " %( nFiles, nFilesDb, name)
-        except:
-            pass
 
         
             

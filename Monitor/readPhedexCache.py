@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!/usr/bin/python
 #--------------------------------------------------------------------------------------------------
 #
 # This script reads the information from the phedex cache.
@@ -25,14 +25,18 @@ def processFile(fileName,debug=0):
     for line in iFile.xreadlines():
         line = line[:-1]
         f = line.split()
-        if len(f) == 5:
+        if len(f) == 8:
             dataset = f[0]
             group   = f[1]
-            date    = f[2]
-            size    = f[3]
-            site    = f[4]
+            date    = int(f[2])
+            size    = float(f[3])
+            nFiles  = int(f[4])
+            valid   = int(f[5])
+            custd   = int(f[6])
+            site    = f[7]
+
         else:
-            print 'Columns not equal 5: \n %s'%(line)
+            print 'Columns not equal 8: \n %s'%(line)
             sys.exit(1)
 
         # first step, find the sizes per site per group hash array
@@ -43,9 +47,9 @@ def processFile(fileName,debug=0):
             sizesPerSite[site] = sizesPerSitePerGroup
 
         if group in sizesPerSitePerGroup:
-            sizesPerSitePerGroup[group] += float(size)
+            sizesPerSitePerGroup[group] += size
         else:
-            sizesPerSitePerGroup[group]  = float(size)
+            sizesPerSitePerGroup[group]  = size
 
     iFile.close();
 

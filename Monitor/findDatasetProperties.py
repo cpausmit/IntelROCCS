@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!/usr/bin/python
 #---------------------------------------------------------------------------------------------------
 #
 # This script uses das_client.py to extract the given dataset properties. It will determine the
@@ -9,7 +9,7 @@ import os, sys, re, subprocess, MySQLdb
 
 short = False
 if   len(sys.argv)<2:
-    print 'not enough arguments\n'
+    print ' not enough arguments. EXIT!\n'
     sys.exit(1)
 elif len(sys.argv)==2:
     dataset = str(sys.argv[1])
@@ -17,7 +17,7 @@ elif len(sys.argv)==3:
     dataset = str(sys.argv[1])
     short = True
 else:
-    print 'too many arguments\n'
+    print ' too many arguments. EXIT!\n'
     sys.exit(2)
 
 #===================================================================================================
@@ -152,8 +152,9 @@ if not re.search(r'/.*/.*/.*',dataset,re.S):
 # check failed so need to go to the source
 if nFiles<0:
     # use das client to find the present size of the dataset
-    cmd = 'das_client.py --format=plain --limit=0 --query="file dataset=' + \
-          dataset + ' | sum(file.size), count(file.name)" | sort -u'
+    cmd = os.environ.get('MONITOR_BASE') \
+        + '/das_client.py --format=plain --limit=0 --query="file dataset=' \
+        + dataset + ' | sum(file.size), count(file.name)" | sort -u'
     if debug>-1:
         print ' CMD: ' + cmd
     nFiles = 0

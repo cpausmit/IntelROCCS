@@ -338,6 +338,8 @@ def getActiveSites(debug=0):
 	cmd += ' -O - 2> /dev/null'
 	for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
 		site = line[:-1]
+		f = site.split(' ')
+		site = f[-1]
 		if debug > 1:
 			print ' Adding site: ' + site
 		sites.append(site)

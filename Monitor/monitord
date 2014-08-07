@@ -5,7 +5,7 @@
 # v1.0                                                                         C.Paus (Mar 09, 2014)
 # --------------------------------------------------------------------------------------------------
 # initialize environment variables
-source /usr/local/IntelROCCS/Monitor/setupDetox.sh
+source /usr/local/IntelROCCS/Detox/setupDetox.sh
 source /usr/local/IntelROCCS/Monitor/setupMonitor.sh
 
 while [ 1 ]
@@ -49,12 +49,13 @@ do
     echo " "                                                           >> $logFile
     echo " monitor loop $index started -- $tag (cycle wait $wait sec)" >> $logFile
     echo " "                                                           >> $logFile
-    ##  $MONITOR_BASE/monitor.py                                           >> $logFile
-    $MONITOR_BASE/monitor.sh                                           >> $logFile
-
+    echo "   --> "`date`                                               >> $logFile
+    echo " "                                                           >> $logFile
+    stdbuf -o0 -e0 $MONITOR_BASE/monitor.sh                            >> $logFile 2>&1
 
     # insure that the log information is updated (WARNING - hardwired, need something more general)
-    rsync -Cavz --delete /local/cmsprod/IntelROCCS/Monitor/ /home/cmsprod/public_html/IntelROCCS/Monitor >& /dev/null
+    rsync -Cavz --delete /local/cmsprod/IntelROCCS/Monitor \
+                         /home/cmsprod/public_html/IntelROCCS >& /dev/null
 
 
     sleep $wait

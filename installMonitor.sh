@@ -1,4 +1,4 @@
-ls#!/bin/bash
+#!/bin/bash
 # --------------------------------------------------------------------------------------------------
 #
 # Installation script for IntelROCCS/Monitor. There will be lots of things to test and to fix, but
@@ -17,7 +17,7 @@ source Monitor/setupMonitor.sh
 
 # General installation (you have to be in the directory of install script and you have to be root)
 
-INTELROCCS_BASE=`dirname $DETOX_BASE`
+INTELROCCS_BASE=`dirname $MONITOR_BASE`
 TRUNC=`dirname $INTELROCCS_BASE`
 
 # copy the software
@@ -42,6 +42,13 @@ chown ${INTELROCCS_USER}:${INTELROCCS_GROUP} -R $INTELROCCS_DB
 
 # install and start daemon
 #=========================
+
+# stop potentially existing server process
+if [ -e "/etc/init.d/monitord" ]
+then
+  /etc/init.d/monitord status
+  /etc/init.d/monitord stop
+fi
 
 # copy Monitor daemon
 cp /usr/local/IntelROCCS/Monitor/sysv/monitord /etc/init.d/
