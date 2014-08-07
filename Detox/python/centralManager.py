@@ -4,7 +4,7 @@
 import sys, os, subprocess, re, time, datetime, smtplib, MySQLdb, shutil, string, glob
 import phedexDataHandler, popularityDataHandler, phedexApi
 import siteProperties, datasetProperties
-import siteStatus
+import siteStatus, deletionRequest
 	
 class CentralManager:
     def __init__(self):
@@ -21,6 +21,9 @@ class CentralManager:
 
         self.sitePropers = {}
         self.dataPropers = {}
+
+        self.delRequests = {}
+        self.siteRequests = {}
 
         self.phedexHandler = phedexDataHandler.PhedexDataHandler(self.allSites)
         self.popularityHandler = popularityDataHandler.PopularityDataHandler(self.allSites)
@@ -156,10 +159,6 @@ class CentralManager:
         statusDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS']
         outputFile = open(statusDirectory+'/'+site+'/'+os.environ['DETOX_DATASETS_TO_DELETE'],'w')
         dsets = self.phedexHandler.getDatasetsByRank(site)
-        #print site
-        #for datasetName in dsets:
-        #    print phedexSets[datasetName].rank(site)
-        
        
         origFile = statusDirectory+'/'+site+'/'+os.environ['DETOX_DATASETS_TO_DELETE']
         copyFile = statusDirectory+'/'+site+'/'+os.environ['DETOX_DATASETS_TO_DELETE']+'-local'
@@ -351,8 +350,6 @@ class CentralManager:
             fileRemain = sitedir + "/RemainingDatasets.txt"
             fileDelete = sitedir + "/DeleteDatasets.txt"
 
-            # CP-  Max what is this file ? # fileProtected = sitedir + "/ProtectedDatasets.txt"
-
             outputFile = open(fileTimest,'w')
             outputFile.write('#- ' + today + " " + ttime + "\n\n")
             outputFile.write("#- D E L E T I O N  P A R A M E T E R S ----\n\n")
@@ -407,8 +404,10 @@ class CentralManager:
 
 
     def requestDeletions(self):
-
+        
+        now_tstamp = datetime.datetime.now()
         numberRequests = 0
+        thisRequest = None
         for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
             sitePr = self.sitePropers[site]
 
@@ -416,13 +415,23 @@ class CentralManager:
             if len(datasets2del) < 1:
                 continue
 
-            numberRequests = numberRequests + 1
             totalSize = 0
+            thisRequest = deletionRequest.DeletionRequest(0,site,now_tstamp)
             for dataset in datasets2del:
                 totalSize =  totalSize + sitePr.dsetSize(dataset)
+                thisRequest.update(dataset,sitePr.dsetRank(dataset),sitePr.dsetSize(dataset))
             print "Deletion request for site " + site
             print " -- Number of datasets       = " + str(len(datasets2del))
             print "%s %0.2f %s" %(" -- Total size to be deleted =",totalSize/1024,"TB")
+
+            lastReqId = self.siteRequests[site].getLastReqId()
+            lastRequest = self.delRequests[lastReqId]
+            #they can look identical, but resubmit in case it was submitted too long ago
+            if thisRequest.looksIdentical(lastRequest):
+                if thisRequest.deltaTime(lastRequest)/(60*60) < 48 :
+                    print " -- Will skip submition, looks like a duplicate"
+                    continue
+            numberRequests = numberRequests + 1
             
             phedex = phedexApi.phedexApi(logPath='./')
             # compose data for deletion request
@@ -444,10 +453,16 @@ class CentralManager:
             respo = response.read()
             matchObj = re.search(r'"id":"(\d+)"',respo)
             id = int(matchObj.group(1))
-            
             date = (re.search(r'"request_date":"(.*?)"',respo)).group(1)
             date = date[:-3]
             myCnf = os.environ['DETOX_MYSQL_CONFIG']
+
+            thisRequest.reqId = id
+            thisRequest.tstamp = date
+            self.delRequests[id] = deletionRequest.DeletionReqest(id,site,date,thisRequest)
+            if site not in self.siteRequests:
+                self.siteRequests[site] = deletionRequest.SiteRequest(site)
+            self.siteRequests[site].update(id,date)
 
             for dataset in datasets2del:
                 dataPr = self.dataPropers[dataset]
@@ -455,51 +470,32 @@ class CentralManager:
                 size =   sitePr.dsetSize(dataset)
                 group = 'AnalysisOps'
         
-                #db = MySQLdb.connect(read_default_file=myCnf,read_default_group="mysql")
-                #cursor = db.cursor()
                 connection = self.getDbConnection(os.environ.get('DETOX_HISTORY_DB'))
                 cursor = connection.cursor()
                 sql = "insert into Requests(RequestId,RequestType,SiteName,Dataset,Size,Rank," \
                       "GroupName,TimeStamp) values('%d','%d','%s','%s','%d','%d','%s','%s')" % \
                       (id, 1, site, dataset,size,rank,group,date)
-                    
-                # ! this could be done in one line but it is just nice to see what is deleted !
                 try:
                     cursor.execute(sql)
                     connection.commit()
                 except:
                     print " -- FAILED insert mysql info: %s"%(sql)
-                    # CP -- rollback is not needed because if commit failed nothing has been written
-                    ## connection.rollback()
-                # close the connection to the database
                 connection.close()
 
         if(numberRequests > 0):
             self.sendEmail("report from CacheRelease",\
                                "Submitted deletion requests, check log for details.")
 
-    def showCacheRequests(self):
+    def extractCacheRequests(self):
         for site in sorted(self.allSites.keys()):
-             if self.allSites[site].getStatus() != 0:
-                 self.showCacheRequestsForSite(site)
-        
-    def showCacheRequestsForSite(self,site):
-        siteRequests = []
-        requestDetails = {}
-        requestSizes = {}
-        requestTime = {}
-        dranks = {}
-        
-        myCnf = os.environ['DETOX_MYSQL_CONFIG']
-        
-        #db = MySQLdb.connect(read_default_file=myCnf,read_default_group="mysql")
-        #cursor = db.cursor()
+            if self.allSites[site].getStatus() != 0:
+                self.extractCacheRequestsForSite(site)
+    
+    def extractCacheRequestsForSite(self,site):
         connection = self.getDbConnection(os.environ.get('DETOX_HISTORY_DB'))
-        #connection = self.getDbConnection('DetoxHistory')
         cursor = connection.cursor()
         sql = "select  RequestId,SiteName,Dataset,Size,Rank,GroupName,TimeStamp from Requests " + \
               " where SiteName='" + site + "' order by RequestId DESC LIMIT 1000"
-
         try:
             cursor.execute(sql)
             results = cursor.fetchall()
@@ -508,66 +504,61 @@ class CentralManager:
             print " -- FAILED extract mysql info: %s"%(sql)
             connection.close()
             return
-        # close connection to the database
         connection.close()
         
         for row in results:
             reqid   = row[0]
             site    = row[1]
+            tstamp  = row[6]
+            if reqid not in self.delRequests:
+                self.delRequests[reqid] = deletionRequest.DeletionRequest(reqid,site,tstamp)
+            if site not in self.siteRequests:
+                self.siteRequests[site] = deletionRequest.SiteDeletions(site)
             dataset = row[2]
             size    = row[3]
             rank    = row[4]
-            tstamp  = row[6]
-
-            dranks[dataset] = rank 
+            self.delRequests[reqid].update(dataset,rank,size)
+            self.siteRequests[site].update(reqid,tstamp)
             
-            if reqid not in siteRequests:
-                siteRequests.append(reqid)
-
-            if reqid in requestDetails.keys():
-                if dataset not in requestDetails[reqid]:
-                    (requestDetails[reqid]).append(dataset)
-                    requestSizes[reqid] = requestSizes[reqid] + size
-            else:
-                requestDetails[reqid] = [dataset]
-                requestSizes[reqid] = size
-                requestTime[reqid] = tstamp
-
+    def showCacheRequests(self):
+        for site in sorted(self.allSites.keys()):
+             if self.allSites[site].getStatus() != 0:
+                 self.showCacheRequestsForSite(site)
+        
+    def showCacheRequestsForSite(self,site):
         resultDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_RESULT']
         outputFile = open(resultDirectory + '/' + site + '/DeletionHistory.txt','w')
-        
         outputFile.write("# ================================================================\n")
         outputFile.write("#  List of at most 20 last phedex deletion requests at this site. \n")
         outputFile.write("#  ---- note: those requests are not necessarily approved.        \n")
         outputFile.write("# ================================================================\n")
 
+        if site not in self.siteRequests:
+            outputFile.write("# no requests found")
+            outputFile.close()
+            return
+
         counter = 0
-        prevReqSize = 0
-        for reqid in sorted(siteRequests,reverse=True):
-            if prevReqSize == requestSizes[reqid]:
+        prevRequest = None
+        for reqid in self.siteRequests[site].getReqIds():
+            theRequest = self.delRequests[reqid]
+            if theRequest.looksIdentical(prevRequest):
                 continue
-            prevReqSize = requestSizes[reqid]
+            prevRequest = theRequest
+
             outputFile.write("#\n# PhEDEx Request: %s (%10s, %.1f GB)\n"%\
-                             (reqid,requestTime[reqid],requestSizes[reqid]))
+                             (reqid,theRequest.getTimeStamp(),theRequest.getSize()))
             
             outputFile.write("#\n# Rank   DatasetName\n")
             outputFile.write("# ---------------------------------------\n")
 
-            for dataset in sorted(dranks, key=dranks.get, reverse=True):
-                if dataset in requestDetails[reqid]:
-                    outputFile.write("  %-6d %s\n" %(dranks[dataset],dataset))
+            for dataset in theRequest.getDsets():
+                outputFile.write("  %-6d %s\n" %(theRequest.getDsetRank(dataset),dataset))
             
-#            for dataset in requestDetails[reqid]:
-#                outputFile.write("  %-6d %s\n" %(dranks[dataset],dataset))
             outputFile.write("\n")
             counter = counter + 1
             if counter > 20:
                 break
-            
-        if len(siteRequests) < 1:
-            outputFile.write("# no requests found")
-
-        outputFile.close()
 
     def sendEmail(self,subject,body):
         emails = os.environ['DETOX_EMAIL_LIST']

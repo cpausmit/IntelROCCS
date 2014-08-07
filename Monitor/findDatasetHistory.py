@@ -19,7 +19,7 @@ if not os.environ.get('MONITOR_DB'):
 #===================================================================================================
 #  M A I N
 #===================================================================================================
-debug = 0
+debug = True
 
 # command line arguments
 short = False
@@ -51,11 +51,13 @@ else:        # check failed so need to go to the source
     for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
         print line
 
-#document = ElementTree.parse(fileName)
-#for request in document.findall('request'):
-#    print ' Request: type=%s decision=%s'%(request.attrib['type'],request.attrib['approval'])
-#    for node in request.findall('node'):
-#        print '  -> Node: time=%d name=%s decision=%s'%\
-#              (int(node.attrib['time_decided']),node.attrib['name'],node.attrib['decision'])
+
+if debug:
+    document = ElementTree.parse(fileName)
+    for request in document.findall('request'):
+        print ' Request: type=%s decision=%s'%(request.attrib['type'],request.attrib['approval'])
+        for node in request.findall('node'):
+            print '  -> Node: time=%s name=%s decision=%s'%\
+                  (node.attrib['time_decided'],node.attrib['name'],node.attrib['decision'])
 
 sys.exit(0)

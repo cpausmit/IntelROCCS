@@ -35,7 +35,8 @@ class PopularityDataHandler:
         beginningOfWeek = self.firstDayOfMonth(beginningOfWeek)
         self.dates.append(beginningOfWeek)
 
-        for i in range(0,9):
+        monthsBack =  int(os.environ['DETOX_TIME_WIND']) + 1
+        for i in range(0,monthsBack):
             beginningOfWeek = self.firstDayOfMonth(beginningOfWeek+datetime.timedelta(days=-2))
             if today-timeDelta < beginningOfWeek:
                 self.dates.append(beginningOfWeek)
