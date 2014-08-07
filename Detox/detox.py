@@ -71,6 +71,8 @@ timeNow = time.time()
 print ' - Making deletion lists took: %d seconds'%(timeNow-timePre)
 timePre = timeNow 
 
+centralManager.extractCacheRequests()
+
 if requestDeletions:
     centralManager.requestDeletions()
 
