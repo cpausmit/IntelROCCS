@@ -5,9 +5,9 @@
 # popularity information.
 #
 #---------------------------------------------------------------------------------------------------
-import os, sys, re, glob, subprocess, json, pprint, MySQLdb
+import os, sys, re, glob, subprocess, time, json, pprint, MySQLdb
 import datasetProperties
-#import ROOT
+from   xml.etree import ElementTree
 
 if not os.environ.get('DETOX_DB') or not os.environ.get('MONITOR_DB'):
     print '\n ERROR - DETOX environment not defined: source setup.sh\n'
@@ -217,6 +217,155 @@ def readDatasetProperties():
     return (fileNumbers, sizesGb)
 
 
+def calculateAverageNumberOfSites(sitePattern,start,end):
+
+    print ' Relevant time interval: %d %d  --> %d'%(start,end,end-start)
+    
+    # convert it into floats and take care of possible rounding issues
+    interval = end - start
+
+    # define our variables
+    phedDirectory = '/local/cmsprod/IntelROCCS/Monitor/datasets/' # FIX: use env from setupMonitor.sh
+    filePattern = '%*%*%*'                                        # consider only xml filename pattern
+    #filePattern = '%GJet_Pt-15to3000_Tune4C_13TeV_pythia8%Spring14dr-PU20bx25_POSTLS170_V5-v1%AODSIM'
+    files = glob.glob(phedDirectory + filePattern)
+    datasetMovement = {}
+    nSites = {}
+    
+    # read in the data from the phedex history database cache
+    #========================================================
+    for file in files:
+        try:                                                      # check that we can parse the xml file
+            document = ElementTree.parse(file)
+        except:
+            print ' WARNING - file reading failed (%s).'%file
+            continue
+        filename = file.split('/')[-1].replace('%','/')
+        for request in document.findall('request'):
+            type = request.attrib['type']        
+    
+            for node in request.findall('node'):
+                site = node.attrib['name']
+                time = node.attrib['time_decided']
+    
+                #print ' Checking %s versus %s'%(sitePattern,site)
+    
+                if not re.match(sitePattern,site):                # consider only specified sites
+                    #print ' WARNING - no site match.'
+                    continue
+    
+                if not filename in datasetMovement:               # only for datasets from correct sites
+                    datasetMovement[filename] = {}
+    
+                if node.attrib['decision'] == 'approved':         # only consider things that happened
+
+                    try:                                          # check for bad times
+                        time = int(float(node.attrib['time_decided']))   # whole number for easy binning
+                    except:
+                        print ' WARNING - time decided is corrupt.'
+                        continue
+
+                    if not site in datasetMovement[filename]:     # initialization
+                        datasetMovement[filename][site] = [[],[]] # allow multiple dataset instances/site
+
+                    if type == 'xfer':                            # (datasets can be requested again)
+                        datasetMovement[filename][site][0].append(time)     # time transferred
+                        #print ' transfer [%s]: %d'%(site,time)
+                    elif type == 'delete':
+                        datasetMovement[filename][site][1].append(time)     # time deleted
+                        #print ' delete   [%s]: %d'%(site,time)
+                    else:
+                        continue
+    
+    # match the intervals from the phedex history to the requested time interval
+    #===========================================================================
+    for filename in datasetMovement:
+        # ensure datasetMovement entry is complete
+        for site in datasetMovement[filename]:
+            #print ' Adding site: ' + site
+            if not re.match(sitePattern,site):                   # only requested sites
+                print ' WARNING - no site match. ' + site
+                continue
+    
+            datasetMovement[filename][site][0].sort()            # sort lists to match items
+            datasetMovement[filename][site][1].sort()
+    
+            lenXfer = len(datasetMovement[filename][site][0])    
+            lenDel  = len(datasetMovement[filename][site][1])
+            
+            if lenXfer == lenDel:                                # ensure reasonable time lists
+                pass
+            elif lenXfer == lenDel - 1:
+                datasetMovement[filename][site][0].insert(0,0)
+            elif lenXfer == lenDel + 1:
+                #print 'Add interval end: %d'%end
+                datasetMovement[filename][site][1].append(end)
+            else:
+                # doesn't make sense, so skip
+                continue
+    
+            # find this site's fraction for nSites
+            if not filename in nSites:
+                nSites[filename] = 0
+    
+            siteSum = 0
+            i       = 0
+    
+            # loop through the transfer/deletion intervals
+            while i < lenXfer:
+                tXfer = datasetMovement[filename][site][0][i]
+                tDel  = datasetMovement[filename][site][1][i]
+    
+                i = i + 1                                        # iterate before all continue statements
+    
+                if tXfer == 0 and tDel == end:                   # skip if defaults, meaning no xfer or del time found
+                    continue                                     # shouldn't happen, but just to be sure
+    
+                # four ways to be in interval                    # (though this prevents you from having the same
+                                                                 #  start and end date)
+                if tXfer <= start <= end <= tDel:
+                    siteSum += 1                                 # should happen at most once, but okay
+                elif tXfer <= start < tDel < end:
+                    siteSum += float(tDel - start)/float(interval)
+                    #print ' Adding: %d %f'%(i,float(tDel - start)/float(interval))
+                elif start < tXfer < end <= tDel:
+                    siteSum += float(end - tXfer)/float(interval)
+                    #print ' Adding: %d %f'%(i,float(end - tXfer)/float(interval))
+                elif start < tXfer < tDel <= end:
+                    siteSum += float(tDel - tXfer)/float(interval)
+                    #print ' Adding: %d %f'%(i,float(tDel - tXfer)/float(interval))
+                else:                                            # have ensured tXfer < tDel
+                    continue
+        
+            if siteSum < 0:                                      # how can this happen??
+                print " WARNING - siteNum < 0 ??"
+                continue
+            
+            nSites[filename] += siteSum
+
+    n     = 0
+    nSkip =  0
+    sum   = float(0)
+    for filename in nSites:
+        if nSites[filename] == 0:                                # dataset not on sites in interval
+            nSkip += 1
+            continue
+        sum += nSites[filename]
+        n   += 1
+        #print ' %s \t%f'%(filename,nSites[filename])
+    
+    print '\n Dataset  --  average number of sites\n'
+    
+    if n != 0:
+        avg = sum/n
+        print '\n overall average n sites: %f\n'%(avg)
+        print '\n number of datasets:      %d\n'%(n)
+        print '\n number of datasets skip: %d\n'%(nSkip)
+    else:
+        print 'no datasets found in specified time interval'
+    
+    return nSites
+
 #===================================================================================================
 #  M A I N
 #===================================================================================================
@@ -272,9 +421,16 @@ print " Site pattern: %s"%(site)
 print " Date pattern: %s"%(date) 
 if sizeAnalysis:
     print "\n Size Analysis is on. Please be patient, this might take a while!\n"
-for fileName in files:
+
+firstFile = ''
+lastFile = ''
+
+for fileName in sorted(files):
     if debug>0:
         print ' Analyzing: ' + fileName
+
+    if firstFile == '':
+        firstFile = fileName
 
     g = fileName.split("/")
     siteName = g[-3]
@@ -292,6 +448,34 @@ for fileName in files:
     nAllSkipped      += nSkipped
     nSiteAccessEntry = addData(nSiteAccessEntry,nAccessed,debug)
     nAllAccessed     = addData(nAllAccessed,    nAccessed,debug)
+
+if lastFile == '':
+    lastFile = fileName
+
+#print " First: %s  Last: %s"%(firstFile,lastFile)
+
+# find start and end times
+
+dir = '/'.join(lastFile.split("/")[0:-1])
+startDate = firstFile.split("/")[-1]
+
+files = glob.glob(dir + '/????-??-??')
+last = ''
+endDate = ''
+for fileName in sorted(files):
+    #print ' Filename: ' + fileName
+    #print " Compare: " + last + ' ' + lastFile.split("/")[-1]
+    if last == lastFile.split("/")[-1]:
+        endDate = fileName.split("/")[-1]
+    last = fileName.split("/")[-1]
+    
+# convert to epoch time
+start = int(time.mktime(time.strptime(startDate,'%Y-%m-%d')))
+if endDate != '':
+    end = int(time.mktime(time.strptime(endDate,'%Y-%m-%d')))
+else:
+    endDate = lastFile.split("/")[-1]
+    end = int(time.mktime(time.strptime(endDate,'%Y-%m-%d'))) + 7*24*3600  # one week
 
 # --------------------------------------------------------------------------------------------------
 # add all datasets that are in phedex but have never been used
@@ -405,6 +589,9 @@ for site in sorted(nSiteAccess):
     # count the number of sites carrying a given dataset
     nSites = addSites(nSites,nSiteAccessEntry,debug)
 
+# figure out properly the 'average number of sites' in the given time interval
+nAverageSites = calculateAverageNumberOfSites('T2',start,end)
+
 # last step: produce monitoring information
 # ========================================
 # ready to use: nAllAccessed[dataset], fileNumbers[dataset], sizesGb[dataset], nSites[dataset]
@@ -414,12 +601,19 @@ print ' Output file: ' + fileName
 totalAccesses = open(fileName,'w')
 for dataset in nAllAccessed:
     nSite = nSites[dataset]
+    if dataset in nAverageSites:
+        nAverageSite = float(nAverageSites[dataset])
+    else:
+        #print ' Fix dataset: ' + dataset
+        cmd = os.environ.get('MONITOR_BASE') + '/findDatasetHistory.py ' + dataset
+        os.system(cmd)
+        nAverageSite = 0
     nAccess = nAllAccessed[dataset]
     nFiles = fileNumbers[dataset]
     sizeGb = sizesGb[dataset]
     #if nAccess == 0:
     #    print " NOT USED - %d %d %d %f"%(nSite,nAccess,nFiles,sizeGb)
-    totalAccesses.write("%d %d %d %f\n"%(nSite,nAccess,nFiles,sizeGb))
+    totalAccesses.write("%d %f %d %d %f %s\n"%(nSite,nAverageSite,nAccess,nFiles,sizeGb,dataset))
 
     if nSite>42:
         print " WARNING - nSites suspicious: %3d %s"%(nSite,dataset)
