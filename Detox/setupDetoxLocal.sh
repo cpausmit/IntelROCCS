@@ -36,7 +36,7 @@ export DETOX_NCOPY_MIN=1
 
 # What time window (in months) will be used for counting usage
 
-export DETOX_TIME_WIND=10
+export DETOX_TIME_WIND=14
 
 # Email list to notify in case of problems
 
