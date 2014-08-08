@@ -35,11 +35,10 @@ class PopularityDataHandler:
         beginningOfWeek = self.firstDayOfMonth(beginningOfWeek)
         self.dates.append(beginningOfWeek)
 
-        monthsBack =  int(os.environ['DETOX_TIME_WIND']) + 1
+        monthsBack =  int(os.environ['DETOX_TIME_WIND'])
         for i in range(0,monthsBack):
             beginningOfWeek = self.firstDayOfMonth(beginningOfWeek+datetime.timedelta(days=-2))
-            if today-timeDelta < beginningOfWeek:
-                self.dates.append(beginningOfWeek)
+            self.dates.append(beginningOfWeek)
 
     def extractPopularityData(self):
         notValidSites = 0
@@ -156,19 +155,19 @@ class PopularityDataHandler:
     def cleanOutdatedSnapshots(self,dirname):
 
         today = datetime.date.today()
-        timeDelta = datetime.timedelta(days=366)
+        twindow = int(os.environ['DETOX_TIME_WIND']) + 1
+        pastDate = self.subtractDate(today, twindow)
+
         files = glob.glob(dirname + '/????-??-??')
         for file in files:
             ma = re.search(r"(\d+)-(\d+)-(\d+)", file)
             dt = datetime.date(int(ma.group(1)),int(ma.group(2)),int(ma.group(3)))
-            #if dt not in self.dates:
-            #    print "     - Cache cleanup: remove " + ma.group()
-            #    os.remove(file)
-
-            #delete everything older than one year
-            if today-timeDelta > dt:
+            if dt not in self.dates:
                 print "     - Cache cleanup: remove " + ma.group()
                 os.remove(file)
+            #if dt < pastDate:
+            #   print "     - Cache cleanup: remove " + ma.group()
+            #  os.remove(file)
    
     def weekStartDate(self,year, week):
         d = datetime.date(year, 1, 1)
@@ -184,3 +183,13 @@ class PopularityDataHandler:
 
     def getUsedDatasets(self):
         return self.datasets 
+
+    def subtractDate(self, date, month = 0, year = 0):
+        year, month = divmod(year*12 + month, 12)
+        if date.month <= month:
+            year = date.year - year - 1
+            month = date.month - month + 12
+        else:
+            year = date.year - year
+            month = date.month - month
+        return self.firstDayOfMonth(date.replace(year = year, month = month))
