@@ -102,9 +102,28 @@ def subscriptionReport():
 	    return ', '.join(names)
 
 	# Send email
-	fromEmail = ("Bjorn Barrefors", "barrefors@cern.ch")
-	toList = (["Bjorn Barrefors", "Brian Bockelman", "Maxim Goncharov", "Christoph Paus"], ["bbarrefo@cse.unl.edu", "bbockelm@cse.unl.edu", "maxi@mit.edu", "paus@mit.edu"])
+	fromEmail = ("Bjorn Barrefors", "bjorn.peter.barrefors@cern.ch")
+	toList = (["Data Management Group",
+			   "Bjorn Barrefors",
+			   "Brian Bockelman",
+			   "Maxim Goncharov",
+			   "Christoph Paus",
+			   "Tony Wildish",
+			   "Nicolo Magini",
+			   "Thomas Kress",
+			   "Frank Wuerthwein"],
+			  ["hn-cms-dmDevelopment@cern.ch",
+			   "bjorn.peter.barrefors@cern.ch",
+			   "bbockelm@cse.unl.edu",
+			   "maxi@mit.edu",
+			   "paus@mit.edu",
+			   "tony.wildish@cern.ch",
+			   "nicolo.magini@cern.ch",
+			   "thomas.kress@cern.ch",
+			   "fkw@fnal.gov"])
 	#toList = (["Bjorn Barrefors"], ["bbarrefo@cse.unl.edu"])
+	#toList = (["Data Management Group"], ["hn-cms-dmDevelopment@cern.ch"])
+
 	msg = MIMEMultipart()
 	msg['Subject'] = title
 	msg['From'] = formataddr(fromEmail)
@@ -118,9 +137,6 @@ def subscriptionReport():
 	msg = msg.as_string()
 	p = Popen(["/usr/sbin/sendmail", "-toi"], stdin=PIPE)
 	p.communicate(msg)
-	# server = smtplib.SMTP(smtpServerHost)
-	# server.sendmail(fromEmail[1], toList[1], msg)
-	# server.quit()
 
 if __name__ == '__main__':
 	subscriptionReport()
