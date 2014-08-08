@@ -37,7 +37,7 @@ datasetRanker = datasetRanker.datasetRanker(threshold)
 datasetRankings = datasetRanker.getDatasetRankings()
 datasetRankingsCopy = copy.deepcopy(datasetRankings)
 print "Dataset Ranking --- Stop"
-sys.exit(0)
+
 # Get site rankings
 print "Site Ranking --- Start"
 siteRanker = siteRanker.siteRanker()
