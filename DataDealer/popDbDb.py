@@ -95,7 +95,7 @@ class popDbDb():
 			if numberAccesses:
 				return numberAccesses[0]
 			else:
-				return 1
+				return 0
 
 	def getDatasetCpus(self, datasetName, date):
 		with self.dbCon:
@@ -105,7 +105,7 @@ class popDbDb():
 			if numberCpus:
 				return numberCpus[0]
 			else:
-				return 1
+				return 0
 
 	def getSiteAccesses(self, siteName, date):
 		with self.dbCon:
