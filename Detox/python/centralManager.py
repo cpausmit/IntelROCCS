@@ -459,7 +459,7 @@ class CentralManager:
 
             thisRequest.reqId = id
             thisRequest.tstamp = date
-            self.delRequests[id] = deletionRequest.DeletionReqest(id,site,date,thisRequest)
+            self.delRequests[id] = deletionRequest.DeletionRequest(id,site,date,thisRequest)
             if site not in self.siteRequests:
                 self.siteRequests[site] = deletionRequest.SiteRequest(site)
             self.siteRequests[site].update(id,date)
