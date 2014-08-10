@@ -35,14 +35,14 @@ class DeletionRequest:
         self.site   = siteName
         self.tstamp = timeStamp
         if orig != None :
-            self.copy_constructor(orig)
+            self.copyConstructor(orig)
        
-    def copy_constructor(self,orig):
+    def copyConstructor(self,orig):
         self.reqId  = orig.reqId
-        self.site   = orig.siteName
-        self.tstamp = orig.timeStamp
-        for dset in dsetsizes:
-            self.upadte(dset,orig.dsetranks[dset],orig.dsetsizes[dset])
+        self.site   = orig.site
+        self.tstamp = orig.tstamp
+        for dset in orig.dsetsizes:
+            self.update(dset,orig.dsetranks[dset],orig.dsetsizes[dset])
 
     def update(self,dset,rank,size):
         if dset in self.dsetsizes:
