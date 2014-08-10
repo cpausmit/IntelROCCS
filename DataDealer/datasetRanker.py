@@ -27,8 +27,8 @@ class datasetRanker():
 		for datasetName in datasets:
 			replicas = max(self.phedexDb.getNumberReplicas(datasetName), 1)
 			sizeGb = self.phedexDb.getDatasetSize(datasetName)
-			nAccesses = self.popDbDb.getDatasetAccesses(datasetName, date.strftime('%Y-%m-%d'))
-			dAccesses = self.popDbDb.getDatasetAccesses(datasetName, (date - datetime.timedelta(days=1)).strftime('%Y-%m-%d'))
+			nAccesses = max(self.popDbDb.getDatasetAccesses(datasetName, date.strftime('%Y-%m-%d')), 1)
+			dAccesses = max(self.popDbDb.getDatasetAccesses(datasetName, (date - datetime.timedelta(days=1)).strftime('%Y-%m-%d')), 1)
 			rank = (math.log10(nAccesses)*dAccesses)/(sizeGb*replicas**2)
 			self.datasetRankings[datasetName] = rank
 			if rank >= self.threshold:
