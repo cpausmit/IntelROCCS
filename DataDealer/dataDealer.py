@@ -4,10 +4,10 @@
 #---------------------------------------------------------------------------------------------------
 import sys, os, copy, sqlite3, subprocess, datetime, operator
 sys.path.append(os.path.dirname(os.environ['INTELROCCS_BASE']))
-import datasetRanker, siteRanker, select
+import datasetRanker, siteRanker, select, phedexDb, popDbDb
 import IntelROCCS.Api.phedex.phedexApi as phedexApi
 import IntelROCCS.Api.popDb.popDbApi as popDbApi
-import IntelROCCS.Report.dataDealerReport as dataDealerReport
+import IntelROCCS.Monitor.subscriptionReport as subscriptionReport
 
 # Setup parameters
 # We would like to make these easier to change in the future
@@ -42,8 +42,7 @@ print "Dataset Ranking --- Stop"
 print "Site Ranking --- Start"
 siteRanker = siteRanker.siteRanker()
 siteRankings = siteRanker.getSiteRankings()
-print "Dataset Ranking --- Stop"
-
+print "Site Ranking --- Stop"
 # Select datasets and sites for subscriptions
 print "Subscriptions --- Start"
 phedexDbPath = "%s/Cache/PhedexCache" % (os.environ['INTELROCCS_BASE'])
@@ -71,9 +70,12 @@ print "Update DB --- Start"
 requestsDbPath = "%s/Cache" % (os.environ['INTELROCCS_BASE'])
 requestsDbFile = "%s/requests.db" % (requestsDbPath)
 requestsDbCon = sqlite3.connect(requestsDbFile)
+phedexDb = phedexDb.phedexDb("%s/Cache/PhedexCache" % (os.environ['INTELROCCS_BASE']), 12)
+popDbDb = popDbDb.popDbDb("%s/Cache/PopDbCache" % (os.environ['INTELROCCS_BASE']), 12)
+datetime.date.today() - datetime.timedelta(days=1)
 with requestsDbCon:
 	cur = requestsDbCon.cursor()
-	cur.execute('CREATE TABLE IF NOT EXISTS Requests (RequestId INTEGER, RequestType INTEGER, DatasetName TEXT, SiteName TEXT, SizeGb REAL, Rank REAL, GroupName TEXT, Timestamp TEXT)')
+	cur.execute('CREATE TABLE IF NOT EXISTS Requests (RequestId INTEGER, RequestType INTEGER, DatasetName TEXT, SiteName TEXT, SizeGb REAL, Replicas INTEGER, Accesses INTEGER, Rank REAL, GroupName TEXT, Timestamp TEXT)')
 
 # create subscriptions
 for siteName in iter(subscriptions):
@@ -100,6 +102,8 @@ for siteName in iter(subscriptions):
 	requestTimestamp = int(request.get('request_timestamp'))
 	for datasetName in datasets:
 		datasetRank = datasetRankingsCopy[datasetName]
+		replicas = phedexDb.getNumberReplicas(datasetName)
+		accesses = popDbDb.getDatasetAccesses(datasetName, (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y-%m-%d'))
 		sizeGb = 0
 		with phedexDbCon:
 			cur = phedexDbCon.cursor()
@@ -107,11 +111,11 @@ for siteName in iter(subscriptions):
 			sizeGb = cur.fetchone()[0]
 			with requestsDbCon:
 				cur = requestsDbCon.cursor()
-				cur.execute('INSERT INTO Requests(RequestId, RequestType, DatasetName, SiteName, SizeGb, Rank, GroupName, Timestamp) VALUES(?, ?, ?, ?, ?, ?, ?, ?)', (requestId, requestType, datasetName, siteName, sizeGb, datasetRank, groupName, requestTimestamp))
+				cur.execute('INSERT INTO Requests(RequestId, RequestType, DatasetName, SiteName, SizeGb, Replicas, Accesses, Rank, GroupName, Timestamp) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', (requestId, requestType, datasetName, siteName, sizeGb, replicas, accesses, datasetRank, groupName, requestTimestamp))
 print "Update DB --- Stop"
 
 # Send summary report
-# TODO : Send daliy report
+subscriptionReport.subscriptionReport()
 
 # DONE
 sys.exit(0)
