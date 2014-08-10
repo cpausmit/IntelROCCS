@@ -24,20 +24,20 @@ import IntelROCCS.DataDealer.phedexDb as phedexDb
 
 def subscriptionReport():
 	# Initialize
-	phedexDb = phedexDb.phedexDb("%s/Cache/PhedexCache" % (os.environ['INTELROCCS_BASE']), 12)
-	sites = sites.sites()
-	siteRanker = siteRanker.siteRanker()
+	phedexDb_ = phedexDb.phedexDb("%s/Cache/PhedexCache" % (os.environ['INTELROCCS_BASE']), 12)
+	sites_ = sites.sites()
+	siteRanker_ = siteRanker.siteRanker()
 	requestsDbPath = "%s/Cache" % (os.environ['INTELROCCS_BASE'])
 	requestsDbFile = "%s/requests.db" % (requestsDbPath)
 	requestsDbCon = sqlite3.connect(requestsDbFile)
 	date = datetime.date.today()
 
 	# Get all currently valid sites with data usage and quota
-	availableSites = sites.getAvailableSites()
+	availableSites = sites_.getAvailableSites()
 	siteQuota = dict()
 	for site in availableSites:
-		quota = siteRanker.getMaxStorage(site)
-		used = phedexDb.getSiteStorage(site)
+		quota = siteRanker_.getMaxStorage(site)
+		used = phedexDb_.getSiteStorage(site)
 		siteQuota[site] = (quota, used)
 
 	# Get all subscriptions
@@ -60,7 +60,7 @@ def subscriptionReport():
 		dataSubscribed += subsciption[4]
 
 	# Create title
-	title = 'AnalysisOps %s | %.2f PB | %d%% | %.2f TB Subscribed' % (date.strftime('%Y-%m-%d'), dataOwned/10**3, int(quotaUsed), dataSubscribed/10**3)
+	title = 'AnalysisOps %s | %d TB | %d%% | %.2f TB Subscribed' % (date.strftime('%Y-%m-%d'), int(dataOwned/10**3), int(quotaUsed), dataSubscribed/10**3)
 	text = '%s\n  %s\n%s\n\n' % ('='*68, title, '='*68)
 
 	# Create site table
@@ -72,9 +72,9 @@ def subscriptionReport():
 		siteSubscriptions[site] += subscription[4]
 
 	siteTable = makeTable.Table(add_numbers=False)
-	siteTable.setHeaders(['Site', 'Subscribed GB', 'Used TB', 'Used %', 'Quota TB'])
+	siteTable.setHeaders(['Site', 'Subscribed TB', 'Used TB', 'Used %', 'Quota TB'])
 	for site in availableSites:
-		subscribed = int(siteSubscriptions[site])
+		subscribed = float(siteSubscriptions[site])/(10**3)
 		usedTb = int(siteQuota[site][1]/10**3)
 		quota = int(siteQuota[site][0])
 		usedP = "%d%%" % (int(100*(float(usedTb)/quota)))
@@ -85,11 +85,11 @@ def subscriptionReport():
 	text += "\n\nNew Subscriptions\n\n"
 
 	subscriptionTable = makeTable.Table(add_numbers=False)
-	subscriptionTable.setHeaders(['Site', 'Rank', 'Size GB', 'Replicas', 'Accesses', 'Dataset'])
+	subscriptionTable.setHeaders(['Site', 'Rank', 'Size TB', 'Replicas', 'Accesses', 'Dataset'])
 	for subscription in subscriptions:
 		site = subscription[3]
 		rank = float(subscription[7])
-		size = int(subscription[4])
+		size = float(subscription[4])/(10**3)
 		replicas = int(subscription[5])
 		accesses = int(subscription[6])
 		dataset = subscription[2]
@@ -102,8 +102,28 @@ def subscriptionReport():
 	    return ', '.join(names)
 
 	# Send email
-	fromEmail = ("Bjorn Barrefors", "barrefors@cern.ch")
-	toList = (["Bjorn Barrefors", "Brian Bockelman", "Maxim Goncharov", "Christoph Paus"], ["bbarrefo@cse.unl.edu", "bbockelm@cse.unl.edu", "maxi@mit.edu", "paus@mit.edu"])
+	fromEmail = ("Bjorn Barrefors", "bjorn.peter.barrefors@cern.ch")
+	toList = (["Data Management Group",
+			   "Bjorn Barrefors",
+			   "Brian Bockelman",
+			   "Maxim Goncharov",
+			   "Christoph Paus",
+			   "Tony Wildish",
+			   "Nicolo Magini",
+			   "Thomas Kress",
+			   "Frank Wuerthwein"],
+			  ["hn-cms-dmDevelopment@cern.ch",
+			   "bjorn.peter.barrefors@cern.ch",
+			   "bbockelm@cse.unl.edu",
+			   "maxi@mit.edu",
+			   "paus@mit.edu",
+			   "tony.wildish@cern.ch",
+			   "nicolo.magini@cern.ch",
+			   "thomas.kress@cern.ch",
+			   "fkw@fnal.gov"])
+	#toList = (["Bjorn Barrefors"], ["bbarrefo@cse.unl.edu"])
+	#toList = (["Data Management Group"], ["hn-cms-dmDevelopment@cern.ch"])
+
 	msg = MIMEMultipart()
 	msg['Subject'] = title
 	msg['From'] = formataddr(fromEmail)
@@ -117,9 +137,6 @@ def subscriptionReport():
 	msg = msg.as_string()
 	p = Popen(["/usr/sbin/sendmail", "-toi"], stdin=PIPE)
 	p.communicate(msg)
-	# server = smtplib.SMTP(smtpServerHost)
-	# server.sendmail(fromEmail[1], toList[1], msg)
-	# server.quit()
 
 if __name__ == '__main__':
 	subscriptionReport()

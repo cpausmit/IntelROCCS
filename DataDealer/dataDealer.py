@@ -42,8 +42,7 @@ print "Dataset Ranking --- Stop"
 print "Site Ranking --- Start"
 siteRanker = siteRanker.siteRanker()
 siteRankings = siteRanker.getSiteRankings()
-print "Dataset Ranking --- Stop"
-
+print "Site Ranking --- Stop"
 # Select datasets and sites for subscriptions
 print "Subscriptions --- Start"
 phedexDbPath = "%s/Cache/PhedexCache" % (os.environ['INTELROCCS_BASE'])
@@ -104,7 +103,7 @@ for siteName in iter(subscriptions):
 	for datasetName in datasets:
 		datasetRank = datasetRankingsCopy[datasetName]
 		replicas = phedexDb.getNumberReplicas(datasetName)
-		accesses = popDbDb.getDatasetAccesses(datasetName, date.strftime('%Y-%m-%d'))
+		accesses = popDbDb.getDatasetAccesses(datasetName, (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y-%m-%d'))
 		sizeGb = 0
 		with phedexDbCon:
 			cur = phedexDbCon.cursor()

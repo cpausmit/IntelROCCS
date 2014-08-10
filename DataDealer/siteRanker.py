@@ -65,8 +65,8 @@ class siteRanker():
 		siteRankings = dict()
 		availableSites = self.sites.getAvailableSites()
 		for siteName in availableSites:
-			availableCpu = self.getAvailableCpu(siteName)
-			availableStorageGb = self.getAvailableStorage(siteName)
+			availableCpu = max(self.getAvailableCpu(siteName), 1)
+			availableStorageGb = max(self.getAvailableStorage(siteName), 1)
 			rank = (availableCpu + availableStorageGb)/10**3
 			siteRankings[siteName] = rank
 		return siteRankings
