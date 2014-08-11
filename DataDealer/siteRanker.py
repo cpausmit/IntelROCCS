@@ -52,13 +52,13 @@ class siteRanker():
 		maxCpu = self.getMaxCpu(site)
 		usedCpu = self.popDbDb.getSiteCpu(site, date.strftime('%Y-%m-%d'))
 		availableCpu = maxCpu - usedCpu
-		return availableCpu
+		return max(availableCpu, 1)
 
 	def getAvailableStorage(self, site):
 		maxStorage = self.getMaxStorage(site)
 		usedStorage = self.phedexDb.getSiteStorage(site)
 		availableStorage = maxStorage*10**3 - usedStorage
-		return availableStorage
+		return max(availableStorage, 1)
 
 	def getSiteRankings(self):
 		# rank = availableSiteStorageGb * availableSiteCpu
