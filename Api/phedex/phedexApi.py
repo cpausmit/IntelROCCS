@@ -19,7 +19,7 @@
 # If a valid call is made but no data was found a JSON structure is still returned, it is up to
 # the caller to check for actual data.
 #---------------------------------------------------------------------------------------------------
-import sys, os, urllib, urllib2, httplib, json, datetime, subprocess
+import sys, re, os, urllib, urllib2, httplib, json, datetime, subprocess
 
 class phedexApi:
 	def __init__(self):
@@ -230,15 +230,33 @@ if __name__ == '__main__':
 			print "Usage: python ./phedexApi.py <apiCall> ['arg1_name=arg1' 'arg2_name=arg2' ...]"
 			sys.exit(2)
 		args[a] = v
-	data = 0
+	jsonData = 0
 	try:
-		data = func(**args)
+		jsonData = func(**args)
 	except TypeError, e:
 		print e
 		print "Usage: python ./phedexApi.py <apiCall> ['arg1_name=arg1' 'arg2_name=arg2' ...]"
 		sys.exit(1)
-	if not data:
+	if not jsonData:
 		print "PhEDEx call failed, see log (%s) for more details" % (phedexApi.logFile)
 		sys.exit(1)
-	print data
+	stored = 0
+	nDatasets = 0
+	datasets = jsonData.get('phedex').get('dataset')
+	for dataset in datasets:
+		nDatasets += 1
+		sizeGb = 0
+		datasetName = dataset.get('name')
+		if re.match('.+/USER', datasetName):
+			continue
+		for block in dataset.get('block'):
+			size = int(block.get('bytes'))
+			print size
+			for replica in dataset.get('block')[0].get('replica'):
+				siteName = replica.get('node')
+				if siteName == 'T2_AT_Vienna':
+					sizeGb = float(size)/10**9
+					stored += sizeGb
+	print int(stored/10**3)
+	print nDatasets
 	sys.exit(0)

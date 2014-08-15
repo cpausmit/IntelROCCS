@@ -84,7 +84,7 @@ for siteName in iter(subscriptions):
 		with open(logFilePath, 'a') as logFile:
 			logFile.write("%s DataDealer ERROR: Creating PhEDEx XML data failed for datasets %s on site %s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(subscriptions[siteName]), siteName))
 		continue
-	jsonData = phedexApi.subscribe(node=siteName, data=subscriptionData, level='dataset', move='n', custodial='n', group='AnalysisOps', request_only='y', no_mail='n', comments='IntelROCCS DataDealer', instance='prod')
+	jsonData = phedexApi.subscribe(node=siteName, data=subscriptionData, level='dataset', move='n', custodial='n', group='AnalysisOps', request_only='n', no_mail='n', comments='IntelROCCS DataDealer', instance='prod')
 	if not jsonData:
 		with open(logFilePath, 'a') as logFile:
 			logFile.write("%s DataDealer ERROR: Failed to create subscription for datasets %s on site %s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(subscriptions[siteName]), siteName))
