@@ -104,23 +104,15 @@ def subscriptionReport():
 	# Send email
 	fromEmail = ("Bjorn Barrefors", "bjorn.peter.barrefors@cern.ch")
 	toList = (["Data Management Group",
-			   "Bjorn Barrefors",
-			   "Brian Bockelman",
-			   "Maxim Goncharov",
-			   "Christoph Paus",
-			   "Tony Wildish",
-			   "Nicolo Magini",
-			   "Thomas Kress",
-			   "Frank Wuerthwein"],
-			  ["hn-cms-dmDevelopment@cern.ch",
-			   "bjorn.peter.barrefors@cern.ch",
-			   "bbockelm@cse.unl.edu",
-			   "maxi@mit.edu",
-			   "paus@mit.edu",
-			   "tony.wildish@cern.ch",
-			   "nicolo.magini@cern.ch",
-			   "thomas.kress@cern.ch",
-			   "fkw@fnal.gov"])
+		   "Bjorn Barrefors",
+		   "Brian Bockelman",
+		   "Maxim Goncharov",
+		   "Christoph Paus"],
+		  ["hn-cms-dmDevelopment@cern.ch",
+		   "bjorn.peter.barrefors@cern.ch",
+		   "bbockelm@cse.unl.edu",
+		   "maxi@mit.edu",
+		   "paus@mit.edu"])
 	#toList = (["Bjorn Barrefors"], ["bbarrefo@cse.unl.edu"])
 	#toList = (["Data Management Group"], ["hn-cms-dmDevelopment@cern.ch"])
 
