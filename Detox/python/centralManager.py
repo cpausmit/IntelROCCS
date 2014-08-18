@@ -76,6 +76,7 @@ class CentralManager:
             results = cursor.fetchall()
             for row in results:
                 siteName = row[0]
+#                if siteName != 'T2_AT_Vienna': continue
                 willBeUsed = int(row[4])
                 sizeTb = float(row[2])
                 siteSizeGb = sizeTb * 1024
@@ -202,10 +203,12 @@ class CentralManager:
 
        phedexSets = self.phedexHandler.getPhedexDatasets()
 
+       counter = 0
        for datasetName in phedexSets.keys():
            onSites = phedexSets[datasetName].locatedOnSites()
            if len(onSites) < 1:
                continue
+           if 'T2_AT_Vienna' in onSites: counter = counter + 1
            rank =    phedexSets[datasetName].getGlobalRank()
            self.dataPropers[datasetName] = datasetProperties.DatasetProperties(datasetName)
            self.dataPropers[datasetName].append(onSites)
@@ -216,6 +219,8 @@ class CentralManager:
                vali = phedexSets[datasetName].isValid(site)
                self.sitePropers[site].addDataset(datasetName,rank,size,vali,part,cust)
 
+       print " count = "
+       print counter
        for site in sorted(self.allSites.keys()):
            if self.allSites[site].getStatus() == 0:
                continue
@@ -424,13 +429,15 @@ class CentralManager:
             print " -- Number of datasets       = " + str(len(datasets2del))
             print "%s %0.2f %s" %(" -- Total size to be deleted =",totalSize/1024,"TB")
 
-            lastReqId = self.siteRequests[site].getLastReqId()
-            lastRequest = self.delRequests[lastReqId]
-            #they can look identical, but resubmit in case it was submitted too long ago
-            if thisRequest.looksIdentical(lastRequest):
-                if thisRequest.deltaTime(lastRequest)/(60*60) < 48 :
-                    print " -- Will skip submition, looks like a duplicate"
-                    continue
+            if site in self.siteRequests:
+                lastReqId = self.siteRequests[site].getLastReqId()
+                lastRequest = self.delRequests[lastReqId]
+                #they can look identical
+                #resubmit in case it was submitted too long ago
+                if thisRequest.looksIdentical(lastRequest):
+                    if thisRequest.deltaTime(lastRequest)/(60*60) < 48 :
+                        print " -- Will skip submition, looks like a duplicate"
+                        continue
             numberRequests = numberRequests + 1
             
             phedex = phedexApi.phedexApi(logPath='./')
@@ -461,7 +468,7 @@ class CentralManager:
             thisRequest.tstamp = date
             self.delRequests[id] = deletionRequest.DeletionRequest(id,site,date,thisRequest)
             if site not in self.siteRequests:
-                self.siteRequests[site] = deletionRequest.SiteRequest(site)
+                self.siteRequests[site] = deletionRequest.SiteDeletions(site)
             self.siteRequests[site].update(id,date)
 
             for dataset in datasets2del:
