@@ -21,10 +21,10 @@ class dbApi():
 		db = os.environ['DB_DB']
 		user = os.environ['DB_USER']
 		passwd = os.environ['DB_PW']
-		#try:
-		#	self.dbCon = MySQLdb.connect(host=host, user=user, passwd=passwd, db=db)
-		#except MySQLdb.Error, e:
-		#	raise Exception(" FATAL (%s - %s) -- Could not connect to db %s:%s" % (str(e.args[0]), str(e.args[1]), host, db))
+		try:
+			self.dbCon = MySQLdb.connect(host=host, user=user, passwd=passwd, db=db)
+		except MySQLdb.Error, e:
+			raise Exception(" FATAL (%s - %s) -- Could not connect to db %s:%s" % (str(e.args[0]), str(e.args[1]), host, db))
 
 #===================================================================================================
 #  M A I N   F U N C T I O N

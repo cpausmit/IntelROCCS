@@ -17,11 +17,11 @@ cacheDeadline = os.environ['CACHE_DEADLINE']
 
 phedexData_ = phedexData.phedexData(phedexCache, cacheDeadline)
 phedexApi_ = phedexApi.phedexApi()
-#phedexApi_.renewProxy()
+phedexApi_.renewProxy()
 
 popDbData_ = popDbData.popDbData(popDbCache, cacheDeadline)
 popDbApi_ = popDbApi.popDbApi(popDbCache, cacheDeadline)
-#popDbApi_.renewSsoCookie()
+popDbApi_.renewSsoCookie()
 
 sys.exit(0)
 #===================================================================================================

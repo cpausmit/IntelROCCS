@@ -37,6 +37,7 @@ class phedexApi:
 		return 0
 
 	def call(self, url, values):
+		print url
 		data = urllib.urlencode(values)
 		opener = urllib2.build_opener(HTTPSGridAuthHandler())
 		request = urllib2.Request(url, data)
