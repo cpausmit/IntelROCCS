@@ -102,7 +102,7 @@ class phedexApi:
 
 	def data(self, dataset='', block='', file_='', level='', create_since='', instance='prod'):
 		values = {'dataset':dataset, 'block':block, 'file':file_, 'level':level, 'create_since':create_since}
-		url = urllib.basejoin(self.phedexBase, "/json/%s/data" % (instance))
+		url = "%s/json/%s/data" % (self.phedexBase, instance)
 		jsonData = self.call(url, values)
 		if not jsonData:
 			print(" ERROR -- data call failed for values: dataset=%s, block=%s, file=%s, level=%s, create_since=%s, instance=%s" % (dataset, block, file_, level, create_since, instance))
@@ -110,7 +110,7 @@ class phedexApi:
 
 	def delete(self, node='', data='', level='', rm_subscriptions='', comments='', instance='prod'):
 		values = {'node':node, 'data':data, 'level':level, 'rm_subscriptions':rm_subscriptions, 'comments':comments}
-		url = urllib.basejoin(self.phedexBase, "/json/%s/delete" % (instance))
+		url = "%s/json/%s/delete" % (self.phedexBase, instance)
 		jsonData = self.call(url, values)
 		if not jsonData:
 			logFile.write(" ERROR -- delete call failed for values: node=%s, level=%s, rm_subscriptions=%s, comments=%s, instance=%s" % (node, level, rm_subscriptions, comments, instance))
@@ -118,7 +118,7 @@ class phedexApi:
 
 	def deleteRequests(self, request='', node='', create_since='', limit='', approval='', requested_by='', instance='prod'):
 		values = {'request':request, 'node':node, 'create_since':create_since, 'limit':limit, 'approval':approval, 'requested_by':requested_by}
-		url = urllib.basejoin(self.phedexBase, "/json/%s/deleterequests" % (instance))
+		url = "%s/json/%s/deleterequests" % (self.phedexBase, instance)
 		jsonData = self.call(url, values)
 		if not jsonData:
 			print(" ERROR -- deleteRequests call failed for values: request=%s, node=%s, create_since=%s, limit=%s, approval=%s, requested_by=%s, instance=%s" % (request, node, create_since, limit, approval, requested_by, instance))
@@ -126,7 +126,7 @@ class phedexApi:
 
 	def deletions(self, node='', se='', block='', dataset='', id_='', request='', request_since='', complete='', complete_since='', instance='prod'):
 		values = {'node':node, 'se':se, 'block':block, 'dataset':dataset, 'id':id_, 'request':request, 'request_since':request_since, 'complete':complete, 'complete_since':complete_since}
-		url = urllib.basejoin(self.phedexBase, "/json/%s/deletions" % (instance))
+		url = "%s/json/%s/deletions" % (self.phedexBase, instance)
 		jsonData = self.call(url, values)
 		if not jsonData:
 			print(" ERROR -- deletions call failed for values: node=%s, se=%s, block=%s, dataset=%s, id=%s, request=%s, request_since=%s, complete=%s, complete_since=%s, instance=%s" % (node, se, block, dataset, id_, request, request_since, complete, complete_since, instance))
@@ -134,7 +134,7 @@ class phedexApi:
 
 	def requestList(self, request='', type_='', approval='', requested_by='', node='', decision='', group='', create_since='', create_until='', decide_since='', decide_until='', dataset='', block='', decided_by='', instance='prod'):
 		values = {'request':request, 'type':type_, 'approval':approval, 'requested_by':requested_by, 'node':node, 'decision':decision, 'group':group, 'create_since':create_since, 'create_until':create_until, 'decide_since':decide_since, 'decide_until':decide_until, 'dataset':dataset, 'block':block, 'decided_by':decided_by}
-		url = urllib.basejoin(self.phedexBase, "/json/%s/requestlist" % (instance))
+		url = "%s/json/%s/requestlist" % (self.phedexBase, instance)
 		jsonData = self.call(url, values)
 		if not jsonData:
 			print(" ERROR -- requestList call failed for values: request=%s, type=%s, approval=%s, requested_by=%s, node=%s, decision=%s, group=%s, create_since=%s, create_until=%s, decide_since=%s, decide_until=%s, dataset=%s, block=%s, decided_by=%s, instance=%s" % (request, type_, approval, requested_by, node, decision, group, create_since, create_until, decide_since, decide_until, dataset, block, decided_by, instance))
@@ -142,7 +142,7 @@ class phedexApi:
 
 	def subscribe(self, node='', data='', level='', priority='', move='', static='', custodial='', group='', time_start='', request_only='', no_mail='', comments='', instance='prod'):
 		values = {'node':node, 'data':data, 'level':level, 'priority':priority, 'move':move, 'static':static, 'custodial':custodial, 'group':group, 'time_start':time_start, 'request_only':request_only, 'no_mail':no_mail, 'comments':comments}
-		url = urllib.basejoin(self.phedexBase, "/json/%s/subscribe" % (instance))
+		url = "%s/json/%s/subscribe" % (self.phedexBase, instance)
 		jsonData = self.call(url, values)
 		if not jsonData:
 			print(" ERROR -- subscribe call failed for values: node=%s, level=%s, priority=%s, move=%s, static=%s, custodial=%s, group=%s, time_start=%s, request_only=%s, no_mail=%s, comments=%s, instance=%s" % (node, level, priority, move, static, custodial, group, time_start, request_only, no_mail, comments, instance))
@@ -150,7 +150,7 @@ class phedexApi:
 
 	def transferRequests(self, request='', node='', group='', create_since='', limit='', approval='', requested_by='', instance='prod'):
 		values = {'request':request, 'node':node, 'group':group, 'create_since':create_since, 'limit':limit, 'approval':approval, 'requested_by':requested_by}
-		url = urllib.basejoin(self.phedexBase, "/json/%s/transferrequests" % (instance))
+		url = "%s/json/%s/transferrequests" % (self.phedexBase, instance)
 		jsonData = self.call(url, values)
 		if not jsonData:
 			print(" ERROR -- transferRequests call failed for values: request=%s, node=%s, group=%s, create_since=%s, limit=%s, approval=%s, requested_by=%s, instance=%s" % (request, node, group, create_since, limit, approval, requested_by, instance))
@@ -158,7 +158,7 @@ class phedexApi:
 
 	def updateRequest(self, decision='', request='', node='', comments='', instance='prod'):
 		values = {'decision':decision, 'request':request, 'node':node, 'comments':comments}
-		url = urllib.basejoin(self.phedexBase, "/json/%s/updaterequest" % (instance))
+		url = "%s/json/%s/updaterequests" % (self.phedexBase, instance)
 		jsonData = self.call(url, values)
 		if not jsonData:
 			print(" ERROR -- updateRequest call failed for values: decision=%s, request=%s, node=%s, comments=%s, instance=%s" % (decision, request, node, comments, instance))
