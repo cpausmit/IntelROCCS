@@ -32,14 +32,14 @@ export MONITOR_PYTHONPATH="$MONITOR_BASE/python"
 
 # Python path etc. (careful it might not be set)
 
-if [ "`echo $PATH | grep /usr/local/bin`" == "" ] 
+if [ "`echo $PATH | grep /usr/local/bin`" == "" ]
 then
   export PATH="/usr/local/bin:${PATH}"
 fi
 
 export LD_LIBRARY_PATH="/usr/local/lib:${LD_LIBRARY_PATH}"
 
-if [ -z "$PYTHONPATH" ] 
+if [ -z "$PYTHONPATH" ]
 then
   export PYTHONPATH="/usr/local/lib/python2.7:/usr/local/lib/python2.7/site-packages"
 fi

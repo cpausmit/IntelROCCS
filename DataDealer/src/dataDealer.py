@@ -3,70 +3,68 @@
 # This is the main script of the DataDealer. See README.md for more information.
 #---------------------------------------------------------------------------------------------------
 import sys, os, copy, sqlite3, subprocess, datetime, operator
-sys.path.append(os.path.dirname(os.environ['INTELROCCS_BASE']))
-import datasetRanker, siteRanker, select, phedexDb, popDbDb
-import IntelROCCS.Api.phedex.phedexApi as phedexApi
-import IntelROCCS.Api.popDb.popDbApi as popDbApi
-import IntelROCCS.Monitor.subscriptionReport as subscriptionReport
+import init
+#import datasetRanker, siteRanker, select, phedexDb, popDbDb, subscriptionReport
+#import datasetRanker
+import phedexApi, popDbApi, phedexData, popDbData
 
 # Setup parameters
 # We would like to make these easier to change in the future
-logFilePath = os.environ['INTELROCCS_LOG']
-threshold = 1
-budgetGb = 10000
-phedexApi = phedexApi.phedexApi()
-error = phedexApi.renewProxy()
-if error:
-	with open(logFilePath, 'a') as logFile:
-		logFile.write("%s FATAL DataDealer ERROR: Couldn't renew proxy, exiting\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-	sys.exit(1)
+budgetGb = os.environ['DATA_DEALER_BUDGET']
+phedexCache = os.environ['PHEDEX_CACHE']
+popDbCache = os.environ['POP_DB_CACHE']
+cacheDeadline = os.environ['CACHE_DEADLINE']
 
-popDbApi = popDbApi.popDbApi()
-error = popDbApi.renewSsoCookie()
-if error:
-	with open(logFilePath, 'a') as logFile:
-		logFile.write("%s FATAL DataDealer ERROR: Couldn't renew SSO cookie, exiting\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-	sys.exit(1)
+phedexData_ = phedexData.phedexData(phedexCache, cacheDeadline)
+phedexApi_ = phedexApi.phedexApi()
+#phedexApi_.renewProxy()
 
+popDbData_ = popDbData.popDbData(popDbCache, cacheDeadline)
+popDbApi_ = popDbApi.popDbApi(popDbCache, cacheDeadline)
+#popDbApi_.renewSsoCookie()
+
+sys.exit(0)
 #===================================================================================================
 #  M A I N
 #===================================================================================================
 # Get dataset rankings
 print "Dataset Ranking --- Start"
-datasetRanker = datasetRanker.datasetRanker(threshold)
-datasetRankings = datasetRanker.getDatasetRankings()
+datasetRanker_ = datasetRanker.datasetRanker()
+datasetRankings = datasetRanker_.getDatasetRankings()
 datasetRankingsCopy = copy.deepcopy(datasetRankings)
 print "Dataset Ranking --- Stop"
 
 # Get site rankings
 print "Site Ranking --- Start"
-siteRanker = siteRanker.siteRanker()
-siteRankings = siteRanker.getSiteRankings()
+siteRanker_ = siteRanker.siteRanker()
+siteRankings = siteRanker_.getSiteRankings()
 print "Site Ranking --- Stop"
+
 # Select datasets and sites for subscriptions
 print "Subscriptions --- Start"
-phedexDbPath = "%s/Cache/PhedexCache" % (os.environ['INTELROCCS_BASE'])
-phedexDbFile = "%s/blockReplicas.db" % (phedexDbPath)
-phedexDbCon = sqlite3.connect(phedexDbFile)
-select = select.select()
+phedexCache = os.environ['PHEDEC_CACHE']
+blockReplicasCache = "%s/blockReplicas.db" % (phedexCache)
+blockReplicasDb = sqlite3.connect(blockReplicasCache)
+select_ = select.select()
 subscriptions = dict()
 selectedGb = 0
 while (selectedGb < budgetGb) and (datasetRankings):
-	datasetName = select.weightedChoice(datasetRankings)
-	siteName = select.weightedChoice(siteRankings)
+	datasetName = select_.weightedChoice(datasetRankings)
+	siteName = select_.weightedChoice(siteRankings)
 	if siteName in subscriptions:
 		subscriptions[siteName].append(datasetName)
 	else:
 		subscriptions[siteName] = [datasetName]
 	del datasetRankings[datasetName]
-	with phedexDbCon:
-		cur = phedexDbCon.cursor()
+	with blockReplicasDb:
+		cur = blockReplicasDb.cursor()
 		cur.execute('SELECT SizeGb FROM Datasets WHERE DatasetName=?', (datasetName,))
 		sizeGb = cur.fetchone()[0]
 	selectedGb += sizeGb
 print "Subscriptions --- Stop"
 
 print "Update DB --- Start"
+# change to mit db
 requestsDbPath = "%s/Cache" % (os.environ['INTELROCCS_BASE'])
 requestsDbFile = "%s/requests.db" % (requestsDbPath)
 requestsDbCon = sqlite3.connect(requestsDbFile)
@@ -84,7 +82,7 @@ for siteName in iter(subscriptions):
 		with open(logFilePath, 'a') as logFile:
 			logFile.write("%s DataDealer ERROR: Creating PhEDEx XML data failed for datasets %s on site %s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(subscriptions[siteName]), siteName))
 		continue
-	jsonData = phedexApi.subscribe(node=siteName, data=subscriptionData, level='dataset', move='n', custodial='n', group='AnalysisOps', request_only='n', no_mail='n', comments='IntelROCCS DataDealer', instance='prod')
+	jsonData = phedexApi.subscribe(node=siteName, data=subscriptionData, level='dataset', move='n', custodial='n', group='AnalysisOps', request_only='y', no_mail='n', comments='IntelROCCS DataDealer', instance='prod')
 	if not jsonData:
 		with open(logFilePath, 'a') as logFile:
 			logFile.write("%s DataDealer ERROR: Failed to create subscription for datasets %s on site %s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(subscriptions[siteName]), siteName))
@@ -114,8 +112,8 @@ for siteName in iter(subscriptions):
 				cur.execute('INSERT INTO Requests(RequestId, RequestType, DatasetName, SiteName, SizeGb, Replicas, Accesses, Rank, GroupName, Timestamp) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', (requestId, requestType, datasetName, siteName, sizeGb, replicas, accesses, datasetRank, groupName, requestTimestamp))
 print "Update DB --- Stop"
 
-print "Daily email --- Start"
 # Send summary report
+print "Daily email --- Start"
 subscriptionReport.subscriptionReport()
 print "Daily email --- Stop"
 

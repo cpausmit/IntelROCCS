@@ -5,10 +5,10 @@ import sys, os, subprocess, re, time, datetime, smtplib, MySQLdb, shutil, string
 import phedexDataHandler, popularityDataHandler, phedexApi
 import siteProperties, datasetProperties
 import siteStatus, deletionRequest
-	
+
 class CentralManager:
     def __init__(self):
-        
+
         if not os.environ.get('DETOX_DB'):
             raise Exception(' FATAL -- DETOX environment not defined: source setup.sh\n')
 
@@ -27,7 +27,7 @@ class CentralManager:
 
         self.phedexHandler = phedexDataHandler.PhedexDataHandler(self.allSites)
         self.popularityHandler = popularityDataHandler.PopularityDataHandler(self.allSites)
-        
+
 
     def getDbConnection(self,db=os.environ.get('DETOX_SITESTORAGE_DB')):
         # configuration
@@ -38,7 +38,7 @@ class CentralManager:
         connection = MySQLdb.connect(host=server,db=db, user=user,passwd=pw)
         # prepare a cursor object using cursor() method
         return connection
-    
+
 
     def extractPhedexData(self,federation):
         if self.phedexHandler.shouldAccessPhedex() :
@@ -68,7 +68,7 @@ class CentralManager:
         print ' Access quota table (%s) in site storage database (%s) to find all sites.'%(table,db)
         connection = self.getDbConnection()
         cursor = connection.cursor()
-        
+
         group = "AnalysisOps"
         sql = "select * from " + table + ' where GroupName=\'' + group +'\''
         try:
@@ -100,7 +100,7 @@ class CentralManager:
     def checkProxyValid(self):
         process = subprocess.Popen(["/usr/bin/voms-proxy-info","-file",os.environ['DETOX_X509UP']],
                                    shell=True,stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        
+
         output, err = process.communicate()
         p_status = process.wait()
         if p_status != 0:
@@ -121,7 +121,7 @@ class CentralManager:
     def rankDatasetsLocally(self):
         for site in sorted(self.allSites):
             self.rankLocallyAtSite(site)
-        
+
     def rankLocallyAtSite(self,site):
         secsPerDay = 60*60*24
         now = float(time.time())
@@ -148,10 +148,10 @@ class CentralManager:
                     dateTime = date+' 00:00:01'
                     pattern = '%Y-%m-%d %H:%M:%S'
                     lastAccessed = int(time.mktime(time.strptime(dateTime, pattern)))
-        
+
                     if (now-creationDate)/secsPerDay > ((now-lastAccessed)/secsPerDay-nAccessed):
                         used = 1
-                        
+
             # calculate the rank of the given dataset according to its access patterns and size
             datasetRank = (1-used)*(now-creationDate)/(60*60*24) + \
                           used*( (now-lastAccessed)/(60*60*24)-nAccessed) - size/100
@@ -160,11 +160,11 @@ class CentralManager:
         statusDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS']
         outputFile = open(statusDirectory+'/'+site+'/'+os.environ['DETOX_DATASETS_TO_DELETE'],'w')
         dsets = self.phedexHandler.getDatasetsByRank(site)
-       
+
         origFile = statusDirectory+'/'+site+'/'+os.environ['DETOX_DATASETS_TO_DELETE']
         copyFile = statusDirectory+'/'+site+'/'+os.environ['DETOX_DATASETS_TO_DELETE']+'-local'
         shutil.copy2(origFile,copyFile)
-        
+
     def rankDatasetsGlobally(self):
         secsPerDay = 60*60*24
         now = float(time.time())
@@ -172,9 +172,9 @@ class CentralManager:
         usedSets = self.popularityHandler.getUsedDatasets()
 
         for datasetName in sorted(phedexSets.keys()):
-            
+
             phedexDset = phedexSets[datasetName]
-            
+
             siteNames = phedexDset.locatedOnSites()
             globalRank = 0
             nSites = 0
@@ -183,11 +183,11 @@ class CentralManager:
                     continue
                 if self.allSites[site].getValid() == 0:
                     continue
-                
+
                 localRank = phedexDset.getLocalRank(site)
                 globalRank = globalRank + localRank
                 nSites = nSites+1
-                
+
             if nSites < 1:
                 globalRank = 9999
             else:
@@ -269,9 +269,9 @@ class CentralManager:
                 # datasets
                 for iter in range(0,2):
                     nprotected = 0
-                    for site in sorted(dataPr.mySites(), cmp=self.sortByProtected):              
+                    for site in sorted(dataPr.mySites(), cmp=self.sortByProtected):
                         sitePr = self.sitePropers[site]
-                            
+
                         if sitePr.pinDataset(datasetName):
                             nprotected = nprotected + 1
                             if nprotected >= self.DETOX_NCOPY_MIN:
@@ -286,7 +286,7 @@ class CentralManager:
                             dataPr.removeDelTarget(site)
                     else:
                         break
-                    
+
                 for site in self.sitePropers.keys() :
                     sitePr = self.sitePropers[site]
                     if(sitePr.onWishList(datasetName)):
@@ -301,7 +301,7 @@ class CentralManager:
                 shutil.rmtree(subd)
             else:
                 os.remove(subd)
-            
+
         today = str(datetime.date.today())
         ttime = time.strftime("%H:%M")
 
@@ -350,7 +350,7 @@ class CentralManager:
             sitedir = resultDirectory + "/" + site
             if not os.path.exists(sitedir):
                 os.mkdir(sitedir)
-                
+
             fileTimest = sitedir + "/Summary.txt"
             fileRemain = sitedir + "/RemainingDatasets.txt"
             fileDelete = sitedir + "/DeleteDatasets.txt"
@@ -371,7 +371,7 @@ class CentralManager:
             outputFile.write("Space to delete [TB]: %8.2f\n"%(sitePr.spaceDeleted()/1024))
             outputFile.write("Space last CP   [TB]: %8.2f\n"%(sitePr.spaceLastCp()/1024))
             outputFile.close()
-            
+
             if len(sitePr.delTargets()) > 0:
                 print " File: " + fileDelete
             outputFile = open(fileDelete,'w')
@@ -409,7 +409,7 @@ class CentralManager:
 
 
     def requestDeletions(self):
-        
+
         now_tstamp = datetime.datetime.now()
         numberRequests = 0
         thisRequest = None
@@ -439,14 +439,14 @@ class CentralManager:
                         print " -- Will skip submition, looks like a duplicate"
                         continue
             numberRequests = numberRequests + 1
-            
+
             phedex = phedexApi.phedexApi(logPath='./')
             # compose data for deletion request
             check,data = phedex.xmlData(datasets=datasets2del,instance='prod')
-            if check: 
+            if check:
                 print " ERROR - phedexApi.xmlData failed"
                 sys.exit(1)
-                
+
             # here the request is really sent
             message = 'IntelROCCS -- Automatic Cache Release Request (next check ' + \
                       'in about %s hours).'%(os.environ['DETOX_CYCLE_HOURS']) + \
@@ -456,7 +456,7 @@ class CentralManager:
                 print " ERROR - phedexApi.delete failed"
                 print response
                 sys.exit(1)
-                
+
             respo = response.read()
             matchObj = re.search(r'"id":"(\d+)"',respo)
             id = int(matchObj.group(1))
@@ -476,7 +476,7 @@ class CentralManager:
                 rank =   sitePr.dsetRank(dataset)
                 size =   sitePr.dsetSize(dataset)
                 group = 'AnalysisOps'
-        
+
                 connection = self.getDbConnection(os.environ.get('DETOX_HISTORY_DB'))
                 cursor = connection.cursor()
                 sql = "insert into Requests(RequestId,RequestType,SiteName,Dataset,Size,Rank," \
@@ -497,7 +497,7 @@ class CentralManager:
         for site in sorted(self.allSites.keys()):
             if self.allSites[site].getStatus() != 0:
                 self.extractCacheRequestsForSite(site)
-    
+
     def extractCacheRequestsForSite(self,site):
         connection = self.getDbConnection(os.environ.get('DETOX_HISTORY_DB'))
         cursor = connection.cursor()
@@ -512,7 +512,7 @@ class CentralManager:
             connection.close()
             return
         connection.close()
-        
+
         for row in results:
             reqid   = row[0]
             site    = row[1]
@@ -526,12 +526,12 @@ class CentralManager:
             rank    = row[4]
             self.delRequests[reqid].update(dataset,rank,size)
             self.siteRequests[site].update(reqid,tstamp)
-            
+
     def showCacheRequests(self):
         for site in sorted(self.allSites.keys()):
              if self.allSites[site].getStatus() != 0:
                  self.showCacheRequestsForSite(site)
-        
+
     def showCacheRequestsForSite(self,site):
         resultDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_RESULT']
         outputFile = open(resultDirectory + '/' + site + '/DeletionHistory.txt','w')
@@ -555,13 +555,13 @@ class CentralManager:
 
             outputFile.write("#\n# PhEDEx Request: %s (%10s, %.1f GB)\n"%\
                              (reqid,theRequest.getTimeStamp(),theRequest.getSize()))
-            
+
             outputFile.write("#\n# Rank   DatasetName\n")
             outputFile.write("# ---------------------------------------\n")
 
             for dataset in theRequest.getDsets():
                 outputFile.write("  %-6d %s\n" %(theRequest.getDsetRank(dataset),dataset))
-            
+
             outputFile.write("\n")
             counter = counter + 1
             if counter > 20:
@@ -573,7 +573,7 @@ class CentralManager:
         From = "maxi@t3btch039.mit.edu"
         Subj = subject
         Text = "" + body + ""
-        
+
         Body = string.join((
             "From: %s" % From,
             "To: %s" % To,
@@ -581,13 +581,13 @@ class CentralManager:
             "",
             Text,
             ), "\r\n")
-       
+
         try:
             smtpObj = smtplib.SMTP('localhost')
             smtpObj.sendmail(From, To, Body)
         except Exception:
             print "Error: unable to send email"
-        
+
     def sortByProtected(self,item1,item2):
         r1 = self.sitePropers[item1].spaceFree()
         r2 = self.sitePropers[item2].spaceFree()

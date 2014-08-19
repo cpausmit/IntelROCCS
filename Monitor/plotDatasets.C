@@ -37,7 +37,7 @@ void plotDatasetUsage()
   TString text        = gSystem->Getenv("DATASET_MONITOR_TEXT");
   TString fileName    = gSystem->Getenv("DATASET_MONITOR_FILE");
 
-  TString pngFileName = fileName + TString(".png");    
+  TString pngFileName = fileName + TString(".png");
   TString inputFile   = fileName + TString(".txt");
 
   // Make sure we have the right styles
@@ -57,7 +57,7 @@ void plotDatasetUsage()
   // book our histogram
   Int_t nBins = int(xMax-xMin)+1;
   TH1D *h = new TH1D("dataUsage","Data Usage",nBins,xMin-0.5,xMax+0.5);
-  MitRootStyle::InitHist(h,"","",kBlack);  
+  MitRootStyle::InitHist(h,"","",kBlack);
   TString titles = TString("; Accesses ") + text + TString(";Data Size [TB]");
   h->SetTitle(titles.Data());
 
@@ -65,13 +65,13 @@ void plotDatasetUsage()
   //-------------------
   while (1) {
 
-    // read in 
+    // read in
     input >> nSites >> nAccesses >> nFiles >> size;
 
     // check it worked
     if (! input.good())
       break;
-    
+
     // show what we are reading
     if (nLines < 5)
       printf(" nSites=%d  nAccesses=%d  nFiles=%d  size=%8f\n",nSites, nAccesses, nFiles, size);
@@ -85,16 +85,16 @@ void plotDatasetUsage()
     if (value<1.0 && (double(nAccesses)/double(nFiles)>0.5))
       value = 1.;
 
-    // truncate at maximum (overflow in last bin) 
+    // truncate at maximum (overflow in last bin)
     if (value>=xMax)
       value = xMax-0.0001;
-    
+
     // fill the histogram here
     h->Fill(value,weight);
 
     if (nLines < 5)
       printf(" Value: %f weight: %f\n",value,weight);
-    
+
     // keep track of the total size
     totalSize += double(nSites)*size/1024.;
 
