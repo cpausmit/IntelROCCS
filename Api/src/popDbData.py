@@ -2,7 +2,7 @@
 #---------------------------------------------------------------------------------------------------
 # getPhedexData.py
 #---------------------------------------------------------------------------------------------------
-import sys, os, json, datetime
+import sys, os, json, sqlite3, datetime
 import popDbApi
 
 class popDbData:
@@ -14,7 +14,7 @@ class popDbData:
 #===================================================================================================
 #  H E L P E R S
 #===================================================================================================
-	def shouldAccessPopDb(self, apiCall, dataset='', site='', date):
+	def shouldAccessPopDb(self, apiCall, date, dataset='', site=''):
 		cacheFile = "%s/%s.db" % (self.popDbCache, apiCall)
 		if (not os.path.isfile(cacheFile)) or (os.path.getsize(cacheFile) == 0):
 			# there is no cache database
@@ -34,10 +34,12 @@ class popDbData:
 					return True
 		return False
 
-
-	def updateDatasetCache(self, apiCall, site='', date):
+	def updateCache(self, apiCall, date, site=''):
 		if not os.path.exists(self.popDbCache):
 			os.makedirs(self.popDbCache)
+		cacheFile = "%s/%s.db" % (self.popDbCache, apiCall)
+		if os.path.isfile(cacheFile) and (os.path.getsize(cacheFile) == 0):
+			os.remove(cacheFile)
 		tstart = date
 		tstop = tstart
 		jsonData = ""
@@ -70,8 +72,8 @@ class popDbData:
 		for dataset in datasets:
 			numberAccesses += dataset.get('NACC')
 			numberCpus += dataset.get('TOTCPU')
-		with self.dbCon:
-			cur = self.dbCon.cursor()
+		with DSStatInTimeWindowCache:
+			cur = DSStatInTimeWindowCache.cursor()
 			cur.execute('INSERT INTO SiteData(Day, SiteName, NumberAccesses, NumberCpus) VALUES(?, ?, ?, ?)', (date, siteName, numberAccesses, numberCpus))
 
 	def buildDatasetDSStatInTimeWindowCache(self, jsonData, date):
@@ -91,7 +93,7 @@ class popDbData:
 
 	def getDatasetAccesses(self, datasetName, date):
 		numberAccesses = 0
-		if shouldAccessPopDb(apiCall='DSStatInTimeWindow', dataset=datasetName, date=date):
+		if self.shouldAccessPopDb(apiCall='DSStatInTimeWindow', dataset=datasetName, date=date):
 			error = self.updateCache(apiCall='DSStatInTimeWindow', date=date)
 			if error:
 				return numberAccesses
@@ -107,7 +109,7 @@ class popDbData:
 
 	def getDatasetCpus(self, datasetName, date):
 		numberCpus = 0
-		if shouldAccessPopDb(apiCall='DSStatInTimeWindow', dataset=datasetName, date=date):
+		if self.shouldAccessPopDb(apiCall='DSStatInTimeWindow', dataset=datasetName, date=date):
 			error = self.updateCache(apiCall='DSStatInTimeWindow', date=date)
 			if error:
 				return numberCpus
@@ -121,9 +123,9 @@ class popDbData:
 				numberCpus = row[0]
 		return numberCpus
 
-		def getSiteAccesses(self, siteName, date):
+	def getSiteAccesses(self, siteName, date):
 		numberAccesses = 1
-		if shouldAccessPopDb(apiCall='DSStatInTimeWindow', site=siteName, date=date):
+		if self.shouldAccessPopDb(apiCall='DSStatInTimeWindow', site=siteName, date=date):
 			error = self.updateCache(apiCall='DSStatInTimeWindow', site=siteName, date=date)
 			if error:
 				return numberAccesses
@@ -139,7 +141,7 @@ class popDbData:
 
 	def getSiteCpu(self, siteName, date):
 		numberCpus = 1
-		if shouldAccessPopDb(apiCall='DSStatInTimeWindow', site=siteName, date=date):
+		if self.shouldAccessPopDb(apiCall='DSStatInTimeWindow', site=siteName, date=date):
 			error = self.updateCache(apiCall='DSStatInTimeWindow', site=siteName, date=date)
 			if error:
 				return numberCpus
@@ -157,12 +159,14 @@ class popDbData:
 #  M A I N
 #===================================================================================================
 if __name__ == '__main__':
-	popDbCache = "%s/IntelROCCS/Cache/PopDb" % (os.environ.get['HOME'])
+	popDbCache = "%s/IntelROCCS/Cache/PopDb" % (os.environ['HOME'])
 	popDbData_ = popDbData(popDbCache, 12)
-	# TODO -- Create dataset and date
+	datasetName = '/SingleMu/Run2012C-22Jan2013-v1/AOD'
+	date = '2014-08-17'
 	numberAccesses = popDbData_.getDatasetAccesses(datasetName, date)
 	if not numberAccesses:
 		print " ERROR -- Could not fetch pop db data"
 		sys.exit(1)
 	print " SUCCESS -- Pop DB data successfully fetched"
+	print numberAccesses
 	sys.exit(0)

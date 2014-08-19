@@ -9,7 +9,7 @@
 #
 # In case of an error a '0' will be returned, caller must check to make sure data is returned.
 #---------------------------------------------------------------------------------------------------
-import sys, os, json, sqlite3, datetime
+import sys, re, os, json, sqlite3, datetime
 import phedexApi
 
 class phedexData:
@@ -42,6 +42,9 @@ class phedexData:
 	def updateCache(self, apiCall):
 		if not os.path.exists(self.phedexCache):
 			os.makedirs(self.phedexCache)
+		cacheFile = "%s/%s.db" % (self.phedexCache, apiCall)
+		if os.path.isfile(cacheFile):
+			os.remove(cacheFile)
 		jsonData = ""
 		# can easily extend this to support more api calls
 		if apiCall == "blockReplicas":
@@ -55,6 +58,7 @@ class phedexData:
 	def buildBlockReplicasCache(self, jsonData):
 		blockReplicasCache = sqlite3.connect("%s/blockReplicas.db" % (self.phedexCache))
 		with blockReplicasCache:
+			cur = blockReplicasCache.cursor()
 			cur.execute('CREATE TABLE Datasets (DatasetId INTEGER PRIMARY KEY AUTOINCREMENT, DatasetName TEXT UNIQUE, SizeGb INTEGER)')
 			cur.execute('CREATE TABLE Replicas (SiteName TEXT, DatasetId INTEGER, GroupName TEXT, FOREIGN KEY(DatasetId) REFERENCES Datasets(DatasetId))')
 		datasets = jsonData.get('phedex').get('dataset')
@@ -62,13 +66,13 @@ class phedexData:
 			datasetName = dataset.get('name')
 			if re.match('.+/USER', datasetName):
 				continue
-			sizeGb = dataset.get('bytes')
-			if not sizeGb:
-				sizeGb = 0
+			sizeBytes = dataset.get('bytes')
+			if not sizeBytes:
+				sizeBytes = 0
 				for block in dataset.get('block'):
-					sizeGb += int(block.get('bytes'))
+					sizeBytes += int(block.get('bytes'))
+			sizeGb = float(sizeBytes)/10**9
 			with blockReplicasCache:
-				sizeGb = float(sizeGb)/10**9
 				cur = blockReplicasCache.cursor()
 				cur.execute('INSERT INTO Datasets(DatasetName, SizeGb) VALUES(?, ?)', (datasetName, sizeGb))
 				datasetId = cur.lastrowid
@@ -164,11 +168,12 @@ class phedexData:
 #  M A I N
 #===================================================================================================
 if __name__ == '__main__':
-	phedexCache = "%s/IntelROCCS/Cache/Phedex" % (os.environ.get['HOME'])
+	phedexCache = "%s/IntelROCCS/Cache/Phedex" % (os.environ['HOME'])
 	phedexData_ = phedexData(phedexCache, 12)
-	datasets = phedexData_.getAllDatasets()
-	if not datasets:
+	siteStorage = phedexData_.getSiteStorage('T2_AT_Vienna')
+	if not siteStorage:
 		print " ERROR -- Could not fetch phedex data"
 		sys.exit(1)
 	print " SUCCESS -- Phedex data successfully fetched"
+	print siteStorage
 	sys.exit(0)

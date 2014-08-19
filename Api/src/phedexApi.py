@@ -222,7 +222,7 @@ if __name__ == '__main__':
 		print "Usage: python ./phedexApi.py <apiCall> ['arg1_name=arg1' 'arg2_name=arg2' ...]"
 		sys.exit(1)
 	if not jsonData:
-		print "Phedex call failed."
+		print " ERROR -- Phedex call failed."
 		sys.exit(1)
 	stored = 0
 	nDatasets = 0
@@ -230,15 +230,19 @@ if __name__ == '__main__':
 	for dataset in datasets:
 		nDatasets += 1
 		sizeGb = 0
+		sizeByte = 0
 		datasetName = dataset.get('name')
+		print datasetName
 		if re.match('.+/USER', datasetName):
 			continue
 		for block in dataset.get('block'):
 			size = int(block.get('bytes'))
 			for replica in dataset.get('block')[0].get('replica'):
 				siteName = replica.get('node')
-				sizeGb = float(size)/10**9
-				stored += sizeGb
-	print int(stored/10**3)
+				sizeByte += size
+		sizeGb = float(sizeByte)/10**9
+		stored += sizeGb
+		print sizeGb
+	print "%.2f" % (stored/10**3)
 	print nDatasets
 	sys.exit(0)
