@@ -149,8 +149,8 @@ class popDbApi():
 # Use this for testing purposes or as a script.
 # Usage: python ./popDbApi.py <APICall> ['arg1_name=arg1' 'arg2_name=arg2' ...]
 if __name__ == '__main__':
-	popDbApi = popDbApi()
-	error = popDbApi.renewSsoCookie()
+	popDbApi_ = popDbApi()
+	error = popDbApi_.renewSsoCookie()
 	if error:
 		print "Failed to renew SSO cookie"
 		sys.exit(1)
@@ -158,7 +158,7 @@ if __name__ == '__main__':
 	if len(sys.argv) < 2:
 		print "Usage: python ./popDbApi.py <APICall> ['arg1_name=arg1' 'arg2_name=arg2' ...]"
 		sys.exit(2)
-	func = getattr(popDbApi, sys.argv[1], None)
+	func = getattr(popDbApi_, sys.argv[1], None)
 	if not func:
 		print "%s is not a valid popularity db api call" % (sys.argv[1])
 		print "Usage: python ./popDbApi.py <APICall> ['arg1_name=arg1' 'arg2_name=arg2' ...]"

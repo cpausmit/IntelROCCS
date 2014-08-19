@@ -43,7 +43,7 @@ if __name__ == '__main__':
 	if not (len(sys.argv) == 1):
 		print "Usage: python ./datasetRanker.py"
 		sys.exit(2)
-	datasetRanker = datasetRanker(1)
-	datasetRankings = datasetRanker.getDatasetRankings()
+	datasetRanker_ = datasetRanker(1)
+	datasetRankings = datasetRanker_.getDatasetRankings()
 	print datasetRankings
 	sys.exit(0)

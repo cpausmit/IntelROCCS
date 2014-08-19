@@ -43,8 +43,8 @@ if __name__ == '__main__':
 	if not (len(sys.argv) == 2):
 		print "Usage: python ./sites.py <function>"
 		sys.exit(2)
-	site_req = sites()
-	func = getattr(site_req, sys.argv[1], None)
+	sites_ = sites()
+	func = getattr(sites_, sys.argv[1], None)
 	if not func:
 		print "Function %s is not available" % (sys.argv[1])
 		print "Usage: python ./sites.py <function>"

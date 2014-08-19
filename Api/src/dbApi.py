@@ -54,12 +54,12 @@ if __name__ == '__main__':
 	if len(sys.argv) < 2:
 		print "Usage: python ./dbApi.py <'db query'> ['value1', 'value2', ...]"
 		sys.exit(2)
-	dbApi = dbApi()
+	dbApi_ = dbApi()
 	query = sys.argv[1]
 	values = []
 	for v in sys.argv[2:]:
 		values.append(v)
-	data = dbApi.dbQuery(query, values=values)
+	data = dbApi_.dbQuery(query, values=values)
 	if not data:
 		print "DB call failed"
 		sys.exit(1)

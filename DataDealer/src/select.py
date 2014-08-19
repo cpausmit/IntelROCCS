@@ -30,9 +30,9 @@ if __name__ == '__main__':
 	if not (len(sys.argv) == 1):
 		print "Usage: python ./select.py"
 		sys.exit(2)
-	select = select()
+	select_ = select()
 	# Testcase
 	choices = {'dataset1': 1, 'dataset2': 2, 'dataset3': 3}
-	datasetName, ranking = select.weightedChoice(choices)
+	datasetName, ranking = select_.weightedChoice(choices)
 	print datasetName + " : " + str(ranking)
 	sys.exit(0)
