@@ -6,12 +6,12 @@ import sys, os, math, json, datetime
 import phedexData, popDbData
 
 class datasetRanker():
-	def __init__(self, threshold):
+	def __init__(self):
 		phedexCache = os.environ['PHEDEX_CACHE']
 		popDbCache = os.environ['POP_DB_CACHE']
-		cacheDeadline = os.environ['CACHE_DEADLINE']
-		self.threshold = os.environ['DATA_DEALER_THRESHOLD']
-		self.phedexData = phedexData.phedexDb(phedexCache, cacheDeadline)
+		cacheDeadline = int(os.environ['CACHE_DEADLINE'])
+		self.threshold = int(os.environ['DATA_DEALER_THRESHOLD'])
+		self.phedexData = phedexData.phedexData(phedexCache, cacheDeadline)
 		self.popDbData = popDbData.popDbData(popDbCache, cacheDeadline)
 		self.datasetRankings = dict()
 #===================================================================================================
@@ -29,8 +29,8 @@ class datasetRanker():
 		for datasetName in datasets:
 			replicas = max(self.phedexData.getNumberReplicas(datasetName), 1)
 			sizeGb = self.phedexData.getDatasetSize(datasetName)
-			nAccesses = max(self.popDbDb.getDatasetAccesses(datasetName, date.strftime('%Y-%m-%d')), 1)
-			dAccesses = max(self.popDbDb.getDatasetAccesses(datasetName, (date - datetime.timedelta(days=1)).strftime('%Y-%m-%d')), 1)
+			nAccesses = max(self.popDbData.getDatasetAccesses(datasetName, date.strftime('%Y-%m-%d')), 1)
+			dAccesses = max(self.popDbData.getDatasetAccesses(datasetName, (date - datetime.timedelta(days=1)).strftime('%Y-%m-%d')), 1)
 			rank = (math.log10(nAccesses)*dAccesses)/(sizeGb*replicas**2)
 			self.datasetRankings[datasetName] = rank
 			if rank >= self.threshold:
