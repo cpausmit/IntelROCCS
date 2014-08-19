@@ -25,12 +25,11 @@ cacheDeadline = os.environ['CACHE_DEADLINE']
 #  M A I N
 #===================================================================================================
 # Get dataset rankings
-print "Dataset Ranking --- Start"
-datasetRanker_ = datasetRanker.datasetRanker()
-datasetRankings = datasetRanker_.getDatasetRankings()
-datasetRankingsCopy = copy.deepcopy(datasetRankings)
-print "Dataset Ranking --- Stop"
-sys.exit(0)
+# print "Dataset Ranking --- Start"
+# datasetRanker_ = datasetRanker.datasetRanker()
+# datasetRankings = datasetRanker_.getDatasetRankings()
+# datasetRankingsCopy = copy.deepcopy(datasetRankings)
+# print "Dataset Ranking --- Stop"
 
 # Get site rankings
 print "Site Ranking --- Start"
