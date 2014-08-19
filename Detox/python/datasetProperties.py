@@ -1,7 +1,7 @@
 #====================================================================================================
 #  C L A S S E S  concerning the description of datasets
 #====================================================================================================
-		
+
 class DatasetProperties:
 	def __init__(self, name):
 		self.name = name
@@ -13,14 +13,14 @@ class DatasetProperties:
 
 	def append(self,sites):
 		for s in sites:
-			if s not in self.siteList: 
+			if s not in self.siteList:
 				self.siteList.append(s)
 
 	def setRankAtSites(self,site, rank):
 		if site not in self.siteList:
 			raise Exception('Non-exising site name ' + site)
 		self.rankAtSites[site] = rank
-		
+
 	def setWeightAtSites(self,site, weight):
 		if site not in self.siteList:
 			raise Exception('Non-exising site name ' + site)
@@ -28,7 +28,7 @@ class DatasetProperties:
 
 	def setGlobalRank(self,rank):
 		self.globalRank = rank
-	
+
 	def addDelTarget(self,site):
 		self.delFromSites.append(site)
 
@@ -58,7 +58,7 @@ class DatasetProperties:
 		if site not in self.rankAtSites:
 			raise Exception('Non-exising site name ' + site)
 		return self.rankAtSites[site]
-	
+
 	def myWeightAtSites(self,site):
 		if site not in self.weightAtSites:
 			raise Exception('Non-exising site name ' + site)

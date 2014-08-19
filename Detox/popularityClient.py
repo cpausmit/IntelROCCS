@@ -120,7 +120,7 @@ if __name__ == "__main__":
 
 
   pop_base_url = "https://cms-popularity.cern.ch/popdb/"
-  pop_url = '%s/%s'%(pop_base_url,argv[1])  
+  pop_url = '%s/%s'%(pop_base_url,argv[1])
 
   data = sso_auth(pop_url)
 

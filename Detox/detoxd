@@ -27,17 +27,17 @@ do
   tag=`date "+%s"`
   logFile=$DETOX_DB/detox-$tag.log
   touch $logFile
-  echo ""                                                                    >> $logFile 
-  echo " = = = =  I N I T I A L  S H E L L   E N V I R O N M E N T  = = = =" >> $logFile 
-  echo ""                                                                    >> $logFile 
-  env  | grep -v ^DETOX                                                      >> $logFile 
-  echo ""                                                                    >> $logFile 
-  echo " = = = =  I N I T I A L  D E T O X   E N V I R O N M E N T  = = = =" >> $logFile 
-  echo ""                                                                    >> $logFile 
-  env  | grep ^DETOX                                                         >> $logFile 
-  echo ""                                                                    >> $logFile 
+  echo ""                                                                    >> $logFile
+  echo " = = = =  I N I T I A L  S H E L L   E N V I R O N M E N T  = = = =" >> $logFile
+  echo ""                                                                    >> $logFile
+  env  | grep -v ^DETOX                                                      >> $logFile
+  echo ""                                                                    >> $logFile
+  echo " = = = =  I N I T I A L  D E T O X   E N V I R O N M E N T  = = = =" >> $logFile
+  echo ""                                                                    >> $logFile
+  env  | grep ^DETOX                                                         >> $logFile
+  echo ""                                                                    >> $logFile
   echo "[ PYTHON PATH: $PYTHONPATH ]"                                        >> $logFile
-  echo ""                                                                    >> $logFile 
+  echo ""                                                                    >> $logFile
 
   # ten loops over the process with one logfile (keep it small)
   for index in `echo 0 1 2 3 4 5 6 7 8 9`

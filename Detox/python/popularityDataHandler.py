@@ -10,7 +10,7 @@ class Alarm(Exception):
 
 def alarm_handler(signum, frame):
     raise Alarm
-	
+
 class PopularityDataHandler:
     def __init__(self,allSites):
 
@@ -42,7 +42,7 @@ class PopularityDataHandler:
 
     def extractPopularityData(self):
         notValidSites = 0
-        
+
         for site in sorted(self.allSites):
             self.accessPopularityData(site)
             if self.allSites[site].getValid() == 0:
@@ -56,7 +56,7 @@ class PopularityDataHandler:
         dirname = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS'] + '/' + \
                   site + '/' + os.environ['DETOX_SNAPSHOTS']
         self.cleanOutdatedSnapshots(dirname)
-        
+
         if not os.path.exists(dirname):
             os.makedirs(dirname)
 
@@ -66,7 +66,7 @@ class PopularityDataHandler:
             if badsnapshots > 4 :
                 self.allSites[site].setValid(0)
                 break
-            
+
             outputFile = dirname + '/' + str(self.dates[i])
             if os.path.exists(outputFile):
                 if i == items-2:
@@ -94,7 +94,7 @@ class PopularityDataHandler:
             except Alarm:
                 print " Oops, taking too long!"
                 raise Exception(" FATAL -- Popularity query timed out, stopping")
-            
+
             if process.returncode != 0:
                 print "    - Popularity queries got bad status " + str(process.returncode) + " for " + site
                 badsnapshots = badsnapshots + 1
@@ -128,7 +128,7 @@ class PopularityDataHandler:
                 badsnapshots = badsnapshots + 1
                 os.remove(outputFile)
                 continue
-            
+
             #use goodsnapshot
             date = (re.search(r"(\d+)-(\d+)-(\d+)", outputFile)).group(0)
             self.processRawInput(site,date,rawinp)
@@ -143,11 +143,11 @@ class PopularityDataHandler:
         dataJason = json.loads(rawinp)
         thisSite = dataJason["SITENAME"]
         if thisSite != site:
-            print " !!!!!! Popularity site screw up !!!!!!" 
+            print " !!!!!! Popularity site screw up !!!!!!"
         for entry in dataJason["DATA"]:
             dataset = entry["COLLNAME"]
             nAccessed = entry["NACC"]
-            
+
             if dataset not in self.datasets :
                 self.datasets[dataset] = usedDataset.UsedDataset(dataset)
             self.datasets[dataset].updateForSite(site,date,nAccessed)
@@ -168,7 +168,7 @@ class PopularityDataHandler:
             #if dt < pastDate:
             #   print "     - Cache cleanup: remove " + ma.group()
             #  os.remove(file)
-   
+
     def weekStartDate(self,year, week):
         d = datetime.date(year, 1, 1)
         delta_days = d.isoweekday() - 1
@@ -182,7 +182,7 @@ class PopularityDataHandler:
         return datetime.date(d.year, d.month, 1)
 
     def getUsedDatasets(self):
-        return self.datasets 
+        return self.datasets
 
     def subtractDate(self, date, month = 0, year = 0):
         year, month = divmod(year*12 + month, 12)

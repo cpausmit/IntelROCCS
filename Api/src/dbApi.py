@@ -8,25 +8,23 @@
 # Values are optional and can be any sequency which can be converted to a tuple.
 # Example of returned data: [('Dataset1', 2), ('Dataset2', 5)]
 #
-# In case of error an error message is printed to the log, currently specified by environemental
-# variable INTELROCCS_LOG, and '0' is returned. User will have to check that something is returned.
+# If we can't connect to the databse an exception is thrown.
+# If a query fail we print an error message and return an empty list, leaving it up to caller to
+# abort or keep executing.
 #---------------------------------------------------------------------------------------------------
-import sys, os, MySQLdb, datetime
+import sys, os, MySQLdb, datetime, subprocess
+import initDb
 
 class dbApi():
 	def __init__(self):
-		self.logFile = os.environ['INTELROCCS_LOG']
-		host = "t3btch039.mit.edu"
-		#db = "IntelROCCS"
-		db = "SiteStorage" # ^^Will switch database^^
-		user = "cmsSiteDb"
-		passwd = "db78user?Cms"
-		try:
-			self.dbCon = MySQLdb.connect(host=host, user=user, passwd=passwd, db=db)
-		except MySQLdb.Error, e:
-			with open(self.logFile, 'a') as logFile:
-				logFile.write("%s DB ERROR: %s\nError msg: %s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(e.args[0]), str(e.args[1])))
-			raise Exception("FATAL DB ERROR - Could not connect to DB")
+		host = os.environ['DB_SERVER']
+		db = os.environ['DB_DB']
+		user = os.environ['DB_USER']
+		passwd = os.environ['DB_PW']
+		#try:
+		#	self.dbCon = MySQLdb.connect(host=host, user=user, passwd=passwd, db=db)
+		#except MySQLdb.Error, e:
+		#	raise Exception(" FATAL (%s - %s) -- Could not connect to db %s:%s" % (str(e.args[0]), str(e.args[1]), host, db))
 
 #===================================================================================================
 #  M A I N   F U N C T I O N
@@ -41,11 +39,9 @@ class dbApi():
 				for row in cur:
 					data.append(row)
 		except MySQLdb.Error, e:
-			with open(self.logFile, 'a') as logFile:
-				logFile.write("%s DB ERROR: %s\nError msg: %s\n for query: %s\n and values: %s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(e.args[0]), str(e.args[1]), str(query), str(values)))
+			print(" ERROR -- %s\nError msg: %s\n for query: %s\n and values: %s" % (str(e.args[0]), str(e.args[1]), str(query), str(values)))
 		except TypeError, e:
-			with open(self.logFile, 'a') as logFile:
-				logFile.write("%s DB ERROR: %s\nMost likely caused by an incorrect number of values\n for query: %s\n and values: %s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(e), str(query), str(values)))
+			print(" ERROR -- %s\nMost likely caused by an incorrect number of values\n for query: %s\n and values: %s" % (str(e), str(query), str(values)))
 		return data
 
 #===================================================================================================
@@ -65,7 +61,7 @@ if __name__ == '__main__':
 		values.append(v)
 	data = dbApi.dbQuery(query, values=values)
 	if not data:
-		print "DB call failed, see log (%s) for more details" % (dbApi.logFile)
+		print "DB call failed"
 		sys.exit(1)
 	print data
 	sys.exit(0)

@@ -58,20 +58,20 @@ void plotSiteStatus()
   //-----------------------------------------------
   while (1) {
 
-    // read in 
+    // read in
     input >> siteName >> total >> used >> toDelete >> lastCp;
 
     // check it worked
     if (! input.good())
       break;
-    
+
     // show what we are reading
     if (nLines < 5)
       printf(" site=%s, total=%8f used=%f  toDelete=%f lastCp=%f\n",
 	     siteName.Data(), total, used, toDelete, lastCp);
     if (used>xMax)
       xMax = used;
-    
+
     nLines++;
   }
   input.close();
@@ -107,13 +107,13 @@ void plotSiteStatus()
   input.open(inputFile.Data());
   while (1) {
 
-    // read in 
+    // read in
     input >> siteName >> total >> used >> toDelete >> lastCp;
 
     // check it worked
     if (! input.good())
       break;
-    
+
     hTotal   ->Fill(total);
     hUsed    ->Fill(used);
     hToDelete->Fill(toDelete);

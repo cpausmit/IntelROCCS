@@ -3,14 +3,16 @@
 # Collects all the necessary data to generate rankings for all datasets in the AnalysisOps space.
 #---------------------------------------------------------------------------------------------------
 import sys, os, math, json, datetime
-sys.path.append(os.path.dirname(os.environ['INTELROCCS_BASE']))
-import phedexDb, popDbDb
+import phedexData, popDbData
 
 class datasetRanker():
 	def __init__(self, threshold):
-		self.threshold = threshold
-		self.phedexDb = phedexDb.phedexDb("%s/Cache/PhedexCache" % (os.environ['INTELROCCS_BASE']), 12)
-		self.popDbDb = popDbDb.popDbDb("%s/Cache/PopDbCache" % (os.environ['INTELROCCS_BASE']), 12)
+		phedexCache = os.environ['PHEDEX_CACHE']
+		popDbCache = os.environ['POP_DB_CACHE']
+		cacheDeadline = os.environ['CACHE_DEADLINE']
+		self.threshold = os.environ['DATA_DEALER_THRESHOLD']
+		self.phedexData = phedexData.phedexDb(phedexCache, cacheDeadline)
+		self.popDbData = popDbData.popDbData(popDbCache, cacheDeadline)
 		self.datasetRankings = dict()
 #===================================================================================================
 #  H E L P E R S
@@ -22,11 +24,11 @@ class datasetRanker():
 	def getDatasetRankings(self):
 		# rank = (log(n_accesses)*d_accesses)/(size*relpicas^2)
 		datasetCandidates = dict()
-		datasets = self.phedexDb.getAllDatasets()
+		datasets = self.phedexData.getAllDatasets()
 		date = datetime.date.today() - datetime.timedelta(days=1)
 		for datasetName in datasets:
-			replicas = max(self.phedexDb.getNumberReplicas(datasetName), 1)
-			sizeGb = self.phedexDb.getDatasetSize(datasetName)
+			replicas = max(self.phedexData.getNumberReplicas(datasetName), 1)
+			sizeGb = self.phedexData.getDatasetSize(datasetName)
 			nAccesses = max(self.popDbDb.getDatasetAccesses(datasetName, date.strftime('%Y-%m-%d')), 1)
 			dAccesses = max(self.popDbDb.getDatasetAccesses(datasetName, (date - datetime.timedelta(days=1)).strftime('%Y-%m-%d')), 1)
 			rank = (math.log10(nAccesses)*dAccesses)/(sizeGb*replicas**2)
