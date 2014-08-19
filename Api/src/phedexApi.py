@@ -37,7 +37,6 @@ class phedexApi:
 		return 0
 
 	def call(self, url, values):
-		print url
 		data = urllib.urlencode(values)
 		opener = urllib2.build_opener(HTTPSGridAuthHandler())
 		request = urllib2.Request(url, data)
@@ -95,7 +94,7 @@ class phedexApi:
 #===================================================================================================
 	def blockReplicas(self, block='', dataset='', node='', se='', update_since='', create_since='', complete='', dist_complete='', subscribed='', custodial='', group='', show_dataset='', instance='prod'):
 		values = {'block':block, 'dataset':dataset, 'node':node, 'se':se, 'update_since':update_since, 'create_since':create_since, 'complete':complete, 'dist_complete':dist_complete, 'subscribed':subscribed, 'custodial':custodial, 'group':group, 'show_dataset':show_dataset}
-		url = urllib.basejoin(self.phedexBase, "/json/%s/blockreplicas" % (instance))
+		url = "%s/json/%s/blockreplicas" % (self.phedexBase, instance)
 		jsonData = self.call(url, values)
 		if not jsonData:
 			print(" ERROR -- blockReplicas call failed for values: block=%s, dataset=%s, node=%s, se=%s, update_since=%s, create_since=%s, complete=%s, dist_complete=%s, subscribed=%s, custodial=%s, group=%s, show_dataset=%s, instance=%s" % (block, dataset, node, se, update_since, create_since, complete, dist_complete, subscribed, custodial, group, show_dataset, instance))
@@ -236,12 +235,10 @@ if __name__ == '__main__':
 			continue
 		for block in dataset.get('block'):
 			size = int(block.get('bytes'))
-			print size
 			for replica in dataset.get('block')[0].get('replica'):
 				siteName = replica.get('node')
-				if siteName == 'T2_AT_Vienna':
-					sizeGb = float(size)/10**9
-					stored += sizeGb
+				sizeGb = float(size)/10**9
+				stored += sizeGb
 	print int(stored/10**3)
 	print nDatasets
 	sys.exit(0)
