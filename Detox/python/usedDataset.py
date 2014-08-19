@@ -40,6 +40,6 @@ class UsedDataset:
 
     def lastUsed(self,site):
         return self.lastUsedAtSite[site]
-   
+
     def timesUsed(self,site):
         return self.timesUsedAtSite[site]

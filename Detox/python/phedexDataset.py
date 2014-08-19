@@ -36,7 +36,7 @@ class PhedexDataset:
             if mtime < self.makeTimeAtSite[site]:
                 self.makeTimeAtSite[site] = mtime
 
-        self.groupAtSite[site] = group   
+        self.groupAtSite[site] = group
         self.setValid(site,valid)
         self.setCustodial(site,custodial)
 
@@ -85,7 +85,7 @@ class PhedexDataset:
 
     def getGlobalRank(self):
         return self.globalRank
-    
+
     def size(self,site):
         if site in self.sizeAtSite:
             return self.sizeAtSite[site]
@@ -143,11 +143,11 @@ class PhedexDataset:
             valid = self.validAtSite[site]
             custd = self.custodialAtSite[site]
             files = self.filesAtSite[site]
-            
+
             line = line + self.dataset + " " + group + " " + str(creationTime)
             line = line + " "  + str(size) + " " + str(files) + " " + str(valid) + " " + str(custd)
             line = line + " " + site + "\n"
-        
+
         return line
 
     def fillFromLine(self,line):
@@ -156,7 +156,7 @@ class PhedexDataset:
         items.remove(datasetName)
         if datasetName != self.dataset:
             raise Exception(" -- Logical mistake: mismatching dataset names")
-        
+
         group = items[0]
         mtime = int(items[1])
         size = float(items[2])

@@ -27,7 +27,7 @@ class SiteProperties:
         self.space2free = 0
         self.deleted = 0
         self.protected = 0
-        
+
     def addDataset(self,set,rank,size,valid,partial,custodial):
         self.dsetIsValid[set] = valid
         self.dsetIsPartial[set] = partial
@@ -52,7 +52,7 @@ class SiteProperties:
             #non-valid dataset can't be on deletion list
             if not self.dsetIsValid[datasetName]:
                 continue
-            
+
             space = space + self.datasetSizes[datasetName]
             self.wishList.append(datasetName)
 
@@ -65,13 +65,13 @@ class SiteProperties:
         if set in self.protectedList:
             return True
         return False
-	
+
     def wantToDelete(self):
         if self.deleted < self.space2free:
             return True
         else:
             return False
-            
+
     def grantWish(self,set):
         if set in self.protectedList:
             return
@@ -88,20 +88,20 @@ class SiteProperties:
     def pinDataset(self,set):
         if set in self.datasetsToDelete:
             return False
-        
+
         #can't pin partial dataset
         if self.dsetIsPartial[set] :
             return False
         #can't pin non-valid dataset
         if not self.dsetIsValid[set]:
             return False
-        
+
         self.protectedList.append(set)
         self.protected = self.protected + self.datasetSizes[set]
         if set in self.wishList:
             self.wishList.remove(set)
         return True
-	
+
     def lastCopySpace(self,datasets,nCopyMin):
         space = 0
         for set in self.datasetSizes.keys():
@@ -112,16 +112,16 @@ class SiteProperties:
             if remaining <= nCopyMin:
                 space = space + self.datasetSizes[set]
 	self.spaceLCp = space
-	
+
     def setSiteSize(self,size):
         self.siteSizeGbV = size
 
     def setSizeToDelete(self,size):
         self.space2free = size
-	
+
     def siteSizeGb(self):
         return self.siteSizeGbV
-	
+
     def dsetRank(self,set):
 	return self.datasetRanks[set]
 

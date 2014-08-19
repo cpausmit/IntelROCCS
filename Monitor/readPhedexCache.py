@@ -20,7 +20,7 @@ def processFile(fileName,debug=0):
 
     sizesPerSite = {}
 
-    iFile = open(fileName,'r')   
+    iFile = open(fileName,'r')
     # loop through all lines
     for line in iFile.xreadlines():
         line = line[:-1]
@@ -95,13 +95,13 @@ def processDb():
             else:
                 quotasPerSitePerGroup = {}
                 quotasPerSite[site] = quotasPerSitePerGroup
-    
+
             if group in quotasPerSitePerGroup:
                 print ' WARNING -- error? entry appears twice, check! (%s,%s)'%(site,group)
                 quotasPerSitePerGroup[group] += float(quota)
             else:
                 quotasPerSitePerGroup[group]  = float(quota)
-    
+
     except:
         print ' Error(%s) -- could not retrieve sites'%(sql)
         print sys.exc_info()
@@ -146,9 +146,9 @@ file = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS'] + '/' + \
        os.environ['DETOX_PHEDEX_CACHE']
 
 print "\n = = = = S T A R T  A N A L Y S I S = = = =\n"
-print " Cache in:      %s"%(file) 
-print " Site  pattern: %s"%(site) 
-print " Group pattern: %s"%(group) 
+print " Cache in:      %s"%(file)
+print " Site  pattern: %s"%(site)
+print " Group pattern: %s"%(group)
 
 if debug>0:
     print ' Analyzing: ' + file
@@ -177,7 +177,7 @@ for site in sizesPerSite:
         quotasPerSitePerGroup = quotasPerSite[site]
         if 'AnalysisOps' in quotasPerSitePerGroup and 'AnalysisOps' in sizesPerSitePerGroup:
 
-            print ' Existing quota: %d'%(quotasPerSite[site]['AnalysisOps']) 
+            print ' Existing quota: %d'%(quotasPerSite[site]['AnalysisOps'])
 
             for group in pagGroups:
                 if group in quotasPerSitePerGroup:
@@ -193,7 +193,7 @@ for site in sizesPerSite:
                 if group in quotasPerSitePerGroup:
                     addQuota += quotasPerSite[site][group]
                     print ' DPG quota add:  %d -- %s'%(quotasPerSite[site][group],group)
-                    
+
             if addQuota>0:
                 print " Added quota [TB]:  +%8.2f   %8.2f -->  %8.2f"%\
                       (addQuota,quotasPerSite[site]['AnalysisOps'],
@@ -201,13 +201,13 @@ for site in sizesPerSite:
                 quotasPerSite[site]['AnalysisOps'] += addQuota
                 print " update Quotas set SizeTb=%d where SiteName = '%s' and GroupName = '%s';"%\
                       (quotasPerSite[site]['AnalysisOps'],site,'AnalysisOps')
-    
+
     # NEXT ACCOUNT FOR ROGUE DATASETS (quota is already updated in memory)
 
     for group in sizesPerSitePerGroup:
         size = sizesPerSitePerGroup[group]
         sizeTotalGb += size
-        print " - data volume [TB]:  %8.2f  %-s"%(size/1024.,group) 
+        print " - data volume [TB]:  %8.2f  %-s"%(size/1024.,group)
 
         if group in pagGroups:
             #print ' found pagGroup: %s - %.3f'%(group,size)
@@ -234,14 +234,14 @@ for site in sizesPerSite:
                0.9*quotasPerSite[site]['AnalysisOps']:
                 print " TOO SMALL [TB]:  +%8.2f   %8.2f  %8.2f  --> %8.2f at site %s"%\
                       (addSize/1024.,(addSize+sizesPerSite[site]['AnalysisOps'])/1024.,
-                       quotasPerSite[site]['AnalysisOps'],1.12*(addSize+sizesPerSite[site]['AnalysisOps'])/1024.,site) 
+                       quotasPerSite[site]['AnalysisOps'],1.12*(addSize+sizesPerSite[site]['AnalysisOps'])/1024.,site)
                 print " update Quotas set SizeTb=%d where SiteName = '%s' and GroupName = '%s';"%\
                       (1.12*(addSize+sizesPerSite[site]['AnalysisOps'])/1024.,site,'AnalysisOps')
-            
+
 # printout the summary
 print " "
 print " = = = = S U M M A R Y = = = = "
 print " "
-print " - total size [TB]:  %9.0f\n"%(sizeTotalGb/1024.) 
+print " - total size [TB]:  %9.0f\n"%(sizeTotalGb/1024.)
 
 sys.exit(0)

@@ -10,18 +10,18 @@ class Alarm(Exception):
 
 def alarm_handler(signum, frame):
     raise Alarm
-	
+
 class PhedexDataHandler:
     def __init__(self,allSites):
         self.phedexDatasets = {}
         self.allSites = allSites
-   
+
     def shouldAccessPhedex(self):
         # number of hours until it will rerun
-        renewMinInterval = int(os.environ.get('DETOX_CYCLE_HOURS'))     
+        renewMinInterval = int(os.environ.get('DETOX_CYCLE_HOURS'))
         statusDir = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS']
         filename = os.environ['DETOX_PHEDEX_CACHE']
-        
+
         timeNow = datetime.datetime.now()
         deltaNhours = datetime.timedelta(seconds = 60*60*(renewMinInterval-1))
         modTime = datetime.datetime.fromtimestamp(0)
@@ -34,18 +34,18 @@ class PhedexDataHandler:
 
         if (timeNow-deltaNhours) < modTime:
             return False
-        
+
         return True
 
     def extractPhedexData(self,federation):
         webServer = 'https://cmsweb.cern.ch/'
         phedexBlocks = 'phedex/datasvc/json/prod/blockreplicas'
         args = 'show_dataset=y&subscribed=y&node=' + federation + '*'
-        
+
         cert = os.environ['DETOX_X509UP']
         url = '"'+webServer+phedexBlocks+'?'+args+'"'
         cmd = 'curl -k -H "Accept: text/xml" ' + url
-    
+
         print ' Access phedexDb: ' + cmd
         tmpname = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS'] + '/tmp.txt'
         tmpfile = open(tmpname, "w")
@@ -66,12 +66,12 @@ class PhedexDataHandler:
         if process.returncode != 0:
             print " Received non-zero exit status: " + str(process.returncode)
             raise Exception(" FATAL -- Call to PhEDEx failed, stopping")
-     
+
         tmpfile = open(tmpname, "r")
         strout = tmpfile.readline()
         tmpfile.close()
         os.remove(tmpname)
-        
+
         dataJson = json.loads(strout)
         datasets = (dataJson["phedex"])["dataset"]
         for dset in datasets:
@@ -100,7 +100,7 @@ class PhedexDataHandler:
                         self.phedexDatasets[datasetName] = phedexDataset.PhedexDataset(datasetName)
                     dataset = self.phedexDatasets[datasetName]
 
-                    size = float(siterpl["bytes"])/1024/1024/1024
+                    size = float(siterpl["bytes"])/1000/1000/1000
                     compl = siterpl["complete"]
                     cust = siterpl["custodial"]
                     subs = int(float(siterpl["time_create"]))
@@ -108,14 +108,14 @@ class PhedexDataHandler:
                     files = int(siterpl["files"])
                     iscust = 0
 
-                    if len(user) > 0 or cust == 'y': 
+                    if len(user) > 0 or cust == 'y':
                         iscust = 1
                     valid = 1
-                    if compl == 'n' and (made-subs) < 60*24*14: 
+                    if compl == 'n' and (made-subs) < 60*24*14:
                         valid = 0
-                        
+
                     dataset.updateForSite(site,size,group,made,files,iscust,valid)
-       
+
 
         # Create our local cache files of the status per site
         filename = os.environ['DETOX_PHEDEX_CACHE']
@@ -131,7 +131,7 @@ class PhedexDataHandler:
 
 
             outputFile.write(line)
-            
+
         outputFile.close()
 
     def readPhedexData(self):
@@ -139,14 +139,14 @@ class PhedexDataHandler:
         filename = os.environ['DETOX_PHEDEX_CACHE']
         inputFile = open(os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS'] + '/'
                          + filename, "r")
-        
+
         for line in inputFile.xreadlines():
             items = line.split()
             datasetName = items[0]
-            
+
             if datasetName not in self.phedexDatasets:
                 self.phedexDatasets[datasetName] = phedexDataset.PhedexDataset(datasetName)
-                
+
             dataset = self.phedexDatasets[datasetName]
             dataset.fillFromLine(line)
         inputFile.close()
@@ -183,6 +183,6 @@ class PhedexDataHandler:
                 dsets[datasetName] = dataset.getLocalRank(site)
         return sorted(dsets,key=dsets.get,reverse=True)
 
-        
-            
+
+
 

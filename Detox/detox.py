@@ -53,7 +53,7 @@ timeStart = time.time()
 centralManager.extractPhedexData("T2")
 
 timeNow = time.time()
-print ' - Renewing phedex cache took: %d seconds'%(timeNow-timeStart) 
+print ' - Renewing phedex cache took: %d seconds'%(timeNow-timeStart)
 timePre = timeNow
 
 # extract usage data from popularity service
@@ -69,7 +69,7 @@ centralManager.makeDeletionLists()
 
 timeNow = time.time()
 print ' - Making deletion lists took: %d seconds'%(timeNow-timePre)
-timePre = timeNow 
+timePre = timeNow
 
 centralManager.extractCacheRequests()
 
@@ -78,10 +78,10 @@ if requestDeletions:
 
 timeNow = time.time()
 print ' - Requesting deletions took: %d seconds'%(timeNow-timePre)
-timePre = timeNow 
+timePre = timeNow
 
 centralManager.showCacheRequests()
-    
+
 # Final summary of timing
 timeNow = time.time()
-print ' Total Cycle took: %d seconds'%(timeNow-timeStart) 
+print ' Total Cycle took: %d seconds'%(timeNow-timeStart)

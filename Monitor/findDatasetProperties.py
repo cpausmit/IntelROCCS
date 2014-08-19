@@ -112,7 +112,7 @@ def checkDatabase(dataset):
         print ' Info (%s) -- dataset properties not in database.'%(sql)
 
     return nFiles,sizeGb
-            
+
 def convertSizeToGb(sizeTxt):
 
     # first make sure string has proper basic format
