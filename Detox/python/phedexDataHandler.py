@@ -100,7 +100,7 @@ class PhedexDataHandler:
                         self.phedexDatasets[datasetName] = phedexDataset.PhedexDataset(datasetName)
                     dataset = self.phedexDatasets[datasetName]
 
-                    size = float(siterpl["bytes"])/1024/1024/1024
+                    size = float(siterpl["bytes"])/1000/1000/1000
                     compl = siterpl["complete"]
                     cust = siterpl["custodial"]
                     subs = int(float(siterpl["time_create"]))

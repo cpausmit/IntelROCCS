@@ -79,7 +79,7 @@ class CentralManager:
 #                if siteName != 'T2_AT_Vienna': continue
                 willBeUsed = int(row[4])
                 sizeTb = float(row[2])
-                siteSizeGb = sizeTb * 1024
+                siteSizeGb = sizeTb * 1000
                 self.allSites[siteName] = siteStatus.SiteStatus(siteName)
                 self.allSites[siteName].setStatus(willBeUsed)
                 self.allSites[siteName].setSize(siteSizeGb)
@@ -318,11 +318,11 @@ class CentralManager:
 
             # first write out the active sites
             if theSite.getStatus() != 0:
-                activeFile.write("%4d %s\n"%(theSite.getSize()/1024, site))
+                activeFile.write("%4d %s\n"%(theSite.getSize()/1000, site))
 
             # summary of all sites
             outputFile.write("   %-6d %-9d %-20s \n"\
-                             %(theSite.getStatus(), theSite.getSize()/1024, site))
+                             %(theSite.getStatus(), theSite.getSize()/1000, site))
         activeFile.close()
         outputFile.close()
 
@@ -341,7 +341,7 @@ class CentralManager:
             for dataset in datasets2del:
                 totalSize =  totalSize + sitePr.dsetSize(dataset)
             outputFile.write("   %-9d %-8d %-20s \n"\
-                                 %(nsets,totalSize/1024,site))
+                                 %(nsets,totalSize/1000,site))
         outputFile.close()
 
 
@@ -360,16 +360,16 @@ class CentralManager:
             outputFile.write("#- D E L E T I O N  P A R A M E T E R S ----\n\n")
             outputFile.write("Upper Threshold     : %8.2f  ->  %4d [TB]\n" \
                                  %(self.DETOX_USAGE_MAX,
-                                   self.DETOX_USAGE_MAX*sitePr.siteSizeGb()/1024))
+                                   self.DETOX_USAGE_MAX*sitePr.siteSizeGb()/1000))
             outputFile.write("Lower Threshold     : %8.2f  ->  %4d [TB]\n" \
                                  %(self.DETOX_USAGE_MIN,
-                                   self.DETOX_USAGE_MIN*sitePr.siteSizeGb()/1024))
+                                   self.DETOX_USAGE_MIN*sitePr.siteSizeGb()/1000))
             outputFile.write("\n")
             outputFile.write("#- S P A C E  S U M M A R Y ----------------\n\n")
-            outputFile.write("Total Space     [TB]: %8.2f\n"%(sitePr.siteSizeGb()/1024))
-            outputFile.write("Space Used      [TB]: %8.2f\n"%(sitePr.spaceTaken()/1024))
-            outputFile.write("Space to delete [TB]: %8.2f\n"%(sitePr.spaceDeleted()/1024))
-            outputFile.write("Space last CP   [TB]: %8.2f\n"%(sitePr.spaceLastCp()/1024))
+            outputFile.write("Total Space     [TB]: %8.2f\n"%(sitePr.siteSizeGb()/1000))
+            outputFile.write("Space Used      [TB]: %8.2f\n"%(sitePr.spaceTaken()/1000))
+            outputFile.write("Space to delete [TB]: %8.2f\n"%(sitePr.spaceDeleted()/1000))
+            outputFile.write("Space last CP   [TB]: %8.2f\n"%(sitePr.spaceLastCp()/1000))
             outputFile.close()
             
             if len(sitePr.delTargets()) > 0:
@@ -427,7 +427,7 @@ class CentralManager:
                 thisRequest.update(dataset,sitePr.dsetRank(dataset),sitePr.dsetSize(dataset))
             print "Deletion request for site " + site
             print " -- Number of datasets       = " + str(len(datasets2del))
-            print "%s %0.2f %s" %(" -- Total size to be deleted =",totalSize/1024,"TB")
+            print "%s %0.2f %s" %(" -- Total size to be deleted =",totalSize/1000,"TB")
 
             if site in self.siteRequests:
                 lastReqId = self.siteRequests[site].getLastReqId()
