@@ -5,8 +5,8 @@
 import sys, os, copy, sqlite3, subprocess, datetime, operator
 import init
 #import datasetRanker, siteRanker, select, phedexDb, popDbDb, subscriptionReport
-#import datasetRanker
-import phedexApi, popDbApi, phedexData, popDbData
+import datasetRanker
+#import phedexApi, popDbApi, phedexData, popDbData
 
 # Setup parameters
 # We would like to make these easier to change in the future
@@ -15,15 +15,12 @@ phedexCache = os.environ['PHEDEX_CACHE']
 popDbCache = os.environ['POP_DB_CACHE']
 cacheDeadline = os.environ['CACHE_DEADLINE']
 
-phedexData_ = phedexData.phedexData(phedexCache, cacheDeadline)
-phedexApi_ = phedexApi.phedexApi()
-phedexApi_.renewProxy()
+# phedexApi_ = phedexApi.phedexApi()
+# phedexApi_.renewProxy()
 
-popDbData_ = popDbData.popDbData(popDbCache, cacheDeadline)
-popDbApi_ = popDbApi.popDbApi(popDbCache, cacheDeadline)
-popDbApi_.renewSsoCookie()
+# popDbApi_ = popDbApi.popDbApi(popDbCache, cacheDeadline)
+# popDbApi_.renewSsoCookie()
 
-sys.exit(0)
 #===================================================================================================
 #  M A I N
 #===================================================================================================
@@ -33,6 +30,7 @@ datasetRanker_ = datasetRanker.datasetRanker()
 datasetRankings = datasetRanker_.getDatasetRankings()
 datasetRankingsCopy = copy.deepcopy(datasetRankings)
 print "Dataset Ranking --- Stop"
+sys.exit(0)
 
 # Get site rankings
 print "Site Ranking --- Start"
