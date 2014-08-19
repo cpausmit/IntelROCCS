@@ -4,8 +4,7 @@
 # are currently not blacklisted or those that are currently blacklisted.
 #---------------------------------------------------------------------------------------------------
 import sys, os
-sys.path.append(os.path.dirname(os.environ['INTELROCCS_BASE']))
-import IntelROCCS.Api.db.dbApi as dbApi
+import dbApi
 
 class sites():
 	def __init__(self):

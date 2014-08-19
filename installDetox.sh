@@ -33,7 +33,7 @@ cp -r ../IntelROCCS/Detox $TRUNC
 # create log/db structure
 #========================
 # owner has to be $INTELROCCS_USER:$INTELROCCS_GROUP, this user runs the process
-mkdir -p $DETOX_DB 
+mkdir -p $DETOX_DB
 chown ${INTELROCCS_USER}:${INTELROCCS_GROUP} -R $DETOX_DB
 
 

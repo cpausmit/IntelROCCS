@@ -69,7 +69,7 @@ name -- Module printing log message
 msg -- Message to be printed to log file
 """
         self.logfd.write("LOG: %s %s: %s\n"\
-                         %(str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")), 
+                         %(str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
                            str(name), str(msg)))
 
 
@@ -88,7 +88,7 @@ Keyword arguments:
 name -- Module printing error message
 msg -- Message to be printed to log file
 """
-        self.logfd.write("ERROR: %s %s: %s\n" % (str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")), 
+        self.logfd.write("ERROR: %s %s: %s\n" % (str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
                                                  str(name), str(msg)))
         # Return a status if write failed?
 

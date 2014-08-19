@@ -28,7 +28,7 @@ class DeletionRequest:
 
     def __init__(self, reqId, siteName, timeStamp, orig=None):
         self.size   = 0
-        self.ndsets = 0 
+        self.ndsets = 0
         self.dsetsizes = {}
         self.dsetranks = {}
         self.reqId  = reqId
@@ -36,7 +36,7 @@ class DeletionRequest:
         self.tstamp = timeStamp
         if orig != None :
             self.copyConstructor(orig)
-       
+
     def copyConstructor(self,orig):
         self.reqId  = orig.reqId
         self.site   = orig.site
@@ -63,14 +63,14 @@ class DeletionRequest:
         if (self.ndsets-matched)/self.ndsets < 0.05:
             return True
         return False
-            
+
     def hasDataset(self,dset):
         if dset in self.dsetsizes:
             return True
         return False
 
     def getDsets(self):
-        return sorted(self.dsetranks, key=self.dsetranks.get, 
+        return sorted(self.dsetranks, key=self.dsetranks.get,
                       reverse=True)
 
     def deltaTime(self,other):

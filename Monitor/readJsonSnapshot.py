@@ -21,7 +21,7 @@ def processPhedexCacheFile(fileName,debug=0):
 
     sizesPerSite = {}
 
-    iFile = open(fileName,'r')   
+    iFile = open(fileName,'r')
     # loop through all lines
     for line in iFile.xreadlines():
         line = line[:-1]
@@ -64,7 +64,7 @@ def processFile(fileName,debug=0):
     nAccessed = {} # the result is a hash array
 
     # read the data from the json file
-    with open(fileName) as data_file:    
+    with open(fileName) as data_file:
         data = json.load(data_file)
 
     # generic full print (careful this can take very long)
@@ -119,7 +119,7 @@ def addSites(nSites,nAccessed,debug=0):
     # loop through the hash array
     for key in nAccessed:
         # add the entries to our all access hash array
-        
+
         if key in nSites:
             nSites[key] += 1
         else:
@@ -173,7 +173,7 @@ def findDatasetSize(dataset,debug=0):
             # which means the counts are zero
             print ' WARNING - decoding failed: %d %f.3 -- %s'%(nFiles,sizeGb,dataset)
             pass
-    
+
     return nFiles, sizeGb
 
 def getDbCursor():
@@ -192,7 +192,7 @@ def readDatasetProperties():
     fileNumbers = {}
 
     #print " START reading database"
-    
+
     # get access to the database
     cursor = getDbCursor()
     sql  = "select Datasets.DatasetName, DatasetProperties.NFiles, DatasetProperties.Size "
@@ -220,7 +220,7 @@ def readDatasetProperties():
 def calculateAverageNumberOfSites(sitePattern,start,end):
 
     print ' Relevant time interval: %d %d  --> %d'%(start,end,end-start)
-    
+
     # convert it into floats and take care of possible rounding issues
     interval = end - start
 
@@ -231,7 +231,7 @@ def calculateAverageNumberOfSites(sitePattern,start,end):
     files = glob.glob(phedDirectory + filePattern)
     datasetMovement = {}
     nSites = {}
-    
+
     # read in the data from the phedex history database cache
     #========================================================
     for file in files:
@@ -242,21 +242,21 @@ def calculateAverageNumberOfSites(sitePattern,start,end):
             continue
         filename = file.split('/')[-1].replace('%','/')
         for request in document.findall('request'):
-            type = request.attrib['type']        
-    
+            type = request.attrib['type']
+
             for node in request.findall('node'):
                 site = node.attrib['name']
                 time = node.attrib['time_decided']
-    
+
                 #print ' Checking %s versus %s'%(sitePattern,site)
-    
+
                 if not re.match(sitePattern,site):                # consider only specified sites
                     #print ' WARNING - no site match.'
                     continue
-    
+
                 if not filename in datasetMovement:               # only for datasets from correct sites
                     datasetMovement[filename] = {}
-    
+
                 if node.attrib['decision'] == 'approved':         # only consider things that happened
 
                     try:                                          # check for bad times
@@ -276,7 +276,7 @@ def calculateAverageNumberOfSites(sitePattern,start,end):
                         #print ' delete   [%s]: %d'%(site,time)
                     else:
                         continue
-    
+
     # match the intervals from the phedex history to the requested time interval
     #===========================================================================
     for filename in datasetMovement:
@@ -286,13 +286,13 @@ def calculateAverageNumberOfSites(sitePattern,start,end):
             if not re.match(sitePattern,site):                   # only requested sites
                 print ' WARNING - no site match. ' + site
                 continue
-    
+
             datasetMovement[filename][site][0].sort()            # sort lists to match items
             datasetMovement[filename][site][1].sort()
-    
-            lenXfer = len(datasetMovement[filename][site][0])    
+
+            lenXfer = len(datasetMovement[filename][site][0])
             lenDel  = len(datasetMovement[filename][site][1])
-            
+
             if lenXfer == lenDel:                                # ensure reasonable time lists
                 pass
             elif lenXfer == lenDel - 1:
@@ -303,24 +303,24 @@ def calculateAverageNumberOfSites(sitePattern,start,end):
             else:
                 # doesn't make sense, so skip
                 continue
-    
+
             # find this site's fraction for nSites
             if not filename in nSites:
                 nSites[filename] = 0
-    
+
             siteSum = 0
             i       = 0
-    
+
             # loop through the transfer/deletion intervals
             while i < lenXfer:
                 tXfer = datasetMovement[filename][site][0][i]
                 tDel  = datasetMovement[filename][site][1][i]
-    
+
                 i = i + 1                                        # iterate before all continue statements
-    
+
                 if tXfer == 0 and tDel == end:                   # skip if defaults, meaning no xfer or del time found
                     continue                                     # shouldn't happen, but just to be sure
-    
+
                 # four ways to be in interval                    # (though this prevents you from having the same
                                                                  #  start and end date)
                 if tXfer <= start <= end <= tDel:
@@ -336,11 +336,11 @@ def calculateAverageNumberOfSites(sitePattern,start,end):
                     #print ' Adding: %d %f'%(i,float(tDel - tXfer)/float(interval))
                 else:                                            # have ensured tXfer < tDel
                     continue
-        
+
             if siteSum < 0:                                      # how can this happen??
                 print " WARNING - siteNum < 0 ??"
                 continue
-            
+
             nSites[filename] += siteSum
 
     n     = 0
@@ -353,9 +353,9 @@ def calculateAverageNumberOfSites(sitePattern,start,end):
         sum += nSites[filename]
         n   += 1
         #print ' %s \t%f'%(filename,nSites[filename])
-    
+
     print '\n Dataset  --  average number of sites\n'
-    
+
     if n != 0:
         avg = sum/n
         print '\n overall average n sites: %f\n'%(avg)
@@ -363,7 +363,7 @@ def calculateAverageNumberOfSites(sitePattern,start,end):
         print '\n number of datasets skip: %d\n'%(nSkip)
     else:
         print 'no datasets found in specified time interval'
-    
+
     return nSites
 
 #===================================================================================================
@@ -398,7 +398,7 @@ if addNotAccessedDatasets:
     file = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS'] + '/' + \
            os.environ['DETOX_PHEDEX_CACHE']
     sizesPerSite = processPhedexCacheFile(file,debug=0)
-   
+
 # initialize our variables
 nAllSkipped  = 0
 nAllAccessed = {}
@@ -416,9 +416,9 @@ workDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS']
 files = glob.glob(workDirectory + '/' + site + '/' + os.environ['DETOX_SNAPSHOTS'] + '/' + date)
 # say what we are goign to do
 print "\n = = = = S T A R T  A N A L Y S I S = = = =\n"
-print " Logfiles in:  %s"%(workDirectory) 
-print " Site pattern: %s"%(site) 
-print " Date pattern: %s"%(date) 
+print " Logfiles in:  %s"%(workDirectory)
+print " Site pattern: %s"%(site)
+print " Date pattern: %s"%(date)
 if sizeAnalysis:
     print "\n Size Analysis is on. Please be patient, this might take a while!\n"
 
@@ -434,7 +434,7 @@ for fileName in sorted(files):
 
     g = fileName.split("/")
     siteName = g[-3]
-    
+
     if siteName in nSiteAccess:
         nSiteAccessEntry = nSiteAccess[siteName]
     else:
@@ -468,7 +468,7 @@ for fileName in sorted(files):
     if last == lastFile.split("/")[-1]:
         endDate = fileName.split("/")[-1]
     last = fileName.split("/")[-1]
-    
+
 # convert to epoch time
 start = int(time.mktime(time.strptime(startDate,'%Y-%m-%d')))
 if endDate != '':
@@ -488,16 +488,16 @@ if addNotAccessedDatasets:
     nExcludedSamples = 0
     excludedSize = 0.
     for site in sizesPerSite:
-    
+
         # get size specific record
         sizesPerSitePerDataset = sizesPerSite[site]
-    
+
         # make sure that we are really interested in this site at all
         if site in nSiteAccess:
             nSiteAccessEntry = nSiteAccess[site]
         else:
             continue
-    
+
         # loop through all datasets at the site and check'em
         for dataset in sizesPerSitePerDataset:
             # exclude non AOD samples
@@ -506,7 +506,7 @@ if addNotAccessedDatasets:
                 nExcludedSamples += 1
                 excludedSize += sizesPerSitePerDataset[dataset]
                 continue
-    
+
             # only add information if the samples is not already available
             if dataset in nAllAccessed:
                 if debug>1:
@@ -514,15 +514,15 @@ if addNotAccessedDatasets:
             else:
                 if debug>0:
                     print ' -> Adding : ' + dataset
-    
+
                 # update our local counters
                 nAddedSamples += 1
                 addedSize += sizesPerSitePerDataset[dataset]
-    
+
                 # make an entry in all of the relevant records
                 nAllAccessed[dataset] = 0
                 nSiteAccessEntry[dataset] = 0
-    
+
     print " "
     print " - number of excluded datasets: %d"%(nExcludedSamples)
     print " - excluded sample size:        %d"%(excludedSize)
@@ -558,7 +558,7 @@ for key in nAllAccessed:
         # add up the total data volume/nFiles
         sizeTotalGb     += sizeGb
         nFilesTotal     += nFiles
-        
+
 # printout the summary
 print " "
 print " = = = = S U M M A R Y = = = = "

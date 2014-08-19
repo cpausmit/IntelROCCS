@@ -34,11 +34,11 @@ start() {
     RETVAL=$?
     echo
     [ $RETVAL = 0 ] && touch ${lockfile}
-    
+
     # this seems like a hack, but I do not know how to do it differently
     pid=`ps auxw | grep "/bin/bash $detoxd" |tr -s ' '|cut -d' ' -f2`
     echo $pid > $pidfile
-    
+
     return $RETVAL
 }
 

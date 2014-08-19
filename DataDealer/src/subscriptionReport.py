@@ -16,19 +16,19 @@ from email.MIMEBase import MIMEBase
 from email.Utils import formataddr
 from email.quopriMIME import encode
 from subprocess import Popen, PIPE
-sys.path.append(os.path.dirname(os.environ['INTELROCCS_BASE']))
 import makeTable
-import IntelROCCS.DataDealer.sites as sites
-import IntelROCCS.DataDealer.siteRanker as siteRanker
-import IntelROCCS.DataDealer.phedexDb as phedexDb
+import sites
+import siteRanker
+import phedexData
 
 def subscriptionReport():
 	# Initialize
-	phedexDb_ = phedexDb.phedexDb("%s/Cache/PhedexCache" % (os.environ['INTELROCCS_BASE']), 12)
+	phedexCache = os.environ['PHEDEX_CACHE']
+	cacheDeadline = os.environ['CACHE_DEADLINE']
+	phedexData_ = phedexData.phedexDb(phedexCache, cacheDeadline)
 	sites_ = sites.sites()
 	siteRanker_ = siteRanker.siteRanker()
-	requestsDbPath = "%s/Cache" % (os.environ['INTELROCCS_BASE'])
-	requestsDbFile = "%s/requests.db" % (requestsDbPath)
+	requestsDbFile = "%s/IntelROCCS/Cache/requests.db" % (os.environ['HOME'])
 	requestsDbCon = sqlite3.connect(requestsDbFile)
 	date = datetime.date.today()
 
@@ -103,18 +103,26 @@ def subscriptionReport():
 
 	# Send email
 	fromEmail = ("Bjorn Barrefors", "bjorn.peter.barrefors@cern.ch")
-	toList = (["Data Management Group",
-		   "Bjorn Barrefors",
-		   "Brian Bockelman",
-		   "Maxim Goncharov",
-		   "Christoph Paus"],
-		  ["hn-cms-dmDevelopment@cern.ch",
-		   "bjorn.peter.barrefors@cern.ch",
-		   "bbockelm@cse.unl.edu",
-		   "maxi@mit.edu",
-		   "paus@mit.edu"])
-	#toList = (["Bjorn Barrefors"], ["bbarrefo@cse.unl.edu"])
-	#toList = (["Data Management Group"], ["hn-cms-dmDevelopment@cern.ch"])
+	# toList = (["Data Management Group",
+	# 		   "Bjorn Barrefors",
+	# 		   "Brian Bockelman",
+	# 		   "Maxim Goncharov",
+	# 		   "Christoph Paus",
+	# 		   "Tony Wildish",
+	# 		   "Nicolo Magini",
+	# 		   "Thomas Kress",
+	# 		   "Frank Wuerthwein"],
+	# 		  ["hn-cms-dmDevelopment@cern.ch",
+	# 		   "bjorn.peter.barrefors@cern.ch",
+	# 		   "bbockelm@cse.unl.edu",
+	# 		   "maxi@mit.edu",
+	# 		   "paus@mit.edu",
+	# 		   "tony.wildish@cern.ch",
+	# 		   "nicolo.magini@cern.ch",
+	# 		   "thomas.kress@cern.ch",
+	# 		   "fkw@fnal.gov"])
+	# toList = (["Bjorn Barrefors"], ["bbarrefo@cse.unl.edu"])
+	toList = (["Data Management Group"], ["hn-cms-dmDevelopment@cern.ch"])
 
 	msg = MIMEMultipart()
 	msg['Subject'] = title
