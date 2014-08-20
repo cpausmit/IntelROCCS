@@ -36,22 +36,21 @@ siteRankings = siteRanker_.getSiteRankings()
 print "Site Ranking --- Stop"
 
 # Select datasets and sites for subscriptions
-print "Subscriptions --- Start"
+print "Select Subscriptions --- Start"
 selection_ = selection.selection()
 subscriptions = selection_.selectSubscriptions(datasetRankings, siteRankings)
-print "Subscriptions --- Stop"
+print "Select Subscriptions --- Stop"
 
-print subscriptions
-sys.exit(0)
-
-print "Update DB --- Start"
+# subscribe selected datasets
+print "Subscribe --- Start"
 subscribe_ = subscribe()
 subscribe_.createSubscriptions(subscriptions)
-print "Update DB --- Stop"
+print "Subscribe --- Stop"
 
 # Send summary report
 print "Daily email --- Start"
-subscriptionReport.subscriptionReport()
+subscriptionReport_ = subscriptionReport.subscriptionReport()
+subscriptionReport_.createReport()
 print "Daily email --- Stop"
 
 # DONE
