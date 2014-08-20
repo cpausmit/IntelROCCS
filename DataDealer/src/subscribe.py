@@ -3,6 +3,7 @@
 # Subscribes selected datasets
 #---------------------------------------------------------------------------------------------------
 import sys, os, math, json, datetime
+import dbApi, phedexApi, phedexData
 
 class subscribe():
 	def __init__(self):
@@ -35,6 +36,6 @@ class subscribe():
 				replicas = phedexDb.getNumberReplicas(datasetName)
 				accesses = popDbDb.getDatasetAccesses(datasetName, (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y-%m-%d'))
 				sizeGb = self.phedexData.getDatasetSize(datasetName)
-				query = "INSERT INTO Requests(RequestId, RequestType, DatasetId, SiteId, SizeGb, Replicas, Accesses, Rank, Timestamp) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s)"
-				values = [requestId, requestType, datasetName, siteName, sizeGb, replicas, accesses, datasetRank, requestTimestamp]
+				query = "INSERT INTO Requests(RequestId, RequestType, DatasetId, SiteId, SizeGb, Replicas, Accesses, Rank, Timestamp) SELECT %s, %s, Datasets.DatasetId, Sites.SiteId, %s, %s, %s, %s, %s FROM Datasets, Sites WHERE Datasets.DatasetName=%s AND Sites.SiteName=%s"
+				values = [requestId, requestType, sizeGb, replicas, accesses, datasetRank, requestTimestamp, datasetName, siteName]
 				self.dbApi.dbQuery(query, values=values)
