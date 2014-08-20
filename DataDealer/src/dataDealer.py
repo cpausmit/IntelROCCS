@@ -4,7 +4,6 @@
 #---------------------------------------------------------------------------------------------------
 import sys, os, copy, sqlite3, subprocess, datetime, operator
 import init
-#import subscribe, subscriptionReport
 import datasetRanker, siteRanker, select, subscribe, subscriptionReport
 import phedexApi, popDbApi
 

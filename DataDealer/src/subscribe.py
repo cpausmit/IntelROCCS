@@ -37,3 +37,4 @@ class subscribe():
 				sizeGb = self.phedexData.getDatasetSize(datasetName)
 				query = "INSERT INTO Requests(RequestId, RequestType, DatasetName, SiteName, SizeGb, Replicas, Accesses, Rank, GroupName, Timestamp) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
 				values = [requestId, requestType, datasetName, siteName, sizeGb, replicas, accesses, datasetRank, groupName, requestTimestamp]
+				self.dbApi.dbQuery(query, values=values)
