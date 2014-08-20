@@ -36,13 +36,13 @@ class subscriptionReport():
 	def sendReport(self, title, text):
 		# Send email
 		fromEmail = ("Bjorn Barrefors", "bjorn.peter.barrefors@cern.ch")
-		toList = (["Bjorn Barrefors"], ["bbarrefo@cse.unl.edu"])
+		toList = (["Bjorn Barrefors"], ["bjorn.peter.barrefors@cern.ch"])
 		#toList = (["Data Management Group"], ["hn-cms-dmDevelopment@cern.ch"])
 
 		msg = MIMEMultipart()
 		msg['Subject'] = title
 		msg['From'] = formataddr(fromEmail)
-		msg['To'] = _toStr(toList)
+		msg['To'] = self._toStr(toList)
 		msg1 = MIMEMultipart("alternative")
 		msgText1 = MIMEText("<pre>%s</pre>" % text, "html")
 		msgText2 = MIMEText(text)
