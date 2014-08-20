@@ -4,8 +4,8 @@
 #---------------------------------------------------------------------------------------------------
 import sys, os, copy, sqlite3, subprocess, datetime, operator
 import init
-#import datasetRanker, siteRanker, select, phedexDb, popDbDb, subscriptionReport
-import datasetRanker, siteRanker, select
+#import subscribe, subscriptionReport
+import datasetRanker, siteRanker, select, subscribe, subscriptionReport
 import phedexApi, popDbApi
 
 # Setup parameters
@@ -46,52 +46,8 @@ print subscriptions
 sys.exit(0)
 
 print "Update DB --- Start"
-# change to mit db
-requestsDbPath = "%s/Cache" % (os.environ['INTELROCCS_BASE'])
-requestsDbFile = "%s/requests.db" % (requestsDbPath)
-requestsDbCon = sqlite3.connect(requestsDbFile)
-phedexDb = phedexDb.phedexDb("%s/Cache/PhedexCache" % (os.environ['INTELROCCS_BASE']), 12)
-popDbDb = popDbDb.popDbDb("%s/Cache/PopDbCache" % (os.environ['INTELROCCS_BASE']), 12)
-datetime.date.today() - datetime.timedelta(days=1)
-with requestsDbCon:
-	cur = requestsDbCon.cursor()
-	cur.execute('CREATE TABLE IF NOT EXISTS Requests (RequestId INTEGER, RequestType INTEGER, DatasetName TEXT, SiteName TEXT, SizeGb REAL, Replicas INTEGER, Accesses INTEGER, Rank REAL, GroupName TEXT, Timestamp TEXT)')
-
-# create subscriptions
-for siteName in iter(subscriptions):
-	datasets, subscriptionData = phedexApi.createXml(datasets=subscriptions[siteName], instance='prod')
-	if not datasets:
-		with open(logFilePath, 'a') as logFile:
-			logFile.write("%s DataDealer ERROR: Creating PhEDEx XML data failed for datasets %s on site %s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(subscriptions[siteName]), siteName))
-		continue
-	jsonData = phedexApi.subscribe(node=siteName, data=subscriptionData, level='dataset', move='n', custodial='n', group='AnalysisOps', request_only='n', no_mail='n', comments='IntelROCCS DataDealer', instance='prod')
-	if not jsonData:
-		with open(logFilePath, 'a') as logFile:
-			logFile.write("%s DataDealer ERROR: Failed to create subscription for datasets %s on site %s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(subscriptions[siteName]), siteName))
-		continue
-	requestType = 0
-	requestId = 0
-	groupName = 'AnalysisOps'
-	request = jsonData.get('phedex')
-	try:
-		requestId = request.get('request_created')[0].get('id')
-	except IndexError, e:
-		with open(logFilePath, 'a') as logFile:
-			logFile.write("%s DataDealer ERROR: Failed to create subscription for datasets %s on site %s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(subscriptions[siteName]), siteName))
-		continue
-	requestTimestamp = int(request.get('request_timestamp'))
-	for datasetName in datasets:
-		datasetRank = datasetRankingsCopy[datasetName]
-		replicas = phedexDb.getNumberReplicas(datasetName)
-		accesses = popDbDb.getDatasetAccesses(datasetName, (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y-%m-%d'))
-		sizeGb = 0
-		with phedexDbCon:
-			cur = phedexDbCon.cursor()
-			cur.execute('SELECT SizeGb FROM Datasets WHERE DatasetName=?', (datasetName,))
-			sizeGb = cur.fetchone()[0]
-			with requestsDbCon:
-				cur = requestsDbCon.cursor()
-				cur.execute('INSERT INTO Requests(RequestId, RequestType, DatasetName, SiteName, SizeGb, Replicas, Accesses, Rank, GroupName, Timestamp) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', (requestId, requestType, datasetName, siteName, sizeGb, replicas, accesses, datasetRank, groupName, requestTimestamp))
+subscribe_ = subscribe()
+subscribe_.createSubscriptions(subscriptions)
 print "Update DB --- Stop"
 
 # Send summary report

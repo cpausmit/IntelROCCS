@@ -2,7 +2,8 @@
 #---------------------------------------------------------------------------------------------------
 # Select datasets to subscribe and select sites on which to subscribe these datasets
 #---------------------------------------------------------------------------------------------------
-import sys, random
+import sys, os, random
+import phedexData
 
 class select():
 	def __init__(self):
