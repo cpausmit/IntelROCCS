@@ -59,8 +59,8 @@ class phedexData:
 		blockReplicasCache = sqlite3.connect("%s/blockReplicas.db" % (self.phedexCache))
 		with blockReplicasCache:
 			cur = blockReplicasCache.cursor()
-			cur.execute('CREATE TABLE Datasets (DatasetId INTEGER PRIMARY KEY AUTOINCREMENT, DatasetName TEXT UNIQUE, SizeGb INTEGER)')
-			cur.execute('CREATE TABLE Replicas (SiteName TEXT, DatasetId INTEGER, GroupName TEXT, FOREIGN KEY(DatasetId) REFERENCES Datasets(DatasetId))')
+			cur.execute('CREATE TABLE IF NOT EXISTS Datasets (DatasetId INTEGER PRIMARY KEY AUTOINCREMENT, DatasetName TEXT UNIQUE, SizeGb INTEGER)')
+			cur.execute('CREATE TABLE IF NOT EXISTS Replicas (SiteName TEXT, DatasetId INTEGER, GroupName TEXT, FOREIGN KEY(DatasetId) REFERENCES Datasets(DatasetId))')
 		datasets = jsonData.get('phedex').get('dataset')
 		for dataset in datasets:
 			datasetName = dataset.get('name')

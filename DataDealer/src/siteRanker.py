@@ -12,8 +12,8 @@ class siteRanker():
 	def __init__(self):
 		phedexCache = os.environ['PHEDEX_CACHE']
 		popDbCache = os.environ['POP_DB_CACHE']
-		cacheDeadline = os.environ['CACHE_DEADLINE']
-		self.phedexData = phedexData.phedexDb(phedexCache, cacheDeadline)
+		cacheDeadline = int(os.environ['CACHE_DEADLINE'])
+		self.phedexData = phedexData.phedexData(phedexCache, cacheDeadline)
 		self.popDbData = popDbData.popDbData(popDbCache, cacheDeadline)
 		self.dbApi = dbApi.dbApi()
 		self.sites = sites.sites()

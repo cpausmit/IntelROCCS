@@ -21,13 +21,16 @@ class popDbData:
 			return True
 		# see if the data for that date is available
 		cacheCon = sqlite3.connect(cacheFile)
-		with cacheCon:
-			if site:
+		if site:
+			with cacheCon:
+				cur = cacheCon.cursor()
 				cur.execute('SELECT * FROM SiteData WHERE Day=? AND SiteName=?', (date, site))
 				row = cur.fetchone()
 				if not row:
 					return True
-			elif dataset:
+		elif dataset:
+			with cacheCon:
+				cur = cacheCon.cursor()
 				cur.execute('SELECT * FROM DatasetData WHERE Day=?', (date,))
 				row = cur.fetchone()
 				if not row:
@@ -63,8 +66,8 @@ class popDbData:
 		DSStatInTimeWindowCache = sqlite3.connect("%s/DSStatInTimeWindow.db" % (self.popDbCache))
 		with DSStatInTimeWindowCache:
 			cur = DSStatInTimeWindowCache.cursor()
-			cur.execute('CREATE TABLE DatasetData (Day TEXT, DatasetName TEXT, NumberAccesses INTEGER, NumberCpus INTEGER)')
-			cur.execute('CREATE TABLE SiteData (Day TEXT, SiteName TEXT, NumberAccesses INTEGER, NumberCpus INTEGER)')
+			cur.execute('CREATE TABLE IF NOT EXISTS DatasetData (Day TEXT, DatasetName TEXT, NumberAccesses INTEGER, NumberCpus INTEGER)')
+			cur.execute('CREATE TABLE IF NOT EXISTS SiteData (Day TEXT, SiteName TEXT, NumberAccesses INTEGER, NumberCpus INTEGER)')
 		siteName = jsonData.get('SITENAME')
 		datasets = jsonData.get('DATA')
 		numberAccesses = 0
@@ -80,8 +83,8 @@ class popDbData:
 		DSStatInTimeWindowCache = sqlite3.connect("%s/DSStatInTimeWindow.db" % (self.popDbCache))
 		with DSStatInTimeWindowCache:
 			cur = DSStatInTimeWindowCache.cursor()
-			cur.execute('CREATE TABLE DatasetData (Day TEXT, DatasetName TEXT, NumberAccesses INTEGER, NumberCpus INTEGER)')
-			cur.execute('CREATE TABLE SiteData (Day TEXT, SiteName TEXT, NumberAccesses INTEGER, NumberCpus INTEGER)')
+			cur.execute('CREATE TABLE IF NOT EXISTS DatasetData (Day TEXT, DatasetName TEXT, NumberAccesses INTEGER, NumberCpus INTEGER)')
+			cur.execute('CREATE TABLE IF NOT EXISTS SiteData (Day TEXT, SiteName TEXT, NumberAccesses INTEGER, NumberCpus INTEGER)')
 		datasets = jsonData.get('DATA')
 		for dataset in datasets:
 			datasetName = dataset.get('COLLNAME')
