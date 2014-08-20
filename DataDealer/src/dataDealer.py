@@ -43,7 +43,7 @@ print "Select Subscriptions --- Stop"
 
 # subscribe selected datasets
 print "Subscribe --- Start"
-subscribe_ = subscribe()
+subscribe_ = subscribe.subscribe()
 subscribe_.createSubscriptions(subscriptions)
 print "Subscribe --- Stop"
 

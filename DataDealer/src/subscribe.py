@@ -23,12 +23,11 @@ class subscribe():
 				continue
 			requestType = 0
 			requestId = 0
-			groupName = 'AnalysisOps'
 			request = jsonData.get('phedex')
 			try:
 				requestId = request.get('request_created')[0].get('id')
 			except IndexError, e:
-				print(" ERROR -- Failed to create subscription for datasets %s on site %s\n" % (str(subscriptions[siteName]), siteName))
+				print(" ERROR -- Failed to create subscription for datasets %s on site %s" % (str(subscriptions[siteName]), siteName))
 				continue
 			requestTimestamp = int(request.get('request_timestamp'))
 			for datasetName in datasets:
@@ -36,6 +35,6 @@ class subscribe():
 				replicas = phedexDb.getNumberReplicas(datasetName)
 				accesses = popDbDb.getDatasetAccesses(datasetName, (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y-%m-%d'))
 				sizeGb = self.phedexData.getDatasetSize(datasetName)
-				query = "INSERT INTO Requests(RequestId, RequestType, DatasetName, SiteName, SizeGb, Replicas, Accesses, Rank, GroupName, Timestamp) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
-				values = [requestId, requestType, datasetName, siteName, sizeGb, replicas, accesses, datasetRank, groupName, requestTimestamp]
+				query = "INSERT INTO Requests(RequestId, RequestType, DatasetId, SiteId, SizeGb, Replicas, Accesses, Rank, Timestamp) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s)"
+				values = [requestId, requestType, datasetName, siteName, sizeGb, replicas, accesses, datasetRank, requestTimestamp]
 				self.dbApi.dbQuery(query, values=values)
