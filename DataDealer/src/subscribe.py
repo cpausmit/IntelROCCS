@@ -2,7 +2,7 @@
 #---------------------------------------------------------------------------------------------------
 # Subscribes selected datasets
 #---------------------------------------------------------------------------------------------------
-import sys, os, math, json, datetime
+import sys, os, datetime
 import dbApi, phedexApi, phedexData
 
 class subscribe():
@@ -19,7 +19,7 @@ class subscribe():
 			if not datasets:
 				continue
 			jsonData = []
-			#jsonData = self.phedexApi.subscribe(node=siteName, data=subscriptionData, level='dataset', move='n', custodial='n', group='AnalysisOps', request_only='n', no_mail='n', comments='IntelROCCS DataDealer', instance='prod')
+			jsonData = self.phedexApi.subscribe(node=siteName, data=subscriptionData, level='dataset', move='n', custodial='n', group='AnalysisOps', request_only='n', no_mail='n', comments='IntelROCCS DataDealer', instance='prod')
 			if not jsonData:
 				continue
 			requestType = 0

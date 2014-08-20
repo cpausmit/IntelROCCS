@@ -2,7 +2,7 @@
 #---------------------------------------------------------------------------------------------------
 # Collects all the necessary data to generate rankings for all datasets in the AnalysisOps space.
 #---------------------------------------------------------------------------------------------------
-import sys, os, math, json, datetime
+import sys, os, math, datetime
 import phedexData, popDbData
 
 class datasetRanker():

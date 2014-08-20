@@ -3,7 +3,7 @@
 # Queries database to get all sites on which AnalysisOps have quota. Can also return only those that
 # are currently not blacklisted or those that are currently blacklisted.
 #---------------------------------------------------------------------------------------------------
-import sys, os
+import sys
 import dbApi
 
 class sites():

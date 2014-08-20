@@ -8,13 +8,10 @@
 #		 Total data subscribed
 #		 Data subscribed per site
 #---------------------------------------------------------------------------------------------------
-import sys, os, sqlite3, datetime, calendar
+import sys, os, datetime, calendar
 from email.MIMEText import MIMEText
-from email.MIMEImage import MIMEImage
 from email.MIMEMultipart import MIMEMultipart
-from email.MIMEBase import MIMEBase
 from email.Utils import formataddr
-from email.quopriMIME import encode
 from subprocess import Popen, PIPE
 import makeTable, sites, siteRanker
 import dbApi, phedexApi, phedexData
@@ -67,11 +64,11 @@ class subscriptionReport():
 
 		# Get all subscriptions
 		subscriptions = []
-		# query = "SELECT Requests.RequestId, Requests.RequestType, Datasets.DatasetName, Sites.SiteName, Requests.Rank, Requests.SizeGb, Requests.Replicas, Requests.Accesses FROM Requests INNER JOIN Datasets ON Datasets.DatasetId=Requests.DatasetId INNER JOIN Sites ON Sites.SiteId=Requests.SiteId WHERE Timestamp>%s AND RequestType=%s"
-		# values = [calendar.timegm(date.timetuple()), 0]
-		# data = self.dbApi.dbQuery(query, values=values)
-		# for subscription in data:
-		# 	subscriptions.append(subscription)
+		query = "SELECT Requests.RequestId, Requests.RequestType, Datasets.DatasetName, Sites.SiteName, Requests.Rank, Requests.SizeGb, Requests.Replicas, Requests.Accesses FROM Requests INNER JOIN Datasets ON Datasets.DatasetId=Requests.DatasetId INNER JOIN Sites ON Sites.SiteId=Requests.SiteId WHERE Timestamp>%s AND RequestType=%s"
+		values = [calendar.timegm(date.timetuple()), 0]
+		data = self.dbApi.dbQuery(query, values=values)
+		for subscription in data:
+			subscriptions.append(subscription)
 
 		# Make title variables
 		quota = 0.0
