@@ -4,7 +4,7 @@
 #---------------------------------------------------------------------------------------------------
 import sys, os, copy, sqlite3, subprocess, datetime, operator
 import init
-import datasetRanker, siteRanker, select, subscribe, subscriptionReport
+import datasetRanker, siteRanker, selection, subscribe, subscriptionReport
 import phedexApi, popDbApi
 
 # Setup parameters
@@ -37,8 +37,8 @@ print "Site Ranking --- Stop"
 
 # Select datasets and sites for subscriptions
 print "Subscriptions --- Start"
-select_ = select.select()
-subscriptions = select_.selectSubscriptions(datasetRankings, siteRankings)
+selection_ = selection.selection()
+subscriptions = selection_.selectSubscriptions(datasetRankings, siteRankings)
 print "Subscriptions --- Stop"
 
 print subscriptions

@@ -5,7 +5,7 @@
 import sys, os, random
 import phedexData
 
-class select():
+class selection():
 	def __init__(self):
 		self.budgetGb = os.environ['DATA_DEALER_BUDGET']
 		phedexCache = os.environ['PHEDEX_CACHE']
