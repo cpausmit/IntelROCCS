@@ -5,7 +5,7 @@
 import sys, os, copy, sqlite3, subprocess, datetime, operator
 import init
 #import datasetRanker, siteRanker, select, phedexDb, popDbDb, subscriptionReport
-import datasetRanker, siteRanker
+import datasetRanker, siteRanker, select
 import phedexApi, popDbApi
 
 # Setup parameters
