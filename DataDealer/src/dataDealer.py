@@ -10,7 +10,6 @@ import phedexApi, popDbApi
 
 # Setup parameters
 # We would like to make these easier to change in the future
-budgetGb = os.environ['DATA_DEALER_BUDGET']
 phedexCache = os.environ['PHEDEX_CACHE']
 popDbCache = os.environ['POP_DB_CACHE']
 cacheDeadline = os.environ['CACHE_DEADLINE']
@@ -25,41 +24,26 @@ popDbApi_.renewSsoCookie()
 #  M A I N
 #===================================================================================================
 # Get dataset rankings
-# print "Dataset Ranking --- Start"
+print "Dataset Ranking --- Start"
 datasetRanker_ = datasetRanker.datasetRanker()
 datasetRankings = datasetRanker_.getDatasetRankings()
 datasetRankingsCopy = copy.deepcopy(datasetRankings)
-# print "Dataset Ranking --- Stop"
+print "Dataset Ranking --- Stop"
 
 # Get site rankings
 print "Site Ranking --- Start"
 siteRanker_ = siteRanker.siteRanker()
 siteRankings = siteRanker_.getSiteRankings()
 print "Site Ranking --- Stop"
-sys.exit(0)
 
 # Select datasets and sites for subscriptions
 print "Subscriptions --- Start"
-phedexCache = os.environ['PHEDEC_CACHE']
-blockReplicasCache = "%s/blockReplicas.db" % (phedexCache)
-blockReplicasDb = sqlite3.connect(blockReplicasCache)
 select_ = select.select()
-subscriptions = dict()
-selectedGb = 0
-while (selectedGb < budgetGb) and (datasetRankings):
-	datasetName = select_.weightedChoice(datasetRankings)
-	siteName = select_.weightedChoice(siteRankings)
-	if siteName in subscriptions:
-		subscriptions[siteName].append(datasetName)
-	else:
-		subscriptions[siteName] = [datasetName]
-	del datasetRankings[datasetName]
-	with blockReplicasDb:
-		cur = blockReplicasDb.cursor()
-		cur.execute('SELECT SizeGb FROM Datasets WHERE DatasetName=?', (datasetName,))
-		sizeGb = cur.fetchone()[0]
-	selectedGb += sizeGb
+subscriptions = select_.selectSubscriptions(datasetRankings, siteRankings)
 print "Subscriptions --- Stop"
+
+print subscriptions
+sys.exit(0)
 
 print "Update DB --- Start"
 # change to mit db
