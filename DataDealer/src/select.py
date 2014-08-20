@@ -1,8 +1,6 @@
 #!/usr/local/bin/python
 #---------------------------------------------------------------------------------------------------
-#
-# Collects all the necessary data to generate rankings for all available sites
-#
+# Select datasets to subscribe and select sites on which to subscribe these datasets
 #---------------------------------------------------------------------------------------------------
 import sys, random
 
