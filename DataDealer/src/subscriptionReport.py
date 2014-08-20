@@ -67,11 +67,11 @@ class subscriptionReport():
 
 		# Get all subscriptions
 		subscriptions = []
-		query = "SELECT * FROM Requests WHERE Timestamp>%s AND RequestType=%s"
-		values = [calendar.timegm(date.timetuple()), 0]
-		data = self.dbApi.dbQuery(query, values=values)
-		for subscription in data:
-			subscriptions.append(subscription)
+		# query = "SELECT * FROM Requests WHERE Timestamp>%s AND RequestType=%s"
+		# values = [calendar.timegm(date.timetuple()), 0]
+		# data = self.dbApi.dbQuery(query, values=values)
+		# for subscription in data:
+		# 	subscriptions.append(subscription)
 
 		# Make title variables
 		quota = 0.0
