@@ -63,23 +63,23 @@ class CentralManager:
 
     def getAllSites(self):
         db = os.environ.get('DETOX_SITESTORAGE_DB')
-        table = os.environ.get('DETOX_QUOTAS')
 
-        print ' Access quota table (%s) in site storage database (%s) to find all sites.'%(table,db)
+        print ' Access site storage database to find all sites.'
         connection = self.getDbConnection()
         cursor = connection.cursor()
 
-        group = "AnalysisOps"
-        sql = "select * from " + table + ' where GroupName=\'' + group +'\''
+        # AnalysisOps is GroupId=1
+        sql = "select SiteName,SizeTb,Status from Quotas,Sites "
+        sql = sql + "where GroupId=1 and Quotas.SiteId=Sites.SiteId"
+        
         try:
             cursor.execute(sql)
             results = cursor.fetchall()
             for row in results:
                 siteName = row[0]
-#                if siteName != 'T2_AT_Vienna': continue
-                willBeUsed = int(row[4])
-                sizeTb = float(row[2])
+                sizeTb = float(row[1])
                 siteSizeGb = sizeTb * 1000
+                willBeUsed = int(row[2])
                 self.allSites[siteName] = siteStatus.SiteStatus(siteName)
                 self.allSites[siteName].setStatus(willBeUsed)
                 self.allSites[siteName].setSize(siteSizeGb)
@@ -203,12 +203,10 @@ class CentralManager:
 
        phedexSets = self.phedexHandler.getPhedexDatasets()
 
-       counter = 0
        for datasetName in phedexSets.keys():
            onSites = phedexSets[datasetName].locatedOnSites()
            if len(onSites) < 1:
                continue
-           if 'T2_AT_Vienna' in onSites: counter = counter + 1
            rank =    phedexSets[datasetName].getGlobalRank()
            self.dataPropers[datasetName] = datasetProperties.DatasetProperties(datasetName)
            self.dataPropers[datasetName].append(onSites)
@@ -219,8 +217,6 @@ class CentralManager:
                vali = phedexSets[datasetName].isValid(site)
                self.sitePropers[site].addDataset(datasetName,rank,size,vali,part,cust)
 
-       print " count = "
-       print counter
        for site in sorted(self.allSites.keys()):
            if self.allSites[site].getStatus() == 0:
                continue
@@ -234,8 +230,24 @@ class CentralManager:
                size2del = sitePr.spaceTaken() - size*self.DETOX_USAGE_MIN
            sitePr.setSpaceToFree(size2del)
 
-       for i in range(1, 4):
-           self.unifyDeletionLists(i)
+       #determine if we need to call it again
+       #call it if there are sites that should delete more 
+       #and have datasets to add to wish list
+       oneMoreIteration = True
+       while oneMoreIteration:
+           oneMoreIteration = False
+           for site in sorted(self.allSites.keys()):
+               if self.allSites[site].getStatus() == 0:
+                   continue
+               sitePr = self.sitePropers[site]
+               if sitePr.space2free > sitePr.deleted:
+                   if sitePr.hasMoreToDelete():
+                       print " --- Site "+site+" has more to delete"
+                       oneMoreIteration = True
+                       break
+           if oneMoreIteration:
+               print " Iterating unifying deletion lists"
+               self.unifyDeletionLists()
 
        # now it all done, calculate for each site space taken by last copies
        for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
@@ -244,7 +256,7 @@ class CentralManager:
 
        self.printResults()
 
-    def unifyDeletionLists(self,iteration):
+    def unifyDeletionLists(self):
         for site in self.sitePropers.keys():
             self.sitePropers[site].makeWishList()
 

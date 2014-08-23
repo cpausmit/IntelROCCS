@@ -15,7 +15,6 @@ export DETOX_SITESTORAGE_PW="db78user?Cms"
 
 # sub directories
 
-export DETOX_QUOTAS="Quotas"
 export DETOX_STATUS="status"
 export DETOX_SNAPSHOTS="snapshots"
 export DETOX_RESULT="result"
