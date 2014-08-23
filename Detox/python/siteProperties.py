@@ -56,6 +56,26 @@ class SiteProperties:
             space = space + self.datasetSizes[datasetName]
             self.wishList.append(datasetName)
 
+    def hasMoreToDelete(self):
+        nsets = 0
+        for datasetName in sorted(self.datasetRanks.keys(), cmp=self.compare):
+            if datasetName in self.datasetsToDelete:
+                continue
+            if datasetName in self.protectedList:
+                continue
+            #custodial set can't be on deletion wish list
+            if self.dsetIsCustodial[datasetName] :
+                continue
+            #non-valid dataset can't be on deletion list
+            if not self.dsetIsValid[datasetName]:
+                continue
+            if datasetName in self.wishList:
+                continue
+            nsets = nsets + 1
+        if nsets > 0:
+            return True
+        return False
+
     def onWishList(self,set):
         if set in self.wishList:
             return True
