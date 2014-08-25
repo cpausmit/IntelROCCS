@@ -64,11 +64,11 @@ class subscriptionReport():
 
 		# Get all subscriptions
 		subscriptions = []
-		query = "SELECT Requests.RequestId, Requests.RequestType, Datasets.DatasetName, Sites.SiteName, Requests.Rank, Requests.SizeGb, Requests.Replicas, Requests.Accesses FROM Requests INNER JOIN Datasets ON Datasets.DatasetId=Requests.DatasetId INNER JOIN Sites ON Sites.SiteId=Requests.SiteId WHERE Timestamp>%s AND RequestType=%s"
-		values = [calendar.timegm(date.timetuple()), 0]
-		data = self.dbApi.dbQuery(query, values=values)
-		for subscription in data:
-			subscriptions.append(subscription)
+		#query = "SELECT Datasets.DatasetName, Sites.SiteName, Requests.Rank, FROM Requests INNER JOIN Datasets ON Datasets.DatasetId=Requests.DatasetId INNER JOIN Sites ON Sites.SiteId=Requests.SiteId WHERE Timestamp>%s AND RequestType=%s"
+		#values = [calendar.timegm(date.timetuple()), 0]
+		#data = self.dbApi.dbQuery(query, values=values)
+		#for subscription in data:
+		#	subscriptions.append(subscription)
 
 		# Make title variables
 		quota = 0.0
