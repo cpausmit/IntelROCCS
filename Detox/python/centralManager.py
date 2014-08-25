@@ -472,6 +472,13 @@ class CentralManager:
             respo = response.read()
             matchObj = re.search(r'"id":"(\d+)"',respo)
             id = int(matchObj.group(1))
+            #here we brute force deletion to be approved
+            check,response = phedex.updateRequest(decision='approve',request=id,node=site,instance='prod')
+            if check:
+                print " ERROR - phedexApi.updateRequest failed"
+                print response
+                sys.exit(1)
+
             date = (re.search(r'"request_date":"(.*?)"',respo)).group(1)
             date = date[:-3]
             myCnf = os.environ['DETOX_MYSQL_CONFIG']
