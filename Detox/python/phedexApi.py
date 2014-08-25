@@ -267,11 +267,6 @@ class phedexApi:
     ############################################################################
     def delete(self, node='', data='', level='dataset', rmSubscriptions='y',
                comments='', format='json', instance='prod'):
-        """
-        _subscribe_
-
-        Set up subscription call to PhEDEx API.
-        """
         name = "delete"
         if not (node and data):
             self.logger.error(name, "Need to pass both node and data")
@@ -283,6 +278,19 @@ class phedexApi:
         if check:
             # An error occurred
             self.logger.error(name, "Delete call failed")
+            # @TODO : Print out better logging, url + values
+            return 1, "ERROR - self.phedexCall with response: " + response
+        return 0, response
+
+    def updateRequest(self, decision='', request='', node='', comments='', 
+                       format='json', instance='prod'):
+        name = "update"
+        values = {'decision':decision, 'request':request, 'node':node, 'comments':comments}
+        url = urllib.basejoin(self.phedexBase, "%s/%s/updaterequest" % (format, instance))
+        check, response = self.phedexCall(url, values)
+        if check:
+            # An error occurred
+            self.logger.error(name, "Update call failed")
             # @TODO : Print out better logging, url + values
             return 1, "ERROR - self.phedexCall with response: " + response
         return 0, response
