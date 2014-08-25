@@ -11,4 +11,8 @@ datasets = jsonData.get('phedex').get('dataset')
 	for dataset in datasets:
 		datasetName = dataset.get('name')
 		jsonData = phedexApi_.requestList(type_='xfer', node='T2_US_Nebraska', group='local', dataset=datasetName)
-		print jsonData
+		requests = jsonData.get('phedex')
+		i = 1
+		for request in requests:
+			print i
+			i += 1
