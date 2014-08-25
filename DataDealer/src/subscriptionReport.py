@@ -19,8 +19,10 @@ import dbApi, phedexApi, phedexData
 class subscriptionReport():
 	def __init__(self):
 		phedexCache = os.environ['PHEDEX_CACHE']
+		popDbCache = os.environ['POP_DB_CACHE']
 		cacheDeadline = int(os.environ['CACHE_DEADLINE'])
 		self.phedexData = phedexData.phedexData(phedexCache, cacheDeadline)
+		self.popDbData = popDbData.popDbData(popDbCache, cacheDeadline)
 		self.phedexApi = phedexApi.phedexApi()
 		self.dbApi = dbApi.dbApi()
 		self.sites = sites.sites()
@@ -69,6 +71,12 @@ class subscriptionReport():
 		#data = self.dbApi.dbQuery(query, values=values)
 		#for subscription in data:
 		#	subscriptions.append(subscription)
+		requestsDb = sqlite3.connect("%s/requests.db" % (os.environ['HOME']))
+		with requestsDb:
+			cur = requestsDb.cursor()
+			cur.execute('SELECT DatasetName, SiteName, Rank, Timestamp FROM Requests WHERE Timestamp>?', (calendar.timegm(date.timetuple()),))
+			for row in cur:
+				subscriptions.append(row)
 
 		# Make title variables
 		quota = 0.0
@@ -79,7 +87,7 @@ class subscriptionReport():
 		quotaUsed = 100*(dataOwned/(quota*10**3))
 		dataSubscribed = 0.0
 		for subsciption in subscriptions:
-			dataSubscribed += subsciption[5]
+			dataSubscribed += self.phedexData.getDatasetSize(subsciption[0])
 
 		# Create title
 		title = 'AnalysisOps %s | %d TB | %d%% | %.2f TB Subscribed' % (date.strftime('%Y-%m-%d'), int(dataOwned/10**3), int(quotaUsed), dataSubscribed/10**3)
@@ -90,8 +98,8 @@ class subscriptionReport():
 		for site in availableSites:
 			siteSubscriptions[site] = 0
 		for subscription in subscriptions:
-			site = subscription[3]
-			siteSubscriptions[site] += subscription[5]
+			site = subscription[1]
+			siteSubscriptions[site] += self.phedexData.getDatasetSize(subsciption[0])
 
 		siteTable = makeTable.Table(add_numbers=False)
 		siteTable.setHeaders(['Site', 'Subscribed TB', 'Space Used TB', 'Space Used %', 'Quota TB'])
@@ -109,12 +117,12 @@ class subscriptionReport():
 		subscriptionTable = makeTable.Table(add_numbers=False)
 		subscriptionTable.setHeaders(['Site', 'Rank', 'Size TB', 'Replicas', 'Accesses', 'Dataset'])
 		for subscription in subscriptions:
-			site = subscription[3]
-			rank = float(subscription[4])
-			size = float(subscription[5])/(10**3)
-			replicas = int(subscription[6])
-			accesses = int(subscription[7])
-			dataset = subscription[2]
+			dataset = subscription[0]
+			site = subscription[1]
+			rank = float(subscription[2])
+			size = float(self.phedexData.getDatasetSize(dataset))/(10**3)
+			replicas = int(self.phedexData.getNumberReplicas(dataset))
+			accesses = int(self.popDbData.getDatasetAccesses(dataset, (datetime.date.today() - datetime.timedelta(days=1))))
 			subscriptionTable.addRow([site, rank, size, replicas, accesses, dataset])
 
 		text += subscriptionTable.plainText()

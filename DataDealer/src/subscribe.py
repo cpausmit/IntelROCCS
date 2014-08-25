@@ -30,6 +30,10 @@ class subscribe():
 			requestTimestamp = int(request.get('request_timestamp'))
 			for datasetName in datasets:
 				datasetRank = datasetRankingsCopy[datasetName]
-				query = "INSERT INTO Requests(RequestId, RequestType, DatasetId, SiteId, Rank, Timestamp) SELECT %s, %s, Datasets.DatasetId, Sites.SiteId, %s, %s FROM Datasets, Sites WHERE Datasets.DatasetName=%s AND Sites.SiteName=%s"
-				values = [requestId, requestType, datasetRank, requestTimestamp, datasetName, siteName]
-				self.dbApi.dbQuery(query, values=values)
+				#query = "INSERT INTO Requests(RequestId, RequestType, DatasetId, SiteId, Rank, Timestamp) SELECT %s, %s, Datasets.DatasetId, Sites.SiteId, %s, %s FROM Datasets, Sites WHERE Datasets.DatasetName=%s AND Sites.SiteName=%s"
+				#values = [requestId, requestType, datasetRank, requestTimestamp, datasetName, siteName]
+				#self.dbApi.dbQuery(query, values=values)
+				requestsDb = sqlite3.connect("%s/requests.db" % (os.environ['HOME']))
+				with requestsDb:
+					cur = requestsDb.cursor()
+					cur.execute('INSERT INTO Requests(RequestId, DatasetName, SiteName, Rank, Timestamp) VALUES(?, ?, ?, ?, ?)', (requestId, datasetName, siteName, datasetRank, requestTimestamp))
