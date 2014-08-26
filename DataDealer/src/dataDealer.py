@@ -22,7 +22,7 @@ requests = jsonData.get('phedex').get('request')
 for request in requests:
 	requestId = request.get('id')
 	requestType = 0
-	siteName = request.get('node').get('name')
+	siteName = request.get('node')[0].get('name')
 	groupName = "AnalysisOps"
 	rank = 0
 	timestamp = request.get('time_create')
