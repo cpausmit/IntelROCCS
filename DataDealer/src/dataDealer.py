@@ -2,7 +2,7 @@
 #---------------------------------------------------------------------------------------------------
 # This is the main script of the DataDealer. See README.md for more information.
 #---------------------------------------------------------------------------------------------------
-import sys, os, copy
+import sys, os, copy, sqlite3
 import init
 import datasetRanker, siteRanker, selection, subscribe, subscriptionReport
 import phedexApi, popDbApi
@@ -15,6 +15,14 @@ cacheDeadline = os.environ['CACHE_DEADLINE']
 
 phedexApi_ = phedexApi.phedexApi()
 phedexApi_.renewProxy()
+
+requestsDb = sqlite3.connect("%s/requests.db" % (os.environ['HOME']))
+jsonData = phedexApi_.requestList(type_='xfer', requested_by='Bjorn Peter Barrefors', decision='approved', group='AnalysisOps', create_since=0, create_until=1406845976)
+print jsonData
+sys.exit(0)
+#with requestsDb:
+#	cur = requestsDb.cursor()
+#	cur.execute('INSERT INTO Requests(RequestId, DatasetName, SiteName, Rank, Timestamp) VALUES(?, ?, ?, ?, ?)', (requestId, datasetName, siteName, datasetRank, requestTimestamp))
 
 popDbApi_ = popDbApi.popDbApi()
 popDbApi_.renewSsoCookie()

@@ -19,8 +19,8 @@ class subscribe():
 			jsonData = self.phedexApi.subscribe(node=siteName, data=subscriptionData, level='dataset', move='n', custodial='n', group='AnalysisOps', request_only='n', no_mail='n', comments='IntelROCCS DataDealer', instance='prod')
 			if not jsonData:
 				continue
-			requestType = 0
 			requestId = 0
+			requestType = 0
 			request = jsonData.get('phedex')
 			try:
 				requestId = request.get('request_created')[0].get('id')
@@ -30,8 +30,9 @@ class subscribe():
 			requestTimestamp = int(request.get('request_timestamp'))
 			for datasetName in datasets:
 				datasetRank = datasetRankingsCopy[datasetName]
-				#query = "INSERT INTO Requests(RequestId, RequestType, DatasetId, SiteId, Rank, Timestamp) SELECT %s, %s, Datasets.DatasetId, Sites.SiteId, %s, %s FROM Datasets, Sites WHERE Datasets.DatasetName=%s AND Sites.SiteName=%s"
-				#values = [requestId, requestType, datasetRank, requestTimestamp, datasetName, siteName]
+				groupName = "AnalysisOps"
+				#query = "INSERT INTO Requests(RequestId, RequestType, DatasetId, SiteId, GroupId, Rank, Timestamp) SELECT %s, %s, Datasets.DatasetId, Sites.SiteId, Groups.GroupId, %s, %s FROM Datasets, Sites, Groups WHERE Datasets.DatasetName=%s AND Sites.SiteName=%s AND Groups.GroupName=%s"
+				#values = [requestId, requestType, datasetRank, requestTimestamp, datasetName, siteName, groupName]
 				#self.dbApi.dbQuery(query, values=values)
 				requestsDb = sqlite3.connect("%s/requests.db" % (os.environ['HOME']))
 				with requestsDb:
