@@ -8,7 +8,7 @@
 #		 Total data subscribed
 #		 Data subscribed per site
 #---------------------------------------------------------------------------------------------------
-import sys, os, datetime, calendar
+import sys, os, sqlite3, datetime, calendar
 from email.MIMEText import MIMEText
 from email.MIMEMultipart import MIMEMultipart
 from email.Utils import formataddr
