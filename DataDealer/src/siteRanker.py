@@ -35,10 +35,8 @@ class siteRanker():
 		return maxCpu
 
 	def getMaxStorage(self, site):
-		#query = "SELECT Quotas.SizeTb FROM Quotas INNER JOIN Sites ON Sites.SiteId=Quotas.SiteId WHERE Sites.SiteName=%s"
-		query = "SELECT SizeTb FROM Quotas WHERE GroupName=%s AND SiteName=%s"
-		#values = [site]
-		values = ['AnalysisOps', site]
+		query = "SELECT Quotas.SizeTb FROM Quotas INNER JOIN Sites ON Sites.SiteId=Quotas.SiteId INNER JOIN Groups ON Groups.GroupId=Quotas.GroupId WHERE Sites.SiteName=%s AND Groups.GroupName=%s"
+		values = [site, 'AnalysisOps']
 		data = self.dbApi.dbQuery(query, values=values)
 		maxStorage = data[0][0]
 		return maxStorage

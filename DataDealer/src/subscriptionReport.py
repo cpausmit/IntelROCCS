@@ -14,7 +14,7 @@ from email.MIMEMultipart import MIMEMultipart
 from email.Utils import formataddr
 from subprocess import Popen, PIPE
 import makeTable, sites, siteRanker
-import dbApi, phedexApi, phedexData
+import dbApi, phedexApi, phedexData, popDbData
 
 class subscriptionReport():
 	def __init__(self):
