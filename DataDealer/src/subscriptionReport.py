@@ -8,7 +8,7 @@
 #		 Total data subscribed
 #		 Data subscribed per site
 #---------------------------------------------------------------------------------------------------
-import sys, os, sqlite3, datetime, calendar
+import sys, os, datetime, calendar
 from email.MIMEText import MIMEText
 from email.MIMEMultipart import MIMEMultipart
 from email.Utils import formataddr
@@ -66,17 +66,11 @@ class subscriptionReport():
 
 		# Get all subscriptions
 		subscriptions = []
-		#query = "SELECT Datasets.DatasetName, Sites.SiteName, Requests.Rank, FROM Requests INNER JOIN Datasets ON Datasets.DatasetId=Requests.DatasetId INNER JOIN Sites ON Sites.SiteId=Requests.SiteId WHERE Timestamp>%s AND RequestType=%s"
-		#values = [calendar.timegm(date.timetuple()), 0]
-		#data = self.dbApi.dbQuery(query, values=values)
-		#for subscription in data:
-		#	subscriptions.append(subscription)
-		requestsDb = sqlite3.connect("%s/requests.db" % (os.environ['HOME']))
-		with requestsDb:
-			cur = requestsDb.cursor()
-			cur.execute('SELECT DatasetName, SiteName, Rank, Timestamp FROM Requests WHERE Timestamp>?', (calendar.timegm(date.timetuple()),))
-			for row in cur:
-				subscriptions.append(row)
+		query = "SELECT Datasets.DatasetName, Sites.SiteName, Requests.Rank, FROM Requests INNER JOIN Datasets ON Datasets.DatasetId=Requests.DatasetId INNER JOIN Sites ON Sites.SiteId=Requests.SiteId WHERE Timestamp>%s AND RequestType=%s"
+		values = [calendar.timegm(date.timetuple()), 0]
+		data = self.dbApi.dbQuery(query, values=values)
+		for subscription in data:
+			subscriptions.append(subscription)
 
 		# Make title variables
 		quota = 0.0

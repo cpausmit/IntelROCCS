@@ -45,7 +45,7 @@ ${INTELROCCS_DIR}/Api/installApi.sh
 
 # set up cache environment
 # phedex
-PHEDEX_CACHE=${INTELROCCS_DIR}/Cache/Phedex
+PHEDEX_CACHE=/tmp/IntelROCCS/Cache/Phedex
 if [ -d "$PHEDEX_CACHE" ]
 then
   	# make sure to remove completely the previous installed software
@@ -57,7 +57,7 @@ else
 fi
 
 # pop db
-POP_DB_CACHE=${INTELROCCS_DIR}/Cache/PopDb
+POP_DB_CACHE=/tmp/IntelROCCS/Cache/PopDb
 if [ -d "$POP_DB_CACHE" ]
 then
   	# make sure to remove completely the previous installed software

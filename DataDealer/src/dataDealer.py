@@ -5,7 +5,7 @@
 import sys, os, copy, sqlite3
 import init
 import datasetRanker, siteRanker, selection, subscribe, subscriptionReport
-import phedexApi, popDbApi
+import phedexApi, popDbApi, dbApi
 
 # Setup parameters
 # We would like to make these easier to change in the future
@@ -13,27 +13,32 @@ phedexCache = os.environ['PHEDEX_CACHE']
 popDbCache = os.environ['POP_DB_CACHE']
 cacheDeadline = os.environ['CACHE_DEADLINE']
 
+dbApi_ = dbApi.dbApi()
+requests = []
+requestsDb = sqlite3.connect("%s/requests.db" % (os.environ['HOME']))
+with requestsDb:
+	cur = requestsDb.cursor()
+	cur.execute('SELECT RequestId, RequestType, DatasetName, SiteName, GroupName, Rank, Timestamp FROM Requests')
+	for row in cur:
+		requests.append(row)
+
+for request in requests:
+	requestId = request[0]
+	requestType = request[1]
+	datasetName = request[2]
+	siteName = request[3]
+	groupName = request[4]
+	datasetRank = request[5]
+	requestTimestamp = request[6]
+	query = "INSERT INTO Requests(RequestId, RequestType, DatasetId, SiteId, GroupId, Rank, Timestamp) SELECT %s, %s, Datasets.DatasetId, Sites.SiteId, Groups.GroupId, %s, %s FROM Datasets, Sites, Groups WHERE Datasets.DatasetName=%s AND Sites.SiteName=%s AND Groups.GroupName=%s"
+	values = [requestId, requestType, datasetRank, requestTimestamp, datasetName, siteName, groupName]
+	self.dbApi.dbQuery(query, values=values)
+
+sys.exit(0)
+
 phedexApi_ = phedexApi.phedexApi()
 phedexApi_.renewProxy()
 
-requestsDb = sqlite3.connect("%s/requests.db" % (os.environ['HOME']))
-jsonData = phedexApi_.requestList(type_='xfer', requested_by='Bjorn Peter Barrefors', decision='approved', group='AnalysisOps', create_since=0, create_until=1406845976)
-requests = jsonData.get('phedex').get('request')
-for request in requests:
-	requestId = request.get('id')
-	requestType = 0
-	siteName = request.get('node')[0].get('name')
-	groupName = "AnalysisOps"
-	datasetRank = 0
-	requestTimestamp = request.get('time_create')
-	jsonData = phedexApi_.transferRequests(request=requestId)
-	datasets = jsonData.get('phedex').get('request')[0].get('data').get('dbs').get('dataset')
-	for dataset in datasets:
-		datasetName = dataset.get('name')
-		with requestsDb:
-			cur = requestsDb.cursor()
-			cur.execute('INSERT INTO Requests(RequestId, RequestType, DatasetName, SiteName, GroupName, Rank, Timestamp) VALUES(?, ?, ?, ?, ?, ?, ?)', (requestId, requestType, datasetName, siteName, groupName, datasetRank, requestTimestamp))
-sys.exit(0)
 popDbApi_ = popDbApi.popDbApi()
 popDbApi_.renewSsoCookie()
 
