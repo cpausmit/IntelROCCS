@@ -18,7 +18,16 @@ phedexApi_.renewProxy()
 
 requestsDb = sqlite3.connect("%s/requests.db" % (os.environ['HOME']))
 jsonData = phedexApi_.requestList(type_='xfer', requested_by='Bjorn Peter Barrefors', decision='approved', group='AnalysisOps', create_since=0, create_until=1406845976)
-print jsonData
+requests = jsonData.get('phedex').get('request')
+for request in requests:
+	requestId = request.get('id')
+	requestType = 0
+	siteName = request.get('node').get('name')
+	groupName = "AnalysisOps"
+	rank = 0
+	timestamp = request.get('time_create')
+	jsonData = phedexApi_.transferRequests(request=requestId)
+	print jsonData
 sys.exit(0)
 #with requestsDb:
 #	cur = requestsDb.cursor()
