@@ -23,20 +23,17 @@ for request in requests:
 	requestId = request.get('id')
 	requestType = 0
 	siteName = request.get('node')[0].get('name')
-	print siteName
 	groupName = "AnalysisOps"
-	rank = 0
-	timestamp = request.get('time_create')
+	datasetRank = 0
+	requestTimestamp = request.get('time_create')
 	jsonData = phedexApi_.transferRequests(request=requestId)
 	datasets = jsonData.get('phedex').get('request')[0].get('data').get('dbs').get('dataset')
 	for dataset in datasets:
 		datasetName = dataset.get('name')
-		print datasetName
+		with requestsDb:
+			cur = requestsDb.cursor()
+			cur.execute('INSERT INTO Requests(RequestId, RequestType, DatasetName, SiteName, GroupName, Rank, Timestamp) VALUES(?, ?, ?, ?, ?, ?, ?)', (requestId, requestType, datasetName, siteName, groupName, datasetRank, requestTimestamp))
 sys.exit(0)
-#with requestsDb:
-#	cur = requestsDb.cursor()
-#	cur.execute('INSERT INTO Requests(RequestId, DatasetName, SiteName, Rank, Timestamp) VALUES(?, ?, ?, ?, ?)', (requestId, datasetName, siteName, datasetRank, requestTimestamp))
-
 popDbApi_ = popDbApi.popDbApi()
 popDbApi_.renewSsoCookie()
 
