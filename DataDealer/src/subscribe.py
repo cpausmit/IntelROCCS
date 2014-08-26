@@ -2,7 +2,7 @@
 #---------------------------------------------------------------------------------------------------
 # Subscribes selected datasets
 #---------------------------------------------------------------------------------------------------
-import sys, os, datetime
+import sys, os, sqlite3, datetime
 import dbApi, phedexApi
 
 class subscribe():
