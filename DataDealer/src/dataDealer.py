@@ -23,11 +23,15 @@ for request in requests:
 	requestId = request.get('id')
 	requestType = 0
 	siteName = request.get('node')[0].get('name')
+	print siteName
 	groupName = "AnalysisOps"
 	rank = 0
 	timestamp = request.get('time_create')
 	jsonData = phedexApi_.transferRequests(request=requestId)
-	print jsonData
+	datasets = jsonData.get('phedex').get('request')[0].get('data').get('dbs').get('dataset')
+	for dataset in datasets:
+		datasetName = dataset.get('name')
+		print datasetName
 sys.exit(0)
 #with requestsDb:
 #	cur = requestsDb.cursor()
