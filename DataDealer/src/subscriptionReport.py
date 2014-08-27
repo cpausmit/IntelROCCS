@@ -57,7 +57,7 @@ class subscriptionReport():
 		date = datetime.date.today() - datetime.timedelta(days=20)
 
 		# Get all currently valid sites with data usage and quota
-		availableSites = self.sites.getAvailableSites()
+		allSites = self.sites.getAllSites()
 		siteQuota = dict()
 		for site in availableSites:
 			quota = self.siteRanker.getMaxStorage(site)
@@ -89,20 +89,26 @@ class subscriptionReport():
 
 		# Create site table
 		siteSubscriptions = dict()
-		for site in availableSites:
+		for site in allSites:
 			siteSubscriptions[site] = 0
 		for subscription in subscriptions:
 			site = subscription[1]
 			siteSubscriptions[site] += self.phedexData.getDatasetSize(subsciption[0])
 
+		# get status of sites
+		availableSites = self.sites.getAvailableSites()
+
 		siteTable = makeTable.Table(add_numbers=False)
-		siteTable.setHeaders(['Site', 'Subscribed TB', 'Space Used TB', 'Space Used %', 'Quota TB'])
-		for site in availableSites:
+		siteTable.setHeaders(['Site', 'Subscribed TB', 'Space Used TB', 'Space Used %', 'Quota TB', 'Status'])
+		for site in allSites:
 			subscribed = float(siteSubscriptions[site])/(10**3)
 			usedTb = int(siteQuota[site][1]/10**3)
 			quota = int(siteQuota[site][0])
 			usedP = "%d%%" % (int(100*(float(usedTb)/quota)))
-			siteTable.addRow([site, subscribed, usedTb, usedP, quota])
+			status = "up"
+			if site in availableSites:
+				status = "down"
+			siteTable.addRow([site, subscribed, usedTb, usedP, quota, status])
 
 		text += siteTable.plainText()
 
