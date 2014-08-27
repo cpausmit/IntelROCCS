@@ -24,21 +24,21 @@ popDbApi_.renewSsoCookie()
 #===================================================================================================
 # Get dataset rankings
 print "Dataset Ranking --- Start"
-datasetRanker_ = datasetRanker.datasetRanker()
-datasetRankings = datasetRanker_.getDatasetRankings()
-datasetRankingsCopy = copy.deepcopy(datasetRankings)
+# datasetRanker_ = datasetRanker.datasetRanker()
+# datasetRankings = datasetRanker_.getDatasetRankings()
+# datasetRankingsCopy = copy.deepcopy(datasetRankings)
 print "Dataset Ranking --- Stop"
 
 # Get site rankings
 print "Site Ranking --- Start"
-siteRanker_ = siteRanker.siteRanker()
-siteRankings = siteRanker_.getSiteRankings()
+# siteRanker_ = siteRanker.siteRanker()
+# siteRankings = siteRanker_.getSiteRankings()
 print "Site Ranking --- Stop"
 
 # Select datasets and sites for subscriptions
 print "Select Subscriptions --- Start"
-selection_ = selection.selection()
-subscriptions = selection_.selectSubscriptions(datasetRankings, siteRankings)
+# selection_ = selection.selection()
+# subscriptions = selection_.selectSubscriptions(datasetRankings, siteRankings)
 print "Select Subscriptions --- Stop"
 
 # subscribe selected datasets
