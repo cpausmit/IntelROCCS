@@ -27,7 +27,6 @@ class selection():
 	def selectSubscriptions(self, datasetRankings, siteRankings):
 		selectedGb = 0
 		subscriptions = dict()
-		print self.budgetGb
 		while (selectedGb < self.budgetGb) and (datasetRankings):
 			datasetName = self.weightedChoice(datasetRankings)
 			siteName = self.weightedChoice(siteRankings)
@@ -38,7 +37,6 @@ class selection():
 			del datasetRankings[datasetName]
 			sizeGb = self.phedexData.getDatasetSize(datasetName)
 			selectedGb += int(sizeGb)
-			print selectedGb
 		return subscriptions
 
 #===================================================================================================

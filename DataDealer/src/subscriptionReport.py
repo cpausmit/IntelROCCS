@@ -8,13 +8,13 @@
 #		 Total data subscribed
 #		 Data subscribed per site
 #---------------------------------------------------------------------------------------------------
-import sys, os, datetime, calendar
+import sys, os, datetime
 from email.MIMEText import MIMEText
 from email.MIMEMultipart import MIMEMultipart
 from email.Utils import formataddr
 from subprocess import Popen, PIPE
 import makeTable, sites, siteRanker
-import dbApi, phedexApi, phedexData, popDbData
+import dbApi, phedexData, popDbData
 
 class subscriptionReport():
 	def __init__(self):
@@ -23,7 +23,6 @@ class subscriptionReport():
 		cacheDeadline = int(os.environ['CACHE_DEADLINE'])
 		self.phedexData = phedexData.phedexData(phedexCache, cacheDeadline)
 		self.popDbData = popDbData.popDbData(popDbCache, cacheDeadline)
-		self.phedexApi = phedexApi.phedexApi()
 		self.dbApi = dbApi.dbApi()
 		self.sites = sites.sites()
 		self.siteRanker = siteRanker.siteRanker()
@@ -90,7 +89,7 @@ class subscriptionReport():
 		# Create site table
 		siteSubscriptions = dict()
 		for site in allSites:
-			siteSubscriptions[site] = 0
+			siteSubscriptions[site] = 0.0
 		for subscription in subscriptions:
 			site = subscription[1]
 			siteSubscriptions[site] += self.phedexData.getDatasetSize(subsciption[0])
