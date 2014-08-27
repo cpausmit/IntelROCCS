@@ -66,7 +66,7 @@ class subscriptionReport():
 
 		# Get all subscriptions
 		subscriptions = []
-		query = "SELECT Datasets.DatasetName, Sites.SiteName, Requests.Rank, FROM Requests INNER JOIN Datasets ON Datasets.DatasetId=Requests.DatasetId INNER JOIN Sites ON Sites.SiteId=Requests.SiteId WHERE Requests.Date>%s AND Requests.RequestType=%s"
+		query = "SELECT Datasets.DatasetName, Sites.SiteName, Requests.Rank FROM Requests INNER JOIN Datasets ON Datasets.DatasetId=Requests.DatasetId INNER JOIN Sites ON Sites.SiteId=Requests.SiteId WHERE Requests.Date>%s AND Requests.RequestType=%s"
 		values = [date.strftime('%Y-%m-%d %H:%M:%S'), 0]
 		data = self.dbApi.dbQuery(query, values=values)
 		for subscription in data:
