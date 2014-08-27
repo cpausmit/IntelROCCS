@@ -31,6 +31,6 @@ class subscribe():
 			for datasetName in datasets:
 				datasetRank = datasetRankingsCopy[datasetName]
 				groupName = "AnalysisOps"
-				query = "INSERT INTO Requests(RequestId, RequestType, DatasetId, SiteId, GroupId, Rank, Timestamp) SELECT %s, %s, Datasets.DatasetId, Sites.SiteId, Groups.GroupId, %s, %s FROM Datasets, Sites, Groups WHERE Datasets.DatasetName=%s AND Sites.SiteName=%s AND Groups.GroupName=%s"
+				query = "INSERT INTO Requests(RequestId, RequestType, DatasetId, SiteId, GroupId, Rank, Date) SELECT %s, %s, Datasets.DatasetId, Sites.SiteId, Groups.GroupId, %s, %s FROM Datasets, Sites, Groups WHERE Datasets.DatasetName=%s AND Sites.SiteName=%s AND Groups.GroupName=%s"
 				values = [requestId, requestType, datasetRank, requestTimestamp, datasetName, siteName, groupName]
 				self.dbApi.dbQuery(query, values=values)
