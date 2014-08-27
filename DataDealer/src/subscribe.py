@@ -10,7 +10,7 @@ class subscribe():
 		self.phedexApi = phedexApi.phedexApi()
 		self.dbApi = dbApi.dbApi()
 
-	def createSubscriptions(self, subscriptions):
+	def createSubscriptions(self, subscriptions, datasetRankings):
 		for siteName in iter(subscriptions):
 			datasets, subscriptionData = self.phedexApi.createXml(datasets=subscriptions[siteName], instance='prod')
 			if not datasets:
@@ -29,7 +29,7 @@ class subscribe():
 				continue
 			requestTimestamp = datetime.datetime.fromtimestamp(float(request.get('request_timestamp')))
 			for datasetName in datasets:
-				datasetRank = datasetRankingsCopy[datasetName]
+				datasetRank = datasetRankings[datasetName]
 				groupName = "AnalysisOps"
 				query = "INSERT INTO Requests(RequestId, RequestType, DatasetId, SiteId, GroupId, Rank, Date) SELECT %s, %s, Datasets.DatasetId, Sites.SiteId, Groups.GroupId, %s, %s FROM Datasets, Sites, Groups WHERE Datasets.DatasetName=%s AND Sites.SiteName=%s AND Groups.GroupName=%s"
 				values = [requestId, requestType, datasetRank, requestTimestamp, datasetName, siteName, groupName]

@@ -44,7 +44,7 @@ print "Select Subscriptions --- Stop"
 # subscribe selected datasets
 print "Subscribe --- Start"
 subscribe_ = subscribe.subscribe()
-subscribe_.createSubscriptions(subscriptions)
+subscribe_.createSubscriptions(subscriptions, datasetRankingsCopy)
 print "Subscribe --- Stop"
 
 # Send summary report
