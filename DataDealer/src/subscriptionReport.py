@@ -54,7 +54,7 @@ class subscriptionReport():
 
 	def createReport(self):
 		# Initialize
-		date = datetime.date.today() - datetime.timedelta(days=20)
+		date = datetime.date.today()
 
 		# Get all currently valid sites with data usage and quota
 		allSites = self.sites.getAllSites()
