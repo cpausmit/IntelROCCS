@@ -59,7 +59,7 @@ class subscriptionReport():
 		# Get all currently valid sites with data usage and quota
 		allSites = self.sites.getAllSites()
 		siteQuota = dict()
-		for site in availableSites:
+		for site in allSites:
 			quota = self.siteRanker.getMaxStorage(site)
 			usedStorage = self.phedexData.getSiteStorage(site)
 			siteQuota[site] = (quota, usedStorage)
