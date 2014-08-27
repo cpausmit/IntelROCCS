@@ -2,7 +2,7 @@
 #---------------------------------------------------------------------------------------------------
 # This is the main script of the DataDealer. See README.md for more information.
 #---------------------------------------------------------------------------------------------------
-import sys, os, copy, sqlite3
+import sys, os, copy, sqlite3, datetime
 import init
 import datasetRanker, siteRanker, selection, subscribe, subscriptionReport
 import phedexApi, popDbApi, dbApi
@@ -29,10 +29,10 @@ for request in requests:
 	siteName = request[3]
 	groupName = request[4]
 	datasetRank = request[5]
-	requestTimestamp = request[6]
-	query = "INSERT INTO Requests(RequestId, RequestType, DatasetId, SiteId, GroupId, Rank, Date) SELECT %s, %s, Datasets.DatasetId, Sites.SiteId, Groups.GroupId, %s, %s FROM Datasets, Sites, Groups WHERE Datasets.DatasetName=%s AND Sites.SiteName=%s AND Groups.GroupName=%s"
-	values = [requestId, requestType, datasetRank, requestTimestamp, datasetName, siteName, groupName]
-	self.dbApi.dbQuery(query, values=values)
+	date = datetime.datetime.fromtimestamp(float(request[6]))
+	query = "UPDATE Requests, Datasets SET Requests.Date=%s WHERE Requests.RequestId=%s AND Requests.DatasetId=Datasets.DatasetId AND Datasets.DatasetName=%s AND Requests.RequestType=%s"
+	values = [date, requestId, datasetName, requestType]
+	dbApi_.dbQuery(query, values=values)
 
 sys.exit(0)
 
