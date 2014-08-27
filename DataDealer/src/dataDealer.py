@@ -13,11 +13,11 @@ phedexCache = os.environ['PHEDEX_CACHE']
 popDbCache = os.environ['POP_DB_CACHE']
 cacheDeadline = os.environ['CACHE_DEADLINE']
 
-phedexApi_ = phedexApi.phedexApi()
-phedexApi_.renewProxy()
+# phedexApi_ = phedexApi.phedexApi()
+# phedexApi_.renewProxy()
 
-popDbApi_ = popDbApi.popDbApi()
-popDbApi_.renewSsoCookie()
+# popDbApi_ = popDbApi.popDbApi()
+# popDbApi_.renewSsoCookie()
 
 #===================================================================================================
 #  M A I N
