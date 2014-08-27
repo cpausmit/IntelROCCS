@@ -7,7 +7,7 @@ import phedexData
 
 class selection():
 	def __init__(self):
-		self.budgetGb = os.environ['DATA_DEALER_BUDGET']
+		self.budgetGb = int(os.environ['DATA_DEALER_BUDGET'])
 		phedexCache = os.environ['PHEDEX_CACHE']
 		cacheDeadline = int(os.environ['CACHE_DEADLINE'])
 		self.phedexData = phedexData.phedexData(phedexCache, cacheDeadline)
@@ -37,7 +37,7 @@ class selection():
 				subscriptions[siteName] = [datasetName]
 			del datasetRankings[datasetName]
 			sizeGb = self.phedexData.getDatasetSize(datasetName)
-			selectedGb += sizeGb
+			selectedGb += int(sizeGb)
 			print selectedGb
 		return subscriptions
 
