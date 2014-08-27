@@ -54,7 +54,7 @@ class subscriptionReport():
 
 	def createReport(self):
 		# Initialize
-		date = datetime.date.today()
+		date = datetime.date.today() - datetime.timedelta(days=20)
 
 		# Get all currently valid sites with data usage and quota
 		availableSites = self.sites.getAvailableSites()
@@ -67,7 +67,7 @@ class subscriptionReport():
 		# Get all subscriptions
 		subscriptions = []
 		query = "SELECT Datasets.DatasetName, Sites.SiteName, Requests.Rank, FROM Requests INNER JOIN Datasets ON Datasets.DatasetId=Requests.DatasetId INNER JOIN Sites ON Sites.SiteId=Requests.SiteId WHERE Requests.Date>%s AND Requests.RequestType=%s"
-		values = [calendar.timegm(date.timetuple()), 0]
+		values = [date, 0]
 		data = self.dbApi.dbQuery(query, values=values)
 		for subscription in data:
 			subscriptions.append(subscription)

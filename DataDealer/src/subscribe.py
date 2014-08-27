@@ -27,7 +27,7 @@ class subscribe():
 			except IndexError, e:
 				print(" ERROR -- Failed to create subscription for datasets %s on site %s" % (str(subscriptions[siteName]), siteName))
 				continue
-			requestTimestamp = int(request.get('request_timestamp'))
+			requestTimestamp = datetime.datetime.fromtimestamp(float(request.get('request_timestamp')))
 			for datasetName in datasets:
 				datasetRank = datasetRankingsCopy[datasetName]
 				groupName = "AnalysisOps"
