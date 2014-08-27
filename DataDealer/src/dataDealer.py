@@ -41,6 +41,9 @@ selection_ = selection.selection()
 subscriptions = selection_.selectSubscriptions(datasetRankings, siteRankings)
 print "Select Subscriptions --- Stop"
 
+print subscriptions
+sys.exit(0)
+
 # subscribe selected datasets
 print "Subscribe --- Start"
 subscribe_ = subscribe.subscribe()
