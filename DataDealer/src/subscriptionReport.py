@@ -79,23 +79,22 @@ class subscriptionReport():
 			dataOwned += value[1]
 		quotaUsed = 100*(dataOwned/(quota*10**3))
 		dataSubscribed = 0.0
+		siteSubscriptions = dict()
+		for site in allSites:
+			siteSubscriptions[site] = 0.0
 		for subsciption in subscriptions:
-			dataSubscribed += self.phedexData.getDatasetSize(subsciption[0])
+			subscriptionSize = self.phedexData.getDatasetSize(subsciption[0])
+			dataSubscribed += subscriptionSize
+			site = subscription[1]
+			siteSubscriptions[site] += subscriptionSize
 
 		# Create title
 		title = 'AnalysisOps %s | %d TB | %d%% | %.2f TB Subscribed' % (date.strftime('%Y-%m-%d'), int(dataOwned/10**3), int(quotaUsed), dataSubscribed/10**3)
 		text = '%s\n  %s\n%s\n\n' % ('='*68, title, '='*68)
 
 		# Create site table
-		siteSubscriptions = dict()
-		for site in allSites:
-			siteSubscriptions[site] = 0.0
-		for subscription in subscriptions:
-			site = subscription[1]
-			siteSubscriptions[site] += self.phedexData.getDatasetSize(subsciption[0])
-
 		# get status of sites
-		availableSites = self.sites.getAvailableSites()
+		blacklistedSites = self.sites.getBlacklistedSites()
 
 		siteTable = makeTable.Table(add_numbers=False)
 		siteTable.setHeaders(['Site', 'Subscribed TB', 'Space Used TB', 'Space Used %', 'Quota TB', 'Status'])
@@ -105,7 +104,7 @@ class subscriptionReport():
 			quota = int(siteQuota[site][0])
 			usedP = "%d%%" % (int(100*(float(usedTb)/quota)))
 			status = "up"
-			if site in availableSites:
+			if site in blacklistedSites:
 				status = "down"
 			siteTable.addRow([site, subscribed, usedTb, usedP, quota, status])
 
