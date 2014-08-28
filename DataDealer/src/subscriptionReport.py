@@ -35,8 +35,12 @@ class subscriptionReport():
 		# Send email
 		fromEmail = ("Bjorn Barrefors", "bjorn.peter.barrefors@cern.ch")
 		#toList = (["Bjorn Barrefors"], ["bjorn.peter.barrefors@cern.ch"])
-		toList = (["Bjorn Barrefors"], ["barrefors@gmail.com"])
+		#toList = (["Bjorn Barrefors"], ["barrefors@gmail.com"])
 		#toList = (["Data Management Group"], ["hn-cms-dmDevelopment@cern.ch"])
+		(["Bjorn Barrefors"], ["bjorn.peter.barrefors@cern.ch"],
+		 ["Brian Bockelman"], ["bbockelm@cse.unl.edu"],
+		 ["Maxim Goncharov"], ["maxi@mit.edu"],
+		 ["Christoph Paus"], ["paus@mit.edu"])
 
 		msg = MIMEMultipart()
 		msg['Subject'] = title
