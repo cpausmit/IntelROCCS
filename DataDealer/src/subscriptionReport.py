@@ -34,7 +34,8 @@ class subscriptionReport():
 	def sendReport(self, title, text):
 		# Send email
 		fromEmail = ("Bjorn Barrefors", "bjorn.peter.barrefors@cern.ch")
-		toList = (["Bjorn Barrefors"], ["bjorn.peter.barrefors@cern.ch"])
+		#toList = (["Bjorn Barrefors"], ["bjorn.peter.barrefors@cern.ch"])
+		toList = (["Bjorn Barrefors"], ["barrefors@gmail.com"])
 		#toList = (["Data Management Group"], ["hn-cms-dmDevelopment@cern.ch"])
 
 		msg = MIMEMultipart()
@@ -86,6 +87,8 @@ class subscriptionReport():
 			subscriptionSize = self.phedexData.getDatasetSize(subsciption[0])
 			dataSubscribed += subscriptionSize
 			site = subscription[1]
+			print site
+			print subscriptionSize
 			siteSubscriptions[site] += subscriptionSize
 
 		# Create title
