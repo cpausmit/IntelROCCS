@@ -2,17 +2,12 @@
 #---------------------------------------------------------------------------------------------------
 # This is the main script of the DataDealer. See README.md for more information.
 #---------------------------------------------------------------------------------------------------
-import sys, os, copy
+import sys, copy
 import init
 import datasetRanker, siteRanker, selection, subscribe, subscriptionReport
 import phedexApi, popDbApi
 
-# Setup parameters
-# We would like to make these easier to change in the future
-phedexCache = os.environ['PHEDEX_CACHE']
-popDbCache = os.environ['POP_DB_CACHE']
-cacheDeadline = os.environ['CACHE_DEADLINE']
-
+# initialize
 phedexApi_ = phedexApi.phedexApi()
 phedexApi_.renewProxy()
 
@@ -22,20 +17,20 @@ popDbApi_.renewSsoCookie()
 #===================================================================================================
 #  M A I N
 #===================================================================================================
-# Get dataset rankings
+# get dataset rankings
 print "Dataset Ranking --- Start"
 datasetRanker_ = datasetRanker.datasetRanker()
 datasetRankings = datasetRanker_.getDatasetRankings()
 datasetRankingsCopy = copy.deepcopy(datasetRankings)
 print "Dataset Ranking --- Stop"
 
-# Get site rankings
+# get site rankings
 print "Site Ranking --- Start"
 siteRanker_ = siteRanker.siteRanker()
 siteRankings = siteRanker_.getSiteRankings()
 print "Site Ranking --- Stop"
 
-# Select datasets and sites for subscriptions
+# select datasets and sites for subscriptions
 print "Select Subscriptions --- Start"
 selection_ = selection.selection()
 subscriptions = selection_.selectSubscriptions(datasetRankings, siteRankings)
