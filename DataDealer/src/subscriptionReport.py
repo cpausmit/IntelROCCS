@@ -37,10 +37,8 @@ class subscriptionReport():
 		#toList = (["Bjorn Barrefors"], ["bjorn.peter.barrefors@cern.ch"])
 		#toList = (["Bjorn Barrefors"], ["barrefors@gmail.com"])
 		#toList = (["Data Management Group"], ["hn-cms-dmDevelopment@cern.ch"])
-		(["Bjorn Barrefors"], ["bjorn.peter.barrefors@cern.ch"],
-		 ["Brian Bockelman"], ["bbockelm@cse.unl.edu"],
-		 ["Maxim Goncharov"], ["maxi@mit.edu"],
-		 ["Christoph Paus"], ["paus@mit.edu"])
+		toList = (["Bjorn Barrefors", "Brian Bockelman", "Maxim Goncharov", "Christoph Paus"],
+				  ["bjorn.peter.barrefors@cern.ch", "bbockelm@cse.unl.edu", "maxi@mit.edu", "paus@mit.edu"])
 
 		msg = MIMEMultipart()
 		msg['Subject'] = title
