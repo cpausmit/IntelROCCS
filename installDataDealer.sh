@@ -4,15 +4,18 @@
 #
 # B.Barrefors (Aug 13, 2014)
 # --------------------------------------------------------------------------------------------------
+# parse arguments
+#================
 # get src and install paths
 #==========================
-# TODO -- Make it possible to change install path by passing argument
 
 # get path of installation script, source code, and install path
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-DATA_DEALER_SRC=${DIR}/src
-INTELROCCS_DIR=${HOME}/IntelROCCS
-INSTALL_DIR=${INTELROCCS_DIR}/Install
+INTELROCCS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+DATA_DEALER_SRC=${INTELROCCS_DIR}/DataDealer/src
+if [ "$#" -eq 1 ]
+then
+  INSTALL_DIR=${INTELROCCS_DIR}/Install
+else
 DATA_DEALER_INSTALL=${INSTALL_DIR}/DataDealer
 
 
