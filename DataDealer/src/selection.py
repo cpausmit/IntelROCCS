@@ -1,13 +1,16 @@
 #!/usr/local/bin/python
 #---------------------------------------------------------------------------------------------------
-#
-# Collects all the necessary data to generate rankings for all available sites
-#
+# Select datasets to subscribe and select sites on which to subscribe these datasets
 #---------------------------------------------------------------------------------------------------
-import sys, random
+import sys, os, random
+import phedexData
 
-class select():
-#    def __init__(self):
+class selection():
+	def __init__(self):
+		self.budgetGb = int(os.environ['DATA_DEALER_BUDGET'])
+		phedexCache = os.environ['PHEDEX_CACHE']
+		cacheDeadline = int(os.environ['CACHE_DEADLINE'])
+		self.phedexData = phedexData.phedexData(phedexCache, cacheDeadline)
 
 #===================================================================================================
 #  H E L P E R S
@@ -21,6 +24,21 @@ class select():
 				return c
 			upto += w
 
+	def selectSubscriptions(self, datasetRankings, siteRankings):
+		selectedGb = 0
+		subscriptions = dict()
+		while (selectedGb < self.budgetGb) and (datasetRankings):
+			datasetName = self.weightedChoice(datasetRankings)
+			siteName = self.weightedChoice(siteRankings)
+			if siteName in subscriptions:
+				subscriptions[siteName].append(datasetName)
+			else:
+				subscriptions[siteName] = [datasetName]
+			del datasetRankings[datasetName]
+			sizeGb = self.phedexData.getDatasetSize(datasetName)
+			selectedGb += int(sizeGb)
+		return subscriptions
+
 #===================================================================================================
 #  M A I N
 #===================================================================================================
@@ -30,9 +48,9 @@ if __name__ == '__main__':
 	if not (len(sys.argv) == 1):
 		print "Usage: python ./select.py"
 		sys.exit(2)
-	select = select()
+	select_ = select()
 	# Testcase
 	choices = {'dataset1': 1, 'dataset2': 2, 'dataset3': 3}
-	datasetName, ranking = select.weightedChoice(choices)
+	datasetName, ranking = select_.weightedChoice(choices)
 	print datasetName + " : " + str(ranking)
 	sys.exit(0)

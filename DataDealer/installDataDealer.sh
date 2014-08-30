@@ -45,7 +45,7 @@ ${INTELROCCS_DIR}/Api/installApi.sh
 
 # set up cache environment
 # phedex
-PHEDEX_CACHE=${INTELROCCS_DIR}/Cache/Phedex
+PHEDEX_CACHE=/tmp/IntelROCCS/Cache/Phedex
 if [ -d "$PHEDEX_CACHE" ]
 then
   	# make sure to remove completely the previous installed software
@@ -57,7 +57,7 @@ else
 fi
 
 # pop db
-POP_DB_CACHE=${INTELROCCS_DIR}/Cache/PopDb
+POP_DB_CACHE=/tmp/IntelROCCS/Cache/PopDb
 if [ -d "$POP_DB_CACHE" ]
 then
   	# make sure to remove completely the previous installed software
@@ -85,3 +85,27 @@ echo "os.environ['DATA_DEALER_THRESHOLD']='"${DATA_DEALER_THRESHOLD}"'" >> $INIT
 echo "os.environ['DATA_DEALER_BUDGET']='"${DATA_DEALER_BUDGET}"'" >> $INIT_FILE
 
 chmod 755 $INIT_FILE
+
+# install and start daemons
+#==========================
+
+# stop potentially existing server process
+#if [ -e "/etc/init.d/data_dealerd" ]
+#then
+#  /etc/init.d/data_dealerd status
+#  /etc/init.d/data_dealerd stop
+#fi
+
+# copy Data Dealer daemon
+#cp ${INTELROCCS_DIR}/DataDealer/sysv/data_dealerd /etc/init.d/
+
+# start new server
+#/etc/init.d/data_dealerd status
+#/etc/init.d/data_dealerd start
+#sleep 2
+#/etc/init.d/data_dealerd status
+
+# start on boot
+#chkconfig --level 345 data_dealerd on
+
+exit 0
