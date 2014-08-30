@@ -44,6 +44,7 @@ void plotDatasetUsage()
   MitRootStyle::Init();
 
   // Now open our database output
+  printf(" Opening input file: %s\n",inputFile.Data());
   ifstream input;
   input.open(inputFile.Data());
 
@@ -52,7 +53,8 @@ void plotDatasetUsage()
   Double_t xMin=0, xMax=40;
 
   Int_t    nSites=0, nFiles=0, nAccesses=0;
-  Double_t size=0;
+  Double_t nSitesAv, size=0;
+  TString  name;
 
   // book our histogram
   Int_t nBins = int(xMax-xMin)+1;
@@ -66,7 +68,7 @@ void plotDatasetUsage()
   while (1) {
 
     // read in
-    input >> nSites >> nAccesses >> nFiles >> size;
+    input >> nSites >> nSitesAv >> nAccesses >> nFiles >> size >> name;
 
     // check it worked
     if (! input.good())

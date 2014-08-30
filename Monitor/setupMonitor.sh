@@ -9,7 +9,7 @@
 export MONITOR_DB="/local/cmsprod/IntelROCCS/Monitor"
 
 export MONITOR_SITESTORAGE_SERVER="t3btch039.mit.edu"
-export MONITOR_SITESTORAGE_DB="SiteStorage"
+export MONITOR_SITESTORAGE_DB="IntelROCCS"
 export MONITOR_SITESTORAGE_USER="cmsSiteDb"
 export MONITOR_SITESTORAGE_PW="db78user?Cms"
 

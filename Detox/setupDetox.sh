@@ -9,7 +9,7 @@
 export DETOX_DB="/local/cmsprod/IntelROCCS/Detox"
 
 export DETOX_SITESTORAGE_SERVER="t3btch039.mit.edu"
-export DETOX_SITESTORAGE_DB="SiteStorage"
+export DETOX_SITESTORAGE_DB="IntelROCCS"
 export DETOX_SITESTORAGE_USER="cmsSiteDb"
 export DETOX_SITESTORAGE_PW="db78user?Cms"
 
