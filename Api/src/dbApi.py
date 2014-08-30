@@ -21,10 +21,10 @@ class dbApi():
 		db = os.environ['DB_DB']
 		user = os.environ['DB_USER']
 		passwd = os.environ['DB_PW']
-		#try:
-		#	self.dbCon = MySQLdb.connect(host=host, user=user, passwd=passwd, db=db)
-		#except MySQLdb.Error, e:
-		#	raise Exception(" FATAL (%s - %s) -- Could not connect to db %s:%s" % (str(e.args[0]), str(e.args[1]), host, db))
+		try:
+			self.dbCon = MySQLdb.connect(host=host, user=user, passwd=passwd, db=db)
+		except MySQLdb.Error, e:
+			raise Exception(" FATAL (%s - %s) -- Could not connect to db %s:%s" % (str(e.args[0]), str(e.args[1]), host, db))
 
 #===================================================================================================
 #  M A I N   F U N C T I O N
@@ -54,12 +54,12 @@ if __name__ == '__main__':
 	if len(sys.argv) < 2:
 		print "Usage: python ./dbApi.py <'db query'> ['value1', 'value2', ...]"
 		sys.exit(2)
-	dbApi = dbApi()
+	dbApi_ = dbApi()
 	query = sys.argv[1]
 	values = []
 	for v in sys.argv[2:]:
 		values.append(v)
-	data = dbApi.dbQuery(query, values=values)
+	data = dbApi_.dbQuery(query, values=values)
 	if not data:
 		print "DB call failed"
 		sys.exit(1)

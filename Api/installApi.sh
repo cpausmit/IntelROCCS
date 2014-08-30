@@ -39,8 +39,7 @@ touch ${API_INSTALL}/__init__.py
 # mit db variables
 
 DB_SERVER="t3btch039.mit.edu"
-DB_DB="SiteStorage"
-#DB_DB="IntelROCCS"
+DB_DB="IntelROCCS"
 DB_USER="cmsSiteDb"
 DB_PW="db78user?Cms"
 

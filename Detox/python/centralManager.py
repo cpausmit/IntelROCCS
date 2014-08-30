@@ -2,7 +2,7 @@
 #  C L A S S
 #===================================================================================================
 import sys, os, subprocess, re, time, datetime, smtplib, MySQLdb, shutil, string, glob
-import phedexDataHandler, popularityDataHandler, phedexApi
+import phedexDataHandler, popularityDataHandler, phedexApi, deprecateDataHandler
 import siteProperties, datasetProperties
 import siteStatus, deletionRequest
 
@@ -27,18 +27,7 @@ class CentralManager:
 
         self.phedexHandler = phedexDataHandler.PhedexDataHandler(self.allSites)
         self.popularityHandler = popularityDataHandler.PopularityDataHandler(self.allSites)
-
-
-    def getDbConnection(self,db=os.environ.get('DETOX_SITESTORAGE_DB')):
-        # configuration
-        server = os.environ.get('DETOX_SITESTORAGE_SERVER')
-        user = os.environ.get('DETOX_SITESTORAGE_USER')
-        pw = os.environ.get('DETOX_SITESTORAGE_PW')
-        # open database connection
-        connection = MySQLdb.connect(host=server,db=db, user=user,passwd=pw)
-        # prepare a cursor object using cursor() method
-        return connection
-
+        self.deprecatedHandler = deprecateDataHandler.DeprecateDataHandler()
 
     def extractPhedexData(self,federation):
         if self.phedexHandler.shouldAccessPhedex() :
@@ -52,6 +41,9 @@ class CentralManager:
             self.phedexHandler.readPhedexData()
 
         self.phedexHandler.findIncomplete()
+
+    def extractDeprecatedData(self):
+        self.deprecatedHandler.extractDeprecatedData()
 
     def extractPopularityData(self):
         try:
@@ -69,27 +61,28 @@ class CentralManager:
         cursor = connection.cursor()
 
         # AnalysisOps is GroupId=1
-        sql = "select SiteName,SizeTb,Status from Quotas,Sites "
+        sql = "select SiteName,SizeTb,Sites.Status,Sites.SiteId from Quotas,Sites "
         sql = sql + "where GroupId=1 and Quotas.SiteId=Sites.SiteId"
         
         try:
             cursor.execute(sql)
             results = cursor.fetchall()
-            for row in results:
-                siteName = row[0]
-                sizeTb = float(row[1])
-                siteSizeGb = sizeTb * 1000
-                willBeUsed = int(row[2])
-                self.allSites[siteName] = siteStatus.SiteStatus(siteName)
-                self.allSites[siteName].setStatus(willBeUsed)
-                self.allSites[siteName].setSize(siteSizeGb)
         except:
             print ' Error(%s) -- could not retrieve sites'%(sql)
             print sys.exc_info()
             connection.close()
             sys.exit(1)
-        # close connection to the database
         connection.close()
+
+        for row in results:
+            siteName = row[0]
+            siteSizeGb = float(row[1])*1000
+            willBeUsed = int(row[2])
+            siteId = int(row[3])
+            self.allSites[siteName] = siteStatus.SiteStatus(siteName)
+            self.allSites[siteName].setStatus(willBeUsed)
+            self.allSites[siteName].setSize(siteSizeGb)
+            self.allSites[siteName].setId(siteId)
 
         for site in sorted(self.allSites):
             if self.allSites[site].getStatus() == 0:
@@ -203,19 +196,53 @@ class CentralManager:
 
        phedexSets = self.phedexHandler.getPhedexDatasets()
 
+       #here we go into datasets and find out dataset Ids
+       # or assign if they do not exist
+       dataSetIds = {}
+       connection = self.getDbConnection()
+       for datasetName in phedexSets.keys():
+           cursor = connection.cursor()
+           sql = "select DatasetId from Datasets where DatasetName='"+datasetName+"'"
+           try:
+               cursor.execute(sql)
+               results = cursor.fetchall()
+           except MySQLdb.Error,e:
+               print e[0],e[1]
+               print " -- FAILED extract mysql info: %s"%(sql)
+               connection.close()
+               sys.exit(1)
+           
+           dsetId = None
+           for row in results:
+               dsetId   = row[0]
+           dataSetIds[datasetName] = dsetId
+       connection.close()
+
+       missing = 0
        for datasetName in phedexSets.keys():
            onSites = phedexSets[datasetName].locatedOnSites()
            if len(onSites) < 1:
                continue
+           if dataSetIds[datasetName] is None:
+               print " -- WARNING -- not in the database " + datasetName
+
            rank =    phedexSets[datasetName].getGlobalRank()
            self.dataPropers[datasetName] = datasetProperties.DatasetProperties(datasetName)
            self.dataPropers[datasetName].append(onSites)
+           self.dataPropers[datasetName].setId(dataSetIds[datasetName])
+           isDeprecated = self.deprecatedHandler.isDeprecated(datasetName)
+           self.dataPropers[datasetName].setDeprecated(isDeprecated)
            for site in onSites:
                size = phedexSets[datasetName].size(site)
                part = phedexSets[datasetName].isPartial(site)
                cust = phedexSets[datasetName].isCustodial(site)
                vali = phedexSets[datasetName].isValid(site)
-               self.sitePropers[site].addDataset(datasetName,rank,size,vali,part,cust)
+               #since I cant delete dataset that is not in the datase 
+               #I will set it as invalid 
+               if dataSetIds[datasetName] is None:
+                   vali = False
+               self.sitePropers[site].addDataset(datasetName,rank,size,vali,part,
+                                                 cust,isDeprecated)
 
        for site in sorted(self.allSites.keys()):
            if self.allSites[site].getStatus() == 0:
@@ -366,6 +393,7 @@ class CentralManager:
             fileTimest = sitedir + "/Summary.txt"
             fileRemain = sitedir + "/RemainingDatasets.txt"
             fileDelete = sitedir + "/DeleteDatasets.txt"
+            fileDeprec = sitedir + "/DeprecatedSets.txt"
 
             outputFile = open(fileTimest,'w')
             outputFile.write('#- ' + today + " " + ttime + "\n\n")
@@ -382,6 +410,7 @@ class CentralManager:
             outputFile.write("Space Used      [TB]: %8.2f\n"%(sitePr.spaceTaken()/1000))
             outputFile.write("Space to delete [TB]: %8.2f\n"%(sitePr.spaceDeleted()/1000))
             outputFile.write("Space last CP   [TB]: %8.2f\n"%(sitePr.spaceLastCp()/1000))
+            outputFile.write("Space deprected [TB]: %8.2f\n"%(sitePr.spaceDeprecated()/1000))
             outputFile.close()
 
             if len(sitePr.delTargets()) > 0:
@@ -409,7 +438,8 @@ class CentralManager:
             outputFile.write("#---------------------------------------------\n")
             delTargets = sitePr.delTargets()
             for dset in sitePr.allSets():
-                if dset in delTargets: continue
+                if dset in delTargets: 
+                    continue
                 dataPr = self.dataPropers[dset]
                 rank = sitePr.dsetRank(dset)
                 size = sitePr.dsetSize(dset)
@@ -419,9 +449,24 @@ class CentralManager:
                                  %(rank,size,nsites,nsites-ndeletes,dset))
             outputFile.close()
 
+            outputFile = open(fileDeprec,'w')
+            outputFile.write("# -- " + today + " " + ttime + "\n\n")
+            outputFile.write("#   Rank      Size nsites DatasetName\n")
+            outputFile.write("#[~days]      [GB] \n")
+            outputFile.write("#------------------------------------\n")
+            for dset in sitePr.allSets():
+                dataPr = self.dataPropers[dset]
+                if dataPr.isDeprecated():
+                    rank = sitePr.dsetRank(dset)
+                    size = sitePr.dsetSize(dset)
+                    nsites = dataPr.nSites()
+                    ndeletes = dataPr.nBeDeleted()
+                    outputFile.write("%8.1f %9.1f %6d  %s\n"\
+                                         %(rank,size,nsites-ndeletes,dset))
+            outputFile.close()
+
 
     def requestDeletions(self):
-
         now_tstamp = datetime.datetime.now()
         numberRequests = 0
         thisRequest = None
@@ -438,6 +483,7 @@ class CentralManager:
                 totalSize =  totalSize + sitePr.dsetSize(dataset)
                 thisRequest.update(dataset,sitePr.dsetRank(dataset),sitePr.dsetSize(dataset))
             print "Deletion request for site " + site
+            
             print " -- Number of datasets       = " + str(len(datasets2del))
             print "%s %0.2f %s" %(" -- Total size to be deleted =",totalSize/1000,"TB")
 
@@ -447,81 +493,62 @@ class CentralManager:
                 #they can look identical
                 #resubmit in case it was submitted too long ago
                 if thisRequest.looksIdentical(lastRequest):
-                    if thisRequest.deltaTime(lastRequest)/(60*60) < 48 :
-                        print " -- Will skip submition, looks like a duplicate"
+                    #if thisRequest.deltaTime(lastRequest)/(60*60) < 72 :
+                        print " -- Skipping submition, looks like a request " + str(lastReqId)
                         continue
             numberRequests = numberRequests + 1
 
-            phedex = phedexApi.phedexApi(logPath='./')
-            # compose data for deletion request
-            check,data = phedex.xmlData(datasets=datasets2del,instance='prod')
-            if check:
-                print " ERROR - phedexApi.xmlData failed"
-                sys.exit(1)
+            (reqid,rdate) = self.submitDeletionRequest(site,datasets2del)
+            self.submitUpdateRequest(site,reqid)
+            print " -- Request Id =  " + str(reqid)
 
-            # here the request is really sent
-            message = 'IntelROCCS -- Automatic Cache Release Request (next check ' + \
-                      'in about %s hours).'%(os.environ['DETOX_CYCLE_HOURS']) + \
-                      ' Summary at: http://t3serv001.mit.edu/~cmsprod/IntelROCCS/Detox/result/'
-            check,response = phedex.delete(node=site,data=data,comments=message,instance='prod')
-            if check:
-                print " ERROR - phedexApi.delete failed"
-                print response
-                sys.exit(1)
-
-            respo = response.read()
-            matchObj = re.search(r'"id":"(\d+)"',respo)
-            id = int(matchObj.group(1))
-            #here we brute force deletion to be approved
-            check,response = phedex.updateRequest(decision='approve',request=id,node=site,instance='prod')
-            if check:
-                print " ERROR - phedexApi.updateRequest failed"
-                print response
-                sys.exit(1)
-
-            date = (re.search(r'"request_date":"(.*?)"',respo)).group(1)
-            date = date[:-3]
-            myCnf = os.environ['DETOX_MYSQL_CONFIG']
-
-            thisRequest.reqId = id
-            thisRequest.tstamp = date
-            self.delRequests[id] = deletionRequest.DeletionRequest(id,site,date,thisRequest)
+            thisRequest.reqId = reqid
+            thisRequest.tstamp = rdate
+            self.delRequests[reqid] = deletionRequest.DeletionRequest(reqid,site,rdate,thisRequest)
             if site not in self.siteRequests:
                 self.siteRequests[site] = deletionRequest.SiteDeletions(site)
-            self.siteRequests[site].update(id,date)
+            self.siteRequests[site].update(reqid,rdate)
 
+            connection = self.getDbConnection()
             for dataset in datasets2del:
                 dataPr = self.dataPropers[dataset]
                 rank =   sitePr.dsetRank(dataset)
                 size =   sitePr.dsetSize(dataset)
-                group = 'AnalysisOps'
+                siteId = self.allSites[site].getId()
+                dsetId = self.dataPropers[dataset].getId()
+                groupID = 1
 
-                connection = self.getDbConnection(os.environ.get('DETOX_HISTORY_DB'))
                 cursor = connection.cursor()
-                sql = "insert into Requests(RequestId,RequestType,SiteName,Dataset,Size,Rank," \
-                      "GroupName,TimeStamp) values('%d','%d','%s','%s','%d','%d','%s','%s')" % \
-                      (id, 1, site, dataset,size,rank,group,date)
+                sql = "insert into Requests(RequestId,RequestType,SiteId,DatasetId,Rank,GroupId,Date) " \
+                    "values('%d','%d','%d','%d','%d','%d','%s')" % \
+                    (reqid, 1, siteId, dsetId, rank, groupID, rdate)
                 try:
                     cursor.execute(sql)
                     connection.commit()
                 except:
                     print " -- FAILED insert mysql info: %s"%(sql)
-                connection.close()
+                    connection.close()
+                    sys.exit(1)
+            connection.close()
 
         if(numberRequests > 0):
             self.sendEmail("report from CacheRelease",\
                                "Submitted deletion requests, check log for details.")
 
     def extractCacheRequests(self):
+        connection = self.getDbConnection()
         for site in sorted(self.allSites.keys()):
             if self.allSites[site].getStatus() != 0:
-                self.extractCacheRequestsForSite(site)
+                self.extractCacheRequestsForSite(site,connection)
+        connection.close()
 
-    def extractCacheRequestsForSite(self,site):
-        connection = self.getDbConnection(os.environ.get('DETOX_HISTORY_DB'))
+    def extractCacheRequestsForSite(self,site,connection):
         cursor = connection.cursor()
-        sql = "select  RequestId,SiteName,Dataset,Size,Rank,GroupName,TimeStamp from Requests " + \
-              " where SiteName='" + site + "' order by RequestId DESC LIMIT 1000"
+        sql = "select RequestId,DatasetName,Size,Rank,Date " +\
+            "from Requests,Sites,Datasets,DatasetProperties " +\
+            "where Requests.SiteId=Sites.SiteId " +\
+            "and Requests.DatasetId=Datasets.DatasetId and DatasetProperties.DatasetId=Datasets.DatasetId "+\
+            "and SiteName='" + site + "' and RequestType=1 order by RequestId DESC LIMIT 1000"
         try:
             cursor.execute(sql)
             results = cursor.fetchall()
@@ -529,20 +556,19 @@ class CentralManager:
             print e[0],e[1]
             print " -- FAILED extract mysql info: %s"%(sql)
             connection.close()
-            return
-        connection.close()
+            sys.exit(1)
 
         for row in results:
             reqid   = row[0]
-            site    = row[1]
-            tstamp  = row[6]
+            tstamp  = row[4]
             if reqid not in self.delRequests:
                 self.delRequests[reqid] = deletionRequest.DeletionRequest(reqid,site,tstamp)
             if site not in self.siteRequests:
                 self.siteRequests[site] = deletionRequest.SiteDeletions(site)
-            dataset = row[2]
-            size    = row[3]
-            rank    = row[4]
+            dataset = row[1]
+            size    = row[2]
+            rank    = row[3]
+
             self.delRequests[reqid].update(dataset,rank,size)
             self.siteRequests[site].update(reqid,tstamp)
 
@@ -585,6 +611,53 @@ class CentralManager:
             counter = counter + 1
             if counter > 20:
                 break
+    def submitDeletionRequest(self,site,datasets2del):
+        if len(datasets2del) < 1:
+            return
+        phedex = phedexApi.phedexApi(logPath='./')
+        # compose data for deletion request
+        check,data = phedex.xmlData(datasets=datasets2del,instance='prod')
+        if check:
+            print " ERROR - phedexApi.xmlData failed"
+            sys.exit(1)
+            
+        # here the request is really sent
+        message = 'IntelROCCS -- Automatic Cache Release Request (next check ' + \
+            'in about %s hours).'%(os.environ['DETOX_CYCLE_HOURS']) + \
+            ' Summary at: http://t3serv001.mit.edu/~cmsprod/IntelROCCS/Detox/result/'
+        check,response = phedex.delete(node=site,data=data,comments=message,instance='prod')
+        if check:
+            print " ERROR - phedexApi.delete failed"
+            print response
+            sys.exit(1)
+
+        respo = response.read()
+        matchObj = re.search(r'"id":"(\d+)"',respo)
+        reqid = int(matchObj.group(1))
+
+        rdate = (re.search(r'"request_date":"(.*?)"',respo)).group(1)
+        rdate = rdate[:-3]
+        del phedex
+        return (reqid,rdate)
+
+    def submitUpdateRequest(self,site,reqid):
+        # here we brute force deletion to be approved
+        phedex = phedexApi.phedexApi(logPath='./')
+        check,response = phedex.updateRequest(decision='approve',request=reqid,node=site,instance='prod')
+        if check:
+            print " ERROR - phedexApi.updateRequest failed - reqid="+ str(reqid)
+            print response
+        del phedex
+
+    def getDbConnection(self,db=os.environ.get('DETOX_SITESTORAGE_DB')):
+        # configuration
+        server = os.environ.get('DETOX_SITESTORAGE_SERVER')
+        user = os.environ.get('DETOX_SITESTORAGE_USER')
+        pw = os.environ.get('DETOX_SITESTORAGE_PW')
+        # open database connection
+        connection = MySQLdb.connect(host=server,db=db, user=user,passwd=pw)
+        # prepare a cursor object using cursor() method
+        return connection
 
     def sendEmail(self,subject,body):
         emails = os.environ['DETOX_EMAIL_LIST']

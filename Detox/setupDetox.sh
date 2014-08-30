@@ -46,9 +46,7 @@ export DETOX_EMAIL_LIST=maxi@fnal.gov,maxi@mit.edu
 export DETOX_X509UP=/tmp/x509up_u5410
 
 # Local logging database config file
-
-export DETOX_MYSQL_CONFIG=/etc/myIntelROCCS.cnf
-export DETOX_HISTORY_DB="DetoxHistory"
+#export DETOX_MYSQL_CONFIG=/etc/myIntelROCCS.cnf
 
 # Paths
 

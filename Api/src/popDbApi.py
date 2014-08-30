@@ -21,7 +21,7 @@ import initPopDb
 
 class popDbApi():
 	def __init__(self):
-		self.popDbBase = os.environ['PHEDEX_BASE']
+		self.popDbBase = os.environ['POP_DB_BASE']
 		self.cert = "%s/.globus/usercert.pem" % (os.environ['HOME'])
 		self.key = "%s/.globus/userkey.pem" % (os.environ['HOME'])
 		self.cookie = "%s/.globus/ssocookie.txt" % (os.environ['HOME'])
@@ -149,16 +149,16 @@ class popDbApi():
 # Use this for testing purposes or as a script.
 # Usage: python ./popDbApi.py <APICall> ['arg1_name=arg1' 'arg2_name=arg2' ...]
 if __name__ == '__main__':
-	popDbApi = popDbApi()
-	error = popDbApi.renewSsoCookie()
+	popDbApi_ = popDbApi()
+	error = popDbApi_.renewSsoCookie()
 	if error:
-		print "Failed to renew SSO cookie, see log (%s) for more details" % (popDbApi.logFile)
+		print "Failed to renew SSO cookie"
 		sys.exit(1)
 	print "Renewed SSO cookie"
 	if len(sys.argv) < 2:
 		print "Usage: python ./popDbApi.py <APICall> ['arg1_name=arg1' 'arg2_name=arg2' ...]"
 		sys.exit(2)
-	func = getattr(popDbApi, sys.argv[1], None)
+	func = getattr(popDbApi_, sys.argv[1], None)
 	if not func:
 		print "%s is not a valid popularity db api call" % (sys.argv[1])
 		print "Usage: python ./popDbApi.py <APICall> ['arg1_name=arg1' 'arg2_name=arg2' ...]"
@@ -172,15 +172,15 @@ if __name__ == '__main__':
 			print "Usage: python ./popDbApi.py <APICall> ['arg1_name=arg1' 'arg2_name=arg2' ...]"
 			sys.exit(2)
 		args[a] = v
-	data = 0
+	jsonData = 0
 	try:
-		data = func(**args)
+		jsonData = func(**args)
 	except TypeError, e:
 		print e
 		print "Usage: python ./popDbApi.py <APICall> ['arg1_name=arg1' 'arg2_name=arg2' ...]"
 		sys.exit(3)
-	if not data:
-		print "PopDB call failed, see log (%s) for more details" % (popDbApi.logFile)
+	if not jsonData:
+		print " ERROR -- PopDB call failed"
 		sys.exit(1)
-	print data
+	print jsonData
 	sys.exit(0)

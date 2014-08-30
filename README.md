@@ -21,4 +21,11 @@ IntelROCCS is supposed to provide the necessary intelligence to optimize the res
 
 ### Components
 
-So far implemented is the cache release. The package is called Detox (for site detoxification).
+#### Detox (Cache Release)
+The package for cache release is called Detox (for site detoxification).
+
+#### Data Dealer (Data Replication)
+The package for data replication is called DataDealer.
+
+#### API
+The Api package is a python interface to interact with PhEDEx (phedexApi), Popularity DB (popDbApi), and IntelROCCS DB (dbApi).

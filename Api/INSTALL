@@ -1,9 +1,10 @@
-# Installation Instructions for Api Package
+# Installation Instructions for DataDealer Package
 
 ## Required software and packages
 
-- Python 2.7 <= && < 3.0
+- Python == 2.7
+- MySQLdb
 
 ## How to install
 
-Run installApi.sh as the user which will use the software
+Run installDataDealer.sh as the user which will use the software
