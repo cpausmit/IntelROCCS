@@ -383,6 +383,20 @@ class CentralManager:
                                  %(nsets,totalSize/1000,site))
         outputFile.close()
 
+        outputFile = open(os.environ['DETOX_DB'] + "/DeprecatedSummary.txt",'w')
+        outputFile.write('#- ' + today + " " + ttime + "\n\n")
+        outputFile.write("#- D E P R E C A T E D  D A T A S E T S ----\n\n")
+        outputFile.write("#  NDatasets Size[TB] SiteName \n")
+        for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
+            sitePr = self.sitePropers[site]
+            nsets = sitePr.nsetsDeprecated()
+            if nsets < 1:
+                continue
+
+            outputFile.write("   %-9d %-7.2f %-20s \n"\
+                                 %(nsets,sitePr.spaceDeprecated()/1000,site))
+        outputFile.close()
+
 
         for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
             sitePr = self.sitePropers[site]

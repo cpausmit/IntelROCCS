@@ -174,6 +174,12 @@ class SiteProperties:
         for dset in self.deprecated.keys():
             size = size + self.datasetSizes[dset]
         return size
+    
+    def nsetsDeprecated(self):
+        nsets = 0
+        for dset in self.deprecated.keys():
+            nsets = nsets + 1
+        return nsets
 
     def hasDataset(self,set):
         if set in self.datasetRanks:
