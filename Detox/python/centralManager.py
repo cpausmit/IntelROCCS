@@ -151,8 +151,19 @@ class CentralManager:
             phedexSets[datasetName].setLocalRank(site,datasetRank)
 
         statusDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS']
+        today = str(datetime.date.today())
         outputFile = open(statusDirectory+'/'+site+'/'+os.environ['DETOX_DATASETS_TO_DELETE'],'w')
+        outputFile.write("# -- " + today + "\n\n")
+        outputFile.write("#   Rank      Size  DatasetName \n")
+        outputFile.write("#[~days]      [GB] \n")
+        outputFile.write("#-------------------------------\n")
         dsets = self.phedexHandler.getDatasetsByRank(site)
+        for datasetName in dsets:
+            phedexDset = phedexSets[datasetName]
+            rank = int(phedexDset.getLocalRank(site))
+            size = float(phedexDset.size(site))
+            outputFile.write("%8.1f %9.1f %s\n"%(rank,size,datasetName))
+        outputFile.close()
 
         origFile = statusDirectory+'/'+site+'/'+os.environ['DETOX_DATASETS_TO_DELETE']
         copyFile = statusDirectory+'/'+site+'/'+os.environ['DETOX_DATASETS_TO_DELETE']+'-local'
@@ -277,9 +288,24 @@ class CentralManager:
                self.unifyDeletionLists()
 
        # now it all done, calculate for each site space taken by last copies
+       statusDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS']
+       today = str(datetime.date.today())
        for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
            sitePr = self.sitePropers[site]
            sitePr.lastCopySpace(self.dataPropers,self.DETOX_NCOPY_MIN)
+
+           outputFile = open(statusDirectory+'/'+site+'/'+os.environ['DETOX_DATASETS_TO_DELETE'],'w')
+           outputFile.write("# -- " + today + "\n\n")
+           outputFile.write("#   Rank      Size  DatasetName \n")
+           outputFile.write("#[~days]      [GB] \n")
+           outputFile.write("#-------------------------------\n")
+           dsets = self.phedexHandler.getDatasetsByRank(site)
+           for dset in sitePr.allSets():
+               dataPr = self.dataPropers[dset]
+               rank = sitePr.dsetRank(dset)
+               size = sitePr.dsetSize(dset)
+               outputFile.write("%8.1f %9.1f %s\n"%(rank,size,dset))
+           outputFile.close()
 
        self.printResults()
 
