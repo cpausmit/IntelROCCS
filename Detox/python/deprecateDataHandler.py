@@ -23,7 +23,7 @@ class DeprecateDataHandler:
                                    stderr=subprocess.PIPE,shell=True)
 
         signal.signal(signal.SIGALRM, alarm_handler)
-        signal.alarm(10*60)  # 2 minutes
+        signal.alarm(20*60)  # 20 minutes
         try:
             strout, error = process.communicate()
             signal.alarm(0)
