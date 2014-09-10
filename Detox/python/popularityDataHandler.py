@@ -80,6 +80,7 @@ class PopularityDataHandler:
 
             tEnd = str(self.dates[i])
             tStart = str(self.dates[i+1])
+            site = site.replace('_Disk', '')
             cmd = os.environ['DETOX_BASE'] + '/' + \
                   'popularityClient.py  /popularity/DSStatInTimeWindow/' + \
                   '\?\&sitename=' + site + '\&tstart=' + tStart + '\&tstop=' + tEnd

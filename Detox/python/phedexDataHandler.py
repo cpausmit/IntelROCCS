@@ -40,7 +40,7 @@ class PhedexDataHandler:
     def extractPhedexData(self,federation):
         webServer = 'https://cmsweb.cern.ch/'
         phedexBlocks = 'phedex/datasvc/json/prod/blockreplicas'
-        args = 'show_dataset=y&subscribed=y&node=' + federation + '*'
+        args = 'show_dataset=y&subscribed=y&' + federation
 
         cert = os.environ['DETOX_X509UP']
         url = '"'+webServer+phedexBlocks+'?'+args+'"'
@@ -86,8 +86,8 @@ class PhedexDataHandler:
                     group = siterpl["group"]
                     if group == 'IB RelVal':
                         group = 'IB-RelVal'
-#                    if group != "AnalysisOps":
-#                        continue
+                    #if group != "AnalysisOps":
+                    #    continue
 
                     site = str(siterpl["node"])
                     if site not in self.allSites:
