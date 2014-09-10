@@ -132,7 +132,7 @@ class CentralManager:
             nAccessed = 0
             lastAccessed = now
 
-            if datasetName in usedSets.keys():
+            if datasetName in usedSets:
                 if usedSets[datasetName].isOnSite(site):
                     nAccessed = usedSets[datasetName].timesUsed(site)
                     if size > 1:
@@ -373,21 +373,38 @@ class CentralManager:
         # this file is needed in this fromat for the initial assignments
         activeFile = open(os.environ['DETOX_DB'] + "/ActiveSites.txt",'w')
 
+        usedSets = self.popularityHandler.getUsedDatasets()
+        totalSpaceTaken = 0
+        totalSpaceLcopy = 0
+        totalDisk = 0
         # file with more infortmation on all sites
         outputFile = open(os.environ['DETOX_DB'] + "/SitesInfo.txt",'w')
         outputFile.write('#- ' + today + " " + ttime + "\n\n")
         outputFile.write("#- S I T E S  I N F O R M A T I O N ----\n\n")
-        outputFile.write("#  Active Quota[TB] SiteName \n")
+        outputFile.write("#  Active Quota[TB] Taken[TB] LastCopy[TB] SiteName \n")
         for site in sorted(self.allSites):
             theSite = self.allSites[site]
+            taken = 0
+            lcopy = 0
+            if theSite.getStatus() != 0:
+                sitePr = self.sitePropers[site]
+                taken = sitePr.spaceTaken()/1000
+                lcopy = sitePr.spaceLastCp()/1000
+                totalDisk = totalDisk + theSite.getSize()/1000
+                totalSpaceLcopy = totalSpaceLcopy + lcopy
+                totalSpaceTaken = totalSpaceTaken + taken
 
             # first write out the active sites
             if theSite.getStatus() != 0:
                 activeFile.write("%4d %s\n"%(theSite.getSize()/1000, site))
 
             # summary of all sites
-            outputFile.write("   %-6d %-9d %-20s \n"\
-                             %(theSite.getStatus(), theSite.getSize()/1000, site))
+            outputFile.write("   %-6d %-9d %-9d %-12d %-20s \n"\
+                             %(theSite.getStatus(), theSite.getSize()/1000, 
+                               taken, lcopy, site))
+        outputFile.write("Total Disk Space  = %-9d \n"%(totalDisk))
+        outputFile.write("Total Space Taken = %-9d \n"%(totalSpaceTaken))
+        outputFile.write("Total Last Copy   = %-9d \n"%(totalSpaceLcopy))
         activeFile.close()
         outputFile.close()
 
@@ -511,6 +528,9 @@ class CentralManager:
         numberRequests = 0
         thisRequest = None
         for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
+            if self.allSites[site].getId() <  1:
+                continue
+            
             sitePr = self.sitePropers[site]
 
             datasets2del = sitePr.delTargets()
