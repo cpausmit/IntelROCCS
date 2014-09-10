@@ -18,7 +18,6 @@ class SiteStatus:
         # will be set to 0 if information for site is corrupted, do not issue delete requests
         self.valid = 1
         self.size = 0
-        self.siteId = 0
 
     def setStatus(self,status):
         self.status = status
@@ -26,8 +25,6 @@ class SiteStatus:
         self.valid = valid
     def setSize(self,size):
         self.size = size
-    def setId(self,id):
-        self.siteId = id
 
     def getStatus(self):
         return self.status
@@ -35,5 +32,3 @@ class SiteStatus:
         return self.valid
     def getSize(self):
         return self.size
-    def getId(self):
-        return self.siteId

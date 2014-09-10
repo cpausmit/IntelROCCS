@@ -42,24 +42,18 @@ timeStart = time.time()
 centralManager = centralManager.CentralManager()
 centralManager.checkProxyValid()
 
-#if you need to approve requests by hand
-#centralManager.submitUpdateRequest('T2_RU_IHEP',421768)
-
 # Make directories to hold cache data
 
 createCacheAreas()
 
 # Get a list of phedex datasets (goes to cache)
+
+print ' - Cache phedex information.'
 timeStart = time.time()
 centralManager.extractPhedexData("T2")
+
 timeNow = time.time()
 print ' - Renewing phedex cache took: %d seconds'%(timeNow-timeStart)
-timePre = timeNow
-
-print ' Extracting Deprecated Datasets.'
-centralManager.extractDeprecatedData()
-timeNow = time.time()
-print ' - Extracting took: %d seconds'%(timeNow-timeStart)
 timePre = timeNow
 
 # extract usage data from popularity service

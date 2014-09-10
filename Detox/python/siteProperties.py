@@ -18,7 +18,6 @@ class SiteProperties:
         self.dsetIsValid = {}
         self.dsetIsCustodial = {}
         self.dsetIsPartial = {}
-        self.deprecated = {}
         self.wishList = []
         self.datasetsToDelete = []
         self.protectedList = []
@@ -29,14 +28,12 @@ class SiteProperties:
         self.deleted = 0
         self.protected = 0
 
-    def addDataset(self,set,rank,size,valid,partial,custodial,depr):
+    def addDataset(self,set,rank,size,valid,partial,custodial):
         self.dsetIsValid[set] = valid
         self.dsetIsPartial[set] = partial
         self.dsetIsCustodial[set] = custodial
         self.datasetRanks[set] = rank
         self.datasetSizes[set] = size
-        if depr:
-            self.deprecated[set] = depr
         self.spaceTakenV = self.spaceTakenV + size
 
     def makeWishList(self):
@@ -168,18 +165,6 @@ class SiteProperties:
 
     def spaceLastCp(self):
         return self.spaceLCp
-
-    def spaceDeprecated(self):
-        size = 0
-        for dset in self.deprecated.keys():
-            size = size + self.datasetSizes[dset]
-        return size
-    
-    def nsetsDeprecated(self):
-        nsets = 0
-        for dset in self.deprecated.keys():
-            nsets = nsets + 1
-        return nsets
 
     def hasDataset(self,set):
         if set in self.datasetRanks:

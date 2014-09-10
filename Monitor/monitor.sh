@@ -13,6 +13,13 @@ then
   exit 0
 fi
 
+# are we interested in nSites or nSitesAv
+average=0
+if [ -n $1 ]
+then
+  average=$1
+fi
+
 # define relevant environment variables
 export MIT_ROOT_STYLE=/home/cmsprod/MitRootStyle/MitRootStyle.C
 export SITE_MONITOR_FILE=$MONITOR_DB/MonitorSummary.txt
@@ -21,14 +28,14 @@ touch $SITE_MONITOR_FILE
 #echo "# Site Quota Used ToDelete LastCp" >> $SITE_MONITOR_FILE
 
 echo ""
-echo " Extracting log file monitoring data from DETOX_DB = $DETOX_DB."
+echo "Extracting log file monitoring data from DETOX_DB = $DETOX_DB."
 echo ""
 
 # find present site quotas
 for site in `ls -1 $DETOX_DB/$DETOX_RESULT | grep ^T[0-3]`
 do
 
-  #echo " Analyzing site : $site"
+#  echo " Analyzing site : $site"
   quota=`grep 'Total Space' $DETOX_DB/$DETOX_RESULT/$site/Summary.txt|cut -d: -f2|tr -d ' '`
   used=`grep 'Space Used' $DETOX_DB/$DETOX_RESULT/$site/Summary.txt|cut -d: -f2|tr -d ' '`
   toDelete=`grep 'Space to delete' $DETOX_DB/$DETOX_RESULT/$site/Summary.txt|cut -d: -f2|tr -d ' '`
@@ -40,27 +47,47 @@ done
 # make nice histograms
 pwd
 root -q -b -l $MONITOR_BASE/plotSites.C
+echo "Done making site plots"
 
 # extract dataset info
 $MONITOR_BASE/readJsonSnapshot.py T2*
-mv DatasetSummary.txt DatasetSummaryAll.txt
 export DATASET_MONITOR_TEXT="since 07/2013"
-export DATASET_MONITOR_FILE=DatasetSummaryAll
-root -q -b -l $MONITOR_BASE/plotDatasets.C
+echo $1 $average
+if [[ $1 == "1" ]]
+then
+  mv DatasetSummary.txt DatasetSummaryAllAv.txt
+  export DATASET_MONITOR_FILE=DatasetSummaryAllAv
+else
+  mv DatasetSummary.txt DatasetSummaryAll.txt
+  export DATASET_MONITOR_FILE=DatasetSummaryAll
+fi
+root -q -b -l $MONITOR_BASE/plotDatasets.C\($average\)
 
 $MONITOR_BASE/readJsonSnapshot.py T2* 2014*
-mv DatasetSummary.txt DatasetSummary2014.txt
 export DATASET_MONITOR_TEXT="Summary 2014"
-export DATASET_MONITOR_FILE=DatasetSummary2014
-root -q -b -l $MONITOR_BASE/plotDatasets.C
+if [[ $1 == "1" ]]
+then
+  mv DatasetSummary.txt DatasetSummary2014Av.txt
+  export DATASET_MONITOR_FILE=DatasetSummary2014Av
+else
+  mv DatasetSummary.txt DatasetSummary2014.txt
+  export DATASET_MONITOR_FILE=DatasetSummary2014
+fi
+root -q -b -l $MONITOR_BASE/plotDatasets.C\($average\)
 
 for period in `echo 01 02 03 04 05 06`
 do
   $MONITOR_BASE/readJsonSnapshot.py T2* 2014-$period*
-  mv     DatasetSummary.txt DatasetSummary${period}-2014.txt
   export DATASET_MONITOR_TEXT="${period}/2014"
-  export DATASET_MONITOR_FILE=DatasetSummary${period}-2014
-  root -q -b -l $MONITOR_BASE/plotDatasets.C
+  if [[ $1 == "1" ]]
+  then
+    mv DatasetSummary.txt DatasetSummary${period}-2014Av.txt
+    export DATASET_MONITOR_FILE=DatasetSummary${period}-2014Av
+  else
+    mv DatasetSummary.txt DatasetSummary${period}-2014.txt
+    export DATASET_MONITOR_FILE=DatasetSummary${period}-2014
+  fi
+  root -q -b -l $MONITOR_BASE/plotDatasets.C\($average\)
 done
 
 # move the results to the log file area ( to be updated to the monitor areas )

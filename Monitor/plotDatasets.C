@@ -22,22 +22,23 @@ using namespace std;
 void plotDatasetUsage();
 
 //--------------------------------------------------------------------------------------------------
-void plotDatasets()
+void plotDatasets(bool average=0)
 {
   TString  styleMacro = gSystem->Getenv("MIT_ROOT_STYLE");
   long int rc = gROOT->LoadMacro(styleMacro+"+");
   printf(" Return code of loading styles: %d\n",rc);
 
-  plotDatasetUsage();
+  plotDatasetUsage(average);
 }
 
 //--------------------------------------------------------------------------------------------------
-void plotDatasetUsage()
+void plotDatasetUsage(bool average=0)
 {
   TString text        = gSystem->Getenv("DATASET_MONITOR_TEXT");
   TString fileName    = gSystem->Getenv("DATASET_MONITOR_FILE");
 
   TString pngFileName = fileName + TString(".png");
+  pngFileName = fileName + TString(".png"); // if we're using nSitesAv instead of nSites
   TString inputFile   = fileName + TString(".txt");
 
   // Make sure we have the right styles
@@ -50,12 +51,15 @@ void plotDatasetUsage()
   Int_t    nLines=0;
   Double_t totalSize=0;
   Double_t xMin=0, xMax=40;
+  if (average) xMax = 120;
 
   Int_t    nSites=0, nFiles=0, nAccesses=0;
-  Double_t size=0;
+  Double_t nSitesAv, size=0;
+  TString  name;
 
   // book our histogram
   Int_t nBins = int(xMax-xMin)+1;
+  if (average) nBins = nBins/3;
   TH1D *h = new TH1D("dataUsage","Data Usage",nBins,xMin-0.5,xMax+0.5);
   MitRootStyle::InitHist(h,"","",kBlack);
   TString titles = TString("; Accesses ") + text + TString(";Data Size [TB]");
@@ -66,17 +70,31 @@ void plotDatasetUsage()
   while (1) {
 
     // read in
-    input >> nSites >> nAccesses >> nFiles >> size;
+    //input >> nSites >> nAccesses >> nFiles >> size;
+    input >> nSites >> nSitesAv >> nAccesses >> nFiles >> size >> name;
 
     // check it worked
     if (! input.good())
       break;
-
-    // show what we are reading
-    if (nLines < 5)
-      printf(" nSites=%d  nAccesses=%d  nFiles=%d  size=%8f\n",nSites, nAccesses, nFiles, size);
-
-    Double_t value = double(nAccesses)/double(nFiles*nSites), weight = double(nSites)*size/1024.;
+    
+    if (average) {
+      // do we want nSites or nSitesAv
+      // show what we are reading
+      if (nLines < 5)
+        printf(" nSitesAv=%.3f  nAccesses=%d  nFiles=%d  size=%8f\n",nSitesAv, nAccesses, nFiles, size);
+    } else {
+      // show what we are reading
+      if (nLines < 5)
+        printf(" nSites=%d  nAccesses=%d  nFiles=%d  size=%8f\n",nSites, nAccesses, nFiles, size);
+    }
+    Double_t value, weight;
+    if (average) {
+      value = double(nAccesses)/double(nFiles*nSitesAv); 
+      weight = double(nSitesAv)*size/1024.;
+    } else {  
+      value = double(nAccesses)/double(nFiles*nSites); 
+      weight = double(nSites)*size/1024.;
+    }
 
     // treat the cases of few accesses:
     //
@@ -96,7 +114,8 @@ void plotDatasetUsage()
       printf(" Value: %f weight: %f\n",value,weight);
 
     // keep track of the total size
-    totalSize += double(nSites)*size/1024.;
+    if (average) totalSize += double(nSitesAv)*size/1024.;
+    else totalSize += double(nSites)*size/1024.;
 
     // count the number of lines
     nLines++;

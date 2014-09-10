@@ -7,10 +7,11 @@ import phedexData
 
 class selection():
 	def __init__(self):
-		self.budgetGb = int(os.environ['DATA_DEALER_BUDGET'])
+		self.budgetGb = os.environ['DATA_DEALER_BUDGET']
 		phedexCache = os.environ['PHEDEX_CACHE']
 		cacheDeadline = int(os.environ['CACHE_DEADLINE'])
 		self.phedexData = phedexData.phedexData(phedexCache, cacheDeadline)
+		self.subscriptions = dict()
 
 #===================================================================================================
 #  H E L P E R S
@@ -26,18 +27,17 @@ class selection():
 
 	def selectSubscriptions(self, datasetRankings, siteRankings):
 		selectedGb = 0
-		subscriptions = dict()
 		while (selectedGb < self.budgetGb) and (datasetRankings):
 			datasetName = self.weightedChoice(datasetRankings)
 			siteName = self.weightedChoice(siteRankings)
-			if siteName in subscriptions:
-				subscriptions[siteName].append(datasetName)
+			if siteName in self.subscriptions:
+				self.subscriptions[siteName].append(datasetName)
 			else:
-				subscriptions[siteName] = [datasetName]
+				self.subscriptions[siteName] = [datasetName]
 			del datasetRankings[datasetName]
 			sizeGb = self.phedexData.getDatasetSize(datasetName)
-			selectedGb += int(sizeGb)
-		return subscriptions
+			selectedGb += sizeGb
+		return self.subscriptions
 
 #===================================================================================================
 #  M A I N

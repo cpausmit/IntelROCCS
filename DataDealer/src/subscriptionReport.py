@@ -8,13 +8,13 @@
 #		 Total data subscribed
 #		 Data subscribed per site
 #---------------------------------------------------------------------------------------------------
-import sys, os, datetime
+import sys, os, datetime, calendar
 from email.MIMEText import MIMEText
 from email.MIMEMultipart import MIMEMultipart
 from email.Utils import formataddr
 from subprocess import Popen, PIPE
 import makeTable, sites, siteRanker
-import dbApi, phedexData, popDbData
+import dbApi, phedexApi, phedexData, popDbData
 
 class subscriptionReport():
 	def __init__(self):
@@ -23,6 +23,7 @@ class subscriptionReport():
 		cacheDeadline = int(os.environ['CACHE_DEADLINE'])
 		self.phedexData = phedexData.phedexData(phedexCache, cacheDeadline)
 		self.popDbData = popDbData.popDbData(popDbCache, cacheDeadline)
+		self.phedexApi = phedexApi.phedexApi()
 		self.dbApi = dbApi.dbApi()
 		self.sites = sites.sites()
 		self.siteRanker = siteRanker.siteRanker()
@@ -34,11 +35,8 @@ class subscriptionReport():
 	def sendReport(self, title, text):
 		# Send email
 		fromEmail = ("Bjorn Barrefors", "bjorn.peter.barrefors@cern.ch")
-		#toList = (["Bjorn Barrefors"], ["bjorn.peter.barrefors@cern.ch"])
-		#toList = (["Bjorn Barrefors"], ["barrefors@gmail.com"])
+		toList = (["Bjorn Barrefors"], ["bjorn.peter.barrefors@cern.ch"])
 		#toList = (["Data Management Group"], ["hn-cms-dmDevelopment@cern.ch"])
-		toList = (["Bjorn Barrefors", "Brian Bockelman", "Maxim Goncharov", "Christoph Paus"],
-				  ["bjorn.peter.barrefors@cern.ch", "bbockelm@cse.unl.edu", "maxi@mit.edu", "paus@mit.edu"])
 
 		msg = MIMEMultipart()
 		msg['Subject'] = title
@@ -71,8 +69,8 @@ class subscriptionReport():
 		query = "SELECT Datasets.DatasetName, Sites.SiteName, Requests.Rank FROM Requests INNER JOIN Datasets ON Datasets.DatasetId=Requests.DatasetId INNER JOIN Sites ON Sites.SiteId=Requests.SiteId WHERE Requests.Date>%s AND Requests.RequestType=%s"
 		values = [date.strftime('%Y-%m-%d %H:%M:%S'), 0]
 		data = self.dbApi.dbQuery(query, values=values)
-		for sub in data:
-			subscriptions.append([info for info in sub])
+		for subscription in data:
+			subscriptions.append(subscription)
 
 		# Make title variables
 		quota = 0.0
@@ -82,22 +80,23 @@ class subscriptionReport():
 			dataOwned += value[1]
 		quotaUsed = 100*(dataOwned/(quota*10**3))
 		dataSubscribed = 0.0
-		siteSubscriptions = dict()
-		for site in allSites:
-			siteSubscriptions[site] = 0.0
-		for subscription in subscriptions:
-			subscriptionSize = self.phedexData.getDatasetSize(subscription[0])
-			dataSubscribed += subscriptionSize
-			site = subscription[1]
-			siteSubscriptions[site] += subscriptionSize
+		for subsciption in subscriptions:
+			dataSubscribed += self.phedexData.getDatasetSize(subsciption[0])
 
 		# Create title
 		title = 'AnalysisOps %s | %d TB | %d%% | %.2f TB Subscribed' % (date.strftime('%Y-%m-%d'), int(dataOwned/10**3), int(quotaUsed), dataSubscribed/10**3)
 		text = '%s\n  %s\n%s\n\n' % ('='*68, title, '='*68)
 
 		# Create site table
+		siteSubscriptions = dict()
+		for site in allSites:
+			siteSubscriptions[site] = 0
+		for subscription in subscriptions:
+			site = subscription[1]
+			siteSubscriptions[site] += self.phedexData.getDatasetSize(subsciption[0])
+
 		# get status of sites
-		blacklistedSites = self.sites.getBlacklistedSites()
+		availableSites = self.sites.getAvailableSites()
 
 		siteTable = makeTable.Table(add_numbers=False)
 		siteTable.setHeaders(['Site', 'Subscribed TB', 'Space Used TB', 'Space Used %', 'Quota TB', 'Status'])
@@ -107,7 +106,7 @@ class subscriptionReport():
 			quota = int(siteQuota[site][0])
 			usedP = "%d%%" % (int(100*(float(usedTb)/quota)))
 			status = "up"
-			if site in blacklistedSites:
+			if site in availableSites:
 				status = "down"
 			siteTable.addRow([site, subscribed, usedTb, usedP, quota, status])
 

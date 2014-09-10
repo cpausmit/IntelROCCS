@@ -78,6 +78,7 @@ class PhedexDataHandler:
             datasetName = dset["name"]
 
             user = re.findall(r"USER",datasetName)
+
             blocks = dset["block"]
             for block in blocks:
                 replicas = block["replica"]
