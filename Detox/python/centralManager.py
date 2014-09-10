@@ -379,8 +379,8 @@ class CentralManager:
         totalDisk = 0
         # file with more infortmation on all sites
         outputFile = open(os.environ['DETOX_DB'] + "/SitesInfo.txt",'w')
-        outputFile.write('#- ' + today + " " + ttime + "\n\n")
-        outputFile.write("#- S I T E S  I N F O R M A T I O N ----\n\n")
+        outputFile.write('#- ' + today + " " + ttime + "\n#\n")
+        outputFile.write("#- S I T E S  I N F O R M A T I O N ----\n#\n")
         outputFile.write("#  Active Quota[TB] Taken[TB] LastCopy[TB] SiteName \n")
         for site in sorted(self.allSites):
             theSite = self.allSites[site]
@@ -402,9 +402,9 @@ class CentralManager:
             outputFile.write("   %-6d %-9d %-9d %-12d %-20s \n"\
                              %(theSite.getStatus(), theSite.getSize()/1000, 
                                taken, lcopy, site))
-        outputFile.write("Total Disk Space  = %-9d \n"%(totalDisk))
-        outputFile.write("Total Space Taken = %-9d \n"%(totalSpaceTaken))
-        outputFile.write("Total Last Copy   = %-9d \n"%(totalSpaceLcopy))
+        outputFile.write("#\n# Total Disk Space  = %-9d \n"%(totalDisk))
+        outputFile.write("# Total Space Taken = %-9d \n"%(totalSpaceTaken))
+        outputFile.write("# Total Last Copy   = %-9d \n"%(totalSpaceLcopy))
         activeFile.close()
         outputFile.close()
 
