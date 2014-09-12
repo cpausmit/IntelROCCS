@@ -20,6 +20,7 @@ def processPhedexCacheFile(fileName,debug=0):
     # processing the contents of a simple file into a hash array
 
     sizesPerSite = {}
+    allDatasets  = []
 
     iFile = open(fileName,'r')
     # loop through all lines
@@ -52,10 +53,20 @@ def processPhedexCacheFile(fileName,debug=0):
         else:
             sizesPerSitePerDataset[dataset]  = size
 
+        if dataset not in allDatasets:
+            allDatasets.append(dataset)
+
     iFile.close();
 
     # return the sizes per site
-    return sizesPerSite
+    return (allDatasets, sizesPerSite)
+
+def updateDatabase(allDatasets):
+    # going through all datasets found and making sure they are in the database
+
+    print ' Updatig databases right now.'
+    for dataset in allDatasets:
+        findDatasetSize(dataset,0)
 
 def processFile(fileName,debug=0):
     # processing the contents of a simple file into a hash array
@@ -393,11 +404,12 @@ else:
     print ' ERROR - too many arguments\n' + usage
     sys.exit(2)
 
-# figure out which datases to consider using phedex cache as input
+# figure out which datasets to consider using phedex cache as input
 if addNotAccessedDatasets:
     file = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS'] + '/' + \
            os.environ['DETOX_PHEDEX_CACHE']
-    sizesPerSite = processPhedexCacheFile(file,debug=0)
+    (allDatasets, sizesPerSite) = processPhedexCacheFile(file,debug=0)
+    updateDatabase(allDatasets)
 
 # initialize our variables
 nAllSkipped  = 0

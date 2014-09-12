@@ -295,15 +295,16 @@ def convertSizeToGb(sizeTxt):
 def findExistingSubscriptions(dataset,debug=0):
 
 	webServer = 'https://cmsweb.cern.ch/'
-	phedexBlocks = 'phedex/datasvc/xml/prod/blockreplicas?subscribed=y&node=T2*&dataset=' + dataset
+	phedexBlocks = 'phedex/datasvc/xml/prod/blockreplicas?subscribed=y&group=AnalysisOps&node=T2*&dataset=' + dataset
 	cert = os.environ.get('X509_USER_PROXY')
 	url = '"'+webServer+phedexBlocks + '"'
-	cmd = 'curl --cert ' + cert + ' -k -H "Accept: text/xml" ' + url + ' 2> /dev/null'
+	#cmd = 'curl --cert ' + cert + ' -k -H "Accept: text/xml" ' + url + ' 2> /dev/null'
+	cmd = 'curl -k -H "Accept: text/xml" ' + url + ' 2> /dev/null'
 	if debug > 1:
 		print ' Access phedexDb: ' + cmd 
 	
 	# setup the shell command
-	siteNames = ''
+	siteNames = []
 	for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
 		if debug > 1:
 			print ' LINE: ' + line
@@ -312,7 +313,11 @@ def findExistingSubscriptions(dataset,debug=0):
 			sublines = re.split("<replica\ ",line)
 			for subline in sublines[1:]:
 				siteName = (re.findall(r"node='(\S+)'",subline))[0]
-				siteNames += ' ' + siteName
+				if siteName in siteNames:
+					if debug>0:
+						print ' Site already in list. Skip!'
+				else:
+					siteNames.append(siteName)
 		except:
 			siteName = ''
 
@@ -334,14 +339,36 @@ def getActiveSites(debug=0):
 	sites = []
 
 	# get the active site list
-	cmd  = 'wget http://t3serv001.mit.edu/~cmsprod/IntelROCCS/Detox/ActiveSites.txt'
-	cmd += ' -O - 2> /dev/null'
+	#cmd  = 'wget http://t3serv001.mit.edu/~cmsprod/IntelROCCS/Detox/ActiveSites.txt'
+	cmd  = 'wget http://t3serv001.mit.edu/~cmsprod/IntelROCCS/Detox/SitesInfo.txt'
+	cmd += ' -O - 2> /dev/null | grep -v "#" | tr -s " "'
 	for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
 		site = line[:-1]
 		f = site.split(' ')
-		site = f[-1]
+		if debug>2:
+			print " Length: %d"%(len(f))
+		if len(f) != 7:
+			continue
+
+		# decode
+		if debug>2:
+			print f
+		site = f[-2]
+		lastCopy = int(f[-3])
+		quota = int(f[-5])
+		valid = int(f[-6])
 		if debug > 1:
-			print ' Adding site: ' + site
+			print ' Trying to add: "' + site + '"  lastCp: %d  Quota: %d  -->  %f'\
+			    %(lastCopy,quota,float(lastCopy)/quota) 
+		if float(lastCopy)/quota > 0.7 or valid == 0:
+			if debug > 0:
+				print '  -> skip %s as Last Copy too large or not valid.\n'%(site)
+			continue
+		else:
+			if debug > 0:
+				print '  -> added %s\n'%(site)
+				
+		# add this site
 		sites.append(site)
 
 	# something went wrong
@@ -352,35 +379,55 @@ def getActiveSites(debug=0):
 	# return the size in GB as a float
 	return sites
 
-def chooseMatchingSite(tier2Sites,sizeGb,debug):
+def chooseMatchingSite(tier2Sites,nSites,sizeGb,debug):
 
 	iRan = -1
-	quota = 0
+	quotas = []
+	lastCps = []
+	sites = []
+
 	nTrials = 0
 
-	while sizeGb > 0.1*quota:
+	while len(sites) < nSites:
 		iRan = random.randint(0,len(tier2Sites)-1)
 		site = tier2Sites[iRan]
 		# not elegant or reliable (should use database directly)
 		cmd  = 'wget http://t3serv001.mit.edu/~cmsprod/IntelROCCS/Detox/result/'+site+'/Summary.txt'
 		cmd += ' -O - 2> /dev/null | grep ^Total'
+		quota = 0
 		for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
 			line = line[:-1]
 			f = line.split(' ')
-			quota = float(f[-1]) * 1024.  # make sure it is GB
+			quota = float(f[-1]) * 1000.   # make sure it is GB
+
+		cmd  = 'wget http://t3serv001.mit.edu/~cmsprod/IntelROCCS/Detox/result/'+site+'/Summary.txt'
+		cmd += ' -O - 2> /dev/null | grep ^\"Space last CP\"'
+
+		lastCp = 0
+		for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
+			line = line[:-1]
+			f = line.split(' ')
+			lastCp = float(f[-1]) * 1000.  # make sure it is GB
+
+		if sizeGb < 0.1*quota:
+			sites.append(site)
+			quotas.append(quota)
+			lastCps.append(lastCp)
+			tier2Sites.remove(site)
+
 		if debug > 0:
 			print ' Trying to fit %.1f GB into Tier-2 [%d]: %s with quota of %.1f GB (use 0.1 max)'%\
 				  (sizeGb,iRan,site,quota)
 	
 		if nTrials > 20:
-			print ' Error - no matching site could be found. Dataset too big? EXIT!'
+			print ' Error - not enough matching sites could be found. Dataset too big? EXIT!'
 			sys.exit(1)
 	
 		nTrials += 1
 
-	return iRan,site,quota
+	return sites,quotas,lastCps
 	
-def submitSubscriptionRequest(site, datasets=[]):
+def submitSubscriptionRequests(sites,datasets=[],debug=0):
 	
 	# make sure we have datasets to subscribe
 	if len(datasets) < 1:
@@ -391,36 +438,36 @@ def submitSubscriptionRequest(site, datasets=[]):
 
 	# compose data for subscription request
 	check,data = phedex.xmlData(datasets=datasets,instance='prod')
-
 	if check: 
 		print " ERROR - phedexApi.xmlData failed"
 		return
-	
-	# here the request is really sent
 	message = 'IntelROCCS -- Automatic Dataset Subscription by Computing Operations.'
-	if not exe:
-		print " Message: " + message
-		print " --> check,response \ "
-		print " = phedex.subscribe(node=site,data=data,comments=message,group='AnalysisOps', \ "
-		print "                    instance='prod')"
-	check,response = phedex.subscribe(node=site,data=data,comments=message,group='AnalysisOps',
-									  instance='prod')
-	if check:
-		print " ERROR - phedexApi.subscribe failed"
-		print response
-		return
+
+	# here the request is really sent to each requested site
+	for site in sites:
+		if debug>0:
+			print " --> phedex.subscribe(node=%s,data=....,comments=%s', \ "%(site,message)
+			print "                      group='AnalysisOps',instance='prod')"
+
+		check,response = phedex.subscribe(node=site,data=data,comments=message,group='AnalysisOps',
+						  instance='prod')
+		if check:
+			print " ERROR - phedexApi.subscribe failed for Tier2: " + site
+			print response
+			continue
 
 #===================================================================================================
 #  M A I N
 #===================================================================================================
 # Define string to explain usage of the script
 usage =  " Usage: assignDatasetToSite.py   --dataset=<name of a CMS dataset>\n"
+usage += "                               [ --nCopies=1 ]   <-- number of desired copies \n"
 usage += "                               [ --debug=0 ]\n"
 usage += "                               [ --exec ]\n"
 usage += "                               [ --help ]\n\n"
 
 # Define the valid options which can be specified and check out the command line
-valid = ['dataset=','debug=','exec','help']
+valid = ['dataset=','debug=','nCopies=','exec','help']
 try:
 	opts, args = getopt.getopt(sys.argv[1:], "", valid)
 except getopt.GetoptError, ex:
@@ -434,6 +481,7 @@ except getopt.GetoptError, ex:
 # Set defaults for each command line parameter/option
 debug = 0
 dataset = ''
+nCopies = 1
 exe = False
 
 # Read new values from the command line
@@ -443,8 +491,10 @@ for opt, arg in opts:
 		sys.exit(0)
 	if opt == "--dataset":
 		dataset = arg
+	if opt == "--nCopies":
+		nCopies = int(arg)
 	if opt == "--debug":
-		debug = arg
+		debug = int(arg)
 	if opt == "--exec":
 		exe = True
 
@@ -480,24 +530,38 @@ if not exe:
 # --> need to verify this is sufficient
 
 siteNames = findExistingSubscriptions(dataset,debug)
+nAdditionalCopies = nCopies - len(siteNames)
 
-if siteNames != '':
-	print ' Already subscribed on Tier-2:' + siteNames
+if len(siteNames) >= nCopies:
+	print ' Already subscribed on Tier-2:'
+	for siteName in siteNames:
+		print ' --> ' + siteName
 	print '\n The job is done already: EXIT!\n'
 	sys.exit(0)
+else:
+	print ' Requested %d copies at Tier-2, but only %d copies found.'%(nCopies,len(siteNames))
+	print ' --> will find %d more sites for subscription.\n'%(nAdditionalCopies)
 
-# find a matching site
-#---------------------
+
+# find a sufficient matching site
+#--------------------------------
 
 # find all dynamically managed sites
 tier2Sites = getActiveSites(debug)
 
+# remove the already used sites
+for siteName in siteNames:
+	tier2Sites.remove(siteName)
+
 # choose a site randomly and exclude sites that are too small
-iRan,site,quota = chooseMatchingSite(tier2Sites,sizeGb,debug)
+sites,quotas,lastCps = chooseMatchingSite(tier2Sites,nAdditionalCopies,sizeGb,debug)
 
 if not exe:
 	print ''
-	print ' SUCCESS - Assigned to Tier-2 [%d]: %s (quota: %.1f GB)'%(iRan,site,quota)
+	print ' SUCCESS - Found requested %d matching Tier-2 sites'%(len(sites))
+	for i in range(len(sites)):
+		print '           - %-20s (quota: %.1f TB lastCp: %.1f TB)'\
+		    %(sites[i],quotas[i]/1000.,lastCps[i]/1000.)
 
 # make phedex subscription
 #-------------------------
@@ -508,7 +572,6 @@ datasets.append(dataset)
 
 # subscribe them
 if exe:
-	print ' -> initial subscribtion of  %s  to %s'%(dataset,site)
-	submitSubscriptionRequest(site,datasets)
+	submitSubscriptionRequests(sites,datasets)
 else:
 	print ' -> not subscribing .... please use  --exec  option.'

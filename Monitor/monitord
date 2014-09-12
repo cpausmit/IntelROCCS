@@ -51,7 +51,8 @@ do
     echo " "                                                           >> $logFile
     echo "   --> "`date`                                               >> $logFile
     echo " "                                                           >> $logFile
-    stdbuf -o0 -e0 $MONITOR_BASE/monitor.sh                            >> $logFile 2>&1
+    $MONITOR_BASE/monitor.sh                                           >> $logFile 2>&1
+    #stdbuf -o0 -e0 $MONITOR_BASE/monitor.sh                            >> $logFile 2>&1
 
     # insure that the log information is updated (WARNING - hardwired, need something more general)
     rsync -Cavz --delete /local/cmsprod/IntelROCCS/Monitor \
