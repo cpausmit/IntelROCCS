@@ -30,19 +30,17 @@ class CentralManager:
         self.deprecatedHandler = deprecateDataHandler.DeprecateDataHandler()
 
     def extractPhedexData(self,federation):
-        if self.phedexHandler.shouldAccessPhedex() :
-            try:
-                self.phedexHandler.extractPhedexData(federation)
-            except:
-                self.sendEmail("Problems detected while running Cache Release",\
-                                   "Execution was terminated, check log to correct problems.")
-                raise
-        else:
-            self.phedexHandler.readPhedexData()
-
+        try:
+            self.phedexHandler.extractPhedexData(federation)
+        except:
+            self.sendEmail("Problems detected while running Cache Release",\
+                               "Execution was terminated, check log to correct problems.")
+            raise
         self.phedexHandler.findIncomplete()
 
     def extractDeprecatedData(self):
+        flag = self.phedexHandler.renewedCache()
+        self.deprecatedHandler.shouldAccessDas(flag)
         self.deprecatedHandler.extractDeprecatedData()
 
     def extractPopularityData(self):
@@ -597,18 +595,12 @@ class CentralManager:
 
     def extractCacheRequests(self):
         connection = self.getDbConnection()
-        for site in sorted(self.allSites.keys()):
-            if self.allSites[site].getStatus() != 0:
-                self.extractCacheRequestsForSite(site,connection)
-        connection.close()
-
-    def extractCacheRequestsForSite(self,site,connection):
         cursor = connection.cursor()
-        sql = "select RequestId,DatasetName,Size,Rank,Date " +\
+        sql = "select RequestId,DatasetName,Size,Rank,Date,SiteName " +\
             "from Requests,Sites,Datasets,DatasetProperties " +\
             "where Requests.SiteId=Sites.SiteId " +\
             "and Requests.DatasetId=Datasets.DatasetId and DatasetProperties.DatasetId=Datasets.DatasetId "+\
-            "and SiteName='" + site + "' and RequestType=1 order by RequestId DESC LIMIT 1000"
+            "and RequestType=1 order by RequestId DESC LIMIT 10000"
         try:
             cursor.execute(sql)
             results = cursor.fetchall()
@@ -617,10 +609,12 @@ class CentralManager:
             print " -- FAILED extract mysql info: %s"%(sql)
             connection.close()
             sys.exit(1)
+        connection.close()
 
         for row in results:
-            reqid   = row[0]
-            tstamp  = row[4]
+            reqid  = row[0]
+            tstamp = row[4]
+            site   = row[5]
             if reqid not in self.delRequests:
                 self.delRequests[reqid] = deletionRequest.DeletionRequest(reqid,site,tstamp)
             if site not in self.siteRequests:
@@ -631,6 +625,8 @@ class CentralManager:
 
             self.delRequests[reqid].update(dataset,rank,size)
             self.siteRequests[site].update(reqid,tstamp)
+
+
 
     def showCacheRequests(self):
         for site in sorted(self.allSites.keys()):

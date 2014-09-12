@@ -13,9 +13,31 @@ def alarm_handler(signum, frame):
 
 class DeprecateDataHandler:
     def __init__(self):
+        self.accessDas = False
+        self.fileName = 'DeprecatedSets.txt'
         self.deprecated = {}
 
+
+    def shouldAccessDas(self,flag):
+       self.accessDas = flag
+       statusDir = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS']
+       
+       if not os.path.isfile(statusDir+'/'+self.fileName):
+           self.accessDas = True
+           return
+       #also check that the file is not empty
+       if not os.path.getsize(statusDir+'/'+self.fileName) > 0:
+           self.accessDas = True
+
     def extractDeprecatedData(self):
+        if self.accessDas:
+            try:
+                self.retrieveDeprecatedData()
+            except:
+                raise
+        self.readDeprecatedData()
+
+    def retrieveDeprecatedData(self):
         cmd = os.environ['DETOX_BASE'] + '/' + \
             'das_client.py --query=\'dataset status=DEPRECATED\' --limit=50000'
 
@@ -29,17 +51,31 @@ class DeprecateDataHandler:
             signal.alarm(0)
         except Alarm:
             print " Oops, taking too long!"
-            raise Exception(" FATAL -- DAS call timed out, stopping")
+            return
+            #raise Exception(" FATAL -- DAS call timed out, stopping")
 
         if process.returncode != 0:
             print "    - DAS queries got bad status " + str(process.returncode)
-            raise Exception(" FATAL -- DAS call timed out, stopping")
+            return
+            #raise Exception(" FATAL -- DAS call timed out, stopping")
 
+        statusDir = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS']
+        ouputFile = open(statusDir + '/' + self.fileName,'w')
         datasets = strout.split(os.linesep)
         for dset in datasets:
-            self.deprecated[dset] = 1
-        totalSets = len(datasets)
+            dset = dset.strip()
+            if dset.startswith('/'):
+                ouputFile.write(dset+'\n')
 
+    def readDeprecatedData(self):
+        statusDir = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS']
+        inputFile = open(statusDir + '/' + self.fileName,'r')
+        
+        for line in inputFile.xreadlines():
+            datasetName = line.strip()
+            self.deprecated[datasetName] = 1
+            
+        totalSets = len(self.deprecated)
         print " -- found " + str(totalSets) +" deprecated sets"
                 
     def getDeprecatedSets(self):

@@ -13,6 +13,8 @@ def alarm_handler(signum, frame):
 
 class PhedexDataHandler:
     def __init__(self,allSites):
+        self.newAccess = False
+        self.cachedDatasets = {}
         self.phedexDatasets = {}
         self.allSites = allSites
 
@@ -38,6 +40,21 @@ class PhedexDataHandler:
         return True
 
     def extractPhedexData(self,federation):
+        self.cachedDatasets = self.readPhedexData()
+        if self.shouldAccessPhedex() :
+            try:
+                self.retrievePhedexData(federation)
+                self.newAccess = True
+            except:
+                raise
+
+        if self.newAccess:
+            self.phedexDatasets = self.readPhedexData()
+        else:
+            self.phedexDatasets = self.cachedDatasets
+
+    def retrievePhedexData(self,federation):
+        phedexDatasets = {}
         webServer = 'https://cmsweb.cern.ch/'
         phedexBlocks = 'phedex/datasvc/json/prod/blockreplicas'
         args = 'show_dataset=y&subscribed=y&' + federation
@@ -82,7 +99,6 @@ class PhedexDataHandler:
             for block in blocks:
                 replicas = block["replica"]
                 for siterpl in replicas:
-
                     group = siterpl["group"]
                     if group == 'IB RelVal':
                         group = 'IB-RelVal'
@@ -95,9 +111,9 @@ class PhedexDataHandler:
                     if self.allSites[site].getStatus() == 0:
                         continue
 
-                    if datasetName not in self.phedexDatasets:
-                        self.phedexDatasets[datasetName] = phedexDataset.PhedexDataset(datasetName)
-                    dataset = self.phedexDatasets[datasetName]
+                    if datasetName not in phedexDatasets:
+                        phedexDatasets[datasetName] = phedexDataset.PhedexDataset(datasetName)
+                    dataset = phedexDatasets[datasetName]
 
                     size = float(siterpl["bytes"])/1000/1000/1000
                     compl = siterpl["complete"]
@@ -115,40 +131,35 @@ class PhedexDataHandler:
 
                     dataset.updateForSite(site,size,group,made,files,iscust,valid)
 
-
         # Create our local cache files of the status per site
         filename = os.environ['DETOX_PHEDEX_CACHE']
         outputFile = open(os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS'] + '/'
                           + filename, "w")
-        for datasetName in self.phedexDatasets:
-            line = self.phedexDatasets[datasetName].printIntoLine()
-
-            # CP- Max I do not understand this test, what are you trying to catch here?
+        for datasetName in phedexDatasets:
+            line = phedexDatasets[datasetName].printIntoLine()
+            #any dataset line should be above 10 characters
             if len(line) < 10:
                 print " SKIPING " + datasetName
                 continue
-
-
             outputFile.write(line)
-
         outputFile.close()
 
     def readPhedexData(self):
-
+        phedexDatasets = {}
         filename = os.environ['DETOX_PHEDEX_CACHE']
         inputFile = open(os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS'] + '/'
                          + filename, "r")
-
         for line in inputFile.xreadlines():
             items = line.split()
             datasetName = items[0]
 
-            if datasetName not in self.phedexDatasets:
-                self.phedexDatasets[datasetName] = phedexDataset.PhedexDataset(datasetName)
+            if datasetName not in phedexDatasets:
+                phedexDatasets[datasetName] = phedexDataset.PhedexDataset(datasetName)
 
-            dataset = self.phedexDatasets[datasetName]
+            dataset = phedexDatasets[datasetName]
             dataset.fillFromLine(line)
         inputFile.close()
+        return phedexDatasets
 
     def findIncomplete(self):
         for datasetName in self.phedexDatasets:
@@ -182,6 +193,9 @@ class PhedexDataHandler:
                 dsets[datasetName] = dataset.getLocalRank(site)
         return sorted(dsets,key=dsets.get,reverse=True)
 
+
+    def renewedCache(self):
+        return self.newAccess
 
 
 
