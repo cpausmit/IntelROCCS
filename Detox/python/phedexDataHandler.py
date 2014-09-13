@@ -22,21 +22,18 @@ class PhedexDataHandler:
         # number of hours until it will rerun
         renewMinInterval = int(os.environ.get('DETOX_CYCLE_HOURS'))
         statusDir = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS']
-        filename = os.environ['DETOX_PHEDEX_CACHE']
+        fileName = statusDir + '/' + os.environ['DETOX_PHEDEX_CACHE']
+        if not os.path.isfile(fileName):
+            return True
+        if not os.path.getsize(fileName) > 0:
+            return True
 
         timeNow = datetime.datetime.now()
         deltaNhours = datetime.timedelta(seconds = 60*60*(renewMinInterval-1))
-        modTime = datetime.datetime.fromtimestamp(0)
-        if os.path.isfile(statusDir+'/'+filename):
-            modTime = datetime.datetime.fromtimestamp(os.path.getmtime(statusDir+'/'+filename))
-
-            #also check that the file is not empty
-            if not os.path.getsize(statusDir+'/'+filename) > 0:
-                return True
-
+        modTime = datetime.datetime.fromtimestamp(os.path.getmtime(fileName))
+        print "  -- last time cache renewed on " + str(modTime)
         if (timeNow-deltaNhours) < modTime:
             return False
-
         return True
 
     def extractPhedexData(self,federation):
@@ -47,6 +44,8 @@ class PhedexDataHandler:
                 self.newAccess = True
             except:
                 raise
+        else:
+            print "  -- reading from cache --"
 
         if self.newAccess:
             self.phedexDatasets = self.readPhedexData()
@@ -147,8 +146,11 @@ class PhedexDataHandler:
     def readPhedexData(self):
         phedexDatasets = {}
         filename = os.environ['DETOX_PHEDEX_CACHE']
-        inputFile = open(os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS'] + '/'
-                         + filename, "r")
+        fileName = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS'] + '/' + filename
+	if not os.path.exists(fileName):
+	    return phedexDatasets
+
+	inputFile = open(fileName,'r')
         for line in inputFile.xreadlines():
             items = line.split()
             datasetName = items[0]

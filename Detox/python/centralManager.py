@@ -39,8 +39,6 @@ class CentralManager:
         self.phedexHandler.findIncomplete()
 
     def extractDeprecatedData(self):
-        flag = self.phedexHandler.renewedCache()
-        self.deprecatedHandler.shouldAccessDas(flag)
         self.deprecatedHandler.extractDeprecatedData()
 
     def extractPopularityData(self):
@@ -424,6 +422,8 @@ class CentralManager:
                                  %(nsets,totalSize/1000,site))
         outputFile.close()
 
+        totalDeprecated = 0
+        deprecatedSpace = 0
         outputFile = open(os.environ['DETOX_DB'] + "/DeprecatedSummary.txt",'w')
         outputFile.write('#- ' + today + " " + ttime + "\n\n")
         outputFile.write("#- D E P R E C A T E D  D A T A S E T S ----\n\n")
@@ -433,9 +433,14 @@ class CentralManager:
             nsets = sitePr.nsetsDeprecated()
             if nsets < 1:
                 continue
+            totalDeprecated = totalDeprecated + nsets
+            deprecatedSpace = deprecatedSpace + sitePr.spaceDeprecated()/1000
 
             outputFile.write("   %-9d %-7.2f %-20s \n"\
                                  %(nsets,sitePr.spaceDeprecated()/1000,site))
+        outputFile.write("#\n# Total Disk Space   = %-9d \n"%(totalDisk))
+        outputFile.write("# Total DeprecatedSpace = %-9d \n"%(deprecatedSpace))
+        outputFile.write("# Deprecated Datasets   = %-9d \n"%(totalDeprecated))
         outputFile.close()
 
 

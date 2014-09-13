@@ -51,15 +51,17 @@ createCacheAreas()
 
 # Get a list of phedex datasets (goes to cache)
 timeStart = time.time()
+print ' Extracting PhEDEx Information'
 centralManager.extractPhedexData("node=T2*&node=T1*")
 timeNow = time.time()
-print ' - Renewing phedex cache took: %d seconds'%(timeNow-timeStart)
+print ' - Extracting PhEDEx information took: %d seconds'%(timeNow-timeStart)
 timePre = timeNow
 
-print ' Extracting Deprecated Datasets.'
+print ' Extracting Deprecated Datasets'
+timeStart = time.time()
 centralManager.extractDeprecatedData()
 timeNow = time.time()
-print ' - Extracting took: %d seconds'%(timeNow-timeStart)
+print ' - Extracting daprecated datasets took: %d seconds'%(timeNow-timeStart)
 timePre = timeNow
 
 # extract usage data from popularity service
