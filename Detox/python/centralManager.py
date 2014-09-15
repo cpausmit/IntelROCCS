@@ -422,7 +422,6 @@ class CentralManager:
                                  %(nsets,totalSize/1000,site))
         outputFile.close()
 
-        totalDeprecated = 0
         deprecatedSpace = 0
         outputFile = open(os.environ['DETOX_DB'] + "/DeprecatedSummary.txt",'w')
         outputFile.write('#- ' + today + " " + ttime + "\n\n")
@@ -433,14 +432,12 @@ class CentralManager:
             nsets = sitePr.nsetsDeprecated()
             if nsets < 1:
                 continue
-            totalDeprecated = totalDeprecated + nsets
             deprecatedSpace = deprecatedSpace + sitePr.spaceDeprecated()/1000
 
             outputFile.write("   %-9d %-7.2f %-20s \n"\
                                  %(nsets,sitePr.spaceDeprecated()/1000,site))
-        outputFile.write("#\n# Total Disk Space   = %-9d \n"%(totalDisk))
-        outputFile.write("# Total DeprecatedSpace = %-9d \n"%(deprecatedSpace))
-        outputFile.write("# Deprecated Datasets   = %-9d \n"%(totalDeprecated))
+        outputFile.write("#\n# Total Disk Space = %-9d \n"%(totalDisk))
+        outputFile.write("# Deprecated Space = %-9d \n"%(deprecatedSpace))
         outputFile.close()
 
 

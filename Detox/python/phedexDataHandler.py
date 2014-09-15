@@ -31,8 +31,8 @@ class PhedexDataHandler:
         timeNow = datetime.datetime.now()
         deltaNhours = datetime.timedelta(seconds = 60*60*(renewMinInterval-1))
         modTime = datetime.datetime.fromtimestamp(os.path.getmtime(fileName))
-        print "  -- last time cache renewed on " + str(modTime)
         if (timeNow-deltaNhours) < modTime:
+            print "  -- last time cache renewed on " + str(modTime)
             return False
         return True
 
