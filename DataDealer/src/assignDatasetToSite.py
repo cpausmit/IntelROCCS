@@ -445,7 +445,7 @@ def submitSubscriptionRequests(sites,datasets=[],debug=0):
 
 	# here the request is really sent to each requested site
 	for site in sites:
-		if debug>0:
+		if debug>1:
 			print " --> phedex.subscribe(node=%s,data=....,comments=%s', \ "%(site,message)
 			print "                      group='AnalysisOps',instance='prod')"
 
