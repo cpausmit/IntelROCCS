@@ -107,8 +107,8 @@ class PhedexDataHandler:
                     site = str(siterpl["node"])
                     if site not in self.allSites:
                         continue
-                    if self.allSites[site].getStatus() == 0:
-                        continue
+                    #if self.allSites[site].getStatus() == 0:
+                    #    continue
 
                     if datasetName not in phedexDatasets:
                         phedexDatasets[datasetName] = phedexDataset.PhedexDataset(datasetName)
@@ -154,6 +154,9 @@ class PhedexDataHandler:
         for line in inputFile.xreadlines():
             items = line.split()
             datasetName = items[0]
+            siteName = items[7]
+            if self.allSites[siteName].getStatus() == 0:
+                continue
 
             if datasetName not in phedexDatasets:
                 phedexDatasets[datasetName] = phedexDataset.PhedexDataset(datasetName)
