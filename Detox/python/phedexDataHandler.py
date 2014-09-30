@@ -17,6 +17,7 @@ class PhedexDataHandler:
         self.cachedDatasets = {}
         self.phedexDatasets = {}
         self.allSites = allSites
+        self.epochTime = int(time.time())
 
     def shouldAccessPhedex(self):
         # number of hours until it will rerun
@@ -87,7 +88,6 @@ class PhedexDataHandler:
         strout = tmpfile.readline()
         tmpfile.close()
         os.remove(tmpname)
-
         dataJson = json.loads(strout)
         datasets = (dataJson["phedex"])["dataset"]
         for dset in datasets:
@@ -101,14 +101,10 @@ class PhedexDataHandler:
                     group = siterpl["group"]
                     if group == 'IB RelVal':
                         group = 'IB-RelVal'
-                    #if group != "AnalysisOps":
-                    #    continue
 
                     site = str(siterpl["node"])
                     if site not in self.allSites:
                         continue
-                    #if self.allSites[site].getStatus() == 0:
-                    #    continue
 
                     if datasetName not in phedexDatasets:
                         phedexDatasets[datasetName] = phedexDataset.PhedexDataset(datasetName)
@@ -125,9 +121,10 @@ class PhedexDataHandler:
                     if len(user) > 0 or cust == 'y':
                         iscust = 1
                     valid = 1
-                    if compl == 'n' and (made-subs) < 60*24*14:
+                    #if compl == 'n' and (made-subs) < 60*24*14:
+                    #    valid = 0
+                    if (self.epochTime-subs) < 60*60*24*14 and compl == 'n':
                         valid = 0
-
                     dataset.updateForSite(site,size,group,made,files,iscust,valid)
 
         # Create our local cache files of the status per site
@@ -154,8 +151,11 @@ class PhedexDataHandler:
         for line in inputFile.xreadlines():
             items = line.split()
             datasetName = items[0]
+            group = items[1]
             siteName = items[7]
             if self.allSites[siteName].getStatus() == 0:
+                continue
+            if group != 'AnalysisOps':
                 continue
 
             if datasetName not in phedexDatasets:
@@ -165,11 +165,6 @@ class PhedexDataHandler:
             dataset.fillFromLine(line)
         inputFile.close()
         return phedexDatasets
-
-    def findIncomplete(self):
-        for datasetName in self.phedexDatasets:
-            dataset = self.phedexDatasets[datasetName]
-            dataset.findIncomplete()
 
     def getPhedexDatasets(self):
         return self.phedexDatasets

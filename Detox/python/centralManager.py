@@ -37,7 +37,6 @@ class CentralManager:
             self.sendEmail("Problems detected while running Cache Release",\
                                "Execution was terminated, check log to correct problems.")
             raise
-        self.phedexHandler.findIncomplete()
 
     def extractDeprecatedData(self):
         self.deprecatedHandler.extractDeprecatedData()
@@ -210,7 +209,9 @@ class CentralManager:
        connection = self.getDbConnection()
        for datasetName in phedexSets.keys():
            cursor = connection.cursor()
-           sql = "select DatasetId from Datasets where DatasetName='"+datasetName+"'"
+           sql = "select Datasets.DatasetId,NFiles,Size from Datasets,DatasetProperties"
+           sql = sql + " where DatasetName='"+datasetName+"'"
+           sql = sql + " and Datasets.DatasetId=DatasetProperties.DatasetId"
            try:
                cursor.execute(sql)
                results = cursor.fetchall()
@@ -223,7 +224,12 @@ class CentralManager:
            dsetId = None
            for row in results:
                dsetId   = row[0]
+               trueNfiles = row[1]
+               trueSize = row[2]
            dataSetIds[datasetName] = dsetId
+           phedexSets[datasetName].setTrueSize(trueSize)
+           phedexSets[datasetName].setTrueNfiles(trueNfiles)
+           phedexSets[datasetName].findIncomplete()
        connection.close()
 
        missing = 0
@@ -234,12 +240,16 @@ class CentralManager:
            if dataSetIds[datasetName] is None:
                print " -- WARNING -- not in the database " + datasetName
 
-           rank =    phedexSets[datasetName].getGlobalRank()
+           rank =       phedexSets[datasetName].getGlobalRank()
+           trueSize =   phedexSets[datasetName].getTrueSize()
+           trueNfiles = phedexSets[datasetName].getTrueNfiles()
            self.dataPropers[datasetName] = datasetProperties.DatasetProperties(datasetName)
            self.dataPropers[datasetName].append(onSites)
            self.dataPropers[datasetName].setId(dataSetIds[datasetName])
            isDeprecated = self.deprecatedHandler.isDeprecated(datasetName)
            self.dataPropers[datasetName].setDeprecated(isDeprecated)
+           self.dataPropers[datasetName].setTrueSize(trueSize)
+           self.dataPropers[datasetName].setTrueNfiles(trueNfiles)
            for site in onSites:
                size = phedexSets[datasetName].size(site)
                part = phedexSets[datasetName].isPartial(site)
@@ -313,10 +323,13 @@ class CentralManager:
         for datasetName in self.dataPropers.keys():
             dataPr = self.dataPropers[datasetName]
             countWishes = 0
+            partSites = 0
             for site in self.sitePropers.keys():
                 sitePr = self.sitePropers[site]
-                if(sitePr.onWishList(datasetName)):
+                if sitePr.onWishList(datasetName):
                     countWishes = countWishes + 1
+                if sitePr.isPartial(datasetName):
+                    partSites = partSites + 1
 
             if dataPr.nSites()-dataPr.nBeDeleted() - countWishes > (self.DETOX_NCOPY_MIN-1):
                 # grant wishes to all sites
@@ -435,10 +448,35 @@ class CentralManager:
                 continue
             deprecatedSpace = deprecatedSpace + sitePr.spaceDeprecated()/1000
 
-            outputFile.write("   %-9d %-7.2f %-20s \n"\
+            outputFile.write("   %-9d %-8.2f %-20s \n"\
                                  %(nsets,sitePr.spaceDeprecated()/1000,site))
         outputFile.write("#\n# Total Disk Space = %-9d \n"%(totalDisk))
         outputFile.write("# Deprecated Space = %-9d \n"%(deprecatedSpace))
+        outputFile.close()
+
+        incompleteSpace = 0
+        outputFile = open(os.environ['DETOX_DB'] + "/IncompleteSummary.txt",'w')
+        outputFile.write('#- ' + today + " " + ttime + "\n\n")
+        outputFile.write("#- I N C O M P L E T E  D A T A S E T S ----\n\n")
+        outputFile.write("#  NDatasets TrueSize[TB] Size[TB] SiteName \n")
+        for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
+            sitePr = self.sitePropers[site]
+            trueSize = 0
+            diskSize = 0
+            nsets = 0
+            for dset in sitePr.allSets():
+                dataPr = self.dataPropers[dset]
+                if sitePr.isPartial(dset):
+                    delta = dataPr.getTrueSize() - sitePr.dsetSize(dset)
+                    incompleteSpace = incompleteSpace + delta
+                    trueSize = trueSize + dataPr.getTrueSize()
+                    diskSize = diskSize + sitePr.dsetSize(dset)
+                    nsets = nsets + 1
+            outputFile.write("   %-9d %-12.2f %-8.2f %-20s \n"\
+                                 %(nsets,trueSize/1000,diskSize/1000,site))
+        outputFile.write("#\n# Total Disk Space = %-9d \n"%(totalDisk))
+        outputFile.write("# Taken Space = %-9d \n"%(diskSize/1000))
+        outputFile.write("# Missing Space = %-9d \n"%(incompleteSpace/1000))
         outputFile.close()
 
 
@@ -452,6 +490,7 @@ class CentralManager:
             fileRemain = sitedir + "/RemainingDatasets.txt"
             fileDelete = sitedir + "/DeleteDatasets.txt"
             fileDeprec = sitedir + "/DeprecatedSets.txt"
+            fileIncomp = sitedir + "/IncompleteSets.txt"
 
             outputFile = open(fileTimest,'w')
             outputFile.write('#- ' + today + " " + ttime + "\n\n")
@@ -469,6 +508,7 @@ class CentralManager:
             outputFile.write("Space to delete [TB]: %8.2f\n"%(sitePr.spaceDeleted()/1000))
             outputFile.write("Space last CP   [TB]: %8.2f\n"%(sitePr.spaceLastCp()/1000))
             outputFile.write("Space deprected [TB]: %8.2f\n"%(sitePr.spaceDeprecated()/1000))
+            outputFile.write("Incomplete data [TB]: %8.2f\n"%(sitePr.spaceIncomplete()/1000))
             outputFile.close()
 
             if len(sitePr.delTargets()) > 0:
@@ -509,8 +549,8 @@ class CentralManager:
 
             outputFile = open(fileDeprec,'w')
             outputFile.write("# -- " + today + " " + ttime + "\n\n")
-            outputFile.write("#   Rank      Size nsites DatasetName\n")
-            outputFile.write("#[~days]      [GB] \n")
+            outputFile.write("#   Rank    Size nsites DatasetName\n")
+            outputFile.write("#[~days]    [GB] \n")
             outputFile.write("#------------------------------------\n")
             for dset in sitePr.allSets():
                 dataPr = self.dataPropers[dset]
@@ -519,8 +559,26 @@ class CentralManager:
                     size = sitePr.dsetSize(dset)
                     nsites = dataPr.nSites()
                     ndeletes = dataPr.nBeDeleted()
-                    outputFile.write("%8.1f %9.1f %6d  %s\n"\
+                    outputFile.write("%6.1f %9.1f %6d  %s\n"\
                                          %(rank,size,nsites-ndeletes,dset))
+            outputFile.close()
+            
+            outputFile = open(fileIncomp,'w')
+            outputFile.write("# -- " + today + " " + ttime + "\n\n")
+            outputFile.write("#   Rank    TrueSize DiskSize nsites DatasetName\n")
+            outputFile.write("#[~days]    [GB]     [GB]\n")
+            outputFile.write("#------------------------------------\n")
+            for dset in sitePr.allSets():
+                if not sitePr.isPartial(dset): 
+                    continue
+                dataPr = self.dataPropers[dset]
+                rank = sitePr.dsetRank(dset)
+                size = sitePr.dsetSize(dset)
+                trueSize = dataPr.getTrueSize()
+                nsites = dataPr.nSites()
+                ndeletes = dataPr.nBeDeleted()
+                outputFile.write("%8.1f %11.1f %8.1f %6d  %s\n"\
+                                     %(rank,trueSize,size,nsites-ndeletes,dset))
             outputFile.close()
 
 

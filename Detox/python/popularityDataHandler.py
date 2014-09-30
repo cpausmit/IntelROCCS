@@ -47,7 +47,7 @@ class PopularityDataHandler:
             self.accessPopularityData(site)
             if self.allSites[site].getValid() == 0:
                 notValidSites = notValidSites + 1
-            if notValidSites > 4:
+            if notValidSites > 20:
                 raise Exception(" FATAL - Popularity service seems to be down")
 
     def accessPopularityData(self,site):

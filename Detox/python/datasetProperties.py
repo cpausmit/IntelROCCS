@@ -8,6 +8,8 @@ class DatasetProperties:
 		self.dbaseId = -1
 		self.globalRank = None
 		self.deprecated = False
+		self.trueSize = 0
+		self.trueNfiles = 0
 		self.siteList = []
 		self.delFromSites = []
 		self.weightAtSites = {}
@@ -43,6 +45,15 @@ class DatasetProperties:
 	def removeDelTarget(self,site):
 		if site in self.delFromSites:
 			self.delFromSites.remove(site)
+
+	def setTrueSize(self,size):
+		self.trueSize = size
+
+	def setTrueNfiles(self,nfiles):
+		self.trueNfiles = nfiles
+
+	def getTrueSize(self):
+		return self.trueSize
 
 	def dsetName(self):
                 return self.name

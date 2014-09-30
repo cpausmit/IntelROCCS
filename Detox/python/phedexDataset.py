@@ -7,6 +7,8 @@ class PhedexDataset:
 
     def __init__(self, dataset):
         self.dataset = dataset
+        self.trueSize = 0
+        self.trueNfiles = 0
         self.siteNames = {}
         self.groupAtSite = {}
         self.sizeAtSite = {}
@@ -75,10 +77,17 @@ class PhedexDataset:
     def setGlobalRank(self,rank):
         self.globalRank = rank
 
-    def setIncomplete(self):
-        for site in self.siteNames:
-            if self.validAtSite[site]:
-                self.partialAtSite[site] = True
+    def setTrueSize(self,size):
+        self.trueSize = size
+
+    def setTrueNfiles(self,nfiles):
+        self.trueNfiles = nfiles
+
+    def getTrueSize(self):
+        return self.trueSize
+
+    def getTrueNfiles(self):
+        return self.trueNfiles
 
     def getLocalRank(self,site):
         return self.rankAtSite[site]
@@ -120,13 +129,8 @@ class PhedexDataset:
         return self.filesAtSite[site]
 
     def findIncomplete(self):
-        if len(self.siteNames.keys()) < 1:
-            return
-
-        fullSize = (sorted(self.sizeAtSite.values(),reverse=True))[0]
-        fullFiles = (sorted(self.filesAtSite.values(),reverse=True))[0]
-        for site,size in self.sizeAtSite.items():
-            if size != fullSize:
+        for site,files in self.filesAtSite.items():
+            if files != self.trueNfiles:
                 #only valid dataset can be taged as partial
                 if self.isValid(site):
                     self.partialAtSite[site] = True

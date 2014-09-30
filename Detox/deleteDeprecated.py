@@ -116,7 +116,7 @@ line  = sys.stdin.readline()
 line = line.rstrip()
 if line == 'Y':
     for site in sorted(siteDsets):
-        if not site == 'T2_US_Wisconsin': continue
+        #if not site == 'T2_US_Wisconsin': continue
         setsToDelete = siteDsets[site]
         print site
         print siteSize2Del[site]
