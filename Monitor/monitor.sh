@@ -7,6 +7,9 @@
 #                                                                             C.Paus (June 10, 2014)
 # --------------------------------------------------------------------------------------------------
 # check if detox package is properly setup
+# calling 
+#   monitor.sh 1
+# will compute nSitesAv instead of nSites
 if [ -z "$DETOX_DB" ] || [ -z "$MONITOR_DB" ]
 then
   echo " ERROR - logfile base not defined: DETOX_DB = \"$DETOX_DB\"  MONITOR_DB = \"$MONITOR_DB\""
@@ -46,48 +49,34 @@ done
 
 # make nice histograms
 pwd
-root -q -b -l $MONITOR_BASE/plotSites.C
+ root -q -b -l $MONITOR_BASE/plotSites.C
 echo "Done making site plots"
 
 # extract dataset info
-$MONITOR_BASE/readJsonSnapshot.py T2*
+ $MONITOR_BASE/readJsonSnapshot.py T2*
 export DATASET_MONITOR_TEXT="since 07/2013"
-echo $1 $average
-if [[ $1 == "1" ]]
-then
-  mv DatasetSummary.txt DatasetSummaryAllAv.txt
-  export DATASET_MONITOR_FILE=DatasetSummaryAllAv
-else
   mv DatasetSummary.txt DatasetSummaryAll.txt
   export DATASET_MONITOR_FILE=DatasetSummaryAll
-fi
-root -q -b -l $MONITOR_BASE/plotDatasets.C\($average\)
+root -q -b -l $MONITOR_BASE/plotDatasets.C\("$1"\)
 
 $MONITOR_BASE/readJsonSnapshot.py T2* 2014*
 export DATASET_MONITOR_TEXT="Summary 2014"
-if [[ $1 == "1" ]]
-then
-  mv DatasetSummary.txt DatasetSummary2014Av.txt
-  export DATASET_MONITOR_FILE=DatasetSummary2014Av
-else
   mv DatasetSummary.txt DatasetSummary2014.txt
   export DATASET_MONITOR_FILE=DatasetSummary2014
-fi
-root -q -b -l $MONITOR_BASE/plotDatasets.C\($average\)
+root -q -b -l $MONITOR_BASE/plotDatasets.C\($1\)
 
-for period in `echo 01 02 03 04 05 06`
-do
+month=`date +%m`
+for period in $(seq 01 $month) 
+do 
+  if [[ ${#period}<2 ]] 
+  then 
+    period=0$period 
+  fi 
   $MONITOR_BASE/readJsonSnapshot.py T2* 2014-$period*
   export DATASET_MONITOR_TEXT="${period}/2014"
-  if [[ $1 == "1" ]]
-  then
-    mv DatasetSummary.txt DatasetSummary${period}-2014Av.txt
-    export DATASET_MONITOR_FILE=DatasetSummary${period}-2014Av
-  else
     mv DatasetSummary.txt DatasetSummary${period}-2014.txt
     export DATASET_MONITOR_FILE=DatasetSummary${period}-2014
-  fi
-  root -q -b -l $MONITOR_BASE/plotDatasets.C\($average\)
+  root -q -b -l $MONITOR_BASE/plotDatasets.C\($1\)
 done
 
 # move the results to the log file area ( to be updated to the monitor areas )
