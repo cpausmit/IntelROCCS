@@ -474,8 +474,8 @@ class CentralManager:
             outputFile.write("   %-9d %-12.2f %-8.2f %-20s \n"\
                                  %(nsets,trueSize/1000,diskSize/1000,site))
         outputFile.write("#\n# Total Disk Space = %-9d \n"%(totalDisk))
-        outputFile.write("#         Taken Space = %-9d \n"%(diskSize/1000))
-        outputFile.write("#       Missing Space = %-9d \n"%(incompleteSpace/1000))
+        outputFile.write("# Taken Space     = %-9d \n"%(diskSize/1000))
+        outputFile.write("# Missing Space   = %-9d \n"%(incompleteSpace/1000))
         outputFile.close()
 
 
