@@ -13,34 +13,51 @@ def alarm_handler(signum, frame):
 
 class PhedexDataHandler:
     def __init__(self,allSites):
+        self.newAccess = False
+        self.cachedDatasets = {}
         self.phedexDatasets = {}
         self.allSites = allSites
+        self.epochTime = int(time.time())
 
     def shouldAccessPhedex(self):
         # number of hours until it will rerun
         renewMinInterval = int(os.environ.get('DETOX_CYCLE_HOURS'))
         statusDir = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS']
-        filename = os.environ['DETOX_PHEDEX_CACHE']
+        fileName = statusDir + '/' + os.environ['DETOX_PHEDEX_CACHE']
+        if not os.path.isfile(fileName):
+            return True
+        if not os.path.getsize(fileName) > 0:
+            return True
 
         timeNow = datetime.datetime.now()
         deltaNhours = datetime.timedelta(seconds = 60*60*(renewMinInterval-1))
-        modTime = datetime.datetime.fromtimestamp(0)
-        if os.path.isfile(statusDir+'/'+filename):
-            modTime = datetime.datetime.fromtimestamp(os.path.getmtime(statusDir+'/'+filename))
-
-            #also check that the file is not empty
-            if not os.path.getsize(statusDir+'/'+filename) > 0:
-                return True
-
+        modTime = datetime.datetime.fromtimestamp(os.path.getmtime(fileName))
         if (timeNow-deltaNhours) < modTime:
+            print "  -- last time cache renewed on " + str(modTime)
             return False
-
         return True
 
     def extractPhedexData(self,federation):
+        self.cachedDatasets = self.readPhedexData()
+        if self.shouldAccessPhedex() :
+            try:
+                self.retrievePhedexData(federation)
+                self.newAccess = True
+            except:
+                raise
+        else:
+            print "  -- reading from cache --"
+
+        if self.newAccess:
+            self.phedexDatasets = self.readPhedexData()
+        else:
+            self.phedexDatasets = self.cachedDatasets
+
+    def retrievePhedexData(self,federation):
+        phedexDatasets = {}
         webServer = 'https://cmsweb.cern.ch/'
         phedexBlocks = 'phedex/datasvc/json/prod/blockreplicas'
-        args = 'show_dataset=y&subscribed=y&node=' + federation + '*'
+        args = 'show_dataset=y&subscribed=y&' + federation
 
         cert = os.environ['DETOX_X509UP']
         url = '"'+webServer+phedexBlocks+'?'+args+'"'
@@ -71,34 +88,27 @@ class PhedexDataHandler:
         strout = tmpfile.readline()
         tmpfile.close()
         os.remove(tmpname)
-
         dataJson = json.loads(strout)
         datasets = (dataJson["phedex"])["dataset"]
         for dset in datasets:
             datasetName = dset["name"]
 
             user = re.findall(r"USER",datasetName)
-
             blocks = dset["block"]
             for block in blocks:
                 replicas = block["replica"]
                 for siterpl in replicas:
-
                     group = siterpl["group"]
                     if group == 'IB RelVal':
                         group = 'IB-RelVal'
-#                    if group != "AnalysisOps":
-#                        continue
 
                     site = str(siterpl["node"])
                     if site not in self.allSites:
                         continue
-                    if self.allSites[site].getStatus() == 0:
-                        continue
 
-                    if datasetName not in self.phedexDatasets:
-                        self.phedexDatasets[datasetName] = phedexDataset.PhedexDataset(datasetName)
-                    dataset = self.phedexDatasets[datasetName]
+                    if datasetName not in phedexDatasets:
+                        phedexDatasets[datasetName] = phedexDataset.PhedexDataset(datasetName)
+                    dataset = phedexDatasets[datasetName]
 
                     size = float(siterpl["bytes"])/1000/1000/1000
                     compl = siterpl["complete"]
@@ -111,50 +121,50 @@ class PhedexDataHandler:
                     if len(user) > 0 or cust == 'y':
                         iscust = 1
                     valid = 1
-                    if compl == 'n' and (made-subs) < 60*24*14:
+                    #if compl == 'n' and (made-subs) < 60*24*14:
+                    #    valid = 0
+                    if (self.epochTime-subs) < 60*60*24*14 and compl == 'n':
                         valid = 0
-
                     dataset.updateForSite(site,size,group,made,files,iscust,valid)
-
 
         # Create our local cache files of the status per site
         filename = os.environ['DETOX_PHEDEX_CACHE']
         outputFile = open(os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS'] + '/'
                           + filename, "w")
-        for datasetName in self.phedexDatasets:
-            line = self.phedexDatasets[datasetName].printIntoLine()
-
-            # CP- Max I do not understand this test, what are you trying to catch here?
+        for datasetName in phedexDatasets:
+            line = phedexDatasets[datasetName].printIntoLine()
+            #any dataset line should be above 10 characters
             if len(line) < 10:
                 print " SKIPING " + datasetName
                 continue
-
-
             outputFile.write(line)
-
         outputFile.close()
 
     def readPhedexData(self):
-
+        phedexDatasets = {}
         filename = os.environ['DETOX_PHEDEX_CACHE']
-        inputFile = open(os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS'] + '/'
-                         + filename, "r")
+        fileName = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS'] + '/' + filename
+	if not os.path.exists(fileName):
+	    return phedexDatasets
 
+	inputFile = open(fileName,'r')
         for line in inputFile.xreadlines():
             items = line.split()
             datasetName = items[0]
+            group = items[1]
+            siteName = items[7]
+            if self.allSites[siteName].getStatus() == 0:
+                continue
+            if group != 'AnalysisOps':
+                continue
 
-            if datasetName not in self.phedexDatasets:
-                self.phedexDatasets[datasetName] = phedexDataset.PhedexDataset(datasetName)
+            if datasetName not in phedexDatasets:
+                phedexDatasets[datasetName] = phedexDataset.PhedexDataset(datasetName)
 
-            dataset = self.phedexDatasets[datasetName]
+            dataset = phedexDatasets[datasetName]
             dataset.fillFromLine(line)
         inputFile.close()
-
-    def findIncomplete(self):
-        for datasetName in self.phedexDatasets:
-            dataset = self.phedexDatasets[datasetName]
-            dataset.findIncomplete()
+        return phedexDatasets
 
     def getPhedexDatasets(self):
         return self.phedexDatasets
@@ -183,6 +193,9 @@ class PhedexDataHandler:
                 dsets[datasetName] = dataset.getLocalRank(site)
         return sorted(dsets,key=dsets.get,reverse=True)
 
+
+    def renewedCache(self):
+        return self.newAccess
 
 
 

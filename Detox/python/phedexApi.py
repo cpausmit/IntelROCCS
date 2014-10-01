@@ -276,22 +276,17 @@ class phedexApi:
         deleteURL = urllib.basejoin(self.phedexBase, "%s/%s/delete" % (format, instance))
         check, response = self.phedexCall(deleteURL, values)
         if check:
-            # An error occurred
             self.logger.error(name, "Delete call failed")
-            # @TODO : Print out better logging, url + values
             return 1, "ERROR - self.phedexCall with response: " + response
         return 0, response
 
-    def updateRequest(self, decision='', request='', node='', comments='', 
-                       format='json', instance='prod'):
+    def updateRequest(self, decision, request, node, comments='',format='json', instance='prod'):
         name = "update"
         values = {'decision':decision, 'request':request, 'node':node, 'comments':comments}
         url = urllib.basejoin(self.phedexBase, "%s/%s/updaterequest" % (format, instance))
         check, response = self.phedexCall(url, values)
         if check:
-            # An error occurred
             self.logger.error(name, "Update call failed")
-            # @TODO : Print out better logging, url + values
             return 1, "ERROR - self.phedexCall with response: " + response
         return 0, response
 

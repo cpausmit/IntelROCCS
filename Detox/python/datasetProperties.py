@@ -5,7 +5,11 @@
 class DatasetProperties:
 	def __init__(self, name):
 		self.name = name
+		self.dbaseId = -1
 		self.globalRank = None
+		self.deprecated = False
+		self.trueSize = 0
+		self.trueNfiles = 0
 		self.siteList = []
 		self.delFromSites = []
 		self.weightAtSites = {}
@@ -29,12 +33,27 @@ class DatasetProperties:
 	def setGlobalRank(self,rank):
 		self.globalRank = rank
 
+	def setId(self,	dsetId):
+		self.dbaseId = dsetId
+
+	def setDeprecated(self,deprecated):
+		self.deprecated = deprecated
+
 	def addDelTarget(self,site):
 		self.delFromSites.append(site)
 
 	def removeDelTarget(self,site):
 		if site in self.delFromSites:
 			self.delFromSites.remove(site)
+
+	def setTrueSize(self,size):
+		self.trueSize = size
+
+	def setTrueNfiles(self,nfiles):
+		self.trueNfiles = nfiles
+
+	def getTrueSize(self):
+		return self.trueSize
 
 	def dsetName(self):
                 return self.name
@@ -53,6 +72,12 @@ class DatasetProperties:
 
 	def getGlobalRank(self):
 		return self.globalRank
+	
+	def getId(self):
+		return self.dbaseId
+
+	def isDeprecated(self):
+		return self.deprecated
 
 	def myRankAtSites(self,site):
 		if site not in self.rankAtSites:

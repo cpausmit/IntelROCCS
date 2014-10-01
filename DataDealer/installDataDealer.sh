@@ -50,7 +50,7 @@ if [ -d "$PHEDEX_CACHE" ]
 then
   	# make sure to remove completely the previous installed software
   	echo " Cleaning up phedex cache."
-  	#rm -rf $PHEDEX_CACHE/*
+  	rm -rf $PHEDEX_CACHE/*
 else
 	# create file structur if it doesn't exist
 	mkdir -p $PHEDEX_CACHE
@@ -62,7 +62,7 @@ if [ -d "$POP_DB_CACHE" ]
 then
   	# make sure to remove completely the previous installed software
   	echo " Cleaning up pop db cache."
-  	#rm -rf $POP_DB_CACHE/*
+  	rm -rf $POP_DB_CACHE/*
 else
 	# create file structur if it doesn't exist
 	mkdir -p $POP_DB_CACHE

@@ -6,7 +6,8 @@
 #---------------------------------------------------------------------------------------------------
 # main directories
 
-export DETOX_DB="/home/snarayan/scratch/IntelROCCS/Monitor/log/IntelROCCS/Detox"
+export DETOX_DB="/home/maxi/IntelROCCS/Detox"
+
 export DETOX_SITESTORAGE_SERVER="t3btch039.mit.edu"
 export DETOX_SITESTORAGE_DB="IntelROCCS"
 export DETOX_SITESTORAGE_USER="cmsSiteDb"
@@ -28,7 +29,7 @@ export DETOX_DATASETS_TO_DELETE=RankedDatasets.txt
 # Parameters for cleaning
 
 export DETOX_CYCLE_HOURS=12
-export DETOX_USAGE_MAX=0.81
+export DETOX_USAGE_MAX=0.90
 export DETOX_USAGE_MIN=0.80
 export DETOX_NCOPY_MIN=1
 
@@ -38,16 +39,14 @@ export DETOX_TIME_WIND=12
 
 # Email list to notify in case of problems
 
-export DETOX_EMAIL_LIST=sidn@mit.edu
+export DETOX_EMAIL_LIST=maxi@fnal.gov,maxi@mit.edu
 
 # Certificate location
 
 export DETOX_X509UP=/tmp/x509up_u`id -u`
 
 # Local logging database config file
-
-export DETOX_MYSQL_CONFIG=/etc/myIntelROCCS.cnf
-export DETOX_HISTORY_DB="DetoxHistory"
+#export DETOX_MYSQL_CONFIG=/etc/myIntelROCCS.cnf
 
 # Paths
 
