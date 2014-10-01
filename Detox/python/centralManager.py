@@ -317,19 +317,16 @@ class CentralManager:
        self.printResults()
 
     def unifyDeletionLists(self):
-        for site in self.sitePropers.keys():
+        for site in self.sitePropers:
             self.sitePropers[site].makeWishList()
 
-        for datasetName in self.dataPropers.keys():
+        for datasetName in self.dataPropers:
             dataPr = self.dataPropers[datasetName]
             countWishes = 0
-            partSites = 0
-            for site in self.sitePropers.keys():
+            for site in self.sitePropers:
                 sitePr = self.sitePropers[site]
                 if sitePr.onWishList(datasetName):
                     countWishes = countWishes + 1
-                if sitePr.isPartial(datasetName):
-                    partSites = partSites + 1
 
             if dataPr.nSites()-dataPr.nBeDeleted() - countWishes > (self.DETOX_NCOPY_MIN-1):
                 # grant wishes to all sites
@@ -472,11 +469,13 @@ class CentralManager:
                     trueSize = trueSize + dataPr.getTrueSize()
                     diskSize = diskSize + sitePr.dsetSize(dset)
                     nsets = nsets + 1
+            if nsets < 1:
+                continue
             outputFile.write("   %-9d %-12.2f %-8.2f %-20s \n"\
                                  %(nsets,trueSize/1000,diskSize/1000,site))
         outputFile.write("#\n# Total Disk Space = %-9d \n"%(totalDisk))
-        outputFile.write("# Taken Space = %-9d \n"%(diskSize/1000))
-        outputFile.write("# Missing Space = %-9d \n"%(incompleteSpace/1000))
+        outputFile.write("#         Taken Space = %-9d \n"%(diskSize/1000))
+        outputFile.write("#       Missing Space = %-9d \n"%(incompleteSpace/1000))
         outputFile.close()
 
 
