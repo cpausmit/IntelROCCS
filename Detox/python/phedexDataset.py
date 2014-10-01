@@ -133,7 +133,10 @@ class PhedexDataset:
             if files != self.trueNfiles:
                 #only valid dataset can be taged as partial
                 if self.isValid(site):
-                    self.partialAtSite[site] = True
+                    if self.trueSize < self.sizeAtSite[site]:
+                        print "  -- WARNING -- need correct size for " + self.dataset 
+                    else:
+                        self.partialAtSite[site] = True
 
     def printIntoLine(self):
         if(len(self.siteNames.keys()) < 1):
