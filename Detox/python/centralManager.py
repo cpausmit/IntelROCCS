@@ -406,12 +406,14 @@ class CentralManager:
                 activeFile.write("%4d %s\n"%(theSite.getSize()/1000, site))
 
             # summary of all sites
+            
             outputFile.write("   %-6d %-9d %-9d %-12d %-20s \n"\
-                             %(theSite.getStatus(), theSite.getSize()/1000, 
-                               taken, lcopy, site))
-        outputFile.write("#\n# Total Disk Space  = %-9d \n"%(totalDisk))
-        outputFile.write("# Total Space Taken = %-9d \n"%(totalSpaceTaken))
-        outputFile.write("# Total Last Copy   = %-9d \n"%(totalSpaceLcopy))
+                                 %(theSite.getStatus(),theSite.getSize()/1000,taken,lcopy,site))
+        perc = totalSpaceTaken/totalDisk
+        outputFile.write("#\n# Total Taken         = %-5d (%-1.2f) \n"%(totalSpaceTaken,perc))
+        perc = totalSpaceLcopy/totalDisk
+        outputFile.write("# Total Last Copy     = %-5d (%-1.2f)\n"%(totalSpaceLcopy,perc))
+        outputFile.write("# Total Active Quota  = %-9d \n"%(totalDisk))
         activeFile.close()
         outputFile.close()
 
@@ -434,6 +436,7 @@ class CentralManager:
         outputFile.close()
 
         deprecatedSpace = 0
+        totalSets = 0
         outputFile = open(os.environ['DETOX_DB'] + "/DeprecatedSummary.txt",'w')
         outputFile.write('#- ' + today + " " + ttime + "\n\n")
         outputFile.write("#- D E P R E C A T E D  D A T A S E T S ----\n\n")
@@ -444,14 +447,20 @@ class CentralManager:
             if nsets < 1:
                 continue
             deprecatedSpace = deprecatedSpace + sitePr.spaceDeprecated()/1000
+            totalSets = totalSets + nsets
 
             outputFile.write("   %-9d %-8.2f %-20s \n"\
                                  %(nsets,sitePr.spaceDeprecated()/1000,site))
-        outputFile.write("#\n# Total Disk Space = %-9d \n"%(totalDisk))
-        outputFile.write("# Deprecated Space = %-9d \n"%(deprecatedSpace))
+        outputFile.write("#\n# Number Datasets    = %-9d \n"%(totalSets))
+        perc = deprecatedSpace/totalDisk
+        outputFile.write("# Total Size         = %-4d (%-1.3f) \n"%(deprecatedSpace,perc))
+        outputFile.write("# Total Active Quota = %-9d \n"%(totalDisk))
         outputFile.close()
 
         incompleteSpace = 0
+        totalSets = 0
+        totalTrueSize = 0
+        totalDiskSize = 0
         outputFile = open(os.environ['DETOX_DB'] + "/IncompleteSummary.txt",'w')
         outputFile.write('#- ' + today + " " + ttime + "\n\n")
         outputFile.write("#- I N C O M P L E T E  D A T A S E T S ----\n\n")
@@ -467,15 +476,24 @@ class CentralManager:
                     delta = dataPr.getTrueSize() - sitePr.dsetSize(dset)
                     incompleteSpace = incompleteSpace + delta
                     trueSize = trueSize + dataPr.getTrueSize()
+                    totalTrueSize = totalTrueSize + dataPr.getTrueSize()
                     diskSize = diskSize + sitePr.dsetSize(dset)
+                    totalDiskSize = totalDiskSize + sitePr.dsetSize(dset)
                     nsets = nsets + 1
+                    totalSets = totalSets + 1
             if nsets < 1:
                 continue
             outputFile.write("   %-9d %-12.2f %-8.2f %-20s \n"\
                                  %(nsets,trueSize/1000,diskSize/1000,site))
-        outputFile.write("#\n# Total Disk Space = %-9d \n"%(totalDisk))
-        outputFile.write("# Taken Space     = %-9d \n"%(diskSize/1000))
-        outputFile.write("# Missing Space   = %-9d \n"%(incompleteSpace/1000))
+        outputFile.write("#\n# Number Datasets    = %-9d \n"%(totalSets))
+        perc = totalTrueSize/totalDisk/1000
+        outputFile.write("# Total True Size    = %-4d (%-1.3f)\n"%(totalTrueSize/1000,perc))
+        perc = totalDiskSize/totalDisk/1000
+        outputFile.write("# Total Size         = %-4d (%-1.3f)\n"%(totalDiskSize/1000,perc))
+        delta = totalTrueSize-totalDiskSize
+        perc = delta/totalDisk/1000
+        outputFile.write("# Missing Space      = %-4d (%-1.3f)\n"%(delta/1000,perc))
+        outputFile.write("# Total Active Quota = %-9d \n"%(totalDisk))
         outputFile.close()
 
 

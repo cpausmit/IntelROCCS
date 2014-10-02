@@ -60,6 +60,7 @@ class PopularityDataHandler:
         if not os.path.exists(dirname):
             os.makedirs(dirname)
 
+        siteAdjust = site.replace('_Disk', '')
         badsnapshots = 0
         items = len(self.dates)
         for i in range(items-1):
@@ -80,10 +81,9 @@ class PopularityDataHandler:
 
             tEnd = str(self.dates[i])
             tStart = str(self.dates[i+1])
-            site = site.replace('_Disk', '')
             cmd = os.environ['DETOX_BASE'] + '/' + \
                   'popularityClient.py  /popularity/DSStatInTimeWindow/' + \
-                  '\?\&sitename=' + site + '\&tstart=' + tStart + '\&tstop=' + tEnd
+                  '\?\&sitename=' + siteAdjust + '\&tstart=' + tStart + '\&tstop=' + tEnd
             process = subprocess.Popen(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,shell=True)
 
 
@@ -132,7 +132,7 @@ class PopularityDataHandler:
 
             #use goodsnapshot
             date = (re.search(r"(\d+)-(\d+)-(\d+)", outputFile)).group(0)
-            self.processRawInput(site,date,rawinp)
+            self.processRawInput(siteAdjust,date,rawinp)
 
         timeNow = time.time()
         print '   - Popularity queries for %s took: %d seconds'%(site,timeNow-timeStart)
@@ -145,6 +145,8 @@ class PopularityDataHandler:
         thisSite = dataJason["SITENAME"]
         if thisSite != site:
             print " !!!!!! Popularity site screw up !!!!!!"
+            print thisSite
+            print site
         for entry in dataJason["DATA"]:
             dataset = entry["COLLNAME"]
             nAccessed = entry["NACC"]
