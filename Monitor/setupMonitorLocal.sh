@@ -6,12 +6,15 @@
 #---------------------------------------------------------------------------------------------------
 # main directories
 
-export MONITOR_DB="$HOME/log/IntelROCCS/Monitor"
+export MONITOR_DB=${PWD}"/log/IntelROCCS/Monitor"
+#export DETOX_DB=${PWD}"/log/IntelROCCS/Detox"
 
 export MONITOR_SITESTORAGE_SERVER="t3btch039.mit.edu"
 export MONITOR_SITESTORAGE_DB="IntelROCCS"
 export MONITOR_SITESTORAGE_USER="cmsSiteDb"
 export MONITOR_SITESTORAGE_PW="db78user?Cms"
+
+export DETOX_RESULT="result"
 
 # Parameters for monitoring
 
@@ -41,6 +44,7 @@ export LD_LIBRARY_PATH="/usr/local/lib:${LD_LIBRARY_PATH}"
 
 if [ -z "$PYTHONPATH" ]
 then
-  export PYTHONPATH="/usr/local/lib/python2.7:/usr/local/lib/python2.7/site-packages"
+  export PYTHONPATH="/usr/lib64/python2.6/:/usr/lib64/python2.6/site-packages"
 fi
+export PYTHONPATH="/usr/lib64/python2.6/:/usr/lib64/python2.6/site-packages"
 export PYTHONPATH="${MONITOR_PYTHONPATH}:$PYTHONPATH"
