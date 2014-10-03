@@ -1,4 +1,3 @@
-
 #===================================================================================================
 #  C L A S S
 #===================================================================================================
@@ -409,10 +408,10 @@ class CentralManager:
             
             outputFile.write("   %-6d %-9d %-9d %-12d %-20s \n"\
                                  %(theSite.getStatus(),theSite.getSize()/1000,taken,lcopy,site))
-        perc = totalSpaceTaken/totalDisk
-        outputFile.write("#\n# Total Taken         = %-5d (%-1.2f) \n"%(totalSpaceTaken,perc))
-        perc = totalSpaceLcopy/totalDisk
-        outputFile.write("# Total Last Copy     = %-5d (%-1.2f)\n"%(totalSpaceLcopy,perc))
+        perc = totalSpaceTaken/totalDisk*100
+        outputFile.write("#\n# Total Taken         = %-5d (%-3.1f%%) \n"%(totalSpaceTaken,perc))
+        perc = totalSpaceLcopy/totalDisk*100
+        outputFile.write("# Total Last Copy     = %-5d (%-3.1f%%)\n"%(totalSpaceLcopy,perc))
         outputFile.write("# Total Active Quota  = %-9d \n"%(totalDisk))
         activeFile.close()
         outputFile.close()
@@ -452,8 +451,8 @@ class CentralManager:
             outputFile.write("   %-9d %-8.2f %-20s \n"\
                                  %(nsets,sitePr.spaceDeprecated()/1000,site))
         outputFile.write("#\n# Number Datasets    = %-9d \n"%(totalSets))
-        perc = deprecatedSpace/totalDisk
-        outputFile.write("# Total Size         = %-4d (%-1.3f) \n"%(deprecatedSpace,perc))
+        perc = deprecatedSpace/totalDisk*100
+        outputFile.write("# Total Size         = %-4d (%-3.1f%%) \n"%(deprecatedSpace,perc))
         outputFile.write("# Total Active Quota = %-9d \n"%(totalDisk))
         outputFile.close()
 
@@ -486,13 +485,13 @@ class CentralManager:
             outputFile.write("   %-9d %-12.2f %-8.2f %-20s \n"\
                                  %(nsets,trueSize/1000,diskSize/1000,site))
         outputFile.write("#\n# Number Datasets    = %-9d \n"%(totalSets))
-        perc = totalTrueSize/totalDisk/1000
-        outputFile.write("# Total True Size    = %-4d (%-1.3f)\n"%(totalTrueSize/1000,perc))
-        perc = totalDiskSize/totalDisk/1000
-        outputFile.write("# Total Size         = %-4d (%-1.3f)\n"%(totalDiskSize/1000,perc))
+        perc = totalTrueSize/totalDisk/10
+        outputFile.write("# Total True Size    = %-4d (%-3.1f%%)\n"%(totalTrueSize/1000,perc))
+        perc = totalDiskSize/totalDisk/10
+        outputFile.write("# Total Size         = %-4d (%-3.1f%%)\n"%(totalDiskSize/1000,perc))
         delta = totalTrueSize-totalDiskSize
-        perc = delta/totalDisk/1000
-        outputFile.write("# Missing Space      = %-4d (%-1.3f)\n"%(delta/1000,perc))
+        perc = delta/totalDisk/10
+        outputFile.write("# Missing Space      = %-4d (%-3.1f%%)\n"%(delta/1000,perc))
         outputFile.write("# Total Active Quota = %-9d \n"%(totalDisk))
         outputFile.close()
 
