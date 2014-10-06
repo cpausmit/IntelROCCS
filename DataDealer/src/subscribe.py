@@ -7,10 +7,12 @@ import dbApi, phedexApi
 
 class subscribe():
 	def __init__(self):
+		self.rankingCachePath = os.environ['DATA_DEALER_RANKING_CACHE']
 		self.phedexApi = phedexApi.phedexApi()
 		self.dbApi = dbApi.dbApi()
 
-	def createSubscriptions(self, subscriptions, datasetRankings):
+	def createSubscriptions(self, subscriptions):
+		cacheFile = "%s/%s.db" % (self.rankingCachePath, "rankingCache")
 		for siteName in iter(subscriptions):
 			datasets, subscriptionData = self.phedexApi.createXml(datasets=subscriptions[siteName], instance='prod')
 			if not datasets:
@@ -29,7 +31,12 @@ class subscribe():
 				continue
 			requestTimestamp = datetime.datetime.fromtimestamp(float(request.get('request_timestamp')))
 			for datasetName in datasets:
-				datasetRank = datasetRankings[datasetName]
+				rankingCache = sqlite3.connect(cacheFile)
+				with rankingCache:
+					cur = rankingCache.cursor()
+					cur.execute('SELECT Rank FROM Datasets WHERE DatasetName=?', (datasetName,))
+					row = cur.fetchone()
+					datasetRank = row[0]
 				groupName = "AnalysisOps"
 				query = "INSERT INTO Requests(RequestId, RequestType, DatasetId, SiteId, GroupId, Rank, Date) SELECT %s, %s, Datasets.DatasetId, Sites.SiteId, Groups.GroupId, %s, %s FROM Datasets, Sites, Groups WHERE Datasets.DatasetName=%s AND Sites.SiteName=%s AND Groups.GroupName=%s"
 				values = [requestId, requestType, datasetRank, requestTimestamp, datasetName, siteName, groupName]

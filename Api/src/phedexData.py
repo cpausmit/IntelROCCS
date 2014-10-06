@@ -64,13 +64,11 @@ class phedexData:
 		datasets = jsonData.get('phedex').get('dataset')
 		for dataset in datasets:
 			datasetName = dataset.get('name')
-			if re.match('.+/USER', datasetName):
-				continue
-			sizeBytes = dataset.get('bytes')
-			if not sizeBytes:
-				sizeBytes = 0
-				for block in dataset.get('block'):
-					sizeBytes += int(block.get('bytes'))
+			#if re.match('.+/USER', datasetName):
+			#	continue
+			sizeBytes = 0
+			for block in dataset.get('block'):
+				sizeBytes += int(block.get('bytes'))
 			sizeGb = float(sizeBytes)/10**9
 			with blockReplicasCache:
 				cur = blockReplicasCache.cursor()
@@ -93,6 +91,25 @@ class phedexData:
 		with blockReplicasCache:
 			cur = blockReplicasCache.cursor()
 			cur.execute('SELECT DISTINCT DatasetName FROM Datasets NATURAL JOIN Replicas WHERE GroupName=?', ('AnalysisOps',))
+			datasets = []
+			for row in cur:
+				if re.match('.+/USER', row[0]):
+					continue
+				datasets.append(row[0])
+		return datasets
+
+	def getDatasetsAtSite(self, siteName):
+		datasets = []
+		if self.shouldAccessPhedex('blockReplicas'):
+			# update
+			error = self.updateCache('blockReplicas')
+			if error:
+				return datasets
+		# access cache
+		blockReplicasCache = sqlite3.connect("%s/blockReplicas.db" % (self.phedexCache))
+		with blockReplicasCache:
+			cur = blockReplicasCache.cursor()
+			cur.execute('SELECT DISTINCT DatasetName FROM Datasets NATURAL JOIN Replicas WHERE GroupName=? and SiteName=?', ('AnalysisOps', siteName))
 			datasets = []
 			for row in cur:
 				datasets.append(row[0])

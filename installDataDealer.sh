@@ -41,7 +41,7 @@ touch ${INSTALL_DIR}/__init__.py
 #============
 
 API_INSTALL=${INSTALL_DIR}/Api
-${INTELROCCS_DIR}/Api/installApi.sh
+${INTELROCCS_DIR}/installApi.sh
 
 # create init scripts
 #====================
@@ -73,19 +73,21 @@ fi
 
 PYTHONPATH=${INSTALL_DIR}/Api
 DATA_DEALER_THRESHOLD="1"
-DATA_DEALER_BUDGET="10000"
+DATA_DEALER_BUDGET="50000"
 CACHE_DEADLINE="12"
+RANKING_CACHE=/tmp/IntelROCCS/Cache
 
 INIT_FILE=$DATA_DEALER_INSTALL/init.py
 
 echo "#!/usr/local/bin/python" > $INIT_FILE
 echo "import sys, os" >> $INIT_FILE
 echo "sys.path.append('"${PYTHONPATH}"')" >> $INIT_FILE
-echo "os.environ['PHEDEX_CACHE']='"${PHEDEX_CACHE}"'" >> $INIT_FILE
-echo "os.environ['POP_DB_CACHE']='"${POP_DB_CACHE}"'" >> $INIT_FILE
-echo "os.environ['CACHE_DEADLINE']='"${CACHE_DEADLINE}"'" >> $INIT_FILE
+echo "os.environ['DATA_DEALER_PHEDEX_CACHE']='"${PHEDEX_CACHE}"'" >> $INIT_FILE
+echo "os.environ['DATA_DEALER_POP_DB_CACHE']='"${POP_DB_CACHE}"'" >> $INIT_FILE
+echo "os.environ['DATA_DEALER_CACHE_DEADLINE']='"${CACHE_DEADLINE}"'" >> $INIT_FILE
 echo "os.environ['DATA_DEALER_THRESHOLD']='"${DATA_DEALER_THRESHOLD}"'" >> $INIT_FILE
 echo "os.environ['DATA_DEALER_BUDGET']='"${DATA_DEALER_BUDGET}"'" >> $INIT_FILE
+echo "os.environ['DATA_DEALER_RANKING_CACHE']='"${RANKING_CACHE}"'" >> $INIT_FILE
 
 chmod 755 $INIT_FILE
 

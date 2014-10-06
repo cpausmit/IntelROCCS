@@ -2,51 +2,53 @@
 #---------------------------------------------------------------------------------------------------
 # This is the main script of the DataDealer. See README.md for more information.
 #---------------------------------------------------------------------------------------------------
-import sys, copy
+import sys
 import init
-import datasetRanker, siteRanker, selection, subscribe, subscriptionReport
-import phedexApi, popDbApi
+import sites, rockerBoard, subscribe, subscriptionReport
+import phedexApi, popDbApi, phedexData
 
 # initialize
+phedexCache = os.environ['DATA_DEALER_PHEDEX_CACHE']
+cacheDeadline = int(os.environ['DATA_DEALER_CACHE_DEADLINE'])
+threshold = int(os.environ['DATA_DEALER_THRESHOLD'])
+
 phedexApi_ = phedexApi.phedexApi()
 phedexApi_.renewProxy()
 
 popDbApi_ = popDbApi.popDbApi()
 popDbApi_.renewSsoCookie()
 
+phedexData = phedexData.phedexData(phedexCache, cacheDeadline)
+sites_ = sites.sites()
+rba = rockerBoard.rockerBoard()
+subscribe_ = subscribe.subscribe()
+dataDealerReport_ = dataDealerReport.dataDealerReport()
+
 #===================================================================================================
 #  M A I N
 #===================================================================================================
-# get dataset rankings
-print "Dataset Ranking --- Start"
-datasetRanker_ = datasetRanker.datasetRanker()
-datasetRankings = datasetRanker_.getDatasetRankings()
-datasetRankingsCopy = copy.deepcopy(datasetRankings)
-print "Dataset Ranking --- Stop"
+# get all datasets
+print " ----  Get Datasets  ---- "
+datasets = self.phedexData.getAllDatasets()
+for dataset in datasets:
+	print dataset
+sys.exit(0)
+# get all sites
+print " ----  Get Sites  ---- "
+availableSites = getAvailableSites()
 
-# get site rankings
-print "Site Ranking --- Start"
-siteRanker_ = siteRanker.siteRanker()
-siteRankings = siteRanker_.getSiteRankings()
-print "Site Ranking --- Stop"
-
-# select datasets and sites for subscriptions
-print "Select Subscriptions --- Start"
-selection_ = selection.selection()
-subscriptions = selection_.selectSubscriptions(datasetRankings, siteRankings)
-print "Select Subscriptions --- Stop"
+# rocker board algorithm
+print " ---- Rocker Board Algorithm ---- "
+subscriptions = rba.rba(datasets, availableSites)
 
 # subscribe selected datasets
-print "Subscribe --- Start"
-subscribe_ = subscribe.subscribe()
-subscribe_.createSubscriptions(subscriptions, datasetRankingsCopy)
-print "Subscribe --- Stop"
+print " ---- Subscribe Datasets ---- "
+subscribe_.createSubscriptions(subscriptions)
 
-# Send summary report
-print "Daily email --- Start"
-subscriptionReport_ = subscriptionReport.subscriptionReport()
-subscriptionReport_.createReport()
-print "Daily email --- Stop"
+# send summary report
+print " ---- Daily Summary ---- "
+dataDealerReport_.createReport()
 
-# DONE
+# done
+print " ---- Done ---- "
 sys.exit(0)
