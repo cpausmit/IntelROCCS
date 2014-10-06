@@ -14,7 +14,7 @@ INTELROCCS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 DATA_DEALER_SRC=${INTELROCCS_DIR}/DataDealer/src
 if [ "$#" -eq 1 ]
 then
-  INSTALL_DIR=${INTELROCCS_DIR}/Install
+	INSTALL_DIR=${INTELROCCS_DIR}/Install
 else
 DATA_DEALER_INSTALL=${INSTALL_DIR}/DataDealer
 
@@ -24,9 +24,9 @@ DATA_DEALER_INSTALL=${INSTALL_DIR}/DataDealer
 
 if [ -d "$DATA_DEALER_INSTALL" ]
 then
-  	# make sure to remove completely the previous installed software
-  	echo " Removing previous data dealer installation."
-  	rm -rf $DATA_DEALER_INSTALL/*
+		# make sure to remove completely the previous installed software
+		echo " Removing previous data dealer installation."
+		rm -rf $DATA_DEALER_INSTALL/*
 else
 	# create file structur if it doesn't exist
 	mkdir -p $DATA_DEALER_INSTALL
@@ -51,9 +51,9 @@ ${INTELROCCS_DIR}/installApi.sh
 PHEDEX_CACHE=/tmp/IntelROCCS/Cache/Phedex
 if [ -d "$PHEDEX_CACHE" ]
 then
-  	# make sure to remove completely the previous installed software
-  	echo " Cleaning up phedex cache."
-  	rm -rf $PHEDEX_CACHE/*
+		# make sure to remove completely the previous installed software
+		echo " Cleaning up phedex cache."
+		rm -rf $PHEDEX_CACHE/*
 else
 	# create file structur if it doesn't exist
 	mkdir -p $PHEDEX_CACHE
@@ -63,9 +63,9 @@ fi
 POP_DB_CACHE=/tmp/IntelROCCS/Cache/PopDb
 if [ -d "$POP_DB_CACHE" ]
 then
-  	# make sure to remove completely the previous installed software
-  	echo " Cleaning up pop db cache."
-  	rm -rf $POP_DB_CACHE/*
+		# make sure to remove completely the previous installed software
+		echo " Cleaning up pop db cache."
+		rm -rf $POP_DB_CACHE/*
 else
 	# create file structur if it doesn't exist
 	mkdir -p $POP_DB_CACHE
