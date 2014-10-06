@@ -6,7 +6,7 @@
 #---------------------------------------------------------------------------------------------------
 # main directories
 
-export DETOX_DB="/home/maxi/IntelROCCS/Detox"
+export DETOX_DB="/home/snarayan/scratch/IntelROCCS/Monitor/log/IntelROCCS/Detox/"
 
 export DETOX_SITESTORAGE_SERVER="t3btch039.mit.edu"
 export DETOX_SITESTORAGE_DB="IntelROCCS"
@@ -39,7 +39,7 @@ export DETOX_TIME_WIND=12
 
 # Email list to notify in case of problems
 
-export DETOX_EMAIL_LIST=maxi@fnal.gov,maxi@mit.edu
+export DETOX_EMAIL_LIST=sidn@mit.edu
 
 # Certificate location
 
@@ -50,7 +50,7 @@ export DETOX_X509UP=/tmp/x509up_u`id -u`
 
 # Paths
 
-export DETOX_BASE=`pwd`
+export DETOX_BASE=/home/snarayan/scratch/IntelROCCS/Detox/
 export DETOX_PYTHONPATH="$DETOX_BASE/python"
 
 # Python path etc. (careful it might not be set)
