@@ -162,10 +162,11 @@ def cleanHistories(xfers,dels,end):
                         i+=1
                     break
         except IndexError:
-            print xfers
-            print dels
-            print i,j
-            sys.exit(-1)
+            break
+        #    print xfers
+        #    print dels
+        #    print i,j
+        #    sys.exit(-1)
     #    print xfers
     #    print dels
     return xfers,dels
@@ -256,11 +257,11 @@ def checkHistory(sitePattern,datasetsOnSites):
                 datasetMovement[filename][siteName][1].append(nowish)
             else:
                 # doesn't make sense, so skip
-                continue
+                # continue
                 # or don't skip
-                #datasetMovement[filename][siteName][0],datasetMovement[filename][siteName][1] = cleanHistories(xfers,dels,nowish)
-#            lastXfer=xfers[-1]
-#            lastDel=dels[-1]
+                datasetMovement[filename][siteName][0],datasetMovement[filename][siteName][1] = cleanHistories(xfers,dels,nowish)
+            lastXfer=xfers[-1]
+            lastDel=dels[-1]
 #            historyFile.write("%25s\t%s\n"%(siteName,str(xfers)))
 #            historyFile.write("%25s\t%s\n"%(" ",str(dels)))
 #            historyFile.write("%25s\t%i -> %i ; %i\n"%(" ",lastXfer,lastDel,nowish))
@@ -338,6 +339,9 @@ for line in phedexFile:
     l = line.split()
     datasetName=l[0]
     siteName=l[7]
+    if not re.match(site,siteName):
+        continue
+    historyFile.write("Matched %s with %s\n"%(site,siteName))
     if datasetName.find("AOD")==-1:
         continue
     if datasetName in datasetsOnSites:
