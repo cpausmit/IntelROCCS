@@ -507,6 +507,7 @@ class CentralManager:
             fileDelete = sitedir + "/DeleteDatasets.txt"
             fileDeprec = sitedir + "/DeprecatedSets.txt"
             fileIncomp = sitedir + "/IncompleteSets.txt"
+            fileWrGroup= sitedir + "/RunAwayGroupSets.txt"
 
             outputFile = open(fileTimest,'w')
             outputFile.write('#- ' + today + " " + ttime + "\n\n")
@@ -595,6 +596,18 @@ class CentralManager:
                 ndeletes = dataPr.nBeDeleted()
                 outputFile.write("%8.1f %11.1f %8.1f %6d  %s\n"\
                                      %(rank,trueSize,size,nsites-ndeletes,dset))
+            outputFile.close()
+
+            outputFile = open(fileWrGroup,'w')
+            outputFile.write("# -- " + today + " " + ttime + "\n")
+            outputFile.write("#------------------------------------\n")
+            runAwayGroups =  self.phedexHandler.getRunAwayGroups(site)
+            runAwaySets =  self.phedexHandler.getRunAwaySets(site)
+            for group in sorted(runAwayGroups):
+                outputFile.write("\n"+group+":\n")
+                for dset in sorted(runAwaySets):
+                    if runAwaySets[dset] == group:
+                        outputFile.write(dset+"\n")
             outputFile.close()
 
 

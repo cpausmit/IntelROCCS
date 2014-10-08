@@ -14,8 +14,9 @@ def alarm_handler(signum, frame):
 class PhedexDataHandler:
     def __init__(self,allSites):
         self.newAccess = False
-        self.cachedDatasets = {}
         self.phedexDatasets = {}
+        self.otherDatasets = {}
+        self.runAwayGroups = {}
         self.allSites = allSites
         self.epochTime = int(time.time())
 
@@ -38,7 +39,6 @@ class PhedexDataHandler:
         return True
 
     def extractPhedexData(self,federation):
-        self.cachedDatasets = self.readPhedexData()
         if self.shouldAccessPhedex() :
             try:
                 self.retrievePhedexData(federation)
@@ -48,10 +48,7 @@ class PhedexDataHandler:
         else:
             print "  -- reading from cache --"
 
-        if self.newAccess:
-            self.phedexDatasets = self.readPhedexData()
-        else:
-            self.phedexDatasets = self.cachedDatasets
+        self.readPhedexData()
 
     def retrievePhedexData(self,federation):
         phedexDatasets = {}
@@ -141,7 +138,6 @@ class PhedexDataHandler:
         outputFile.close()
 
     def readPhedexData(self):
-        phedexDatasets = {}
         filename = os.environ['DETOX_PHEDEX_CACHE']
         fileName = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS'] + '/' + filename
 	if not os.path.exists(fileName):
@@ -155,16 +151,22 @@ class PhedexDataHandler:
             siteName = items[7]
             if self.allSites[siteName].getStatus() == 0:
                 continue
-            if group != 'AnalysisOps':
+            if group == 'local':
                 continue
 
-            if datasetName not in phedexDatasets:
-                phedexDatasets[datasetName] = phedexDataset.PhedexDataset(datasetName)
-
-            dataset = phedexDatasets[datasetName]
+            dataset = None
+            if group != 'AnalysisOps':
+                if datasetName not in self.otherDatasets:
+                    self.otherDatasets[datasetName] = phedexDataset.PhedexDataset(datasetName)
+                dataset = self.otherDatasets[datasetName]
+            else:
+                if datasetName not in self.phedexDatasets:
+                    self.phedexDatasets[datasetName] = phedexDataset.PhedexDataset(datasetName)
+                dataset = self.phedexDatasets[datasetName]
             dataset.fillFromLine(line)
         inputFile.close()
-        return phedexDatasets
+
+        self.printRunawaySets()
 
     def getPhedexDatasets(self):
         return self.phedexDatasets
@@ -196,6 +198,50 @@ class PhedexDataHandler:
 
     def renewedCache(self):
         return self.newAccess
+
+    def getRunAwayGroups(self,site):
+        groups = []
+        if site in self.runAwayGroups:
+            groups = self.runAwayGroups[site]
+        return groups
+
+    def getRunAwaySets(self,site):
+        runAway = {}
+        for dset in self.phedexDatasets:
+            if dset not in self.otherDatasets:
+                continue
+
+            dataset = self.otherDatasets[dset]
+            if not dataset.isOnSite(site):
+                continue
+            group = dataset.group(site)
+            runAway[dset] = group
+        return runAway
+
+    def printRunawaySets(self):
+        siteSizes = {}
+        for dset in self.phedexDatasets:
+            if dset not in self.otherDatasets:
+                continue
+
+            dataset = self.otherDatasets[dset]
+            for site in dataset.siteNames:
+                group = dataset.group(site)
+                size  = dataset.size(site)
+                if site not in siteSizes:
+                    siteSizes[site] = 0
+                siteSizes[site] = siteSizes[site] + size/1000
+                if site not in self.runAwayGroups:
+                    self.runAwayGroups[site] = [group]
+                else:
+                    if group not in self.runAwayGroups[site]:
+                        self.runAwayGroups[site].append(group)
+
+        if (len(siteSizes) < 1):
+            return
+        print " !! WARNING !! - those sites have datasets in wrong groups"
+        for site in sorted(siteSizes):
+            print ' %6.2f TB'%(siteSizes[site]) + ": " + site
 
 
 
