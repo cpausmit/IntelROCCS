@@ -30,8 +30,8 @@ export MONITOR_MYSQL_CONFIG=/etc/myIntelROCCS.cnf
 
 # Paths
 
-export MONITOR_BASE=`pwd`
-export MONITOR_PYTHONPATH="$MONITOR_BASE/python"
+export MONITOR_BASE=/home/snarayan/scratch/IntelROCCS/Monitor/
+export MONITOR_PYTHONPATH="$DETOX_BASE/python"
 
 # Python path etc. (careful it might not be set)
 

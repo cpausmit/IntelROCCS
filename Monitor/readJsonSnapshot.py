@@ -252,10 +252,7 @@ def cleanHistories(xfers,dels,end):
                         i+=1
                     break
         except IndexError:
-            print xfers
-            print dels
-            print i,j
-            sys.exit(-1)
+            continue
     #    print xfers
     #    print dels
     return xfers,dels
@@ -351,7 +348,7 @@ def calculateAverageNumberOfSites(sitePattern,start,end):
                 continue
             else:
                 # doesn't make sense, so skip
-                # continue
+                continue
                 # or don't skip
                 xfers= datasetMovement[filename][site][0]
                 dels=  datasetMovement[filename][site][1]
@@ -383,9 +380,7 @@ def calculateAverageNumberOfSites(sitePattern,start,end):
                     tXfer = datasetMovement[filename][site][0][i]
                     tDel  = datasetMovement[filename][site][1][i]
                 except IndexError:
-                    print datasetMovement[filename][site]
-                    print i
-                    sys.exit(-1)
+                    continue
                 
                 i = i + 1                                        # iterate before all continue statements
 
@@ -421,12 +416,12 @@ def calculateAverageNumberOfSites(sitePattern,start,end):
         if nSites[filename] == 0:                                # dataset not on sites in interval
             nSkip += 1
             continue
-        elif nSites[filename] < 1:
+        '''elif nSites[filename] < 1:
             print nSites[filename],filename
             for sites in datasetMovement[filename]:
                 print sites
                 print "\t",datasetMovement[filename][sites][0]
-                print "\t",datasetMovement[filename][sites][1]
+                print "\t",datasetMovement[filename][sites][1]'''
         sum += nSites[filename]
         n   += 1
         #print ' %s \t%f'%(filename,nSites[filename])

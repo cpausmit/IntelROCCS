@@ -126,6 +126,49 @@ def readDatasetProperties():
 
     return (fileNumbers, sizesGb)
 
+def cleanHistories(xfers,dels,end):
+    # used to clean up messy histories
+    i=0
+    j=0
+    ld=-1
+    if len(dels)==0:
+        # if there are no deletions in the history, assume it's still there
+        # if there are no transfers in the history, and you are here, SOMETHING IS VERY WRONG
+        dels=[end]
+    if xfers[0] > dels[0]:
+        xfers.insert(0,0)
+    while True:
+        nx=len(xfers)
+        nd=len(dels)
+        try:
+            if i==nx and j==nd:
+                break
+            elif xfers[i] < ld:
+                xfers.pop(i)
+            elif xfers[i] > dels[j]:
+                dels.pop(j)
+            else:
+                i+=1
+                j+=1
+                ld=dels[j-1]
+                if i>=len(xfers):
+                    while j<len(dels):
+                        dels.pop(j)
+                        j+=1
+                    break
+                elif j>=len(dels):
+                    while i<len(xfers):
+                        xfers.pop(i)
+                        i+=1
+                    break
+        except IndexError:
+            print xfers
+            print dels
+            print i,j
+            sys.exit(-1)
+    #    print xfers
+    #    print dels
+    return xfers,dels
 
 def checkHistory(sitePattern,datasetsOnSites):
     # predictedSiteDatasets[k]=v, where k is a dataset and v is a set of sites containing k, as predicted by transfer/delete history
@@ -184,30 +227,50 @@ def checkHistory(sitePattern,datasetsOnSites):
 
     # match the intervals from the phedex history to the requested time interval
     #===========================================================================
-    for datasetName in datasetMovement:
+    for filename in datasetMovement:
+        historyFile.write("%s\n"%(filename))
         #only look at datasets which we know are on sites
-        for siteName in datasetMovement[datasetName]:
+        for siteName in datasetMovement[filename]:
             if not re.match(sitePattern,siteName):                   # only requested sites
                 print ' WARNING - no site match. ' + siteName
                 continue
-            #historyFile.write(' Added site: ' + site+'\n')
-            #datasetMovement[datasetName][site][0].sort()            # sort lists to match items
-            #datasetMovement[datasetName][site][1].sort()
-            #lenXfer = len(datasetMovement[datasetName][site][0])
-            #lenDel  = len(datasetMovement[datasetName][site][1])
-            try:
-                lastXfer = max(datasetMovement[datasetName][siteName][0])
-            except ValueError:
-                lastXfer = 0 # maybe there are no recorded transfers
-            try:
-                lastDel  = max(datasetMovement[datasetName][siteName][1])
-            except ValueError:
-                lastDel  = 0 # or deletions
-            if  lastXfer > lastDel:
-                if datasetName in predictedDatasetsOnSites:
-                    predictedDatasetsOnSites[datasetName].add(siteName)
+            datasetMovement[filename][siteName][0].sort()            # sort lists to match items
+            datasetMovement[filename][siteName][1].sort()
+            lenXfer = len(datasetMovement[filename][siteName][0])
+            lenDel  = len(datasetMovement[filename][siteName][1])
+
+            xfers= datasetMovement[filename][siteName][0]
+            dels=  datasetMovement[filename][siteName][1]
+            if lenXfer == lenDel:                                # ensure reasonable time lists
+                pass
+            elif lenXfer == lenDel - 1:
+                datasetMovement[filename][siteName][0].insert(0,0)
+                lenXfer+=1
+            elif lenXfer == lenDel + 1:
+                #print 'Add interval end: %d'%end
+                datasetMovement[filename][siteName][1].append(nowish)
+            elif lenXfer==0:
+                # this actually doesn't make sense
+                continue
+            elif lenDel==0:
+                datasetMovement[filename][siteName][1].append(nowish)
+            else:
+                # doesn't make sense, so skip
+                continue
+                # or don't skip
+                #datasetMovement[filename][siteName][0],datasetMovement[filename][siteName][1] = cleanHistories(xfers,dels,nowish)
+#            lastXfer=xfers[-1]
+#            lastDel=dels[-1]
+#            historyFile.write("%25s\t%s\n"%(siteName,str(xfers)))
+#            historyFile.write("%25s\t%s\n"%(" ",str(dels)))
+#            historyFile.write("%25s\t%i -> %i ; %i\n"%(" ",lastXfer,lastDel,nowish))
+            if  lastXfer > lastDel or lastDel > nowish-5*60: 
+                # last transfer was more recent than last deletion
+                # or last deletion was at no more than 5 minutes ago
+                if filename in predictedDatasetsOnSites:
+                    predictedDatasetsOnSites[filename].add(siteName)
                 else:
-                    predictedDatasetsOnSites[datasetName]=set([siteName])
+                    predictedDatasetsOnSites[filename]=set([siteName])
     return predictedDatasetsOnSites
 
 def fillDict(d,k,v):
@@ -253,6 +316,7 @@ else:
     sys.stderr.write('ERROR - too many arguments\n' + usage)
     sys.exit(2)
 
+nowish         = int(round(time.time()/300)*300)               # now to the nearest five min
 # --------------------------------------------------------------------------------------------------
 # loop through all matching snapshot files
 # --------------------------------------------------------------------------------------------------
