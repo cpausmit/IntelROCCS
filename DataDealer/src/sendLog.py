@@ -19,14 +19,14 @@ date = datetime.date.today()
 title = 'Data Dealer Log %s' % (date.strftime('%Y-%m-%d'))
 
 # message
-f = open('/tmp/IntelROCCS/%s-data_dealer.log' % (date.strftime('%Y%m%d')), 'r')
+f = open('/tmp/IntelROCCS/Logs/%s-data_dealer.log' % (date.strftime('%Y%m%d')), 'r')
 text = f.read()
 f.close()
 
 # Send email
 fromEmail = ("Bjorn Barrefors", "bjorn.peter.barrefors@cern.ch")
-#toList = (["Bjorn Barrefors"], ["bjorn.peter.barrefors@cern.ch"])
-toList = (["Bjorn Barrefors"], ["barrefors@gmail.com"])
+toList = (["Bjorn Barrefors"], ["bjorn.peter.barrefors@cern.ch"])
+#toList = (["Bjorn Barrefors"], ["barrefors@gmail.com"])
 msg = MIMEMultipart()
 msg['Subject'] = title
 msg['From'] = formataddr(fromEmail)

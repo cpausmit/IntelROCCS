@@ -44,7 +44,8 @@ ${INTELROCCS_DIR}/installApi.sh
 
 # set up cache environment
 # phedex
-PHEDEX_CACHE=/tmp/IntelROCCS-dev/Cache/Phedex
+#PHEDEX_CACHE=/tmp/IntelROCCS-dev/Cache/Phedex # used for testing
+PHEDEX_CACHE=/tmp/IntelROCCS/Cache/Phedex
 if [ -d "$PHEDEX_CACHE" ]
 then
 	# make sure to remove completely the previous installed software
@@ -56,7 +57,8 @@ else
 fi
 
 # pop db
-POP_DB_CACHE=/tmp/IntelROCCS-dev/Cache/PopDb
+#POP_DB_CACHE=/tmp/IntelROCCS-dev/Cache/PopDb # used for testing
+POP_DB_CACHE=/tmp/IntelROCCS/Cache/PopDb
 if [ -d "$POP_DB_CACHE" ]
 then
 	# make sure to remove completely the previous installed software
@@ -68,10 +70,12 @@ else
 fi
 
 PYTHONPATH=${INSTALL_DIR}/Api
-DATA_DEALER_THRESHOLD="1"
+DATA_DEALER_THRESHOLD="1" # not used right now
+#DATA_DEALER_BUDGET="1000" # set low when testing
 DATA_DEALER_BUDGET="50000"
 CACHE_DEADLINE="12"
-RANKING_CACHE=/tmp/IntelROCCS-dev/Cache
+#RANKING_CACHE=/tmp/IntelROCCS-dev/Cache # used for testing
+RANKING_CACHE=/tmp/IntelROCCS/Cache
 
 INIT_FILE=$DATA_DEALER_INSTALL/init.py
 

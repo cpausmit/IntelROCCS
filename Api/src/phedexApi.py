@@ -239,10 +239,10 @@ if __name__ == '__main__':
 			size = int(block.get('bytes'))
 			for replica in dataset.get('block')[0].get('replica'):
 				siteName = replica.get('node')
-				sizeByte += size
+				groupName = replica.get('group')
+				if siteName == 'T2_BE_IIHE' and groupName == 'AnalysisOps':
+					sizeByte += size
 		sizeGb = float(sizeByte)/10**9
 		stored += sizeGb
-		print sizeGb
 	print "%.2f" % (stored/10**3)
-	print nDatasets
 	sys.exit(0)
