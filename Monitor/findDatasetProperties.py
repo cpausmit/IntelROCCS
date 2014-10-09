@@ -53,12 +53,13 @@ def addDataset(dataset):
     # get access to the database
     cursor = getDbCursor()
     sql = "insert into Datasets (DatasetName) values (\'" + dataset + "\')"
+    cursor.execute(sql)
     try:
         # Execute the SQL command
         print '        ' + sql
         cursor.execute(sql)
     except:
-        print " Error (%s): unable to insert record into table."%(sql)
+        sys.stderr.write(" Error (%s): unable to insert record into table.\n"%(sql))
         return False
     return True
 
@@ -66,14 +67,14 @@ def addDatasetProperties(dataset,nFiles,sizeGb):
     # get access to the database
     cursor = getDbCursor()
     sql = "insert into DatasetProperties values " + \
-          "((select DatasetId from Datasets where DatasetName='" + dataset + "'),%d,%f)" \
-          %(nFiles,sizeGb)
+          "((select DatasetId from Datasets where DatasetName='" + dataset + "' LIMIT 1),%d,%f)" \
+          %(nFiles,sizeGb) #added LIMIT 1 because there are duplicate entries in Datasets
     try:
         # Execute the SQL command
         print '        ' + sql
         cursor.execute(sql)
     except:
-        print " Error (%s): unable to insert record into table."%(sql)
+        sys.stderr.write("Error (%s): unable to insert record into table.\n"%(sql))
         return False
     return True
 
@@ -87,13 +88,13 @@ def checkDatabase(dataset):
         if (addDataset(dataset)):
             print " Added the dataset %s successfully."%(dataset)
         else:
-            print " Error: Dataset %s addition failed."%(dataset)
+            sys.stderr.write(" Error: Dataset %s addition failed.\n"%(dataset))
             sys.exit(1)
         id = getDatasetId(dataset)
 
     # make sure we have a valid id to continue
     if id==-1:
-        print " Error: unable to assign proper Id to dataset (%s). Stopping here."%(dataset)
+        sys.stderr.write("Error: unable to assign proper Id to dataset (%s). Stopping here.\n"%(dataset))
         sys.exit(3)
 
     # define sql
@@ -110,7 +111,6 @@ def checkDatabase(dataset):
         #print " Properties -- Id:  %d  NFiles:  %d  Size:  %f.2"%(id,nFiles,sizeGb)
     except:
         print ' Info (%s) -- dataset properties not in database.'%(sql)
-
     return nFiles,sizeGb
 
 def convertSizeToGb(sizeTxt):

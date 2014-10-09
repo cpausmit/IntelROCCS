@@ -9,7 +9,7 @@
 export DETOX_DB="/local/cmsprod/IntelROCCS/Detox"
 
 export DETOX_SITESTORAGE_SERVER="t3btch039.mit.edu"
-export DETOX_SITESTORAGE_DB="SiteStorage"
+export DETOX_SITESTORAGE_DB="IntelROCCS"
 export DETOX_SITESTORAGE_USER="cmsSiteDb"
 export DETOX_SITESTORAGE_PW="db78user?Cms"
 
@@ -46,9 +46,7 @@ export DETOX_EMAIL_LIST=maxi@fnal.gov,maxi@mit.edu
 export DETOX_X509UP=/tmp/x509up_u5410
 
 # Local logging database config file
-
-export DETOX_MYSQL_CONFIG=/etc/myIntelROCCS.cnf
-export DETOX_HISTORY_DB="DetoxHistory"
+#export DETOX_MYSQL_CONFIG=/etc/myIntelROCCS.cnf
 
 # Paths
 

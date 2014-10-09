@@ -74,7 +74,10 @@ def processDb():
     # prepare a cursor object using cursor() method
     cursor = db.cursor()
     # define sql
-    sql = "select * from " + table
+    sql  = "select Sites.SiteName, Groups.GroupName, Quotas.SizeTb from "
+    sql += "(Quotas left join Groups on Quotas.GroupId = Groups.GroupId) "
+    sql += "left join Sites on Quotas.SiteId = Sites.SiteId "
+    sql += "where Groups.GroupName = 'AnalysisOps'"
 
     # go ahead and try
     try:
@@ -86,8 +89,6 @@ def processDb():
             site    = row[0]
             group   = row[1]
             quota   = row[2]
-            time    = row[3]
-            status  = row[3]
 
             # first step, find the sizes per site per group hash array
             if site in quotasPerSite:

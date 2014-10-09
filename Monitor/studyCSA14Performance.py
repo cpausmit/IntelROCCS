@@ -57,11 +57,13 @@ def processPhedexCacheFile(fileName,debug=0):
     # return the sizes per site
     return sizesPerSite
 
-def processFile(fileName,debug=0):
+def processFile(fileName,fileNumbers,debug=0):
     # processing the contents of a simple file into a hash array
 
-    nSkipped  = 0
-    nAccessed = {} # the result is a hash array
+    nCSA=0
+    nDatasetsCSA=0
+    nOthers=0
+    nDatasetsOthers=0
 
     # read the data from the json file
     with open(fileName) as data_file:
@@ -82,21 +84,34 @@ def processFile(fileName,debug=0):
         if debug>0:
             print " NAccess - %6d %s"%(value,key)
         # filter out non-AOD data
-        if not re.search(r'/.*/.*/.*AOD.*',key):
-            if debug>0:
-                print ' WARNING -- rejecting non *AOD* type data: ' + key
-            nSkipped += 1
-            continue
-
-        # here is where we assign the values to the hash (checking if duplicates are registered)
-        if key in nAccessed:
-            print ' WARNING - suspicious entry - the entry exists already (continue)'
-            nAccessed[key] += value
-        else:
-            nAccessed[key] = value
-
+        rx1=r'/.*/Spring14.*PU20bx25_POSTLS170.*/AODSIM'
+        rx2=r'/.*/Spring14.*S14_POSTLS170.*/AODSIM'
+        rx3=r'/.*/Spring14.*PU40bx25_POSTLS170.*/AODSIM'
+        rx4=r'/.*/Spring14.*/MINIAODSIM'
+        rx5=r'/.*/.*/USER'
+        try:
+            if fileNumbers[key]:
+                value=float(value)/fileNumbers[key]
+            else:
+                # if a dataset has no files, why is it being accessed?
+#                print "Warning, no files in %s"%(key)
+                value = 0
+        except KeyError:
+            pass
+        if re.search(rx1,key) or re.search(rx2,key) or re.search(rx3,key) or re.search(rx4,key) or re.search(rx5,key):
+            # this is CSA14 [MINI]AODSIM
+            nCSA += value
+            nDatasetsCSA+=1
+        elif re.search(r'/.*/.*/.*AOD.*',key):
+            # this is any other AODSIM
+            nOthers += value
+            nDatasetsOthers+=1
     # return the datasets
-    return (nSkipped, nAccessed)
+    if nDatasetsCSA:
+        nCSA=nCSA/nDatasetsCSA
+    if nDatasetsOthers:
+        nOthers=nOthers/nDatasetsOthers
+    return (nCSA, nOthers)
 
 def addData(nAllAccessed,nAccessed,debug=0):
     # adding a hash array (nAccessed) to the mother of all hash arrays (nAllAccessed)
@@ -215,8 +230,9 @@ def readDatasetProperties():
 
     return (fileNumbers, sizesGb)
 
-
 def cleanHistories(xfers,dels,end):
+    orig_xfers=xfers[:]
+    orig_dels=dels[:]
     # used to clean up messy histories
     i=0
     j=0
@@ -225,22 +241,29 @@ def cleanHistories(xfers,dels,end):
         # if there are no deletions in the history, assume it's still there
         # if there are no transfers in the history, and you are here, SOMETHING IS VERY WRONG
         dels=[end]
-    if xfers[0] > dels[0]:
+    if xfers[0] > dels[0] and xfers[0] <= end:
+        # if there's a deletion before the first transfer and the first transfer is in the window
+        # assume the sample has been here since the beginning of time
         xfers.insert(0,0)
+    while len(xfers) > len(dels):
+        dels.append(end)
     while True:
         nx=len(xfers)
         nd=len(dels)
         try:
             if i==nx and j==nd:
                 break
-            elif xfers[i] < ld:
+            elif i < len(xfers) and xfers[i] < ld:
                 xfers.pop(i)
-            elif xfers[i] > dels[j]:
+            elif i < len(xfers) and j < len(dels) and xfers[i] > dels[j] and xfers[i] <= end:
                 dels.pop(j)
+            elif i < len(xfers) and j < len(dels) and xfers[i] > end:
+                xfers.pop(i)
             else:
                 i+=1
                 j+=1
-                ld=dels[j-1]
+                if j <= len(dels):
+                    ld=dels[j-1]
                 if i>=len(xfers):
                     while j<len(dels):
                         dels.pop(j)
@@ -252,10 +275,17 @@ def cleanHistories(xfers,dels,end):
                         i+=1
                     break
         except IndexError:
-            continue
+            sys.stderr.write("Exception IndexError. Array info:")
+            sys.stderr.write("%s ==> %s\n"%(orig_xfers,xfers))
+            sys.stderr.write("%s ==> %s\n"%(orig_dels,dels))
+            sys.stderr.write("%i %i\n"%( i,j))
+            sys.exit(-1)
     #    print xfers
     #    print dels
+    if xfers==[]:
+            dels=[]
     return xfers,dels
+
 
 def calculateAverageNumberOfSites(sitePattern,start,end):
 
@@ -271,17 +301,34 @@ def calculateAverageNumberOfSites(sitePattern,start,end):
     #filePattern = '%GJet_Pt-15to3000_Tune4C_13TeV_pythia8%Spring14dr-PU20bx25_POSTLS170_V5-v1%AODSIM'
     files = glob.glob(phedDirectory + filePattern)
     datasetMovement = {}
-    nSites = {}
+    nSitesCSA = 0
+    nSitesOthers = 0
+    nCSA=0
+    nOthers=0
 
     # read in the data from the phedex history database cache
     #========================================================
+    isCSA={}
+    rx1=r'/.*/Spring14.*PU20bx25_POSTLS170.*/AODSIM'
+    rx2=r'/.*/Spring14.*S14_POSTLS170.*/AODSIM'
+    rx3=r'/.*/Spring14.*PU40bx25_POSTLS170.*/AODSIM'
+    rx4=r'/.*/Spring14.*/MINIAODSIM'
+    rx5=r'/.*/.*/USER'
     for file in files:
+        filename = file.split('/')[-1].replace('%','/')
+        if re.search(rx1,filename) or re.search(rx2,filename) or re.search(rx3,filename) or re.search(rx4,filename):
+        #if re.search(rx1,filename) or re.search(rx2,filename) or re.search(rx3,filename) or re.search(rx4,filename) or re.search(rx5,filename):
+            isCSA[filename]=True
+        elif re.search(r'/.*/.*/.*AOD.*',filename):
+            isCSA[filename]=False
+        else:
+            #neither CSA nor AOD
+            continue
         try:                                                      # check that we can parse the xml file
             document = ElementTree.parse(file)
         except:
             print ' WARNING - file reading failed (%s).'%file
             continue
-        filename = file.split('/')[-1].replace('%','/')
         for request in document.findall('request'):
             type = request.attrib['type']
 
@@ -321,7 +368,8 @@ def calculateAverageNumberOfSites(sitePattern,start,end):
     # match the intervals from the phedex history to the requested time interval
     #===========================================================================
     for filename in datasetMovement:
-#        print datasetMovement[filename]
+        firstTransfer=end
+        lastDeletion=0
         # ensure datasetMovement entry is complete
         for site in datasetMovement[filename]:
             #print ' Adding site: ' + site
@@ -335,25 +383,22 @@ def calculateAverageNumberOfSites(sitePattern,start,end):
             lenXfer = len(datasetMovement[filename][site][0])
             lenDel  = len(datasetMovement[filename][site][1])
 
-            if lenXfer == lenDel:                                # ensure reasonable time lists
-                pass
-            elif lenXfer == lenDel - 1:
-                datasetMovement[filename][site][0].insert(0,0)
-                lenXfer+=1
-            elif lenXfer == lenDel + 1:
-                #print 'Add interval end: %d'%end
-                datasetMovement[filename][site][1].append(end)
-            elif lenXfer==0:
+            if lenXfer==0:
                 # this actually doesn't make sense
                 continue
-            else:
-                # doesn't make sense, so skip
-                continue
-                # or don't skip
-                xfers= datasetMovement[filename][site][0]
-                dels=  datasetMovement[filename][site][1]
-                datasetMovement[filename][site][0],datasetMovement[filename][site][1] = cleanHistories(xfers,dels,end)
+            xfers= datasetMovement[filename][site][0]
+            dels=  datasetMovement[filename][site][1]
+            datasetMovement[filename][site][0],datasetMovement[filename][site][1] = cleanHistories(xfers,dels,end)
+            while len(datasetMovement[filename][site][0]) < len(datasetMovement[filename][site][1]):
+                datasetMovement[filename][site][0].insert(0,0)
+            while len(datasetMovement[filename][site][0]) > len(datasetMovement[filename][site][1]):
+                #print 'Add interval end: %d'%end
+                datasetMovement[filename][site][1].append(end)
+            if len(datasetMovement[filename][site][0]):
+                firstTransfer = min(firstTransfer,min(datasetMovement[filename][site][0]))
+                lastDeletion = max(lastDeletion,max(datasetMovement[filename][site][1]))
 
+        datasetSum = 0
 
         for site in datasetMovement[filename]:
             #print ' Adding site: ' + site
@@ -361,27 +406,34 @@ def calculateAverageNumberOfSites(sitePattern,start,end):
                 print ' WARNING - no site match. ' + site
                 continue
             lenXfer = len(datasetMovement[filename][site][0])
-            lenDel  = len(datasetMovement[filename][site][1])
-            if not lenXfer == lenDel:
-                #should have been fixed in previous loop
+            if lenXfer==0:
                 continue
+            lenDel  = len(datasetMovement[filename][site][1])
             
-
-            # find this site's fraction for nSites
-            if not filename in nSites:
-                nSites[filename] = 0
 
             siteSum = 0
             i       = 0
-            
+
+            # the nSitesAverage should never (in principle) be below 1. This can erroneously happen
+            # if the dataset is created after start or deleted (i.e. not present on any T2s) before end
+            # we redefine [start,end] as the intersection of [start,end] and [created,deleted]
+            start_tmp = max(start,firstTransfer)
+            end_tmp = min(end,lastDeletion)
+            interval_tmp = end_tmp - start_tmp
+            #start_tmp=start
+            #end_tmp=end
+            #interval_tmp=interval
+
             # loop through the transfer/deletion intervals
             while i < lenXfer:
                 try:
                     tXfer = datasetMovement[filename][site][0][i]
                     tDel  = datasetMovement[filename][site][1][i]
                 except IndexError:
-                    continue
-                
+                    sys.stderr.write("Exception IndexError. Index info:")
+                    sys.stderr.write("%i %i %s\n"%(lenXfer,lenDel,filename))
+                    sys.exit(-1)
+
                 i = i + 1                                        # iterate before all continue statements
 
                 if tXfer == 0 and tDel == end:                   # skip if defaults, meaning no xfer or del time found
@@ -389,54 +441,48 @@ def calculateAverageNumberOfSites(sitePattern,start,end):
 
                 # four ways to be in interval                    # (though this prevents you from having the same
                                                                  #  start and end date)
-                if tXfer <= start <= end <= tDel:
+
+                if tXfer <= start_tmp <= end_tmp <= tDel:
                     siteSum += 1                                 # should happen at most once, but okay
-                elif tXfer <= start < tDel < end:
-                    siteSum += float(tDel - start)/float(interval)
+                elif tXfer <= start_tmp < tDel < end_tmp:
+                    siteSum += float(tDel - start_tmp)/float(interval_tmp)
 #                    print ' Adding: %d %f'%(i,float(tDel - start)/float(interval))
-                elif start < tXfer < end <= tDel:
-                    siteSum += float(end - tXfer)/float(interval)
+                elif start_tmp < tXfer < end_tmp <= tDel:
+                    siteSum += float(end_tmp - tXfer)/float(interval_tmp)
  #                   print ' Adding: %d %f'%(i,float(end - tXfer)/float(interval))
-                elif start < tXfer < tDel <= end:
-                    siteSum += float(tDel - tXfer)/float(interval)
+                elif start_tmp < tXfer < tDel <= end_tmp:
+                    siteSum += float(tDel - tXfer)/float(interval_tmp)
   #                  print ' Adding: %d %f'%(i,float(tDel - tXfer)/float(interval))
                 else:                                            # have ensured tXfer < tDel
                     continue
+                '''if tXfer <= start <= end <= tDel:
+                    siteSum += 1                                 # should happen at most once, but okay
+                elif tXfer <= start < tDel < end:
+                    siteSum += float(tDel - start)/float(interval)
+                    #print ' Adding: %d %f'%(i,float(tDel - start)/float(interval))
+                elif start < tXfer < end <= tDel:
+                    siteSum += float(end - tXfer)/float(interval)
+                    #print ' Adding: %d %f'%(i,float(end - tXfer)/float(interval))
+                elif start < tXfer < tDel <= end:
+                    siteSum += float(tDel - tXfer)/float(interval)
+                    #print ' Adding: %d %f'%(i,float(tDel - tXfer)/float(interval))
+                else:                                            # have ensured tXfer < tDel
+                    continue'''
 
             if siteSum < 0:                                      # how can this happen??
                 print " WARNING - siteNum < 0 ??"
                 continue
-
-            nSites[filename] += siteSum
-
-    n     = 0
-    nSkip =  0
-    sum   = float(0)
-    for filename in nSites:
-        if nSites[filename] == 0:                                # dataset not on sites in interval
-            nSkip += 1
-            continue
-        '''elif nSites[filename] < 1:
-            print nSites[filename],filename
-            for sites in datasetMovement[filename]:
-                print sites
-                print "\t",datasetMovement[filename][sites][0]
-                print "\t",datasetMovement[filename][sites][1]'''
-        sum += nSites[filename]
-        n   += 1
-        #print ' %s \t%f'%(filename,nSites[filename])
-
-    print '\n Dataset  --  average number of sites\n'
-
-    if n != 0:
-        avg = sum/n
-        print '\n overall average n sites: %f\n'%(avg)
-        print '\n number of datasets:      %d\n'%(n)
-        print '\n number of datasets skip: %d\n'%(nSkip)
-    else:
-        print 'no datasets found in specified time interval'
-
-    return nSites
+            datasetSum+=siteSum
+        #print filename,isCSA[filename],datasetSum
+        if isCSA[filename] and datasetSum:
+            print datasetSum,filename,"\n\t",datasetMovement[filename]
+            # only look at those files which are actually on the tier2s at the time of query
+            nSitesCSA += datasetSum
+            nCSA+=1
+        elif datasetSum:
+            nSitesOthers += datasetSum
+            nOthers+=1
+    return float(nSitesCSA)/nCSA,float(nSitesOthers)/nOthers
 
 #===================================================================================================
 #  M A I N
@@ -446,24 +492,23 @@ sizeAnalysis = True
 addNotAccessedDatasets = True
 
 usage  = "\n"
-usage += " readJsonSnapshot.py  <sitePattern> [ <datePattern>=????-??-?? ]\n"
+usage += " %s  <sitePattern> [ <datePattern>=????-??-?? ]\n"%(sys.argv[0])
 usage += "\n"
 usage += "   sitePattern  - pattern to select particular sites (ex. T2* or T2_U[SK]* etc.)\n"
 usage += "   datePattern  - pattern to select date pattern (ex. 201[34]-0[0-7]-??)\n\n"
 
+date=[] # all date patterns to consider
 # decode command line parameters
 if   len(sys.argv)<2:
     print ' ERROR - not enough arguments\n' + usage
     sys.exit(1)
 elif len(sys.argv)==2:
     site = str(sys.argv[1])
-    date = '????-??-??'
-elif len(sys.argv)==3:
+    date.append('????-??-??')
+elif len(sys.argv)>=3:
     site = str(sys.argv[1])
-    date = str(sys.argv[2])
-else:
-    print ' ERROR - too many arguments\n' + usage
-    sys.exit(2)
+    for arg in sys.argv[2:]:
+        date.append(str(arg))
 
 # figure out which datases to consider using phedex cache as input
 if addNotAccessedDatasets:
@@ -485,7 +530,9 @@ if sizeAnalysis:
 # --------------------------------------------------------------------------------------------------
 # figure out which snapshot files to consider
 workDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS']
-files = glob.glob(workDirectory + '/' + site + '/' + os.environ['DETOX_SNAPSHOTS'] + '/' + date)
+files=[]
+for d in date:
+    files += glob.glob(workDirectory + '/' + site + '/' + os.environ['DETOX_SNAPSHOTS'] + '/' + d)
 # say what we are goign to do
 print "\n = = = = S T A R T  A N A L Y S I S = = = =\n"
 print " Logfiles in:  %s"%(workDirectory)
@@ -496,17 +543,20 @@ if sizeAnalysis:
 
 firstFile = ''
 lastFile = ''
-
+accessesByDate={}
+startDate=''
 for fileName in sorted(files):
     if debug>0:
         print ' Analyzing: ' + fileName
 
-    if firstFile == '':
-        firstFile = fileName
-
     g = fileName.split("/")
     siteName = g[-3]
+    
+    if firstFile == '':
+        firstFile = fileName
+        startDate = g[-1]
 
+    
     if siteName in nSiteAccess:
         nSiteAccessEntry = nSiteAccess[siteName]
     else:
@@ -514,12 +564,11 @@ for fileName in sorted(files):
         nSiteAccess[siteName] = nSiteAccessEntry
 
     # analyze this file
-    (nSkipped, nAccessed) = processFile(fileName,debug)
-
-    # add the results to our 'all' record
-    nAllSkipped      += nSkipped
-    nSiteAccessEntry = addData(nSiteAccessEntry,nAccessed,debug)
-    nAllAccessed     = addData(nAllAccessed,    nAccessed,debug)
+    (nCSA, nOthers) = processFile(fileName,fileNumbers,debug)
+    if g[-1] in accessesByDate:
+        accessesByDate[g[-1]] = (accessesByDate[g[-1]][0] + nCSA , accessesByDate[g[-1]][1] + nOthers )
+    else:
+        accessesByDate[g[-1]] = ( nCSA , nOthers )
 
 if lastFile == '':
     lastFile = fileName
@@ -529,167 +578,40 @@ if lastFile == '':
 # find start and end times
 
 dir = '/'.join(lastFile.split("/")[0:-1])
-startDate = firstFile.split("/")[-1]
 
 files = glob.glob(dir + '/????-??-??')
-last = ''
-endDate = ''
-for fileName in sorted(files):
-    #print ' Filename: ' + fileName
-    #print " Compare: " + last + ' ' + lastFile.split("/")[-1]
-    if last == lastFile.split("/")[-1]:
-        endDate = fileName.split("/")[-1]
-    last = fileName.split("/")[-1]
+endDate =  lastFile.split("/")[-1]
 
 # convert to epoch time
-start = int(time.mktime(time.strptime(startDate,'%Y-%m-%d')))
-if endDate != '':
-    end = int(time.mktime(time.strptime(endDate,'%Y-%m-%d')))
-else:
-    endDate = lastFile.split("/")[-1]
-    end = int(time.mktime(time.strptime(endDate,'%Y-%m-%d'))) + 7*24*3600  # one week
-
-# --------------------------------------------------------------------------------------------------
-# add all datasets that are in phedex but have never been used
-# --------------------------------------------------------------------------------------------------
-if addNotAccessedDatasets:
-    # these are number of non accessed samples with corresponding total size
-    nAddedSamples = 0
-    addedSize = 0.
-    # these are number of non AOD samples we exclude
-    nExcludedSamples = 0
-    excludedSize = 0.
-    for site in sizesPerSite:
-
-        # get size specific record
-        sizesPerSitePerDataset = sizesPerSite[site]
-
-        # make sure that we are really interested in this site at all
-        if site in nSiteAccess:
-            nSiteAccessEntry = nSiteAccess[site]
-        else:
-            continue
-
-        # loop through all datasets at the site and check'em
-        for dataset in sizesPerSitePerDataset:
-            # exclude non AOD samples
-            if not re.search(r'/.*/.*/.*AOD.*',dataset):
-                # update our local counters
-                nExcludedSamples += 1
-                excludedSize += sizesPerSitePerDataset[dataset]
-                continue
-
-            # only add information if the samples is not already available
-            if dataset in nAllAccessed:
-                if debug>1:
-                    print ' -> Not Adding : ' + dataset
-            else:
-                if debug>0:
-                    print ' -> Adding : ' + dataset
-
-                # update our local counters
-                nAddedSamples += 1
-                addedSize += sizesPerSitePerDataset[dataset]
-
-                # make an entry in all of the relevant records
-                nAllAccessed[dataset] = 0
-                nSiteAccessEntry[dataset] = 0
-
-    print " "
-    print " - number of excluded datasets: %d"%(nExcludedSamples)
-    print " - excluded sample size:        %d"%(excludedSize)
-    print " "
-    print " - number of added datasets:    %d"%(nAddedSamples)
-    print " - added sample size:           %d"%(addedSize)
+start={}
+end={}
+for d in sorted(accessesByDate):
+    start[d] = int(time.mktime(time.strptime(d,'%Y-%m-%d')))
+    end[d] = int(time.mktime(time.strptime(d,'%Y-%m-%d'))) + 7*24*3600  # one month
 
 # --------------------------------------------------------------------------------------------------
 # create summary information and potentially print the contents
 # --------------------------------------------------------------------------------------------------
-nAll = 0
-nAllAccess = 0
-sizeTotalGb = 0.
-nFilesTotal = 0
-for key in nAllAccessed:
-    value = nAllAccessed[key]
-    nAllAccess += value
-    nAll += 1
-    if sizeAnalysis:
-        if not key in fileNumbers:
-            # update the dataset history
-            cmd = os.environ.get('MONITOR_BASE') + '/findDatasetHistory.py ' + key + ' 2> /dev/null'
-            print ' CMD: ' + cmd
-            os.system(cmd)
-            # update the dataset properties
-            (nFiles,sizeGb) = findDatasetSize(key)
-            # add to our memory
-            fileNumbers[key] = nFiles
-            sizesGb[key]     = sizeGb
-        else:
-            nFiles = fileNumbers[key]
-            sizeGb = sizesGb[key]
-        # add up the total data volume/nFiles
-        sizeTotalGb     += sizeGb
-        nFilesTotal     += nFiles
-
-# printout the summary
-print " "
-print " = = = = S U M M A R Y = = = = "
-print " "
-print " - number of skipped datasets: %d"%(nAllSkipped)
-print " "
-print " - number of datasets:         %d"%(nAll)
-print " - number of accesses:         %d"%(nAllAccess)
-if sizeAnalysis:
-    print " - data volume [TB]:           %.3f"%(sizeTotalGb/1024.)
-
-# careful watch cases where no datasets were found
-if nAll>0:
-    print " "
-    print " - number of accesses/dataset: %.2f"%(float(nAllAccess)/float(nAll))
-if sizeAnalysis:
-    if sizeTotalGb>0:
-        print " - number of accesses/GB:      %.2f"%(float(nAllAccess)/sizeTotalGb)
-    if nFilesTotal>0:
-        print " - number of accesses/file:    %.2f"%(float(nAllAccess)/nFilesTotal)
-print " "
-
-# need to figure out how many replicas are out there
-nSites = {}
-for site in sorted(nSiteAccess):
-    nSiteAccessEntry = nSiteAccess[site]
-    ## print " - number of datasets:         %-8d at %s"%(len(nSiteAccessEntry),site)
-    # count the number of sites carrying a given dataset
-    nSites = addSites(nSites,nSiteAccessEntry,debug)
 
 # figure out properly the 'average number of sites' in the given time interval
-nAverageSites = calculateAverageNumberOfSites('T2',start,end)
+nAverageSites={}
+for d in sorted(accessesByDate):
+    nAverageSites[d] = calculateAverageNumberOfSites('T2',start[d],end[d])
 
 # last step: produce monitoring information
 # ========================================
 # ready to use: nAllAccessed[dataset], fileNumbers[dataset], sizesGb[dataset], nSites[dataset]
 
-fileName = 'DatasetSummary.txt'
+fileName = 'CSASummary.txt'
 print ' Output file: ' + fileName
 totalAccesses = open(fileName,'w')
-for dataset in nAllAccessed:
-    nSite = nSites[dataset]
-    if dataset in nAverageSites:
-        nAverageSite = float(nAverageSites[dataset])
-    else:
-        #print ' Fix dataset: ' + dataset
-        cmd = os.environ.get('MONITOR_BASE') + '/findDatasetHistory.py ' + dataset
-        os.system(cmd)
-        nAverageSite = 0
-    nAccess = nAllAccessed[dataset]
-    nFiles = fileNumbers[dataset]
-    sizeGb = sizesGb[dataset]
-    #if nAccess == 0:
-    #    print " NOT USED - %d %d %d %f"%(nSite,nAccess,nFiles,sizeGb)
-    totalAccesses.write("%d %f %d %d %f %s\n"%(nSite,nAverageSite,nAccess,nFiles,sizeGb,dataset))
-    if nSite>42:
-        print " WARNING - nSites suspicious: %3d %s"%(nSite,dataset)
-    if nAverageSite>42:
-        print " WARNING - nAverageSites suspicious: %3d %s"%(nAverageSite,dataset)
+totalCSA=0
+totalOthers=0
+totalAccesses.write("date\taccessesCSA\taccessesOthers/nSitesAvCSA\tnSitesAvOthers\n")
+for d in sorted(accessesByDate):
+    totalCSA+=accessesByDate[d][0]
+    totalOthers+=accessesByDate[d][1]
+    totalAccesses.write("%s\t%f\t%f\t%f\t%f\n"%(d,totalCSA,totalOthers,nAverageSites[d][0],nAverageSites[d][1]))
 totalAccesses.close()
 
 sys.exit(0)
