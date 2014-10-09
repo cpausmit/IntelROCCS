@@ -112,6 +112,8 @@ class phedexData:
 			cur.execute('SELECT DISTINCT DatasetName FROM Datasets NATURAL JOIN Replicas WHERE GroupName=? and SiteName=?', ('AnalysisOps', siteName))
 			datasets = []
 			for row in cur:
+				if re.match('.+/USER', row[0]):
+					continue
 				datasets.append(row[0])
 		return datasets
 

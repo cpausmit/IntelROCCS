@@ -8,24 +8,24 @@
 #		 Total data subscribed
 #		 Data subscribed per site
 #---------------------------------------------------------------------------------------------------
-import sys, os, datetime
+import sys, os, datetime, sqlite3
 from email.MIMEText import MIMEText
 from email.MIMEMultipart import MIMEMultipart
 from email.Utils import formataddr
 from subprocess import Popen, PIPE
-import makeTable, sites, siteRanker
+import makeTable, sites
 import dbApi, phedexData, popDbData
 
 class dataDealerReport():
 	def __init__(self):
-		phedexCache = os.environ['PHEDEX_CACHE']
-		popDbCache = os.environ['POP_DB_CACHE']
-		cacheDeadline = int(os.environ['CACHE_DEADLINE'])
+		phedexCache = os.environ['DATA_DEALER_PHEDEX_CACHE']
+		popDbCache = os.environ['DATA_DEALER_POP_DB_CACHE']
+		cacheDeadline = int(os.environ['DATA_DEALER_CACHE_DEADLINE'])
+		self.rankingCachePath = os.environ['DATA_DEALER_RANKING_CACHE']
 		self.phedexData = phedexData.phedexData(phedexCache, cacheDeadline)
 		self.popDbData = popDbData.popDbData(popDbCache, cacheDeadline)
 		self.dbApi = dbApi.dbApi()
 		self.sites = sites.sites()
-		self.siteRanker = siteRanker.siteRanker()
 
 	def _toStr(self, toList):
 	    names = [formataddr(i) for i in zip(*toList)]
@@ -57,14 +57,27 @@ class dataDealerReport():
 	def createReport(self):
 		# Initialize
 		date = datetime.date.today()
+		cacheFile = "%s/%s.db" % (self.rankingCachePath, "rankingCache")
+		rankingCache = sqlite3.connect(cacheFile)
 
-		# Get all currently valid sites with data usage and quota
+		# Get all sites with data usage, quota, and rank
 		allSites = self.sites.getAllSites()
 		siteQuota = dict()
 		for site in allSites:
-			quota = self.siteRanker.getMaxStorage(site)
+			query = "SELECT Quotas.SizeTb FROM Quotas INNER JOIN Sites ON Quotas.SiteId=Sites.SiteId INNER JOIN Groups ON Groups.GroupId=Quotas.GroupId WHERE Sites.SiteName=%s AND Groups.GroupName=%s"
+			values = [site, "AnalysisOps"]
+			data = self.dbApi.dbQuery(query, values=values)
+			quota= data[0][0]
 			usedStorage = self.phedexData.getSiteStorage(site)
-			siteQuota[site] = (quota, usedStorage)
+			with rankingCache:
+				cur = rankingCache.cursor()
+				cur.execute('SELECT Rank FROM Sites WHERE SiteName=?', (site,))
+				row = cur.fetchone()
+				if not row:
+					rank = 0
+				else:
+					rank = row[0]
+			siteQuota[site] = (quota, usedStorage, rank)
 
 		# Get all subscriptions
 		subscriptions = []
@@ -74,13 +87,23 @@ class dataDealerReport():
 		for sub in data:
 			subscriptions.append([info for info in sub])
 
+		# Get top 10 datasets not subscribed
+		cacheFile = "%s/%s.db" % (self.rankingCachePath, "rankingCache")
+		nSubbed = len(subscriptions)
+		topTen = []
+		with rankingCache:
+			cur = rankingCache.cursor()
+			cur.execute('SELECT * FROM Datasets ORDER BY Rank DESC LIMIT ? OFFSET ?', (nSubbed+10, nSubbed))
+			for row in cur:
+				topTen.append(row)
+
 		# Make title variables
 		quota = 0.0
 		dataOwned = 0.0
 		for value in siteQuota.itervalues():
 			quota += value[0]
 			dataOwned += value[1]
-		quotaUsed = 100*(dataOwned/(quota*10**3))
+		quotaUsed = int(100*(float(dataOwned)/float(quota*10**3)))
 		dataSubscribed = 0.0
 		siteSubscriptions = dict()
 		for site in allSites:
@@ -92,7 +115,7 @@ class dataDealerReport():
 			siteSubscriptions[site] += subscriptionSize
 
 		# Create title
-		title = 'AnalysisOps %s | %d TB | %d%% | %.2f TB Subscribed' % (date.strftime('%Y-%m-%d'), int(dataOwned/10**3), int(quotaUsed), dataSubscribed/10**3)
+		title = 'AnalysisOps %s | %d TB | %d%% | %.2f TB Subscribed' % (date.strftime('%Y-%m-%d'), int(dataOwned/10**3), int(quotaUsed), dataSubscribed)
 		text = '%s\n  %s\n%s\n\n' % ('='*68, title, '='*68)
 
 		# Create site table
@@ -100,33 +123,50 @@ class dataDealerReport():
 		blacklistedSites = self.sites.getBlacklistedSites()
 
 		siteTable = makeTable.Table(add_numbers=False)
-		siteTable.setHeaders(['Site', 'Subscribed TB', 'Space Used TB', 'Space Used %', 'Quota TB', 'Status'])
+		siteTable.setHeaders(['Site', 'Subscribed TB', 'Space Used TB', 'Space Used %', 'Quota TB', 'Rank', 'Status'])
 		for site in allSites:
 			subscribed = float(siteSubscriptions[site])/(10**3)
 			usedTb = int(siteQuota[site][1]/10**3)
-			quota = int(siteQuota[site][0])
-			usedP = "%d%%" % (int(100*(float(usedTb)/quota)))
+			quota = siteQuota[site][0]
+			usedP = "%d%%" % (int(100*(float(usedTb)/float(quota))))
 			status = "up"
+			rank = float(siteQuota[site][2])
 			if site in blacklistedSites:
 				status = "down"
-			siteTable.addRow([site, subscribed, usedTb, usedP, quota, status])
+			siteTable.addRow([site, subscribed, usedTb, usedP, quota, rank, status])
 
 		text += siteTable.plainText()
 
+		# create subscription table
 		text += "\n\nNew Subscriptions\n\n"
 
 		subscriptionTable = makeTable.Table(add_numbers=False)
-		subscriptionTable.setHeaders(['Site', 'Rank', 'Size TB', 'Replicas', 'Accesses', 'Dataset'])
+		subscriptionTable.setHeaders(['Site', 'Rank', 'Size GB', 'Replicas', 'CPU Hours', 'Dataset'])
 		for subscription in subscriptions:
 			dataset = subscription[0]
 			site = subscription[1]
 			rank = float(subscription[2])
-			size = float(self.phedexData.getDatasetSize(dataset))/(10**3)
+			size = self.phedexData.getDatasetSize(dataset)
 			replicas = int(self.phedexData.getNumberReplicas(dataset))
-			accesses = int(self.popDbData.getDatasetAccesses(dataset, (datetime.date.today() - datetime.timedelta(days=1))))
-			subscriptionTable.addRow([site, rank, size, replicas, accesses, dataset])
+			cpuH = int(self.popDbData.getDatasetCpus(dataset, (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y-%m-%d')))
+			subscriptionTable.addRow([site, rank, size, replicas, cpuH, dataset])
 
 		text += subscriptionTable.plainText()
+
+		# create top ten datasets not subscribed table
+		text += "\n\nTop Ten Datasets Not Subscribed\n\n"
+
+		topTenTable = makeTable.Table(add_numbers=False)
+		topTenTable.setHeaders(['Rank', 'Size GB', 'Replicas', 'CPU Hours', 'Dataset'])
+		for dataset in topTen:
+			datasetName = dataset[0]
+			rank = float(dataset[1])
+			size = self.phedexData.getDatasetSize(datasetName)
+			replicas = int(self.phedexData.getNumberReplicas(datasetName))
+			cpuH = int(self.popDbData.getDatasetCpus(datasetName, (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y-%m-%d')))
+			topTenTable.addRow([rank, size, replicas, cpuH, datasetName])
+
+		text += topTenTable.plainText()
 
 		self.sendReport(title, text)
 
