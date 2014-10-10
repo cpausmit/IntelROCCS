@@ -6,7 +6,7 @@
 #---------------------------------------------------------------------------------------------------
 # main directories
 
-export DETOX_DB="/home/snarayan/scratch/IntelROCCS/Monitor/log/IntelROCCS/Detox/"
+export DETOX_DB="/home/maxi/IntelROCCS/Detox"
 
 export DETOX_SITESTORAGE_SERVER="t3btch039.mit.edu"
 export DETOX_SITESTORAGE_DB="IntelROCCS"
@@ -29,8 +29,8 @@ export DETOX_DATASETS_TO_DELETE=RankedDatasets.txt
 # Parameters for cleaning
 
 export DETOX_CYCLE_HOURS=12
-export DETOX_USAGE_MAX=0.90
-export DETOX_USAGE_MIN=0.80
+export DETOX_USAGE_MAX=0.70
+export DETOX_USAGE_MIN=0.60
 export DETOX_NCOPY_MIN=1
 
 # What time window (in months) will be used for counting usage
@@ -50,7 +50,7 @@ export DETOX_X509UP=/tmp/x509up_u`id -u`
 
 # Paths
 
-export DETOX_BASE=/home/snarayan/scratch/IntelROCCS/Detox/
+export DETOX_BASE=/home/maxi/IntelROCCS/Detox
 export DETOX_PYTHONPATH="$DETOX_BASE/python"
 
 # Python path etc. (careful it might not be set)

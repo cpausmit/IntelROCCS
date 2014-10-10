@@ -139,9 +139,6 @@ class SiteProperties:
     def setSiteSize(self,size):
         self.siteSizeGbV = size
 
-    def setSizeToDelete(self,size):
-        self.space2free = size
-
     def siteSizeGb(self):
         return self.siteSizeGbV
 
