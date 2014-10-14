@@ -5,7 +5,7 @@
 #
 #---------------------------------------------------------------------------------------------------
 # main directories
-export CARETAKER_DB="/local/cmsprod/IntelROCCS/Detox"
+export CARETAKER_DB="/local/cmsprod/IntelROCCS/SitesCaretaker"
 export CARETAKER_SITESTORAGE_SERVER="t3btch039.mit.edu"
 export CARETAKER_SITESTORAGE_DB="IntelROCCS"
 export CARETAKER_SITESTORAGE_USER="cmsSiteDb"
