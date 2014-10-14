@@ -17,7 +17,6 @@
 INITLOG_ARGS=""
 
 # Path to the running script, server binary, and short-form for messages.
-#detoxd=/usr/sbin/detoxd
 caretakerd=/usr/local/IntelROCCS/SitesCaretaker/caretakerd
 prog=caretakerd
 pidfile=${PIDFILE-/var/run/caretakerd.pid}
@@ -26,7 +25,7 @@ lockfile=${LOCKFILE-/var/lock/subsys/caretakerd}
 RETVAL=0
 STOP_TIMEOUT=${STOP_TIMEOUT-10}
 
-# Start detox daemon (detoxd)
+# Start caretaker daemon (caretakerd)
 start() {
     echo -n $"Starting $prog:"
     daemon --user=cmsprod --pidfile=${pidfile} $caretakerd \&

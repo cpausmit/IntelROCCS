@@ -27,5 +27,8 @@ export CARETAKER_X509UP=/tmp/x509up_u`id -u`
 export CARETAKER_BASE="/usr/local/IntelROCCS/SitesCaretaker"
 export CARETAKER_PYTHONPATH="$CARETAKER_BASE/python"
 
+#how often it runs
+export CARETAKER_CYCLE_HOURS=12
+
 # Python path etc. (careful it might not be set)
 export PYTHONPATH="${CARETAKER_PYTHONPATH}:$PYTHONPATH"

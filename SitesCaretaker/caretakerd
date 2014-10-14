@@ -30,7 +30,7 @@ do
   echo ""                                                                    >> $logFile
   echo " = = = =  I N I T I A L  S H E L L   E N V I R O N M E N T  = = = =" >> $logFile
   echo ""                                                                    >> $logFile
-  env  | grep -v ^DETOX                                                      >> $logFile
+  env  | grep -v ^CARETAKER                                                  >> $logFile
   echo ""                                                                    >> $logFile
   echo " = = =  I N I T I A L  C A R E T A K E R   E N V I R O N M E N T = " >> $logFile
   echo ""                                                                    >> $logFile
