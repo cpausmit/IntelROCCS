@@ -248,7 +248,7 @@ def testLocalSetup(dataset,debug=0):
 		print ' Error - no dataset specified. EXIT!\n'
 		print usage
 		sys.exit(1)
-	
+
 	# check the user proxy
 	if os.environ.get('X509_USER_PROXY'):
 		if debug > 0:
@@ -256,7 +256,7 @@ def testLocalSetup(dataset,debug=0):
 	else:
 		print ' Error - no X509_USER_PROXY, please define the variable correctly. EXIT!'
 		sys.exit(1)
-		
+
 	# check das_client.py tool
 	cmd = 'which das_client.py'
 	for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
@@ -291,7 +291,7 @@ def convertSizeToGb(sizeTxt):
 
 	# return the size in GB as a float
 	return sizeGb
-	
+
 def findExistingSubscriptions(dataset,debug=0):
 
 	webServer = 'https://cmsweb.cern.ch/'
@@ -301,8 +301,8 @@ def findExistingSubscriptions(dataset,debug=0):
 	#cmd = 'curl --cert ' + cert + ' -k -H "Accept: text/xml" ' + url + ' 2> /dev/null'
 	cmd = 'curl -k -H "Accept: text/xml" ' + url + ' 2> /dev/null'
 	if debug > 1:
-		print ' Access phedexDb: ' + cmd 
-	
+		print ' Access phedexDb: ' + cmd
+
 	# setup the shell command
 	siteNames = []
 	for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
@@ -322,7 +322,7 @@ def findExistingSubscriptions(dataset,debug=0):
 			siteName = ''
 
 	return siteNames
-	
+
 def getActiveSites(debug=0):
 	# hardcoded fallback
 	tier2Base = [ 'T2_AT_Vienna','T2_BR_SPRACE','T2_CH_CSCS','T2_DE_DESY','T2_DE_RWTH',
@@ -418,17 +418,14 @@ def chooseMatchingSite(tier2Sites,nSites,sizeGb,debug):
 		if debug > 0:
 			print ' Trying to fit %.1f GB into Tier-2 [%d]: %s with quota of %.1f GB (use 0.1 max)'%\
 				  (sizeGb,iRan,site,quota)
-	
+
 		if nTrials > 20:
 			print ' Error - not enough matching sites could be found. Dataset too big? EXIT!'
 			sys.exit(1)
-	
+
 		nTrials += 1
 
-	return sites,quotas,lastCps
-	
 def submitSubscriptionRequests(sites,datasets=[],debug=0):
-	
 	# make sure we have datasets to subscribe
 	if len(datasets) < 1:
 		print " ERROR - Trying to submit empty request for " + site
@@ -438,7 +435,8 @@ def submitSubscriptionRequests(sites,datasets=[],debug=0):
 
 	# compose data for subscription request
 	check,data = phedex.xmlData(datasets=datasets,instance='prod')
-	if check: 
+
+	if check:
 		print " ERROR - phedexApi.xmlData failed"
 		return
 	message = 'IntelROCCS -- Automatic Dataset Subscription by Computing Operations.'

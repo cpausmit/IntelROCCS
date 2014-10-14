@@ -9,9 +9,8 @@
 # TODO -- Make it possible to change install path by passing argument
 
 # get path of installation script, source code, and install path
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-API_SRC=${DIR}/src
-INTELROCCS_DIR=${HOME}/IntelROCCS
+INTELROCCS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+API_SRC=${INTELROCCS_DIR}/Api/src
 INSTALL_DIR=${INTELROCCS_DIR}/Install
 API_INSTALL=${INSTALL_DIR}/Api
 
@@ -22,13 +21,15 @@ API_INSTALL=${INSTALL_DIR}/Api
 if [ -d "$API_INSTALL" ]
 then
   	# make sure to remove completely the previous installed software
-  	echo " Removing previous api installation."
-  	rm -rf $API_INSTALL/*
+  	echo " API install directory already exists."
+  	#rm -rf $API_INSTALL/*
 else
 	# create file structur if it doesn't exist
+	echo " Creating API install directory."
 	mkdir -p $API_INSTALL
 fi
 # copy all source files to install directory
+echo " Copi API source files."
 cp $API_SRC/* $API_INSTALL
 touch ${API_INSTALL}/__init__.py
 

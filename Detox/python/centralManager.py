@@ -272,12 +272,15 @@ class CentralManager:
            size2del = -1
            if taken > size*self.DETOX_USAGE_MAX :
                size2del = sitePr.spaceTaken() - size*self.DETOX_USAGE_MIN
+           if size2del > 100*1000:
+               size2del = 100*1000
            sitePr.setSpaceToFree(size2del)
 
        #determine if we need to call it again
        #call it if there are sites that should delete more 
        #and have datasets to add to wish list
        oneMoreIteration = True
+       totalIters = 0
        while oneMoreIteration:
            oneMoreIteration = False
            for site in sorted(self.allSites.keys()):
@@ -290,8 +293,12 @@ class CentralManager:
                        oneMoreIteration = True
                        break
            if oneMoreIteration:
+               if totalIters > 20 :
+                   oneMoreIteration = False
+                   break
                print " Iterating unifying deletion lists"
                self.unifyDeletionLists()
+               totalIters = totalIters + 1
 
        # now it all done, calculate for each site space taken by last copies
        statusDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS']
@@ -507,6 +514,7 @@ class CentralManager:
             fileDelete = sitedir + "/DeleteDatasets.txt"
             fileDeprec = sitedir + "/DeprecatedSets.txt"
             fileIncomp = sitedir + "/IncompleteSets.txt"
+            fileWrGroup= sitedir + "/RunAwayGroupSets.txt"
 
             outputFile = open(fileTimest,'w')
             outputFile.write('#- ' + today + " " + ttime + "\n\n")
@@ -597,6 +605,18 @@ class CentralManager:
                                      %(rank,trueSize,size,nsites-ndeletes,dset))
             outputFile.close()
 
+            outputFile = open(fileWrGroup,'w')
+            outputFile.write("# -- " + today + " " + ttime + "\n")
+            outputFile.write("#------------------------------------\n")
+            runAwayGroups =  self.phedexHandler.getRunAwayGroups(site)
+            runAwaySets =  self.phedexHandler.getRunAwaySets(site)
+            for group in sorted(runAwayGroups):
+                outputFile.write("\n"+group+":\n")
+                for dset in sorted(runAwaySets):
+                    if runAwaySets[dset] == group:
+                        outputFile.write(dset+"\n")
+            outputFile.close()
+
 
     def requestDeletions(self):
         now_tstamp = datetime.datetime.now()
@@ -634,7 +654,8 @@ class CentralManager:
             numberRequests = numberRequests + 1
 
             (reqid,rdate) = self.submitDeletionRequest(site,datasets2del)
-            self.submitUpdateRequest(site,reqid)
+            if site.startswith('T2'):
+                self.submitUpdateRequest(site,reqid)
             print " -- Request Id =  " + str(reqid)
 
             thisRequest.reqId = reqid

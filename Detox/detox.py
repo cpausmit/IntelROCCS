@@ -43,7 +43,7 @@ centralManager = centralManager.CentralManager()
 centralManager.checkProxyValid()
 
 #if you need to approve requests by hand
-#centralManager.submitUpdateRequest('T2_RU_IHEP',421768)
+#centralManager.submitUpdateRequest('T2_TH_CUNSTDA',423918)
 
 # Make directories to hold cache data
 
