@@ -15,7 +15,7 @@ export CARETAKER_SITESTORAGE_PW="db78user?Cms"
 export CARETAKER_TRDIR="transfers"
 
 # location of Detox web 
-export CARETAKER_DETOXWEB="http://t3serv001.mit.edu/~cmsprod/IntelROCCS/SitesCaretaker"
+export CARETAKER_DETOXWEB="http://t3serv001.mit.edu/~cmsprod/IntelROCCS/Detox"
 
 # Email list to notify in case of problems
 export CARETAKER_EMAIL_LIST=maxi@fnal.gov,maxi@mit.edu
