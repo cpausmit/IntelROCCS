@@ -86,6 +86,7 @@ class dataDealerReport():
 		data = self.dbApi.dbQuery(query, values=values)
 		for sub in data:
 			subscriptions.append([info for info in sub])
+		# sort subscriptions based on rank in descending order
 
 		# Get top 10 datasets not subscribed
 		cacheFile = "%s/%s.db" % (self.rankingCachePath, "rankingCache")
@@ -101,8 +102,9 @@ class dataDealerReport():
 		quota = 0.0
 		dataOwned = 0.0
 		for value in siteQuota.itervalues():
-			quota += value[0]
-			dataOwned += value[1]
+			if site not in blacklistedSites:
+				quota += value[0]
+				dataOwned += value[1]
 		quotaUsed = int(100*(float(dataOwned)/float(quota*10**3)))
 		dataSubscribed = 0.0
 		siteSubscriptions = dict()
@@ -115,7 +117,7 @@ class dataDealerReport():
 			siteSubscriptions[site] += subscriptionSize
 
 		# Create title
-		title = 'AnalysisOps %s | %d TB | %d%% | %.2f TB Subscribed' % (date.strftime('%Y-%m-%d'), int(dataOwned/10**3), int(quotaUsed), dataSubscribed)
+		title = 'AnalysisOps %s | %d TB | %d%% | %.2f TB Subscribed' % (date.strftime('%Y-%m-%d'), int(dataOwned/10**3), int(quotaUsed), int(dataSubscribed/10**3)
 		text = '%s\n  %s\n%s\n\n' % ('='*68, title, '='*68)
 
 		# Create site table
@@ -126,9 +128,9 @@ class dataDealerReport():
 		siteTable.setHeaders(['Site', 'Subscribed TB', 'Space Used TB', 'Space Used %', 'Quota TB', 'Rank', 'Status'])
 		for site in allSites:
 			subscribed = float(siteSubscriptions[site])/(10**3)
-			usedTb = int(siteQuota[site][1]/10**3)
 			quota = siteQuota[site][0]
 			usedP = "%d%%" % (int(100*(float(usedTb)/float(quota))))
+			usedTb = int(siteQuota[site][1]/10**3)
 			status = "up"
 			rank = float(siteQuota[site][2])
 			if site in blacklistedSites:
