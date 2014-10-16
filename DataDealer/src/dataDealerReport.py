@@ -35,10 +35,10 @@ class dataDealerReport():
 		# Send email
 		fromEmail = ("Bjorn Barrefors", "bjorn.peter.barrefors@cern.ch")
 		#toList = (["Bjorn Barrefors"], ["bjorn.peter.barrefors@cern.ch"])
-		toList = (["Bjorn Barrefors"], ["barrefors@gmail.com"])
+		#toList = (["Bjorn Barrefors"], ["barrefors@gmail.com"])
 		#toList = (["Data Management Group"], ["hn-cms-dmDevelopment@cern.ch"])
-		#toList = (["Bjorn Barrefors", "Brian Bockelman", "Maxim Goncharov", "Christoph Paus"],
-		#		  ["bjorn.peter.barrefors@cern.ch", "bbockelm@cse.unl.edu", "maxi@mit.edu", "paus@mit.edu"])
+		toList = (["Bjorn Barrefors", "Brian Bockelman", "Maxim Goncharov", "Christoph Paus"],
+				  ["bjorn.peter.barrefors@cern.ch", "bbockelm@cse.unl.edu", "maxi@mit.edu", "paus@mit.edu"])
 
 		msg = MIMEMultipart()
 		msg['Subject'] = title
@@ -62,6 +62,7 @@ class dataDealerReport():
 
 		# Get all sites with data usage, quota, and rank
 		allSites = self.sites.getAllSites()
+		blacklistedSites = self.sites.getBlacklistedSites()
 		siteQuota = dict()
 		for site in allSites:
 			query = "SELECT Quotas.SizeTb FROM Quotas INNER JOIN Sites ON Quotas.SiteId=Sites.SiteId INNER JOIN Groups ON Groups.GroupId=Quotas.GroupId WHERE Sites.SiteName=%s AND Groups.GroupName=%s"
@@ -101,8 +102,8 @@ class dataDealerReport():
 		# Make title variables
 		quota = 0.0
 		dataOwned = 0.0
-		for value in siteQuota.itervalues():
-			if site not in blacklistedSites:
+		for site, value in siteQuota.items():
+			if not (site in blacklistedSites):
 				quota += value[0]
 				dataOwned += value[1]
 		quotaUsed = int(100*(float(dataOwned)/float(quota*10**3)))
@@ -117,20 +118,18 @@ class dataDealerReport():
 			siteSubscriptions[site] += subscriptionSize
 
 		# Create title
-		title = 'AnalysisOps %s | %d TB | %d%% | %.2f TB Subscribed' % (date.strftime('%Y-%m-%d'), int(dataOwned/10**3), int(quotaUsed), int(dataSubscribed/10**3)
+		title = 'AnalysisOps %s | %d TB | %d%% | %.2f TB Subscribed' % (date.strftime('%Y-%m-%d'), int(dataOwned/10**3), int(quotaUsed), int(dataSubscribed/10**3))
 		text = '%s\n  %s\n%s\n\n' % ('='*68, title, '='*68)
 
 		# Create site table
 		# get status of sites
-		blacklistedSites = self.sites.getBlacklistedSites()
-
 		siteTable = makeTable.Table(add_numbers=False)
 		siteTable.setHeaders(['Site', 'Subscribed TB', 'Space Used TB', 'Space Used %', 'Quota TB', 'Rank', 'Status'])
 		for site in allSites:
 			subscribed = float(siteSubscriptions[site])/(10**3)
-			quota = siteQuota[site][0]
-			usedP = "%d%%" % (int(100*(float(usedTb)/float(quota))))
+			quota = siteQuota[site][0]	
 			usedTb = int(siteQuota[site][1]/10**3)
+			usedP = "%d%%" % (int(100*(float(usedTb)/float(quota))))
 			status = "up"
 			rank = float(siteQuota[site][2])
 			if site in blacklistedSites:
