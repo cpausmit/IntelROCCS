@@ -18,10 +18,10 @@ cacheDeadline = int(os.environ['DATA_DEALER_CACHE_DEADLINE'])
 threshold = int(os.environ['DATA_DEALER_THRESHOLD'])
 
 phedexApi_ = phedexApi.phedexApi()
-phedexApi_.renewProxy()
+#phedexApi_.renewProxy()
 
 popDbApi_ = popDbApi.popDbApi()
-popDbApi_.renewSsoCookie()
+#popDbApi_.renewSsoCookie()
 
 phedexData = phedexData.phedexData(phedexCache, cacheDeadline)
 sites_ = sites.sites()
@@ -38,7 +38,7 @@ print ""
 # get all datasets
 print " ----  Get Datasets  ---- "
 startTime = datetime.datetime.now()
-datasets = phedexData.getAllDatasets()
+#datasets = phedexData.getAllDatasets()
 totalTime = datetime.datetime.now() - startTime
 print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
 print ""
@@ -46,7 +46,7 @@ print ""
 # get all sites
 print " ----  Get Sites  ---- "
 startTime = datetime.datetime.now()
-availableSites = sites_.getAvailableSites()
+#availableSites = sites_.getAvailableSites()
 totalTime = datetime.datetime.now() - startTime
 print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
 print ""
@@ -54,7 +54,7 @@ print ""
 # rocker board algorithm
 print " ----  Rocker Board Algorithm  ---- "
 startTime = datetime.datetime.now()
-subscriptions = rba.rba(datasets, availableSites)
+#subscriptions = rba.rba(datasets, availableSites)
 totalTime = datetime.datetime.now() - startTime
 print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
 print ""
@@ -62,7 +62,7 @@ print ""
 # subscribe selected datasets
 print " ----  Subscribe Datasets  ---- "
 startTime = datetime.datetime.now()
-subscribe_.createSubscriptions(subscriptions)
+#subscribe_.createSubscriptions(subscriptions)
 totalTime = datetime.datetime.now() - startTime
 print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
 print ""
