@@ -46,6 +46,7 @@ class DeletionRequest:
 
     def update(self,dset,rank,size):
         if dset in self.dsetsizes:
+            print dset
             raise Exception("Duplicate dataset in DeletionRequest!!!")
 
         self.dsetsizes[dset] = size

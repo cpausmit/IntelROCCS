@@ -74,8 +74,8 @@ class CentralManager:
             return
 
         sitesPending = {}
-        self.deletion = self.basedir + '/' + os.environ['CARETAKER_DELETE']
-        for fileName in glob.glob(self.deletion+'*'):
+        self.deletion = self.basedir + '/' + os.environ['CARETAKER_TRDIR']
+        for fileName in glob.glob(self.deletion+'/*'):
             siteName = fileName.split('-')[1]
             sitesPending[siteName] = 1
 
