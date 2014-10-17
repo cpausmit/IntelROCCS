@@ -33,6 +33,7 @@ class phedexApi:
 		process = subprocess.Popen(["grid-proxy-init", "-valid", "24:00"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=False)
 		strout = process.communicate()[0]
 		if process.returncode != 0:
+			# email
 			raise Exception(" FATAL -- Could not generate proxy\nError msg: %s" % (str(strout)))
 		return 0
 
@@ -46,17 +47,17 @@ class phedexApi:
 		except urllib2.HTTPError, e:
 			errorMsg = str(e)
 			phedexMsg = e.read()
-			print(" ERROR -- %s\PHEDEX msg: %s" % (errorMsg, phedexMsg))
+			print(" FATAL -- %s\PHEDEX msg: %s" % (errorMsg, phedexMsg))
 			return 0
 		except urllib2.URLError, e:
 			errorMsg = str(e)
-			print(" ERROR -- %s\nMost likely due to invalid proxy or error in phedex base: %s" % (errorMsg, self.phedexBase))
+			print(" FATAL -- %s\nMost likely due to invalid proxy or error in phedex base: %s" % (errorMsg, self.phedexBase))
 			return 0
 		response = strout.read()
 		try:
 			jsonData = json.loads(response)
 		except ValueError, e:
-			print(" ERROR -- No JSON data returned\nMost likely due to error in phedex url base: %s" % (self.phedexBase))
+			print(" FATAL -- No JSON data returned\nMost likely due to error in phedex url base: %s" % (self.phedexBase))
 			return 0
 		return jsonData
 
@@ -68,12 +69,14 @@ class phedexApi:
 		for dataset in datasets:
 			jsonData = self.data(dataset=dataset, level='file')
 			if not jsonData:
-				print(" ERROR -- Couldn't create xml data for dataset %s" % (dataset))
+				print(" FATAL -- Couldn't create xml data for dataset %s" % (dataset))
+				# email
 				continue
 			try:
 				data = jsonData.get('phedex').get('dbs')[0].get('dataset')[0]
 			except IndexError, e:
-				print(" ERROR -- Couldn't create xml data for dataset %s" % (dataset))
+				print(" FATAL -- Couldn't create xml data for dataset %s" % (dataset))
+				# email
 				continue
 			successDatasets.append(dataset)
 			xml = xml + '<dataset name="%s" is-open="%s">' % (data.get('name'), data.get('is_open'))

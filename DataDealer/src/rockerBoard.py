@@ -120,5 +120,6 @@ class rockerBoard():
 			used = self.phedexData.getSiteStorage(siteName)
 			totalUsed += used
 		systemLeft = totalQuota*0.8 - totalUsed
+		print "System left: " + str(systemLeft)
 		subscriptions = self.getNewReplicas(datasetRankings, siteRankings, systemLeft)
 		return subscriptions
