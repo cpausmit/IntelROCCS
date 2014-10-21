@@ -56,7 +56,6 @@ class PhedexDataHandler:
         phedexBlocks = 'phedex/datasvc/json/prod/blockreplicas'
         args = 'show_dataset=y&subscribed=y&' + federation
 
-        cert = os.environ['DETOX_X509UP']
         url = '"'+webServer+phedexBlocks+'?'+args+'"'
         cmd = 'curl -k -H "Accept: text/xml" ' + url
 
