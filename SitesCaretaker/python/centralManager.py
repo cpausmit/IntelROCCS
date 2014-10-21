@@ -113,6 +113,8 @@ class CentralManager:
             print "Re-signing datasets for SITE=" + siteName
             siteToSites[siteName] = []
             datasets = self.detoxWebReader.getDatasetsForSite(siteName)
+            deprecated = self.detoxWebReader.getJunkDatasets(siteName)
+
             if len(datasets.keys()) < 1:
                 break
             self.dbInfoHandler.setDatasetRanks(datasets)
@@ -129,6 +131,10 @@ class CentralManager:
                 for dset in datasets.keys():
                     #part of the datasets might be already in pending request
                     if dset in pendingSets:
+                        del datasets[dset]
+                        continue
+                    #make sure it is not deprectaed set
+                    if dset in deprecated:
                         del datasets[dset]
                         continue
 
