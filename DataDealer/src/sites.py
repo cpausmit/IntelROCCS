@@ -13,7 +13,7 @@ class sites():
     def getAllSites(self):
         # Change query when tables are updated
         query = "SELECT Sites.SiteName FROM Sites INNER JOIN Quotas ON Sites.SiteId=Quotas.SiteId INNER JOIN Groups ON Groups.GroupId=Quotas.GroupId WHERE Groups.GroupName=%s"
-        values = ["AnalysisOps"
+        values = ["AnalysisOps"]
         data = self.dbApi.dbQuery(query, values=values)
         return [site[0] for site in data]
 
