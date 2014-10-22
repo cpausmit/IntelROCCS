@@ -25,8 +25,8 @@ import initPhedex
 class phedexApi:
     def __init__(self):
         self.phedexBase = os.environ['PHEDEX_BASE']
-        self.cert = "/home/bbarrefo/.globus/usercert.pem"
-        self.key = "/home/bbarrefo/.globus/userkey.pem"
+        self.cert = "/usr/local/IntelROCCS/.globus/usercert.pem"
+        self.key = "/usr/local/IntelROCCS/.globus/userkey.pem"
 
 #===================================================================================================
 #  H E L P E R S
