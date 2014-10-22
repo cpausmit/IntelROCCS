@@ -10,6 +10,7 @@ OPTIND=1
 # Initialize our own variables:
 testing=0
 keep_cache=0
+restart=0
 
 while getopts "tcr" opt; do
     case "$opt" in
@@ -138,7 +139,7 @@ echo "os.environ['DATA_DEALER_RANKINGS_CACHE']='"${RANKINGS_CACHE}"'" >> $INIT_F
 
 chmod 755 $INIT_FILE
 
-if [ $testing -eq 0 -o $restart -eq 1 ]
+if [ $testing -eq 0 -a $restart -eq 1 ]
 then
     # install and start daemons
     #==========================
