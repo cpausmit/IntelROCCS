@@ -10,7 +10,7 @@ OPTIND=1
 # Initialize our own variables:
 testing=0
 
-while getopts "t:" opt; do
+while getopts "t" opt; do
 	case "$opt" in
 	t)  testing=1
 		;;
