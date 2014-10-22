@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!/usr/bin/env python
 #---------------------------------------------------------------------------------------------------
 # Subscribes selected datasets
 #---------------------------------------------------------------------------------------------------
@@ -7,12 +7,12 @@ import dbApi, phedexApi
 
 class subscribe():
 	def __init__(self):
-		self.rankingCachePath = os.environ['DATA_DEALER_RANKING_CACHE']
+		self.rankingsCachePath = os.environ['DATA_DEALER_RANKINGS_CACHE']
 		self.phedexApi = phedexApi.phedexApi()
 		self.dbApi = dbApi.dbApi()
 
 	def createSubscriptions(self, subscriptions):
-		cacheFile = "%s/%s.db" % (self.rankingCachePath, "rankingCache")
+		cacheFile = "%s/%s.db" % (self.rankingsCachePath, "rankingsCache")
 		for siteName in iter(subscriptions):
 			datasets, subscriptionData = self.phedexApi.createXml(datasets=subscriptions[siteName], instance='prod')
 			if not datasets:
@@ -31,9 +31,9 @@ class subscribe():
 				continue
 			requestTimestamp = datetime.datetime.fromtimestamp(float(request.get('request_timestamp')))
 			for datasetName in datasets:
-				rankingCache = sqlite3.connect(cacheFile)
-				with rankingCache:
-					cur = rankingCache.cursor()
+				rankingsCache = sqlite3.connect(cacheFile)
+				with rankingsCache:
+					cur = rankingsCache.cursor()
 					cur.execute('SELECT Rank FROM Datasets WHERE DatasetName=?', (datasetName,))
 					row = cur.fetchone()
 					datasetRank = row[0]

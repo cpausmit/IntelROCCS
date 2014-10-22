@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!/usr/bin/env python
 #---------------------------------------------------------------------------------------------------
 # Daily Report
 # Print: Total data owned
@@ -21,7 +21,7 @@ class dataDealerReport():
 		phedexCache = os.environ['DATA_DEALER_PHEDEX_CACHE']
 		popDbCache = os.environ['DATA_DEALER_POP_DB_CACHE']
 		cacheDeadline = int(os.environ['DATA_DEALER_CACHE_DEADLINE'])
-		self.rankingCachePath = os.environ['DATA_DEALER_RANKING_CACHE']
+		self.rankingsCachePath = os.environ['DATA_DEALER_RANKINGS_CACHE']
 		self.phedexData = phedexData.phedexData(phedexCache, cacheDeadline)
 		self.popDbData = popDbData.popDbData(popDbCache, cacheDeadline)
 		self.dbApi = dbApi.dbApi()
@@ -57,8 +57,8 @@ class dataDealerReport():
 	def createReport(self):
 		# Initialize
 		date = datetime.date.today()
-		cacheFile = "%s/%s.db" % (self.rankingCachePath, "rankingCache")
-		rankingCache = sqlite3.connect(cacheFile)
+		cacheFile = "%s/%s.db" % (self.rankingsCachePath, "rankingsCache")
+		rankingsCache = sqlite3.connect(cacheFile)
 
 		# Get all sites with data usage, quota, and rank
 		allSites = self.sites.getAllSites()
@@ -70,8 +70,8 @@ class dataDealerReport():
 			data = self.dbApi.dbQuery(query, values=values)
 			quota= data[0][0]
 			usedStorage = self.phedexData.getSiteStorage(site)
-			with rankingCache:
-				cur = rankingCache.cursor()
+			with rankingsCache:
+				cur = rankingsCache.cursor()
 				cur.execute('SELECT Rank FROM Sites WHERE SiteName=?', (site,))
 				row = cur.fetchone()
 				if not row:
@@ -90,11 +90,11 @@ class dataDealerReport():
 		# sort subscriptions based on rank in descending order
 
 		# Get top 10 datasets not subscribed
-		cacheFile = "%s/%s.db" % (self.rankingCachePath, "rankingCache")
+		cacheFile = "%s/%s.db" % (self.rankingsCachePath, "rankingsCache")
 		nSubbed = len(subscriptions)
 		topTen = []
-		with rankingCache:
-			cur = rankingCache.cursor()
+		with rankingsCache:
+			cur = rankingsCache.cursor()
 			cur.execute('SELECT * FROM Datasets ORDER BY Rank DESC LIMIT ? OFFSET ?', (nSubbed+10, nSubbed))
 			for row in cur:
 				topTen.append(row)
@@ -127,7 +127,7 @@ class dataDealerReport():
 		siteTable.setHeaders(['Site', 'Subscribed TB', 'Space Used TB', 'Space Used %', 'Quota TB', 'Rank', 'Status'])
 		for site in allSites:
 			subscribed = float(siteSubscriptions[site])/(10**3)
-			quota = siteQuota[site][0]	
+			quota = siteQuota[site][0]
 			usedTb = int(siteQuota[site][1]/10**3)
 			usedP = "%d%%" % (int(100*(float(usedTb)/float(quota))))
 			status = "up"

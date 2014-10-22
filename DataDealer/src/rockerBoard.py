@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!/usr/bin/env python
 #---------------------------------------------------------------------------------------------------
 # Collects all the necessary data to generate rankings for all datasets in the AnalysisOps space.
 #---------------------------------------------------------------------------------------------------
@@ -10,7 +10,7 @@ class rockerBoard():
 		phedexCache = os.environ['DATA_DEALER_PHEDEX_CACHE']
 		popDbCache = os.environ['DATA_DEALER_POP_DB_CACHE']
 		cacheDeadline = int(os.environ['DATA_DEALER_CACHE_DEADLINE'])
-		self.rankingCachePath = os.environ['DATA_DEALER_RANKING_CACHE']
+		self.rankingsCachePath = os.environ['DATA_DEALER_RANKINGS_CACHE']
 		self.threshold = int(os.environ['DATA_DEALER_THRESHOLD'])
 		self.budget = int(os.environ['DATA_DEALER_BUDGET'])
 		self.phedexData = phedexData.phedexData(phedexCache, cacheDeadline)
@@ -47,15 +47,15 @@ class rockerBoard():
 					return 0
 		return popularity
 
-	def rankingCache(self, datasetRankings, siteRankings):
-		if not os.path.exists(self.rankingCachePath):
-			os.makedirs(self.rankingCachePath)
-		cacheFile = "%s/%s.db" % (self.rankingCachePath, "rankingCache")
+	def rankingsCache(self, datasetRankings, siteRankings):
+		if not os.path.exists(self.rankingsCachePath):
+			os.makedirs(self.rankingsCachePath)
+		cacheFile = "%s/%s.db" % (self.rankingsCachePath, "rankingsCache")
 		if os.path.isfile(cacheFile):
 			os.remove(cacheFile)
-		rankingCache = sqlite3.connect(cacheFile)
-		with rankingCache:
-			cur = rankingCache.cursor()
+		rankingsCache = sqlite3.connect(cacheFile)
+		with rankingsCache:
+			cur = rankingsCache.cursor()
 			cur.execute('CREATE TABLE IF NOT EXISTS Datasets (DatasetName TEXT UNIQUE, Rank REAL)')
 			cur.execute('CREATE TABLE IF NOT EXISTS Sites (SiteName TEXT UNIQUE, Rank REAL)')
 			for datasetName, rank in datasetRankings.items():
@@ -109,7 +109,7 @@ class rockerBoard():
 	def rba(self, datasets, sites):
 		datasetRankings = self.getDatasetRankings(datasets)
 		siteRankings = self.getSiteRankings(sites, datasetRankings)
-		self.rankingCache(datasetRankings, siteRankings)
+		self.rankingsCache(datasetRankings, siteRankings)
 		totalQuota = 0
 		totalUsed = 0
 		for siteName in sites:

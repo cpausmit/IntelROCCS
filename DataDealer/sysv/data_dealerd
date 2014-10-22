@@ -19,7 +19,7 @@ INITLOG_ARGS=""
 
 # Path to the running script, server binary, and short-form for messages.
 #detoxd=/usr/sbin/detoxd
-data_dealerd=/usr/local/IntelROCCS/DataDealer/data_dealerd
+data_dealerd=/usr/local/IntelROCCS/Install/DataDealer/data_dealerd
 prog=data_dealerd
 pidfile=${PIDFILE-/var/run/data_dealerd.pid}
 lockfile=${LOCKFILE-/var/lock/subsys/data_dealerd}
