@@ -22,7 +22,7 @@ done
 export INTELROCCS_USER=cmsprod
 export INTELROCCS_GROUP=zh
 
-if [ testing -eq 0 ]
+if [ $testing -eq 0 ]
 then
 	INSTALL_DIR=/usr/local/IntelROCCS/Install
 else
