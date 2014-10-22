@@ -11,10 +11,10 @@ OPTIND=1
 testing=0
 
 while getopts "t" opt; do
-	case "$opt" in
-	t)  testing=1
-		;;
-	esac
+    case "$opt" in
+    t)  testing=1
+        ;;
+    esac
 done
 
 
@@ -24,9 +24,9 @@ export INTELROCCS_GROUP=zh
 
 if [ $testing -eq 0 ]
 then
-	INSTALL_DIR=/usr/local/IntelROCCS/Install
+    INSTALL_DIR=/usr/local/IntelROCCS/Install
 else
-	INSTALL_DIR=/usr/local/IntelROCCS/Install-test
+    INSTALL_DIR=/usr/local/IntelROCCS/Install-test
 fi
 # get path of installation script, source code, and install path
 INTELROCCS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -39,12 +39,12 @@ API_INSTALL=${INSTALL_DIR}/Api
 
 if [ -d "$API_INSTALL" ]
 then
-	# make sure to remove completely the previous installed software
-	echo " Removing previous api installation."
-	rm -rf $API_INSTALL/*
+    # make sure to remove completely the previous installed software
+    echo " Removing previous api installation."
+    rm -rf $API_INSTALL/*
 else
-	# create file structur if it doesn't exist
-	mkdir -p $API_INSTALL
+    # create file structur if it doesn't exist
+    mkdir -p $API_INSTALL
 fi
 # copy all source files to install directory
 cp $API_SRC/* $API_INSTALL

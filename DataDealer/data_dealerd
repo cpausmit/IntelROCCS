@@ -9,29 +9,29 @@
 while [ 1 ]
 do
 
-	# generate specific log file
-	tag=`date "+%s"`
-	logFile=/local/cmsprod/IntelROCCS/DataDealer/data_dealer-$tag.log
-	touch $logFile
+    # generate specific log file
+    tag=`date "+%s"`
+    logFile=/local/cmsprod/IntelROCCS/DataDealer/data_dealer-$tag.log
+    touch $logFile
 
-	# ten loops over the process with one logfile (keep it small)
-	for index in `echo 0 1 2 3 4 5 6 7 8 9`
-	do
-		# period 3600 * nHours
-		let wait=3600*24
+    # ten loops over the process with one logfile (keep it small)
+    for index in `echo 0 1 2 3 4 5 6 7 8 9`
+    do
+        # period 3600 * nHours
+        let wait=3600*24
 
-		echo " "                                                         	   >> $logFile
-		echo " data dealer loop $index started -- $tag (cycle wait $wait sec)" >> $logFile
-		echo " "                                                         	   >> $logFile
-		echo "   --> "`date`                                                   >> $logFile
-		echo " "                                                               >> $logFile
-		stdbuf -o0 -e0 /usr/local/IntelROCCS/Install/DataDealer/dataDealer.py  >> $logFile 2>&1
+        echo " "                                                               >> $logFile
+        echo " data dealer loop $index started -- $tag (cycle wait $wait sec)" >> $logFile
+        echo " "                                                               >> $logFile
+        echo "   --> "`date`                                                   >> $logFile
+        echo " "                                                               >> $logFile
+        stdbuf -o0 -e0 /usr/local/IntelROCCS/Install/DataDealer/dataDealer.py  >> $logFile 2>&1
 
-		# insure that the log information is updated
-		rsync -Cavz --delete /local/cmsprod/IntelROCCS/DataDealer \
-		                     /home/cmsprod/public_html/IntelROCCS >& /dev/null
-		sleep $wait
-	done
+        # insure that the log information is updated
+        rsync -Cavz --delete /local/cmsprod/IntelROCCS/DataDealer \
+                             /home/cmsprod/public_html/IntelROCCS >& /dev/null
+        sleep $wait
+    done
 done
 
 exit 0;
