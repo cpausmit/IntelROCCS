@@ -9,16 +9,23 @@ OPTIND=1
 
 # Initialize our own variables:
 testing=0
-keep_cache=0
-restart=0
+clear_cache=0
+daemon=0
 
-while getopts "tcr" opt; do
+while getopts "tcdh" opt; do
     case "$opt" in
     t) testing=1
        ;;
-    c) keep_cache=1
+    c) clear_cache=1
        ;;
-    r) restart=1
+    d) daemon=1
+       ;;
+    h) echo "usage: sudo ./installDataDealer [-t | -c | -d | -h]"
+       echo "t: test installation, use for testing"
+       echo "c: clear cache"
+       echo "d: install a new daemon and restart it"
+       echo "h: show this message"
+       exit 0
        ;;
     esac
 done
@@ -79,7 +86,7 @@ touch ${INSTALL_DIR}/__init__.py
 if [ -d "$PHEDEX_CACHE" ]
 then
     # make sure to remove completely the previous installed software
-    if [ $keep_cache -eq 0 ]
+    if [ $clear_cache -eq 1 ]
     then
         echo " Cleaning up phedex cache."
         rm -rf $PHEDEX_CACHE/*
@@ -94,7 +101,7 @@ mkdir -p $PHEDEX_CACHE
 if [ -d "$POP_DB_CACHE" ]
 then
     # make sure to remove completely the previous installed software
-    if [ $keep_cache -eq 0 ]
+    if [ $clear_cache -eq 1 ]
     then
         echo " Cleaning up pop db cache."
         rm -rf $POP_DB_CACHE/*
@@ -109,7 +116,7 @@ mkdir -p $POP_DB_CACHE
 if [ -d "$RANKINGS_CACHE" ]
 then
     # make sure to remove completely the previous installed software
-    if [ $keep_cache -eq 0 ]
+    if [ $clear_cache -eq 1 ]
     then
         echo " Cleaning up rankings cache."
         rm -rf $RANKINGS_CACHE/*
@@ -139,7 +146,7 @@ echo "os.environ['DATA_DEALER_RANKINGS_CACHE']='"${RANKINGS_CACHE}"'" >> $INIT_F
 
 chmod 755 $INIT_FILE
 
-if [ $testing -eq 0 -a $restart -eq 1 ]
+if [ $testing -eq 0 -a $daemon -eq 1 ]
 then
     # install and start daemons
     #==========================

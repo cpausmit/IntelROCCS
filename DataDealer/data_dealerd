@@ -10,7 +10,7 @@ while [ 1 ]
 do
 
     # generate specific log file
-    tag=`date "+%s"`
+    tag=`date "+%Y%m%d"`
     logFile=/local/cmsprod/IntelROCCS/DataDealer/data_dealer-$tag.log
     touch $logFile
 
