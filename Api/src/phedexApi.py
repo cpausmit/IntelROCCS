@@ -25,12 +25,14 @@ import initPhedex
 class phedexApi:
     def __init__(self):
         self.phedexBase = os.environ['PHEDEX_BASE']
+        self.cert = "/home/bbarrefo/.globus/usercert.pem"
+        self.key = "/home/bbarrefo/.globus/userkey.pem"
 
 #===================================================================================================
 #  H E L P E R S
 #===================================================================================================
     def renewProxy(self):
-        process = subprocess.Popen(["grid-proxy-init", "-valid", "24:00"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=False)
+        process = subprocess.Popen(["grid-proxy-init", "-valid", "24:00", "-cert", self.cert, "-key", self.key], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=False)
         strout = process.communicate()[0]
         if process.returncode != 0:
             # email

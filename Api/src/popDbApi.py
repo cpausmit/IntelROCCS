@@ -22,9 +22,9 @@ import initPopDb
 class popDbApi():
     def __init__(self):
         self.popDbBase = os.environ['POP_DB_BASE']
-        self.cert = "%s/.globus/usercert.pem" % (os.environ['HOME'])
-        self.key = "%s/.globus/userkey.pem" % (os.environ['HOME'])
-        self.cookie = "%s/.globus/ssocookie.txt" % (os.environ['HOME'])
+        self.cert = "/home/bbarrefo/.globus/usercert.pem"
+        self.key = "/home/bbarrefo/.globus/userkey.pem"
+        self.cookie = "/home/bbarrefo/.globus/ssocookie.txt"
 
 #===================================================================================================
 #  H E L P E R S
