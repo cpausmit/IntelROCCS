@@ -10,10 +10,15 @@ OPTIND=1
 # Initialize our own variables:
 testing=0
 
-while getopts "t" opt; do
+while getopts "th" opt; do
     case "$opt" in
-    t)  testing=1
-        ;;
+    t) testing=1
+       ;;
+    h) echo "usage: sudo ./installApi [-t | -h]"
+       echo "t: test installation, use for testing"
+       echo "h: show this message"
+       exit 0
+       ;;
     esac
 done
 
