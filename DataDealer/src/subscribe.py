@@ -14,6 +14,9 @@ class subscribe():
     def createSubscriptions(self, subscriptions):
         cacheFile = "%s/%s.db" % (self.rankingsCachePath, "rankingsCache")
         for siteName in iter(subscriptions):
+            if siteName == "T1_US_FNAL_Disk":
+                print "Trying to subscribe to T1_US_FNAL_Dis. This shouldn't happen but luckily we caught it before subscribing!"
+                continue
             datasets, subscriptionData = self.phedexApi.createXml(datasets=subscriptions[siteName], instance='prod')
             if not datasets:
                 continue
