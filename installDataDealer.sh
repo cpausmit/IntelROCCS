@@ -108,10 +108,10 @@ then
 	# make sure to remove completely the previous installed software
 	if [ $keep_cache -eq 0 ]
 	then
-		echo " Cleaning up phedex cache."
+		echo " Cleaning up rankings cache."
 		rm -rf $RANKINGS_CACHE/*
 	else
-		echo " Phedex cache is not cleared"
+		echo " Rankings cache is not cleared"
 	fi
 fi
 # create file structur if it doesn't exist
