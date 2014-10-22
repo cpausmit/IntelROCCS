@@ -24,7 +24,7 @@ done
 export INTELROCCS_USER=cmsprod
 export INTELROCCS_GROUP=zh
 
-if [ testing -eq 0 ]
+if [ $testing -eq 0 ]
 then
 	INSTALL_DIR=/usr/local/IntelROCCS/Install
 	DATA_DEALER_BUDGET="50000"
@@ -74,7 +74,7 @@ touch ${INSTALL_DIR}/__init__.py
 if [ -d "$PHEDEX_CACHE" ]
 then
 	# make sure to remove completely the previous installed software
-	if [ keep_cache -eq 0 ]
+	if [ $keep_cache -eq 0 ]
 	then
 		echo " Cleaning up phedex cache."
 		rm -rf $PHEDEX_CACHE/*
@@ -89,7 +89,7 @@ mkdir -p $PHEDEX_CACHE
 if [ -d "$POP_DB_CACHE" ]
 then
 	# make sure to remove completely the previous installed software
-	if [ keep_cache -eq 0 ]
+	if [ $keep_cache -eq 0 ]
 	then
 		echo " Cleaning up pop db cache."
 		rm -rf $POP_DB_CACHE/*
@@ -119,7 +119,7 @@ echo "os.environ['DATA_DEALER_RANKINGS_CACHE']='"${RANKINGS_CACHE}"'" >> $INIT_F
 
 chmod 755 $INIT_FILE
 
-if [ testing -eq 0 ]
+if [ $testing -eq 0 ]
 then
 	# install and start daemons
 	#==========================

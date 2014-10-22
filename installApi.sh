@@ -17,9 +17,6 @@ while getopts "t:" opt; do
 	esac
 done
 
-echo $testing
-
-exit 0
 
 # Configuration parameters
 export INTELROCCS_USER=cmsprod
