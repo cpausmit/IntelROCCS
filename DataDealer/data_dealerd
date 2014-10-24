@@ -2,36 +2,52 @@
 # --------------------------------------------------------------------------------------------------
 # Process to keep data dealer alive and well.
 #
-# v1.0                                                                    B.Barrefors (Aug 11, 2014)
+# v1.1                                                                   B.Barrefors (Aug 11, 2014)
 # --------------------------------------------------------------------------------------------------
-# initialize environment variables
+# set up variables
+loopInterval=24
+
+# always run on the same tim
+today=$(date -d "now" +%Y/%m/%d)
+runTime=$(date -d "$today 03:00" +%s)
+currentTime=$(date -d "now" +%s)
+timeToWait=$(($runTime - $currentTime))
+if [ timeToRun -le 0 ]
+then
+    tomorrow=$(date -d "tomorrow" +%Y/%m/%d)
+    runTime=$(date -d "$tomorrow 03:00" +%s)
+    currentTime=$(date -d "now" +%s)
+    timeToWait=$(($runTime- $currentTime))
+fi
+
+sleep $timeToWait
 
 while [ 1 ]
 do
+    # prepare to start on the same time every time based on loop interval
+    secs=$(date +%s --date="now")
+    runTime=$(date '+%s' --date="@$((secs + $loopInterval*60*60))")
 
     # generate specific log file
     tag=`date "+%Y%m%d"`
     logFile=/local/cmsprod/IntelROCCS/DataDealer/data_dealer-$tag.log
     touch $logFile
 
-    # ten loops over the process with one logfile (keep it small)
-    for index in `echo 0 1 2 3 4 5 6 7 8 9`
-    do
-        # period 3600 * nHours
-        let wait=3600*24
+    echo " "                                                               >> $logFile
+    echo " data dealer loop $index started -- $tag (cycle wait $wait sec)" >> $logFile
+    echo " "                                                               >> $logFile
+    echo "   --> "`date`                                                   >> $logFile
+    echo " "                                                               >> $logFile
+    stdbuf -o0 -e0 /usr/local/IntelROCCS/Install/DataDealer/dataDealer.py  >> $logFile 2>&1
 
-        echo " "                                                               >> $logFile
-        echo " data dealer loop $index started -- $tag (cycle wait $wait sec)" >> $logFile
-        echo " "                                                               >> $logFile
-        echo "   --> "`date`                                                   >> $logFile
-        echo " "                                                               >> $logFile
-        stdbuf -o0 -e0 /usr/local/IntelROCCS/Install/DataDealer/dataDealer.py  >> $logFile 2>&1
+    # insure that the log information is updated
+     rsync -Cavz --delete /local/cmsprod/IntelROCCS/DataDealer \
+                          /home/cmsprod/public_html/IntelROCCS >& /dev/null
 
-        # insure that the log information is updated
-        rsync -Cavz --delete /local/cmsprod/IntelROCCS/DataDealer \
-                             /home/cmsprod/public_html/IntelROCCS >& /dev/null
-        sleep $wait
-    done
+    # calculate the time until next run should start
+    currentTime=$(date -d "now" +%s)
+    timeToWait=$(($runTime- $currentTime))
+    sleep $timeToWait
 done
 
 exit 0;

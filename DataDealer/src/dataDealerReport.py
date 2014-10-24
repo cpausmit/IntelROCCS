@@ -9,6 +9,7 @@
 #        Data subscribed per site
 #---------------------------------------------------------------------------------------------------
 import sys, os, datetime, sqlite3
+from operator import itemgetter
 from email.MIMEText import MIMEText
 from email.MIMEMultipart import MIMEMultipart
 from email.Utils import formataddr
@@ -82,12 +83,12 @@ class dataDealerReport():
 
         # Get all subscriptions
         subscriptions = []
-        query = "SELECT Datasets.DatasetName, Sites.SiteName, Requests.Rank FROM Requests INNER JOIN Datasets ON Datasets.DatasetId=Requests.DatasetId INNER JOIN Sites ON Sites.SiteId=Requests.SiteId WHERE Requests.Date>%s AND Requests.RequestType=%s"
+        query = "SELECT Datasets.DatasetName, Requests.Rank FROM Requests INNER JOIN Datasets ON Datasets.DatasetId=Requests.DatasetId INNER JOIN Sites ON Sites.SiteId=Requests.SiteId WHERE Requests.Date>%s AND Requests.RequestType=%s"
         values = [date.strftime('%Y-%m-%d %H:%M:%S'), 0]
         data = self.dbApi.dbQuery(query, values=values)
         for sub in data:
             subscriptions.append([info for info in sub])
-        # sort subscriptions based on rank in descending order
+        subscriptions.sort(reverse=True, key=itemgetter(1))
 
         # Get top 10 datasets not subscribed
         cacheFile = "%s/%s.db" % (self.rankingsCachePath, "rankingsCache")
