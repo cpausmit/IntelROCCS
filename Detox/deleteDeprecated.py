@@ -120,5 +120,7 @@ if line == 'Y':
         setsToDelete = siteDsets[site]
         print site
         print siteSize2Del[site]
-        print setsToDelete
+        for dset in setsToDelete:
+            print dset
+        #print setsToDelete
         requestDeletions(site,setsToDelete)

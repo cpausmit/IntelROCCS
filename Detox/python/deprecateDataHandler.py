@@ -58,8 +58,8 @@ class DeprecateDataHandler:
             outputFile.write(dset+'\n')
         for dset in deleted:
             outputFile.write(dset+'\n')
-        for dset in invalid:
-            outputFile.write(dset+'\n')
+        #for dset in invalid:
+        #    outputFile.write(dset+'\n')
         outputFile.close()
 
     def getDatasets(self,pattern):

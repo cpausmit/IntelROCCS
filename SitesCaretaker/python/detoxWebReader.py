@@ -171,4 +171,6 @@ class DetoxWebReader:
         return self.siteSpace
     
     def siteDiskUsage(self,site):
+        if site not in self.siteDiskSpace:
+            return 0
         return self.siteDiskSpace[site]
