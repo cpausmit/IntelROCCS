@@ -55,16 +55,6 @@ PHEDEX_CACHE=/local/cmsprod/IntelROCCS/DataDealer/Phedex
 POP_DB_CACHE=/local/cmsprod/IntelROCCS/DataDealer/PopDb
 RANKINGS_CACHE=/local/cmsprod/IntelROCCS/DataDealer/Rankings
 
-mkdir -p $DATA_DEALER_LOG
-mkdir -p $PHEDEX_CACHE
-mkdir -p $POP_DB_CACHE
-mkdir -p $RANKINGS_CACHE
-
-chown ${INTELROCCS_USER}:${INTELROCCS_GROUP} -R $DATA_DEALER_LOG
-chown ${INTELROCCS_USER}:${INTELROCCS_GROUP} -R $PHEDEX_CACHE
-chown ${INTELROCCS_USER}:${INTELROCCS_GROUP} -R $POP_DB_CACHE
-chown ${INTELROCCS_USER}:${INTELROCCS_GROUP} -R $RANKINGS_CACHE
-
 
 # copy the software
 #==================
@@ -133,6 +123,12 @@ then
 fi
 # create file structur if it doesn't exist
 mkdir -p $RANKINGS_CACHE
+
+mkdir -p $DATA_DEALER_LOG
+chown ${INTELROCCS_USER}:${INTELROCCS_GROUP} -R $DATA_DEALER_LOG
+chown ${INTELROCCS_USER}:${INTELROCCS_GROUP} -R $PHEDEX_CACHE
+chown ${INTELROCCS_USER}:${INTELROCCS_GROUP} -R $POP_DB_CACHE
+chown ${INTELROCCS_USER}:${INTELROCCS_GROUP} -R $RANKINGS_CACHE
 
 PYTHONPATH=${INSTALL_DIR}/Api
 DATA_DEALER_THRESHOLD="1" # not used right now
