@@ -51,9 +51,9 @@ INTELROCCS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 DATA_DEALER_SRC=${INTELROCCS_DIR}/DataDealer/src
 DATA_DEALER_INSTALL=${INSTALL_DIR}/DataDealer
 DATA_DEALER_LOG=/local/cmsprod/IntelROCCS/DataDealer
-PHEDEX_CACHE=/usr/local/IntelROCCS/Cache/DataDealer/Phedex
-POP_DB_CACHE=/usr/local/IntelROCCS/Cache/DataDealer/PopDb
-RANKINGS_CACHE=/usr/local/IntelROCCS/Cache/DataDealer/Rankings
+PHEDEX_CACHE=/local/cmsprod/IntelROCCS/DataDealer/Phedex
+POP_DB_CACHE=/local/cmsprod/IntelROCCS/DataDealer/PopDb
+RANKINGS_CACHE=/local/cmsprod/IntelROCCS/DataDealer/Rankings
 
 mkdir -p $DATA_DEALER_LOG
 
