@@ -12,7 +12,6 @@ today=$(date -d "now" +%Y/%m/%d)
 runTime=$(date -d "$today 03:00" +%s)
 currentTime=$(date -d "now" +%s)
 timeToWait=$(($runTime - $currentTime))
-echo $timeToWait
 if [ $timeToWait -le 0 ]
 then
     tomorrow=$(date -d "tomorrow" +%Y/%m/%d)
@@ -20,8 +19,6 @@ then
     currentTime=$(date -d "now" +%s)
     timeToWait=$(($runTime- $currentTime))
 fi
-
-exit 0
 
 sleep $timeToWait
 
