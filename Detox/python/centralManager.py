@@ -141,8 +141,9 @@ class CentralManager:
                         used = 1
 
             # calculate the rank of the given dataset according to its access patterns and size
+
             datasetRank = (1-used)*(now-creationDate)/(60*60*24) + \
-                          used*( (now-lastAccessed)/(60*60*24)-nAccessed) - size/100
+                          used*( (now-lastAccessed)/(60*60*24)-nAccessed) - size/1000
             phedexSets[datasetName].setLocalRank(site,datasetRank)
 
         statusDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS']
