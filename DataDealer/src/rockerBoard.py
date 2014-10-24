@@ -94,9 +94,12 @@ class rockerBoard():
             siteRankings[siteName] = maxRank - rank
         while (sizeSubscribedGb < self.budget and datasetRankings and sizeSubscribedGb < systemLeft):
             datasetName = max(datasetRankings.iteritems(), key=operator.itemgetter(1))[0]
+            datasetSizeGb = self.phedexData.getDatasetSize(datasetName)
+            if sizeSubscribedGb + datasetSizeGb > self.budget:
+                break
             del datasetRankings[datasetName]
             siteName = self.weightedChoice(siteRankings)
-            sizeSubscribedGb += self.phedexData.getDatasetSize(datasetName)
+            sizeSubscribedGb += datasetSizeGb
             if siteName in subscriptions:
                 subscriptions[siteName].append(datasetName)
             else:
