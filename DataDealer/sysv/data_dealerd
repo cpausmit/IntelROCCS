@@ -4,7 +4,7 @@
 #
 # chkconfig: - 70 15
 # description: DataDealer is a process which decides if a CMS dataset needs to be replicated
-#			   It also selects an appropriate destination site
+#              It also selects an appropriate destination site
 #
 # processname: data_dealerd
 # config:      /etc/data_dealerd.conf
@@ -19,7 +19,7 @@ INITLOG_ARGS=""
 
 # Path to the running script, server binary, and short-form for messages.
 #detoxd=/usr/sbin/detoxd
-data_dealerd=/usr/local/IntelROCCS/DataDealer/data_dealerd
+data_dealerd=/usr/local/IntelROCCS/Install/DataDealer/data_dealerd
 prog=data_dealerd
 pidfile=${PIDFILE-/var/run/data_dealerd.pid}
 lockfile=${LOCKFILE-/var/lock/subsys/data_dealerd}
@@ -29,54 +29,54 @@ STOP_TIMEOUT=${STOP_TIMEOUT-10}
 
 # Start data dealer daemon (data_dealerd)
 start() {
-	echo -n $"Starting $prog:"
-	daemon --user=cmsprod --pidfile=${pidfile} $data_dealerd \&
-	RETVAL=$?
-	echo
-	[ $RETVAL = 0 ] && touch ${lockfile}
+    echo -n $"Starting $prog:"
+    daemon --user=cmsprod --pidfile=${pidfile} $data_dealerd \&
+    RETVAL=$?
+    echo
+    [ $RETVAL = 0 ] && touch ${lockfile}
 
-	# this seems like a hack, but I do not know how to do it differently
-	pid=`ps auxw | grep "/bin/bash $data_dealerd" |tr -s ' '|cut -d' ' -f2`
-	echo $pid > $pidfile
+    # this seems like a hack, but I do not know how to do it differently
+    pid=`ps auxw | grep "/bin/bash $data_dealerd" |tr -s ' '|cut -d' ' -f2`
+    echo $pid > $pidfile
 
-	return $RETVAL
+    return $RETVAL
 }
 
 # Stop data dealer daemon (data_dealerd)
 stop() {
-	echo -n $"Stopping $prog: "
-	killproc -p ${pidfile} -d ${STOP_TIMEOUT} $data_dealerd
-	RETVAL=$?
-	echo
-	[ $RETVAL = 0 ] && rm -f ${lockfile} ${pidfile}
+    echo -n $"Stopping $prog: "
+    killproc -p ${pidfile} -d ${STOP_TIMEOUT} $data_dealerd
+    RETVAL=$?
+    echo
+    [ $RETVAL = 0 ] && rm -f ${lockfile} ${pidfile}
 }
 
 # See how we were called.
 case "$1" in
   start)
-	start
-	;;
+    start
+    ;;
   stop)
-	stop
-	;;
+    stop
+    ;;
   status)
-	status -p ${pidfile} $data_dealerd
-	RETVAL=$?
-	;;
+    status -p ${pidfile} $data_dealerd
+    RETVAL=$?
+    ;;
   restart)
-	stop
-	start
-	;;
+    stop
+    start
+    ;;
   condrestart|try-restart)
-	if status -p ${pidfile} $data_dealerd >&/dev/null
-	then
-	  stop
-	  start
-	fi
-	;;
+    if status -p ${pidfile} $data_dealerd >&/dev/null
+    then
+      stop
+      start
+    fi
+    ;;
   *)
-	echo $"Usage: $prog {start|stop|restart|status|help}"
-	RETVAL=2
+    echo $"Usage: $prog {start|stop|restart|status|help}"
+    RETVAL=2
 esac
 
 exit $RETVAL
