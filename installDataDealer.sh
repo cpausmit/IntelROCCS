@@ -56,6 +56,9 @@ POP_DB_CACHE=/local/cmsprod/IntelROCCS/DataDealer/PopDb
 RANKINGS_CACHE=/local/cmsprod/IntelROCCS/DataDealer/Rankings
 
 mkdir -p $DATA_DEALER_LOG
+mkdir -p $PHEDEX_CACHE
+mkdir -p $POP_DB_CACHE
+mkdir -p $RANKINGS_CACHE
 
 chown ${INTELROCCS_USER}:${INTELROCCS_GROUP} -R $DATA_DEALER_LOG
 chown ${INTELROCCS_USER}:${INTELROCCS_GROUP} -R $PHEDEX_CACHE
