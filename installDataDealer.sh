@@ -37,9 +37,17 @@ export INTELROCCS_GROUP=zh
 if [ $testing -eq 0 ]
 then
     INSTALL_DIR=/usr/local/IntelROCCS/Install
+    DATA_DEALER_LOG=/local/cmsprod/IntelROCCS/DataDealer
+    PHEDEX_CACHE=/local/cmsprod/IntelROCCS/DataDealer/Phedex
+    POP_DB_CACHE=/local/cmsprod/IntelROCCS/DataDealer/PopDb
+    RANKINGS_CACHE=/local/cmsprod/IntelROCCS/DataDealer/Rankings
     DATA_DEALER_BUDGET="50000"
 else
     INSTALL_DIR=/usr/local/IntelROCCS/Install-test
+    DATA_DEALER_LOG=/local/cmsprod/IntelROCCS/DataDealer-test
+    PHEDEX_CACHE=/local/cmsprod/IntelROCCS/DataDealer-test/Phedex
+    POP_DB_CACHE=/local/cmsprod/IntelROCCS/DataDealer-test/PopDb
+    RANKINGS_CACHE=/local/cmsprod/IntelROCCS/DataDealer-test/Rankings
     DATA_DEALER_BUDGET="1000"
 fi
 
@@ -50,10 +58,7 @@ fi
 INTELROCCS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 DATA_DEALER_SRC=${INTELROCCS_DIR}/DataDealer/src
 DATA_DEALER_INSTALL=${INSTALL_DIR}/DataDealer
-DATA_DEALER_LOG=/local/cmsprod/IntelROCCS/DataDealer
-PHEDEX_CACHE=/local/cmsprod/IntelROCCS/DataDealer/Phedex
-POP_DB_CACHE=/local/cmsprod/IntelROCCS/DataDealer/PopDb
-RANKINGS_CACHE=/local/cmsprod/IntelROCCS/DataDealer/Rankings
+
 
 
 # copy the software
