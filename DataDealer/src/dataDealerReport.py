@@ -83,12 +83,12 @@ class dataDealerReport():
 
         # Get all subscriptions
         subscriptions = []
-        query = "SELECT Datasets.DatasetName, Requests.Rank FROM Requests INNER JOIN Datasets ON Datasets.DatasetId=Requests.DatasetId INNER JOIN Sites ON Sites.SiteId=Requests.SiteId WHERE Requests.Date>%s AND Requests.RequestType=%s"
+        query = "SELECT Datasets.DatasetName, Sites.SiteName, Requests.Rank FROM Requests INNER JOIN Datasets ON Datasets.DatasetId=Requests.DatasetId INNER JOIN Sites ON Sites.SiteId=Requests.SiteId WHERE Requests.Date>%s AND Requests.RequestType=%s"
         values = [date.strftime('%Y-%m-%d %H:%M:%S'), 0]
         data = self.dbApi.dbQuery(query, values=values)
         for sub in data:
             subscriptions.append([info for info in sub])
-        subscriptions.sort(reverse=True, key=itemgetter(1))
+        subscriptions.sort(reverse=True, key=itemgetter(2))
 
         # Get top 10 datasets not subscribed
         cacheFile = "%s/%s.db" % (self.rankingsCachePath, "rankingsCache")
@@ -143,15 +143,14 @@ class dataDealerReport():
         text += "\n\nNew Subscriptions\n\n"
 
         subscriptionTable = makeTable.Table(add_numbers=False)
-        subscriptionTable.setHeaders(['Site', 'Rank', 'Size GB', 'Replicas', 'CPU Hours', 'Dataset'])
+        subscriptionTable.setHeaders(['Rank', 'Size GB', 'Replicas', 'CPU Hours', 'Dataset'])
         for subscription in subscriptions:
             dataset = subscription[0]
-            site = subscription[1]
             rank = float(subscription[2])
             size = self.phedexData.getDatasetSize(dataset)
             replicas = int(self.phedexData.getNumberReplicas(dataset))
             cpuH = int(self.popDbData.getDatasetCpus(dataset, (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y-%m-%d')))
-            subscriptionTable.addRow([site, rank, size, replicas, cpuH, dataset])
+            subscriptionTable.addRow([rank, size, replicas, cpuH, dataset])
 
         text += subscriptionTable.plainText()
 
