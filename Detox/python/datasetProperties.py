@@ -7,7 +7,7 @@ class DatasetProperties:
 		self.name = name
 		self.dbaseId = -1
 		self.globalRank = None
-		self.deprecated = False
+		#self.deprecated = False
 		self.trueSize = 0
 		self.trueNfiles = 0
 		self.siteList = []
@@ -36,8 +36,8 @@ class DatasetProperties:
 	def setId(self,	dsetId):
 		self.dbaseId = dsetId
 
-	def setDeprecated(self,deprecated):
-		self.deprecated = deprecated
+	#def setDeprecated(self,deprecated):
+	#	self.deprecated = deprecated
 
 	def addDelTarget(self,site):
 		self.delFromSites.append(site)
@@ -76,8 +76,8 @@ class DatasetProperties:
 	def getId(self):
 		return self.dbaseId
 
-	def isDeprecated(self):
-		return self.deprecated
+	#def isDeprecated(self):
+	#	return self.deprecated
 
 	def myRankAtSites(self,site):
 		if site not in self.rankAtSites:

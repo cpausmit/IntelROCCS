@@ -169,6 +169,11 @@ class SiteProperties:
     def spaceLastCp(self):
         return self.spaceLCp
 
+    def isDeprecated(self,dset):
+        if dset in self.deprecated:
+            return True
+        return False
+
     def spaceDeprecated(self):
         size = 0
         for dset in self.deprecated:

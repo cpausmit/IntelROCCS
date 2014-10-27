@@ -55,11 +55,11 @@ class DeprecateDataHandler:
         outputFile = open(statusDir + '/' + self.fileName,'w')
         
         for dset in deprecated:
-            outputFile.write(dset+'\n')
+            outputFile.write(dset+' 1\n')
         for dset in deleted:
-            outputFile.write(dset+'\n')
-        #for dset in invalid:
-        #    outputFile.write(dset+'\n')
+            outputFile.write(dset+' 2\n')
+        for dset in invalid:
+            outputFile.write(dset+' 3\n')
         outputFile.close()
 
     def getDatasets(self,pattern):
@@ -93,15 +93,19 @@ class DeprecateDataHandler:
         inputFile = open(statusDir + '/' + self.fileName,'r')
         
         for line in inputFile.xreadlines():
-            datasetName = line.strip()
-            self.deprecated[datasetName] = 1
+            items = line.split()
+            datasetName = items[0]
+            self.deprecated[datasetName] = int(items[1])
         inputFile.close()
                 
     def getDeprecatedSets(self):
         return self.deprecated
 
-    def isDeprecated(self,dset):
+    def isDeprecated(self,dset,site):
         if dset in self.deprecated:
+            if site.startswith('T1_'):
+                if self.deprecated[dset] == 3:
+                    return False
             return True
         else:
             return False

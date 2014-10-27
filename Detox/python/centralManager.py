@@ -246,11 +246,11 @@ class CentralManager:
            self.dataPropers[datasetName] = datasetProperties.DatasetProperties(datasetName)
            self.dataPropers[datasetName].append(onSites)
            self.dataPropers[datasetName].setId(dataSetIds[datasetName])
-           isDeprecated = self.deprecatedHandler.isDeprecated(datasetName)
-           self.dataPropers[datasetName].setDeprecated(isDeprecated)
+           #self.dataPropers[datasetName].setDeprecated(isDeprecated)
            self.dataPropers[datasetName].setTrueSize(trueSize)
            self.dataPropers[datasetName].setTrueNfiles(trueNfiles)
            for site in onSites:
+               isDeprecated = self.deprecatedHandler.isDeprecated(datasetName,site)
                size = phedexSets[datasetName].size(site)
                part = phedexSets[datasetName].isPartial(site)
                cust = phedexSets[datasetName].isCustodial(site)
@@ -384,9 +384,6 @@ class CentralManager:
         today = str(datetime.date.today())
         ttime = time.strftime("%H:%M")
 
-        # this file is needed in this fromat for the initial assignments
-        activeFile = open(os.environ['DETOX_DB'] + "/ActiveSites.txt",'w')
-
         usedSets = self.popularityHandler.getUsedDatasets()
         totalSpaceTaken = 0
         totalSpaceLcopy = 0
@@ -408,20 +405,17 @@ class CentralManager:
                 totalSpaceLcopy = totalSpaceLcopy + lcopy
                 totalSpaceTaken = totalSpaceTaken + taken
 
-            # first write out the active sites
-            if theSite.getStatus() != 0:
-                activeFile.write("%4d %s\n"%(theSite.getSize()/1000, site))
-
             # summary of all sites
-            
             outputFile.write("   %-6d %-9d %-9d %-12d %-20s \n"\
                                  %(theSite.getStatus(),theSite.getSize()/1000,taken,lcopy,site))
-        perc = totalSpaceTaken/totalDisk*100
-        outputFile.write("#\n# Total Taken         = %-5d (%-3.1f%%) \n"%(totalSpaceTaken,perc))
-        perc = totalSpaceLcopy/totalDisk*100
-        outputFile.write("# Total Last Copy     = %-5d (%-3.1f%%)\n"%(totalSpaceLcopy,perc))
+        outputFile.write("#------------------------------------------------------\n")
+        outputFile.write("#  %-6d %-9d %-9d %-12d %-20s \n"\
+                             %(len(self.allSites.keys()),totalDisk,
+                               totalSpaceTaken,totalSpaceLcopy,'Total'))
+        percTst = totalSpaceTaken/totalDisk*100
+        percTslc = totalSpaceLcopy/totalDisk*100
+        outputFile.write("#  %-6s %-9s %-4.1f%%     %-4.1f%% %-20s \n"%(' ',' ',percTst,percTslc,' '))
         outputFile.write("# Total Active Quota  = %-9d \n"%(totalDisk))
-        activeFile.close()
         outputFile.close()
 
         outputFile = open(os.environ['DETOX_DB'] + "/DeletionSummary.txt",'w')
@@ -458,9 +452,10 @@ class CentralManager:
 
             outputFile.write("   %-9d %-8.2f %-20s \n"\
                                  %(nsets,sitePr.spaceDeprecated()/1000,site))
-        outputFile.write("#\n# Number Datasets    = %-9d \n"%(totalSets))
+        outputFile.write("#--------------------------------------------\n")
+        outputFile.write("#  %-9d %-8.2f %-20s \n"%(totalSets,deprecatedSpace,'Total'))
         perc = deprecatedSpace/totalDisk*100
-        outputFile.write("# Total Size         = %-4d (%-3.1f%%) \n"%(deprecatedSpace,perc))
+        outputFile.write("#  %-9s %-3.1f%% %-20s \n"%('',perc,''))
         outputFile.write("# Total Active Quota = %-9d \n"%(totalDisk))
         outputFile.close()
 
@@ -482,24 +477,24 @@ class CentralManager:
                 if sitePr.isPartial(dset):
                     delta = dataPr.getTrueSize() - sitePr.dsetSize(dset)
                     incompleteSpace = incompleteSpace + delta
-                    trueSize = trueSize + dataPr.getTrueSize()
-                    totalTrueSize = totalTrueSize + dataPr.getTrueSize()
-                    diskSize = diskSize + sitePr.dsetSize(dset)
-                    totalDiskSize = totalDiskSize + sitePr.dsetSize(dset)
+                    trueSize = trueSize + dataPr.getTrueSize()/1000
+                    totalTrueSize = totalTrueSize + dataPr.getTrueSize()/1000
+                    diskSize = diskSize + sitePr.dsetSize(dset)/1000
+                    totalDiskSize = totalDiskSize + sitePr.dsetSize(dset)/1000
                     nsets = nsets + 1
                     totalSets = totalSets + 1
             if nsets < 1:
                 continue
-            outputFile.write("   %-9d %-12.2f %-8.2f %-20s \n"\
-                                 %(nsets,trueSize/1000,diskSize/1000,site))
-        outputFile.write("#\n# Number Datasets    = %-9d \n"%(totalSets))
-        perc = totalTrueSize/totalDisk/10
-        outputFile.write("# Total True Size    = %-4d (%-3.1f%%)\n"%(totalTrueSize/1000,perc))
-        perc = totalDiskSize/totalDisk/10
-        outputFile.write("# Total Size         = %-4d (%-3.1f%%)\n"%(totalDiskSize/1000,perc))
+            outputFile.write("   %-9d %-12.2f %-8.2f %-20s \n"%(nsets,trueSize,diskSize,site))
+        outputFile.write("#--------------------------------------------\n")
+        outputFile.write("#  %-9d %-12.2f %-8.2f %-20s \n"\
+                                 %(totalSets,totalTrueSize,totalDiskSize,'Total'))
+        percTs = totalTrueSize/totalDisk*100
+        percTd = totalDiskSize/totalDisk*100
+        outputFile.write("#  %-9s %-3.1f%%         %-3.1f%% %-20s \n"%('',percTs,percTd,''))
         delta = totalTrueSize-totalDiskSize
-        perc = delta/totalDisk/10
-        outputFile.write("# Missing Space      = %-4d (%-3.1f%%)\n"%(delta/1000,perc))
+        perc = delta/totalDisk*100
+        outputFile.write("# Missing Space      = %-4d (%-3.1f%%)\n"%(delta,perc))
         outputFile.write("# Total Active Quota = %-9d \n"%(totalDisk))
         outputFile.close()
 
@@ -578,8 +573,8 @@ class CentralManager:
             outputFile.write("#[~days]    [GB] \n")
             outputFile.write("#------------------------------------\n")
             for dset in sitePr.allSets():
-                dataPr = self.dataPropers[dset]
-                if dataPr.isDeprecated():
+                if sitePr.isDeprecated(dset):
+                    dataPr = self.dataPropers[dset]
                     rank = sitePr.dsetRank(dset)
                     size = sitePr.dsetSize(dset)
                     nsites = dataPr.nSites()
