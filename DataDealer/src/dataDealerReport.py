@@ -9,6 +9,7 @@
 #        Data subscribed per site
 #---------------------------------------------------------------------------------------------------
 import sys, os, datetime, sqlite3
+from operator import itemgetter
 from email.MIMEText import MIMEText
 from email.MIMEMultipart import MIMEMultipart
 from email.Utils import formataddr
@@ -87,7 +88,7 @@ class dataDealerReport():
         data = self.dbApi.dbQuery(query, values=values)
         for sub in data:
             subscriptions.append([info for info in sub])
-        # sort subscriptions based on rank in descending order
+        subscriptions.sort(reverse=True, key=itemgetter(2))
 
         # Get top 10 datasets not subscribed
         cacheFile = "%s/%s.db" % (self.rankingsCachePath, "rankingsCache")
@@ -142,15 +143,14 @@ class dataDealerReport():
         text += "\n\nNew Subscriptions\n\n"
 
         subscriptionTable = makeTable.Table(add_numbers=False)
-        subscriptionTable.setHeaders(['Site', 'Rank', 'Size GB', 'Replicas', 'CPU Hours', 'Dataset'])
+        subscriptionTable.setHeaders(['Rank', 'Size GB', 'Replicas', 'CPU Hours', 'Dataset'])
         for subscription in subscriptions:
             dataset = subscription[0]
-            site = subscription[1]
             rank = float(subscription[2])
             size = self.phedexData.getDatasetSize(dataset)
             replicas = int(self.phedexData.getNumberReplicas(dataset))
             cpuH = int(self.popDbData.getDatasetCpus(dataset, (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y-%m-%d')))
-            subscriptionTable.addRow([site, rank, size, replicas, cpuH, dataset])
+            subscriptionTable.addRow([rank, size, replicas, cpuH, dataset])
 
         text += subscriptionTable.plainText()
 
