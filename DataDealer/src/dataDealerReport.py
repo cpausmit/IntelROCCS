@@ -169,6 +169,11 @@ class dataDealerReport():
 
         text += topTenTable.plainText()
 
+        fs = open('/local/cmsprod/IntelROCCS/DataDealer/data_dealer-%s.report', 'w') % (date.strftime('%Y%m%d'))
+        fs.write(title)
+        fs.write(text)
+        fs.close()
+
         self.sendReport(title, text)
 
 if __name__ == '__main__':

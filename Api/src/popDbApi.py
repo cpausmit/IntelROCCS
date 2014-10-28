@@ -20,11 +20,11 @@ import sys, os, re, json, urllib, urllib2, datetime, subprocess
 import initPopDb
 
 class popDbApi():
-    def __init__(self):
+    def __init__(self, userCert, userKey, ssoCookie):
         self.popDbBase = os.environ['POP_DB_BASE']
-        self.cert = "/usr/local/IntelROCCS/.globus/usercert.pem"
-        self.key = "/usr/local/IntelROCCS/.globus/userkey.pem"
-        self.cookie = "/usr/local/IntelROCCS/.globus/ssocookie.txt"
+        self.cert = userCert
+        self.key = userKey
+        self.cookie = ssoCookie
 
 #===================================================================================================
 #  H E L P E R S

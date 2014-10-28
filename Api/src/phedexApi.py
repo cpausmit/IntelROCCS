@@ -23,10 +23,10 @@ import sys, re, os, urllib, urllib2, httplib, json, datetime, subprocess
 import initPhedex
 
 class phedexApi:
-    def __init__(self):
+    def __init__(self, userCert, userKey):
         self.phedexBase = os.environ['PHEDEX_BASE']
-        self.cert = "/usr/local/IntelROCCS/.globus/usercert.pem"
-        self.key = "/usr/local/IntelROCCS/.globus/userkey.pem"
+        self.cert = userCert
+        self.key = userKey
 
 #===================================================================================================
 #  H E L P E R S
