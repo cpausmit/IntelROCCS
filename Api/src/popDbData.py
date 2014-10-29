@@ -7,9 +7,9 @@ import popDbApi
 
 class popDbData:
     def __init__(self, popDbCache, cacheDeadline):
-        userCert = int(os.environ['INTELROCCS_CERT'])
-        userKey = int(os.environ['INTELROCCS_KEY'])
-        ssoCookie = int(os.environ['INTELROCCS_SSO_COOKIE'])
+        userCert = os.environ['INTELROCCS_CERT']
+        userKey = os.environ['INTELROCCS_KEY']
+        ssoCookie = os.environ['INTELROCCS_SSO_COOKIE']
         self.popDbApi = popDbApi.popDbApi(userCert, userKey, ssoCookie)
         self.popDbCache = popDbCache
         self.cacheDeadline = cacheDeadline

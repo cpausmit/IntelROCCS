@@ -16,9 +16,9 @@ print " ----  Initialize  ---- "
 phedexCache = os.environ['DATA_DEALER_PHEDEX_CACHE']
 cacheDeadline = int(os.environ['DATA_DEALER_CACHE_DEADLINE'])
 threshold = int(os.environ['DATA_DEALER_THRESHOLD'])
-userCert = int(os.environ['INTELROCCS_CERT'])
-userKey = int(os.environ['INTELROCCS_KEY'])
-ssoCookie = int(os.environ['INTELROCCS_SSO_COOKIE'])
+userCert = os.environ['INTELROCCS_CERT']
+userKey = os.environ['INTELROCCS_KEY']
+ssoCookie = os.environ['INTELROCCS_SSO_COOKIE']
 
 phedexApi_ = phedexApi.phedexApi(userCert, userKey)
 phedexApi_.renewProxy()
