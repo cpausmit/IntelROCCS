@@ -8,7 +8,9 @@ import dbApi, phedexApi
 class subscribe():
     def __init__(self):
         self.rankingsCachePath = os.environ['DATA_DEALER_RANKINGS_CACHE']
-        self.phedexApi = phedexApi.phedexApi()
+        userCert = os.environ['INTELROCCS_CERT']
+        userKey = os.environ['INTELROCCS_KEY']
+        self.phedexApi = phedexApi.phedexApi(userCert, userKey)
         self.dbApi = dbApi.dbApi()
 
     def createSubscriptions(self, subscriptions):
