@@ -380,6 +380,9 @@ def getActiveSites(debug=0):
 	return sites
 
 def chooseMatchingSite(tier2Sites,nSites,sizeGb,debug):
+	# Given a list of Tier-2 centers, a requested number of copies and the size of the sample to
+	# assign we choose a list of sites
+
 
 	iRan = -1
 	quotas = []
@@ -424,6 +427,9 @@ def chooseMatchingSite(tier2Sites,nSites,sizeGb,debug):
 			sys.exit(1)
 
 		nTrials += 1
+
+
+	return sites,quotas,lastCps
 
 def submitSubscriptionRequests(sites,datasets=[],debug=0):
 	# make sure we have datasets to subscribe
