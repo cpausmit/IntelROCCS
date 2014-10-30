@@ -89,7 +89,7 @@ class rockerBoard():
     def getNewReplicas(self, datasetRankings, siteRankings, systemLeft):
         subscriptions = dict()
         sizeSubscribedGb = 0
-        print "Available space left until system 80% full: %dGB" % (systemLeft)
+        print "Available space left until system 80%% full: %dGB" % (systemLeft)
         maxRank = max(siteRankings.iteritems(), key=operator.itemgetter(1))[1]
         for siteName, rank in siteRankings.items():
             siteRankings[siteName] = maxRank - rank
