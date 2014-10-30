@@ -22,8 +22,9 @@ class subscribe():
             datasets, subscriptionData = self.phedexApi.createXml(datasets=subscriptions[siteName], instance='prod')
             if not datasets:
                 continue
+            comment = "IntelROCCS DataDealer - For more information about this subscription see http://t3serv001.mit.edu/~cmsprod/IntelROCCS/DataDealer/data_dealer-latest.report"
             jsonData = []
-            jsonData = self.phedexApi.subscribe(node=siteName, data=subscriptionData, level='dataset', move='n', custodial='n', group='AnalysisOps', request_only='n', no_mail='n', comments='IntelROCCS DataDealer', instance='prod')
+            jsonData = self.phedexApi.subscribe(node=siteName, data=subscriptionData, level='dataset', move='n', custodial='n', group='AnalysisOps', request_only='n', no_mail='n', comments=comment, instance='prod')
             if not jsonData:
                 continue
             requestId = 0
