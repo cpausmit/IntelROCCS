@@ -14,7 +14,9 @@ import phedexApi
 
 class phedexData:
     def __init__(self, phedexCache, cacheDeadline):
-        self.phedexApi = phedexApi.phedexApi()
+        userCert = os.environ['INTELROCCS_CERT']
+        userKey = os.environ['INTELROCCS_KEY']
+        self.phedexApi = phedexApi.phedexApi(userCert, userKey)
         self.phedexCache = phedexCache
         self.cacheDeadline = cacheDeadline
 

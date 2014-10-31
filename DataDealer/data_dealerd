@@ -6,6 +6,8 @@
 # --------------------------------------------------------------------------------------------------
 # set up variables
 loopInterval=24
+latestLog=/local/cmsprod/IntelROCCS/DataDealer/data_dealer-latest.log
+latestReport=/local/cmsprod/IntelROCCS/DataDealer/data_dealer-latest.report
 
 # always run on the same tim
 today=$(date -d "now" +%Y/%m/%d)
@@ -31,6 +33,7 @@ do
     # generate specific log file
     tag=`date "+%Y%m%d"`
     logFile=/local/cmsprod/IntelROCCS/DataDealer/data_dealer-$tag.log
+    reportFile=/local/cmsprod/IntelROCCS/DataDealer/data_dealer-$tag.report
     touch $logFile
 
     echo " "                                                               >> $logFile
@@ -39,6 +42,10 @@ do
     echo "   --> "`date`                                                   >> $logFile
     echo " "                                                               >> $logFile
     stdbuf -o0 -e0 /usr/local/IntelROCCS/Install/DataDealer/dataDealer.py  >> $logFile 2>&1
+
+    # change symlinks for todays report and log
+    ln -s $logFile $latestLog
+    ln -s $reportFile $latestReport
 
     # insure that the log information is updated
      rsync -Cavz --delete /local/cmsprod/IntelROCCS/DataDealer \

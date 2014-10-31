@@ -16,11 +16,14 @@ print " ----  Initialize  ---- "
 phedexCache = os.environ['DATA_DEALER_PHEDEX_CACHE']
 cacheDeadline = int(os.environ['DATA_DEALER_CACHE_DEADLINE'])
 threshold = int(os.environ['DATA_DEALER_THRESHOLD'])
+userCert = os.environ['INTELROCCS_CERT']
+userKey = os.environ['INTELROCCS_KEY']
+ssoCookie = os.environ['INTELROCCS_SSO_COOKIE']
 
-phedexApi_ = phedexApi.phedexApi()
+phedexApi_ = phedexApi.phedexApi(userCert, userKey)
 phedexApi_.renewProxy()
 
-popDbApi_ = popDbApi.popDbApi()
+popDbApi_ = popDbApi.popDbApi(userCert, userKey, ssoCookie)
 popDbApi_.renewSsoCookie()
 
 phedexData = phedexData.phedexData(phedexCache, cacheDeadline)
@@ -60,12 +63,12 @@ print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + 
 print ""
 
 # subscribe selected datasets
-# print " ----  Subscribe Datasets  ---- "
-# startTime = datetime.datetime.now()
-# subscribe_.createSubscriptions(subscriptions)
-# totalTime = datetime.datetime.now() - startTime
-# print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
-# print ""
+print " ----  Subscribe Datasets  ---- "
+startTime = datetime.datetime.now()
+subscribe_.createSubscriptions(subscriptions)
+totalTime = datetime.datetime.now() - startTime
+print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
+print ""
 
 # send summary report
 print " ----  Daily Summary  ---- "
