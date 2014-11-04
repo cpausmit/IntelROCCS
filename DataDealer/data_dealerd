@@ -5,9 +5,6 @@
 # v1.1                                                                   B.Barrefors (Aug 11, 2014)
 # --------------------------------------------------------------------------------------------------
 # set up variables
-loopInterval=24
-latestLog=/local/cmsprod/IntelROCCS/DataDealer/data_dealer-latest.log
-latestReport=/local/cmsprod/IntelROCCS/DataDealer/data_dealer-latest.report
 
 # always run on the same tim
 today=$(date -d "now" +%Y/%m/%d)
@@ -26,6 +23,9 @@ sleep $timeToWait
 
 while [ 1 ]
 do
+    loopInterval=24
+    latestLog=/local/cmsprod/IntelROCCS/DataDealer/data_dealer-latest.log
+    latestReport=/local/cmsprod/IntelROCCS/DataDealer/data_dealer-latest.report
     # prepare to start on the same time every time based on loop interval
     secs=$(date +%s --date="now")
     runTime=$(date '+%s' --date="@$((secs + $loopInterval*60*60))")
@@ -36,14 +36,16 @@ do
     reportFile=/local/cmsprod/IntelROCCS/DataDealer/data_dealer-$tag.report
     touch $logFile
 
-    echo " "                                                               >> $logFile
-    echo " data dealer loop $index started -- $tag (cycle wait $wait sec)" >> $logFile
-    echo " "                                                               >> $logFile
-    echo "   --> "`date`                                                   >> $logFile
-    echo " "                                                               >> $logFile
-    stdbuf -o0 -e0 /usr/local/IntelROCCS/Install/DataDealer/dataDealer.py  >> $logFile 2>&1
+    echo " "                                                                >> $logFile
+    echo " data dealer loop started -- $tag (cycle wait $loopInterval sec)" >> $logFile
+    echo " "                                                                >> $logFile
+    echo "   --> "`date`                                                    >> $logFile
+    echo " "                                                                >> $logFile
+    stdbuf -o0 -e0 /usr/local/IntelROCCS/Install/DataDealer/dataDealer.py   >> $logFile 2>&1
 
     # change symlinks for todays report and log
+    echo $latestReport                                                      >> $logFile
+    rm $latestLog $latestReport
     ln -s $logFile $latestLog
     ln -s $reportFile $latestReport
 
