@@ -195,4 +195,4 @@ class PopularityDataHandler:
         else:
             year = date.year - year
             month = date.month - month
-        return self.firstDayOfMonth(date.replace(year = year, month = month))
+        return self.firstDayOfMonth(date.replace(year = year, month = month, day = 10))

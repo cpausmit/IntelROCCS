@@ -427,8 +427,6 @@ def chooseMatchingSite(tier2Sites,nSites,sizeGb,debug):
 			sys.exit(1)
 
 		nTrials += 1
-
-
 	return sites,quotas,lastCps
 
 def submitSubscriptionRequests(sites,datasets=[],debug=0):
