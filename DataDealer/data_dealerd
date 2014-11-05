@@ -24,8 +24,6 @@ sleep $timeToWait
 while [ 1 ]
 do
     loopInterval=24
-    latestLog=/local/cmsprod/IntelROCCS/DataDealer/data_dealer-latest.log
-    latestReport=/local/cmsprod/IntelROCCS/DataDealer/data_dealer-latest.report
     # prepare to start on the same time every time based on loop interval
     secs=$(date +%s --date="now")
     runTime=$(date '+%s' --date="@$((secs + $loopInterval*60*60))")
@@ -44,13 +42,12 @@ do
     stdbuf -o0 -e0 /usr/local/IntelROCCS/Install/DataDealer/dataDealer.py   >> $logFile 2>&1
 
     # change symlinks for todays report and log
-    echo $latestReport                                                      >> $logFile
-    rm $latestLog $latestReport
-    ln -s $logFile $latestLog
-    ln -s $reportFile $latestReport
 
     # insure that the log information is updated
     rsync -Cavz --delete /local/cmsprod/IntelROCCS/DataDealer /home/cmsprod/public_html/IntelROCCS >& /dev/null
+
+    ln -s /home/cmsprod/public_html/IntelROCCS/data_dealer-$tag.log /home/cmsprod/public_html/IntelROCCS/data_dealer-latest.log
+    ln -s /home/cmsprod/public_html/IntelROCCS/data_dealer-$tag.report /home/cmsprod/public_html/IntelROCCS/data_dealer-latest.report
 
     # calculate the time until next run should start
     currentTime=$(date -d "now" +%s)
