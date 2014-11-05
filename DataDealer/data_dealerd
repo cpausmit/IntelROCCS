@@ -24,15 +24,19 @@ sleep $timeToWait
 while [ 1 ]
 do
     loopInterval=24
+    numLogFiles=15
     # prepare to start on the same time every time based on loop interval
     secs=$(date +%s --date="now")
     runTime=$(date '+%s' --date="@$((secs + $loopInterval*60*60))")
 
     # generate specific log file
     tag=`date "+%Y%m%d"`
-    logFile=/local/cmsprod/IntelROCCS/DataDealer/data_dealer-$tag.log
-    reportFile=/local/cmsprod/IntelROCCS/DataDealer/data_dealer-$tag.report
+    oldTag=$(date '+%Y%m%d' --date="@$((secs - $numLogFiles*24*60*60))")
+    logFile=/local/cmsprod/IntelROCCS/DataDealer/Logs/data_dealer-$tag.log
+    oldLogFile=/local/cmsprod/IntelROCCS/DataDealer/Logs/data_dealer-$oldTag.log
+    reportFile=/local/cmsprod/IntelROCCS/DataDealer/Reports/data_dealer-$tag.report
     touch $logFile
+    rm $oldLogFile
 
     echo " "                                                                >> $logFile
     echo " data dealer loop started -- $tag (cycle wait $loopInterval sec)" >> $logFile
@@ -41,13 +45,12 @@ do
     echo " "                                                                >> $logFile
     stdbuf -o0 -e0 /usr/local/IntelROCCS/Install/DataDealer/dataDealer.py   >> $logFile 2>&1
 
-    # change symlinks for todays report and log
-
     # insure that the log information is updated
     rsync -Cavz --delete /local/cmsprod/IntelROCCS/DataDealer /home/cmsprod/public_html/IntelROCCS >& /dev/null
 
-    ln -s /home/cmsprod/public_html/IntelROCCS/data_dealer-$tag.log /home/cmsprod/public_html/IntelROCCS/data_dealer-latest.log
-    ln -s /home/cmsprod/public_html/IntelROCCS/data_dealer-$tag.report /home/cmsprod/public_html/IntelROCCS/data_dealer-latest.report
+    # change symlinks for todays report and log
+    ln -s /home/cmsprod/public_html/IntelROCCS/DataDealer/Logs/data_dealer-$tag.log /home/cmsprod/public_html/IntelROCCS/DataDealer/Logs/data_dealer-latest.log
+    ln -s /home/cmsprod/public_html/IntelROCCS/DataDealer/Reports/data_dealer-$tag.report /home/cmsprod/public_html/IntelROCCS/DataDealer/Reports/data_dealer-latest.report
 
     # calculate the time until next run should start
     currentTime=$(date -d "now" +%s)
