@@ -50,8 +50,7 @@ do
     ln -s $reportFile $latestReport
 
     # insure that the log information is updated
-     rsync -Cavz --delete /local/cmsprod/IntelROCCS/DataDealer \
-                          /home/cmsprod/public_html/IntelROCCS >& /dev/null
+    rsync -Cavz --delete /local/cmsprod/IntelROCCS/DataDealer /home/cmsprod/public_html/IntelROCCS >& /dev/null
 
     # calculate the time until next run should start
     currentTime=$(date -d "now" +%s)
