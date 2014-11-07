@@ -32,7 +32,7 @@ class phedexApi:
 #  H E L P E R S
 #===================================================================================================
     def renewProxy(self):
-        process = subprocess.Popen(["grid-proxy-init", "-valid", "24:00", "-cert", self.cert, "-key", self.key], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=False)
+        process = subprocess.Popen(["grid-proxy-init", "-valid", "24:00", "-cert", self.cert, "-key", self.key, "-out", "/tmp/x509up_ud2"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=False)
         strout = process.communicate()[0]
         if process.returncode != 0:
             # email
@@ -182,9 +182,7 @@ class HTTPSGridAuthHandler(urllib2.HTTPSHandler):
         return self.do_open(self.getConnection, req)
 
     def getProxy(self):
-        proxy = os.environ.get('X509_USER_PROXY')
-        if not proxy:
-            proxy = "/tmp/x509up_u%d" % (os.geteuid(),)
+        proxy = "/tmp/x509up_ud2"
         return proxy
 
     def getConnection(self, host, timeout=300):

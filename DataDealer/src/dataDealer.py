@@ -21,7 +21,7 @@ userKey = os.environ['INTELROCCS_KEY']
 ssoCookie = os.environ['INTELROCCS_SSO_COOKIE']
 
 phedexApi_ = phedexApi.phedexApi(userCert, userKey)
-phedexApi_.renewProxy()
+#phedexApi_.renewProxy()
 
 popDbApi_ = popDbApi.popDbApi(userCert, userKey, ssoCookie)
 popDbApi_.renewSsoCookie()
