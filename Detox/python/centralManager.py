@@ -498,6 +498,21 @@ class CentralManager:
         outputFile.write("# Total Active Quota = %-9d \n"%(totalDisk))
         outputFile.close()
 
+        outputFile = open(os.environ['DETOX_DB'] + "/LargeDatasets.txt",'w')
+        outputFile.write('#- ' + today + " " + ttime + "\n\n")
+        outputFile.write("#- L A R G E  D A T A S E T S ----\n\n")
+        for dset in sorted(self.dataPropers):
+            dataPr = self.dataPropers[dset]
+            trueSize = dataPr.getTrueSize()
+            if trueSize < 20000 :
+                continue
+            outputFile.write(dset+'\n')
+            sites = dataPr.mySites()
+            for site in sites:
+                sitePr = self.sitePropers[site]
+                diskSize = sitePr.dsetSize(dset)
+                outputFile.write("   %-12.1f %-8.1f %-20s \n"%(trueSize,diskSize,site))
+        outputFile.close()
 
         for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
             sitePr = self.sitePropers[site]
