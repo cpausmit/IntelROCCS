@@ -36,10 +36,10 @@ class dataDealerReport():
         # Send email
         fromEmail = ("Bjorn Barrefors", "bjorn.peter.barrefors@cern.ch")
         #toList = (["Bjorn Barrefors"], ["bjorn.peter.barrefors@cern.ch"])
-        #toList = (["Bjorn Barrefors"], ["barrefors@gmail.com"])
+        toList = (["Bjorn Barrefors"], ["barrefors@gmail.com"])
         #toList = (["Data Management Group"], ["hn-cms-dmDevelopment@cern.ch"])
-        toList = (["Bjorn Barrefors", "Brian Bockelman", "Maxim Goncharov", "Christoph Paus"],
-                  ["bjorn.peter.barrefors@cern.ch", "bbockelm@cse.unl.edu", "maxi@mit.edu", "paus@mit.edu"])
+        #toList = (["Bjorn Barrefors", "Brian Bockelman", "Maxim Goncharov", "Christoph Paus"],
+        #          ["bjorn.peter.barrefors@cern.ch", "bbockelm@cse.unl.edu", "maxi@mit.edu", "paus@mit.edu"])
 
         msg = MIMEMultipart()
         msg['Subject'] = title
@@ -172,6 +172,8 @@ class dataDealerReport():
         fs = open('/local/cmsprod/IntelROCCS/DataDealer/Reports/data_dealer-%s.report' % (date.strftime('%Y%m%d')), 'w')
         fs.write(text)
         fs.close()
+
+        text = "http://t3serv001.mit.edu/~cmsprod/IntelROCCS/DataDealer/Logs/data_dealer-latest.log\n\nhttp://t3serv001.mit.edu/~cmsprod/IntelROCCS/DataDealer/Reports/data_dealer-latest.report"
 
         self.sendReport(title, text)
 
