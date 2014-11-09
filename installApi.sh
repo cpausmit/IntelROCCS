@@ -7,13 +7,8 @@
 # Reset in case getopts has been used previously in the shell
 OPTIND=1
 
-# Initialize our own variables:
-testing=0
-
-while getopts "th" opt; do
+while getopts "h" opt; do
     case "$opt" in
-    t) testing=1
-       ;;
     h) echo "usage: sudo ./installApi [-t | -h]"
        echo "t: test installation, use for testing"
        echo "h: show this message"
@@ -21,7 +16,6 @@ while getopts "th" opt; do
        ;;
     esac
 done
-
 
 # Configuration parameters
 export INTELROCCS_USER=cmsprod

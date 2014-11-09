@@ -2,19 +2,17 @@
 #---------------------------------------------------------------------------------------------------
 # Collects all the necessary data to generate rankings for all datasets in the AnalysisOps space.
 #---------------------------------------------------------------------------------------------------
-import sys, os, math, datetime, sqlite3, operator, random
+import sys, os, math, datetime, sqlite3, operator, random, ConfigParser
 import phedexData, popDbData, dbApi
 
 class rockerBoard():
     def __init__(self):
-        phedexCache = os.environ['DATA_DEALER_PHEDEX_CACHE']
-        popDbCache = os.environ['DATA_DEALER_POP_DB_CACHE']
-        cacheDeadline = int(os.environ['DATA_DEALER_CACHE_DEADLINE'])
-        self.rankingsCachePath = os.environ['DATA_DEALER_RANKINGS_CACHE']
-        self.threshold = int(os.environ['DATA_DEALER_THRESHOLD'])
-        self.budget = int(os.environ['DATA_DEALER_BUDGET'])
-        self.phedexData = phedexData.phedexData(phedexCache, cacheDeadline)
-        self.popDbData = popDbData.popDbData(popDbCache, cacheDeadline)
+        config = ConfigParser.RawConfigParser()
+        config.read('intelroccs.cfg')
+        self.rankingsCachePath = config.get('DataDealer', 'cache')
+        self.budget = config.getint('DataDealer', 'budget')
+        self.phedexData = phedexData.phedexData()
+        self.popDbData = popDbData.popDbData()
         self.dbApi = dbApi.dbApi()
 
 #===================================================================================================

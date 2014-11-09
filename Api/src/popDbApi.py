@@ -16,15 +16,18 @@
 # If a valid call is made but no data was found a JSON structure is still returned, it is up to
 # the caller to check for actual data.
 #---------------------------------------------------------------------------------------------------
-import sys, os, re, json, urllib, urllib2, datetime, subprocess
+import sys, os, re, json, urllib, urllib2, datetime, subprocess, ConfigParser
 import initPopDb
 
 class popDbApi():
-    def __init__(self, userCert, userKey, ssoCookie):
-        self.popDbBase = os.environ['POP_DB_BASE']
-        self.cert = userCert
-        self.key = userKey
-        self.cookie = ssoCookie
+    def __init__(self):
+        config = ConfigParser.RawConfigParser()
+        config.read('intelroccs.cfg')
+        self.popDbBase = config.get('PopDB', 'base')
+        self.cert = config.get('PopDB', 'certificate')
+        self.key = config.get('PopDB', 'key')
+        self.cookie = config.get('PopDB', 'sso_cookie')
+        self.renewSsoCookie()
 
 #===================================================================================================
 #  H E L P E R S
@@ -143,44 +146,3 @@ class popDbApi():
             print(" ERROR: getUserStat call failed for values: tstart=%s, tstop=%s, collname=%s, orderby=%s" % (tstart, tstop, collname, orderby))
         return jsonData
 
-#===================================================================================================
-#  M A I N
-#===================================================================================================
-# Use this for testing purposes or as a script.
-# Usage: python ./popDbApi.py <APICall> ['arg1_name=arg1' 'arg2_name=arg2' ...]
-if __name__ == '__main__':
-    popDbApi_ = popDbApi()
-    error = popDbApi_.renewSsoCookie()
-    if error:
-        print "Failed to renew SSO cookie"
-        sys.exit(1)
-    print "Renewed SSO cookie"
-    if len(sys.argv) < 2:
-        print "Usage: python ./popDbApi.py <APICall> ['arg1_name=arg1' 'arg2_name=arg2' ...]"
-        sys.exit(2)
-    func = getattr(popDbApi_, sys.argv[1], None)
-    if not func:
-        print "%s is not a valid popularity db api call" % (sys.argv[1])
-        print "Usage: python ./popDbApi.py <APICall> ['arg1_name=arg1' 'arg2_name=arg2' ...]"
-        sys.exit(3)
-    args = dict()
-    for arg in sys.argv[2:]:
-        try:
-            a, v = arg.split('=')
-        except ValueError, e:
-            print "Passed argument %s does not follow the correct usage" % (arg)
-            print "Usage: python ./popDbApi.py <APICall> ['arg1_name=arg1' 'arg2_name=arg2' ...]"
-            sys.exit(2)
-        args[a] = v
-    jsonData = 0
-    try:
-        jsonData = func(**args)
-    except TypeError, e:
-        print e
-        print "Usage: python ./popDbApi.py <APICall> ['arg1_name=arg1' 'arg2_name=arg2' ...]"
-        sys.exit(3)
-    if not jsonData:
-        print " ERROR -- PopDB call failed"
-        sys.exit(1)
-    print jsonData
-    sys.exit(0)

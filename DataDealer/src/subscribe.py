@@ -2,15 +2,15 @@
 #---------------------------------------------------------------------------------------------------
 # Subscribes selected datasets
 #---------------------------------------------------------------------------------------------------
-import sys, os, datetime, sqlite3
+import sys, os, datetime, sqlite3, ConfigParser
 import dbApi, phedexApi
 
 class subscribe():
     def __init__(self):
-        self.rankingsCachePath = os.environ['DATA_DEALER_RANKINGS_CACHE']
-        userCert = os.environ['INTELROCCS_CERT']
-        userKey = os.environ['INTELROCCS_KEY']
-        self.phedexApi = phedexApi.phedexApi(userCert, userKey)
+        config = ConfigParser.RawConfigParser()
+        config.read('intelroccs.cfg')
+        self.rankingsCachePath = config.get('DataDealer', 'cache')
+        self.phedexApi = phedexApi.phedexApi()
         self.dbApi = dbApi.dbApi()
 
     def createSubscriptions(self, subscriptions):

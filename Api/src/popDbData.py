@@ -2,17 +2,15 @@
 #---------------------------------------------------------------------------------------------------
 # getPhedexData.py
 #---------------------------------------------------------------------------------------------------
-import sys, os, json, sqlite3, datetime
+import sys, os, json, sqlite3, datetime, ConfigParser
 import popDbApi
 
 class popDbData:
-    def __init__(self, popDbCache, cacheDeadline):
-        userCert = os.environ['INTELROCCS_CERT']
-        userKey = os.environ['INTELROCCS_KEY']
-        ssoCookie = os.environ['INTELROCCS_SSO_COOKIE']
-        self.popDbApi = popDbApi.popDbApi(userCert, userKey, ssoCookie)
-        self.popDbCache = popDbCache
-        self.cacheDeadline = cacheDeadline
+    def __init__(self):
+        config = ConfigParser.RawConfigParser()
+        config.read('intelroccs.cfg')
+        self.phedexCache = config.get('PopDB', 'cache')
+        self.popDbApi = popDbApi.popDbApi()
 
 #===================================================================================================
 #  H E L P E R S
@@ -161,18 +159,3 @@ class popDbData:
                 numberCpus = row[0]
         return numberCpus
 
-#===================================================================================================
-#  M A I N
-#===================================================================================================
-if __name__ == '__main__':
-    popDbCache = "%s/IntelROCCS/Cache/PopDb" % (os.environ['HOME'])
-    popDbData_ = popDbData(popDbCache, 12)
-    datasetName = '/SingleMu/Run2012C-22Jan2013-v1/AOD'
-    date = '2014-08-17'
-    numberAccesses = popDbData_.getDatasetAccesses(datasetName, date)
-    if not numberAccesses:
-        print " ERROR -- Could not fetch pop db data"
-        sys.exit(1)
-    print " SUCCESS -- Pop DB data successfully fetched"
-    print numberAccesses
-    sys.exit(0)
