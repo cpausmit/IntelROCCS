@@ -86,6 +86,17 @@ class PhedexDataset:
     def getTrueSize(self):
         return self.trueSize
 
+    def getMaxSize(self):
+        maxSize = 0
+        nsites = 0
+        for site in self.sizeAtSite:
+            if maxSize < self.sizeAtSite[site]:
+                maxSize = self.sizeAtSite[site]
+                nsites = 0
+            if self.sizeAtSite[site] == maxSize:
+		nsites = nsites + 1
+        return (nsites,maxSize)
+
     def getTrueNfiles(self):
         return self.trueNfiles
 
