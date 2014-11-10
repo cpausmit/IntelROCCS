@@ -56,7 +56,6 @@ class PhedexDataHandler:
         phedexBlocks = 'phedex/datasvc/json/prod/blockreplicas'
         args = 'show_dataset=y&subscribed=y&' + federation
 
-        cert = os.environ['DETOX_X509UP']
         url = '"'+webServer+phedexBlocks+'?'+args+'"'
         cmd = 'curl -k -H "Accept: text/xml" ' + url
 
@@ -84,7 +83,7 @@ class PhedexDataHandler:
         tmpfile = open(tmpname, "r")
         strout = tmpfile.readline()
         tmpfile.close()
-        os.remove(tmpname)
+        #os.remove(tmpname)
         dataJson = json.loads(strout)
         datasets = (dataJson["phedex"])["dataset"]
         for dset in datasets:
@@ -149,6 +148,8 @@ class PhedexDataHandler:
             datasetName = items[0]
             group = items[1]
             siteName = items[7]
+            size = float(items[3])
+
             if self.allSites[siteName].getStatus() == 0:
                 continue
             if group == 'local':

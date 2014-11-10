@@ -4,91 +4,81 @@
 #
 # B.Barrefors (Aug 13, 2014)
 # --------------------------------------------------------------------------------------------------
-# parse arguments
-#================
+# Reset in case getopts has been used previously in the shell
+OPTIND=1
+
+# Initialize our own variables:
+clear_cache=0
+daemon=0
+install_path=/usr/local/IntelROCCS/DataDealer
+
+while getopts "dh" opt; do
+    case "$opt" in
+    d) daemon=1
+       ;;
+    h) echo "usage: sudo ./installDataDealer [-d | -h]"
+       echo "d: install a new daemon and restart it"
+       echo "h: show this message"
+       exit 0
+       ;;
+    esac
+done
+
+# Configuration parameters
+export INTELROCCS_USER=cmsprod
+export INTELROCCS_GROUP=zh
+
 # get src and install paths
 #==========================
 
 # get path of installation script, source code, and install path
-INTELROCCS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-DATA_DEALER_SRC=${INTELROCCS_DIR}/DataDealer/src
-INSTALL_DIR=${INTELROCCS_DIR}/Install
-DATA_DEALER_INSTALL=${INSTALL_DIR}/DataDealer
+intelroccs_path="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+data_dealer_src=${intelroccs_path}/DataDealer/src
+api_src=${intelroccs_path}/Api/src
+
+
 
 # copy the software
 #==================
 
-if [ -d "$DATA_DEALER_INSTALL" ]
+if [ -d "$install_path" ]
 then
-	# make sure to remove completely the previous installed software
-	echo " Removing previous data dealer installation."
-	rm -rf $DATA_DEALER_INSTALL/*
+    # make sure to remove completely the previous installed software
+    echo " Removing previous data dealer installation."
+    rm -rf $install_path/*
 else
-	# create file structur if it doesn't exist
-	mkdir -p $DATA_DEALER_INSTALL
+    # create file structur if it doesn't exist
+    mkdir -p $install_path
 fi
 # copy all source files to install directory
-cp $DATA_DEALER_SRC/* $DATA_DEALER_INSTALL
-touch ${DATA_DEALER_INSTALL}/__init__.py
-touch ${INSTALL_DIR}/__init__.py
+cp $data_dealer_src/* $install_path
+cp $api_src/* $install_path
+cp $data_dealer_src/../data_dealerd $install_path
+cp $data_dealer_src/../data_dealer.cfg $install_path/intelroccs.cfg
 
-
-# install api
-#============
-
-API_INSTALL=${INSTALL_DIR}/Api
-${INTELROCCS_DIR}/installApi.sh
-
-# create init scripts
-#====================
-
-# set up cache environment
-# phedex
-#PHEDEX_CACHE=/tmp/IntelROCCS-dev/Cache/Phedex # used for testing
-PHEDEX_CACHE=/tmp/IntelROCCS/Cache/Phedex
-if [ -d "$PHEDEX_CACHE" ]
+if [ $daemon -eq 1 ]
 then
-	# make sure to remove completely the previous installed software
-	echo " Cleaning up phedex cache."
-	rm -rf $PHEDEX_CACHE/*
-else
-	# create file structur if it doesn't exist
-	mkdir -p $PHEDEX_CACHE
+    # install and start daemons
+    #==========================
+
+    # stop potentially existing server process
+    if [ -e "/etc/init.d/data_dealerd" ]
+    then
+      /etc/init.d/data_dealerd status
+      /etc/init.d/data_dealerd stop
+    fi
+
+    # copy Detox daemon
+    cp ${intelroccs_path}/DataDealer/sysv/data_dealerd /etc/init.d/
+
+    # start new server
+    /etc/init.d/data_dealerd status
+    /etc/init.d/data_dealerd start
+    sleep 2
+    /etc/init.d/data_dealerd status
+
+    # start on boot
+    chkconfig --level 345 data_dealerd on
 fi
-
-# pop db
-#POP_DB_CACHE=/tmp/IntelROCCS-dev/Cache/PopDb # used for testing
-POP_DB_CACHE=/tmp/IntelROCCS/Cache/PopDb
-if [ -d "$POP_DB_CACHE" ]
-then
-	# make sure to remove completely the previous installed software
-	echo " Cleaning up pop db cache."
-	rm -rf $POP_DB_CACHE/*
-else
-	# create file structur if it doesn't exist
-	mkdir -p $POP_DB_CACHE
-fi
-
-PYTHONPATH=${INSTALL_DIR}/Api
-DATA_DEALER_THRESHOLD="1" # not used right now
-#DATA_DEALER_BUDGET="1000" # set low when testing
-DATA_DEALER_BUDGET="50000"
-CACHE_DEADLINE="12"
-#RANKING_CACHE=/tmp/IntelROCCS-dev/Cache # used for testing
-RANKING_CACHE=/tmp/IntelROCCS/Cache
-
-INIT_FILE=$DATA_DEALER_INSTALL/init.py
-
-echo "#!/usr/local/bin/python" > $INIT_FILE
-echo "import sys, os" >> $INIT_FILE
-echo "sys.path.append('"${PYTHONPATH}"')" >> $INIT_FILE
-echo "os.environ['DATA_DEALER_PHEDEX_CACHE']='"${PHEDEX_CACHE}"'" >> $INIT_FILE
-echo "os.environ['DATA_DEALER_POP_DB_CACHE']='"${POP_DB_CACHE}"'" >> $INIT_FILE
-echo "os.environ['DATA_DEALER_CACHE_DEADLINE']='"${CACHE_DEADLINE}"'" >> $INIT_FILE
-echo "os.environ['DATA_DEALER_THRESHOLD']='"${DATA_DEALER_THRESHOLD}"'" >> $INIT_FILE
-echo "os.environ['DATA_DEALER_BUDGET']='"${DATA_DEALER_BUDGET}"'" >> $INIT_FILE
-echo "os.environ['DATA_DEALER_RANKING_CACHE']='"${RANKING_CACHE}"'" >> $INIT_FILE
-
-chmod 755 $INIT_FILE
 
 exit 0

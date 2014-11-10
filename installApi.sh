@@ -4,14 +4,32 @@
 #
 # B.Barrefors (Aug 13, 2014)
 # --------------------------------------------------------------------------------------------------
-# get src and install paths
-#==========================
-# TODO -- Make it possible to change install path by passing argument
+# Reset in case getopts has been used previously in the shell
+OPTIND=1
 
+while getopts "h" opt; do
+    case "$opt" in
+    h) echo "usage: sudo ./installApi [-t | -h]"
+       echo "t: test installation, use for testing"
+       echo "h: show this message"
+       exit 0
+       ;;
+    esac
+done
+
+# Configuration parameters
+export INTELROCCS_USER=cmsprod
+export INTELROCCS_GROUP=zh
+
+if [ $testing -eq 0 ]
+then
+    INSTALL_DIR=/usr/local/IntelROCCS/Install
+else
+    INSTALL_DIR=/usr/local/IntelROCCS/Install-test
+fi
 # get path of installation script, source code, and install path
 INTELROCCS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 API_SRC=${INTELROCCS_DIR}/Api/src
-INSTALL_DIR=${INTELROCCS_DIR}/Install
 API_INSTALL=${INSTALL_DIR}/Api
 
 
@@ -20,12 +38,12 @@ API_INSTALL=${INSTALL_DIR}/Api
 
 if [ -d "$API_INSTALL" ]
 then
-  	# make sure to remove completely the previous installed software
-  	echo " Removing previous api installation."
-  	rm -rf $API_INSTALL/*
+    # make sure to remove completely the previous installed software
+    echo " Removing previous api installation."
+    rm -rf $API_INSTALL/*
 else
-	# create file structur if it doesn't exist
-	mkdir -p $API_INSTALL
+    # create file structur if it doesn't exist
+    mkdir -p $API_INSTALL
 fi
 # copy all source files to install directory
 cp $API_SRC/* $API_INSTALL
@@ -76,3 +94,5 @@ echo "import sys, os" >> $POP_DB_INIT_FILE
 echo "os.environ['POP_DB_BASE']='"${POP_DB_BASE}"'" >> $POP_DB_INIT_FILE
 
 chmod 755 $POP_DB_INIT_FILE
+
+exit 0

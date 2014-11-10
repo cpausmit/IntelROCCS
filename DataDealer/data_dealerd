@@ -2,62 +2,60 @@
 # --------------------------------------------------------------------------------------------------
 # Process to keep data dealer alive and well.
 #
-# v1.0                                                                    B.Barrefors (Aug 11, 2014)
+# v1.1                                                                   B.Barrefors (Aug 11, 2014)
 # --------------------------------------------------------------------------------------------------
-# initialize environment variables
-source /usr/local/IntelROCCS/DataDealer/setupDataDealer.sh
+# set up variables
+
+# always run on the same tim
+today=$(date -d "now" +%Y/%m/%d)
+runTime=$(date -d "$today 03:00" +%s)
+currentTime=$(date -d "now" +%s)
+timeToWait=$(($runTime - $currentTime))
+if [ $timeToWait -le 0 ]
+then
+    tomorrow=$(date -d "tomorrow" +%Y/%m/%d)
+    runTime=$(date -d "$tomorrow 03:00" +%s)
+    currentTime=$(date -d "now" +%s)
+    timeToWait=$(($runTime- $currentTime))
+fi
+
+sleep $timeToWait
 
 while [ 1 ]
 do
+    loopInterval=24
+    numLogFiles=15
+    # prepare to start on the same time every time based on loop interval
+    secs=$(date +%s --date="now")
+    runTime=$(date '+%s' --date="@$((secs + $loopInterval*60*60))")
 
-  # make sure the log directory exists
-  mkdir -p $DATA_DEALER_DB
-  if [ -e "$DATA_DEALER_DB" ]
-  then
-	#echo " Data Dealer log area exists. Let's start!"
-	sleep 1
-  else
-	echo ""
-	echo " Data Dealer database area could not be found ($DATA_DEALER_DB). EXIT!"
-	echo ""
-	exit 1
-  fi
+    # generate specific log file
+    tag=`date "+%Y%m%d"`
+    oldTag=$(date '+%Y%m%d' --date="@$((secs - $numLogFiles*24*60*60))")
+    logFile=/local/cmsprod/IntelROCCS/DataDealer/Logs/data_dealer-$tag.log
+    oldLogFile=/local/cmsprod/IntelROCCS/DataDealer/Logs/data_dealer-$oldTag.log
+    reportFile=/local/cmsprod/IntelROCCS/DataDealer/Reports/data_dealer-$tag.report
+    touch $logFile
+    rm $oldLogFile
 
-  # generate specific log file
-  tag=`date "+%s"`
-  logFile=$DATA_DEALER_DB/data_dealer-$tag.log
-  touch $logFile
-  echo ""                                                                    			  >> $logFile
-  echo " = = = = = = =  I N I T I A L   S H E L L   E N V I R O N M E N T  = = = = = = =" >> $logFile
-  echo ""                                                                    			  >> $logFile
-  env  | grep -v ^DATA_DEALER                                                			  >> $logFile
-  echo ""                                                                    			  >> $logFile
-  echo " = = = =  I N I T I A L   D A T A   D E A L E R   E N V I R O N M E N T  = = = =" >> $logFile
-  echo ""                                                                    			  >> $logFile
-  env  | grep ^DATA_DEALER                                                   			  >> $logFile
-  echo ""                                                                    			  >> $logFile
-  echo "[ PYTHON PATH: $PYTHONPATH ]"                                        			  >> $logFile
-  echo ""                                                                    			  >> $logFile
+    echo " "                                                           >> $logFile
+    echo " data dealer started -- $tag (cycle wait $loopInterval sec)" >> $logFile
+    echo " "                                                           >> $logFile
+    echo "   --> "`date`                                               >> $logFile
+    echo " "                                                           >> $logFile
+    stdbuf -o0 -e0 /usr/local/IntelROCCS/DataDealer/dataDealer.py      >> $logFile 2>&1
 
-  # ten loops over the process with one logfile (keep it small)
-  for index in `echo 0 1 2 3 4 5 6 7 8 9`
-  do
-	# period 3600 * nHours
-	let wait=3600*$DATA_DEALER_CYCLE_HOURS
+    # ensure that the log and report information is updated
+    rsync -Cavz --delete /local/cmsprod/IntelROCCS/DataDealer /home/cmsprod/public_html/IntelROCCS >& /dev/null
 
-	echo " "                                                         	   >> $logFile
-	echo " data dealer loop $index started -- $tag (cycle wait $wait sec)" >> $logFile
-	echo " "                                                         	   >> $logFile
-	echo "   --> "`date`                                             	   >> $logFile
-	echo " "                                                         	   >> $logFile
-	stdbuf -o0 -e0 $DATA_DEALER_BASE/dataDealer.py                     	   >> $logFile 2>&1
+    # change symlinks for todays report and log
+    ln -s /home/cmsprod/public_html/IntelROCCS/DataDealer/Logs/data_dealer-$tag.log /home/cmsprod/public_html/IntelROCCS/DataDealer/Logs/data_dealer-latest.log
+    ln -s /home/cmsprod/public_html/IntelROCCS/DataDealer/Reports/data_dealer-$tag.report /home/cmsprod/public_html/IntelROCCS/DataDealer/Reports/data_dealer-latest.report
 
-	# insure that the log information is updated
-	rsync -Cavz --delete /local/cmsprod/IntelROCCS/DataDealer \
-	/home/cmsprod/public_html/IntelROCCS >& /dev/null
-	sleep $wait
-  done
-
+    # calculate the time until next run should start
+    currentTime=$(date -d "now" +%s)
+    timeToWait=$(($runTime- $currentTime))
+    sleep $timeToWait
 done
 
 exit 0;

@@ -93,6 +93,42 @@ class DetoxWebReader:
             datasets[name] = (rank,size)
         return datasets
 
+    def getJunkDatasets(self,siteName):
+        webServer = os.environ.get('CARETAKER_DETOXWEB') + '/result/'
+        url = '"' + webServer + siteName +'/DeprecatedSets.txt' + '"'
+        cmd = 'curl -k -H "Accept: text" ' + url
+        #print ' Access Detox Web:\n' + cmd
+
+        process = subprocess.Popen(cmd,stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE,shell=True)
+        signal.signal(signal.SIGALRM, alarm_handler)
+        signal.alarm(10*60)  # 10 minutes
+        try:
+            mystring, error = process.communicate()
+            signal.alarm(0)
+        except Alarm:
+            print " Oops, taking too long!"
+            raise Exception(" FATAL -- Call to DeadSites timed out, stopping")
+
+        if process.returncode != 0:
+            print " Received non-zero exit status: " + str(process.returncode)
+            raise Exception(" FATAL -- Call to DeadSites failed, stopping")
+
+        datasets = {}
+        if mystring.find('Not Found') != -1 :
+            return datasets
+        lines = mystring.splitlines()
+        for li in lines:
+            if li.startswith('#'):
+                continue
+            items = li.split()
+            if len(items) < 4:
+                continue
+            reps = float(items[3])
+            name = items[3]
+            datasets[name] = 1
+        return datasets
+
     def extractAllSiteSizes(self):
 
         webServer = os.environ.get('CARETAKER_DETOXWEB') + '/status/'
@@ -135,4 +171,6 @@ class DetoxWebReader:
         return self.siteSpace
     
     def siteDiskUsage(self,site):
+        if site not in self.siteDiskSpace:
+            return 0
         return self.siteDiskSpace[site]
