@@ -13,7 +13,6 @@
 # abort or keep executing.
 #---------------------------------------------------------------------------------------------------
 import sys, os, MySQLdb, datetime, subprocess, ConfigParser
-import initDb
 
 class dbApi():
     def __init__(self):

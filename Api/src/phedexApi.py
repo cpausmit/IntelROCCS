@@ -20,7 +20,6 @@
 # the caller to check for actual data.
 #---------------------------------------------------------------------------------------------------
 import sys, re, os, urllib, urllib2, httplib, json, datetime, subprocess, ConfigParser
-import initPhedex
 
 class phedexApi:
     def __init__(self):

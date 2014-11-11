@@ -45,7 +45,7 @@ print ""
 print " ----  Subscribe Datasets  ---- "
 startTime = datetime.datetime.now()
 subscribe_ = subscribe.subscribe()
-subscribe_.createSubscriptions(subscriptions)
+#subscribe_.createSubscriptions(subscriptions)
 totalTime = datetime.datetime.now() - startTime
 print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
 print ""

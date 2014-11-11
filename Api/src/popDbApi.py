@@ -17,7 +17,6 @@
 # the caller to check for actual data.
 #---------------------------------------------------------------------------------------------------
 import sys, os, re, json, urllib, urllib2, datetime, subprocess, ConfigParser
-import initPopDb
 
 class popDbApi():
     def __init__(self):
