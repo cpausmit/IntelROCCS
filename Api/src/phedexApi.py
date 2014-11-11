@@ -173,7 +173,9 @@ class HTTPSGridAuthHandler(urllib2.HTTPSHandler):
         return self.do_open(self.getConnection, req)
 
     def getProxy(self):
-        proxy = "/tmp/x509up_ud2"
+        proxy = os.environ.get('X509_USER_PROXY')
+        if not proxy:
+            proxy = "/tmp/x509up_u%d" % (os.geteuid(),)
         return proxy
 
     def getConnection(self, host, timeout=300):
