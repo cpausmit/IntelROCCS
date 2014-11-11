@@ -9,7 +9,7 @@ class popDbData:
     def __init__(self):
         config = ConfigParser.RawConfigParser()
         config.read('intelroccs.cfg')
-        self.phedexCache = config.get('PopDB', 'cache')
+        self.popDbCache = config.get('PopDB', 'cache')
         self.popDbApi = popDbApi.popDbApi()
 
 #===================================================================================================
