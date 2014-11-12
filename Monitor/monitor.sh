@@ -16,6 +16,8 @@ then
   exit 0
 fi
 
+cd $MONITOR_BASE #preventing temp files from being created in weird places
+
 # are we interested in nSites or nSitesAv
 average=1
 if [ -z $1 ]
