@@ -17,12 +17,11 @@
 # the caller to check for actual data.
 #---------------------------------------------------------------------------------------------------
 import sys, os, re, json, urllib, urllib2, datetime, subprocess, ConfigParser
-import initPopDb
 
 class popDbApi():
     def __init__(self):
         config = ConfigParser.RawConfigParser()
-        config.read('intelroccs.cfg')
+        config.read('/usr/local/IntelROCCS/DataDealer/intelroccs.cfg')
         self.popDbBase = config.get('PopDB', 'base')
         self.cert = config.get('PopDB', 'certificate')
         self.key = config.get('PopDB', 'key')

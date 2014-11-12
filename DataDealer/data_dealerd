@@ -39,7 +39,7 @@ do
     rm $oldLogFile
 
     echo " "                                                           >> $logFile
-    echo " data dealer started -- $tag (cycle wait $loopInterval sec)" >> $logFile
+    echo " data dealer started -- $tag (cycle wait ${loopInterval}h)" >> $logFile
     echo " "                                                           >> $logFile
     echo "   --> "`date`                                               >> $logFile
     echo " "                                                           >> $logFile

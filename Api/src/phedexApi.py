@@ -20,12 +20,11 @@
 # the caller to check for actual data.
 #---------------------------------------------------------------------------------------------------
 import sys, re, os, urllib, urllib2, httplib, json, datetime, subprocess, ConfigParser
-import initPhedex
 
 class phedexApi:
     def __init__(self):
         config = ConfigParser.RawConfigParser()
-        config.read('intelroccs.cfg')
+        config.read('/usr/local/IntelROCCS/DataDealer/intelroccs.cfg')
         self.phedexBase = config.get('Phedex', 'base')
 
 #===================================================================================================
@@ -174,7 +173,9 @@ class HTTPSGridAuthHandler(urllib2.HTTPSHandler):
         return self.do_open(self.getConnection, req)
 
     def getProxy(self):
-        proxy = "/tmp/x509up_ud2"
+        proxy = os.environ.get('X509_USER_PROXY')
+        if not proxy:
+            proxy = "/tmp/x509up_u%d" % (os.geteuid(),)
         return proxy
 
     def getConnection(self, host, timeout=300):

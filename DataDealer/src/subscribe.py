@@ -8,7 +8,7 @@ import dbApi, phedexApi
 class subscribe():
     def __init__(self):
         config = ConfigParser.RawConfigParser()
-        config.read('intelroccs.cfg')
+        config.read('/usr/local/IntelROCCS/DataDealer/intelroccs.cfg')
         self.rankingsCachePath = config.get('DataDealer', 'cache')
         self.phedexApi = phedexApi.phedexApi()
         self.dbApi = dbApi.dbApi()
