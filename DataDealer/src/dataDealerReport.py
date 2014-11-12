@@ -20,7 +20,7 @@ import dbApi, phedexData, popDbData
 class dataDealerReport():
     def __init__(self):
         config = ConfigParser.RawConfigParser()
-        config.read('intelroccs.cfg')
+        config.read('/usr/local/IntelROCCS/DataDealer/intelroccs.cfg')
         self.rankingsCachePath = config.get('DataDealer', 'cache')
         self.reportPath = config.get('DataDealer', 'report_path')
         self.phedexData = phedexData.phedexData()

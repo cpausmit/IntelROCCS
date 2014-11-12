@@ -15,7 +15,7 @@ import phedexApi
 class phedexData:
     def __init__(self):
         config = ConfigParser.RawConfigParser()
-        config.read('intelroccs.cfg')
+        config.read('/usr/local/IntelROCCS/DataDealer/intelroccs.cfg')
         self.phedexCache = config.get('Phedex', 'cache')
         self.cacheDeadline = config.getint('Phedex', 'expiration_timer')
         self.phedexApi = phedexApi.phedexApi()

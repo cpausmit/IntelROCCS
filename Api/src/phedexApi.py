@@ -24,7 +24,7 @@ import sys, re, os, urllib, urllib2, httplib, json, datetime, subprocess, Config
 class phedexApi:
     def __init__(self):
         config = ConfigParser.RawConfigParser()
-        config.read('intelroccs.cfg')
+        config.read('/usr/local/IntelROCCS/DataDealer/intelroccs.cfg')
         self.phedexBase = config.get('Phedex', 'base')
 
 #===================================================================================================
