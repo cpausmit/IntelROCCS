@@ -58,14 +58,15 @@ let interval=$(date --date=$(date +"%m/%d/%Y") +%s)-1378008000
 export DATASET_MONITOR_TEXT="since 09/2013"
   mv DatasetSummary.txt DatasetSummaryAll.txt
   export DATASET_MONITOR_FILE=DatasetSummaryAll
-root -q -b -l $MONITOR_BASE/plotDatasets.C\("$average",interval\)
-
+root -q -b -l $MONITOR_BASE/plotDatasets.C\("$average",$interval\)
+start=$(date --date=01/01/2014 +%s)
+end=$(date --date=$(date +"%m/%d/%Y") +%s)
 let interval=$(date --date=$(date +"%m/%d/%Y") +%s)-$(date --date=01/01/2014 +%s)
-$MONITOR_BASE/readJsonSnapshotAll.py T2* 2014*
+$MONITOR_BASE/readJsonSnapshotAll.py T2* $start $end
 export DATASET_MONITOR_TEXT="Summary 2014"
   mv DatasetSummary.txt DatasetSummary2014.txt
   export DATASET_MONITOR_FILE=DatasetSummary2014
-root -q -b -l $MONITOR_BASE/plotDatasets.C\("$average",interval\)
+root -q -b -l $MONITOR_BASE/plotDatasets.C\("$average",$interval\)
 
 month=`date +%m`
 for period in $(seq 01 $month) 
@@ -82,12 +83,14 @@ do
     02 )
       lastday=28;;
   esac
-  let interval=$(date --date=${lastday}/${period}/2014 +%s)-$(date --date=01/${period}/2014 +%s)
-  $MONITOR_BASE/readJsonSnapshotAll.py T2* 2014-$period*
+  start=$(date --date=01/${period}/2014 +%s)
+  end=$(date --date=${period}/${lastday}/2014 +%s)
+  let interval=$(date --date=${period}/${lastday}/2014 +%s)-$(date --date=${period}/01/2014 +%s)
+  $MONITOR_BASE/readJsonSnapshotAll.py T2* $start $end
   export DATASET_MONITOR_TEXT="${period}/2014"
     mv DatasetSummary.txt DatasetSummary${period}-2014.txt
     export DATASET_MONITOR_FILE=DatasetSummary${period}-2014
-  root -q -b -l $MONITOR_BASE/plotDatasets.C\("$average",interval\)
+  root -q -b -l $MONITOR_BASE/plotDatasets.C\("$average",$interval\)
 done
 
 
