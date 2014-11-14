@@ -17,7 +17,7 @@ source Monitor/setupMonitor.sh
 
 # General installation (you have to be in the directory of install script and you have to be root)
 
-INTELROCCS_BASE=`dirname $MONITOR_BASE`
+TRUNC=`dirname $MONITOR_BASE`
 
 # copy the software
 #==================
