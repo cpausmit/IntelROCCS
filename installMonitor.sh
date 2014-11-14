@@ -51,6 +51,9 @@ fi
 # copy Monitor daemon
 cp /usr/local/IntelROCCS/Monitor/sysv/monitord /etc/init.d/
 
+# copy html files
+cp ../IntelROCCS/Monitor/html/* /home/cmsprod/public_html/IntelROCCS/Monitor
+
 # start new server
 /etc/init.d/monitord status
 /etc/init.d/monitord start
