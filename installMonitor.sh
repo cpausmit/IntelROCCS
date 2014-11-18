@@ -17,27 +17,25 @@ source Monitor/setupMonitor.sh
 
 # General installation (you have to be in the directory of install script and you have to be root)
 
-INTELROCCS_BASE=`dirname $MONITOR_BASE`
-TRUNC=`dirname $INTELROCCS_BASE`
+TRUNC=`dirname $MONITOR_BASE`
 
 # copy the software
 #==================
 
-if [ -d "$INTELROCCS_BASE" ]
+if [ -d "$MONITOR_BASE" ]
 then
   # make sure to remove completely the previous installed software
   echo " Removing previous installation."
-  rm -rf "$INTELROCCS_BASE"
+  rm -rf "$MONITOR_BASE"
 fi
-cp -r ../IntelROCCS $TRUNC
+cp -r ../IntelROCCS/Monitor $TRUNC
 
 # create log/db structure
 #========================
 
 # owner has to be $INTELROCCS_USER:$INTELROCCS_GROUP, this user runs the process
-INTELROCCS_DB=`dirname $MONITOR_DB`
-mkdir -p $INTELROCCS_DB $MONITOR_DB
-chown ${INTELROCCS_USER}:${INTELROCCS_GROUP} -R $INTELROCCS_DB
+mkdir -p $MONITOR_DB
+chown ${INTELROCCS_USER}:${INTELROCCS_GROUP} -R $MONITOR_DB
 
 
 # install and start daemon
@@ -52,6 +50,9 @@ fi
 
 # copy Monitor daemon
 cp /usr/local/IntelROCCS/Monitor/sysv/monitord /etc/init.d/
+
+# copy html files
+cp ../IntelROCCS/Monitor/html/* /home/cmsprod/public_html/IntelROCCS/Monitor
 
 # start new server
 /etc/init.d/monitord status
