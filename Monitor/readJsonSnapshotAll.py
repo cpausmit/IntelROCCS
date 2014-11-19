@@ -8,6 +8,11 @@
 import os, sys, re, glob, subprocess, time, json, pprint, MySQLdb
 import datasetProperties
 from   xml.etree import ElementTree
+from findDatasetHistoryAll import *
+
+datasetPattern=r'/.*/.*/.*AOD.*'
+# datasetPattern=r'(?!/.*/.*/USER.*)' # exclude USER since das_client doesn't return useful info
+# datasetPattern='/wprime_oppsign_mu_M2200_g1_ptl1000to1d5_8TeV/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM'
 
 if not os.environ.get('DETOX_DB') or not os.environ.get('MONITOR_DB'):
     print '\n ERROR - DETOX environment not defined: source setup.sh\n'
@@ -82,7 +87,7 @@ def processFile(fileName,debug=0):
         if debug>0:
             print " NAccess - %6d %s"%(value,key)
         # filter out non-AOD data
-        if not re.search(r'/.*/.*/.*AOD.*',key):
+        if not re.match(datasetPattern,key):
             if debug>0:
                 print ' WARNING -- rejecting non *AOD* type data: ' + key
             nSkipped += 1
@@ -124,8 +129,6 @@ def addSites(nSites,nAccessed,debug=0):
             nSites[key] += 1
         else:
             nSites[key] = 1
-
-
     # return the updated all hash array
     return nSites
 
@@ -158,8 +161,8 @@ def findDatasetSize(dataset,debug=0):
     # and its size in GB
 
     cmd = os.environ.get('MONITOR_BASE') + '/findDatasetProperties.py ' + dataset + ' short | tail -1'
-    if debug>-1:
-        print ' CMD: ' + cmd
+    # if debug>-1:
+    #     print ' CMD: ' + cmd
     nFiles = 0
     sizeGb = 0.
     for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
@@ -174,6 +177,35 @@ def findDatasetSize(dataset,debug=0):
             print ' WARNING - decoding failed: %d %f.3 -- %s'%(nFiles,sizeGb,dataset)
             pass
     return nFiles, sizeGb
+
+def findDatasetCreationTime(dataset,fileName,debug=0):
+    cmd = os.environ.get('MONITOR_BASE') + 'das_client.py --format=plain --limit=0 --query="dataset=' + dataset + ' | grep dataset.creation_time " '
+    print cmd
+    for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
+        try:
+            cTime = time.mktime(time.strptime(line,'%Y-%m-%d %H:%M:%S\n'))
+        except ValueError:
+            # bad response; assume it was always there
+            print line
+            return 0
+        with open(fileName,'a') as dataFile:
+            dataFile.write("%s %i\n"%(dataset,cTime))
+    return cTime
+
+def readDatasetCreationTimes(fileName,debug=0):
+    creationTimes={}
+    if not os.path.exists(fileName):
+        return creationTimes
+    dataFile = open(fileName,'r')
+    for line in dataFile.readlines():
+        line=re.split('[ \n]',line)
+        try:
+            creationTimes[line[0]] = int(line[1])
+        except:
+            print line
+            raise ValueError
+    dataFile.close()
+    return creationTimes
 
 def getDbCursor():
     # configuration
@@ -215,216 +247,120 @@ def readDatasetProperties():
 
     return (fileNumbers, sizesGb)
 
-
-def cleanHistories(xfers,dels,end):
-    # used to clean up messy histories
-    i=0
-    j=0
-    ld=-1
-    if len(dels)==0:
-        # if there are no deletions in the history, assume it's still there
-        # if there are no transfers in the history, and you are here, SOMETHING IS VERY WRONG
-        dels=[end]
-    if xfers[0] > dels[0]:
-        xfers.insert(0,0)
-    while True:
-        nx=len(xfers)
-        nd=len(dels)
-        try:
-            if i==nx and j==nd:
-                break
-            elif xfers[i] < ld:
-                xfers.pop(i)
-            elif xfers[i] > dels[j]:
-                dels.pop(j)
-            else:
-                i+=1
-                j+=1
-                ld=dels[j-1]
-                if i>=len(xfers):
-                    while j<len(dels):
-                        dels.pop(j)
-                        j+=1
-                    break
-                elif j>=len(dels):
-                    while i<len(xfers):
-                        xfers.pop(i)
-                        i+=1
-                    break
-        except IndexError:
-            continue
-    #    print xfers
-    #    print dels
-    return xfers,dels
-
-def calculateAverageNumberOfSites(sitePattern,start,end):
+def calculateAverageNumberOfSites(sitePattern,datasetsOnSites,start,end,cTimes={}):
 
     print ' Relevant time interval: %d %d  --> %d'%(start,end,end-start)
 
     # convert it into floats and take care of possible rounding issues
     interval = end - start
-
-    # define our variables
-    #phedDirectory = '/local/cmsprod/IntelROCCS/Monitor/datasets/' # FIX: use env from setupMonitor.sh
-    phedDirectory = os.environ['MONITOR_DB']+'/datasets/'
-    filePattern = '%*%*%*'                                        # consider only xml filename pattern
-    #filePattern = '%GJet_Pt-15to3000_Tune4C_13TeV_pythia8%Spring14dr-PU20bx25_POSTLS170_V5-v1%AODSIM'
-    files = glob.glob(phedDirectory + filePattern)
     datasetMovement = {}
+    predictedDatasetsOnSites={}
+    for datasetName in datasetsOnSites:
+        datasetMovement[datasetName]={}
+        predictedDatasetsOnSites[datasetName]=set([])
+    nowish = time.time()
+    fileName = os.environ.get('MONITOR_DB') + '/datasets/' + 'delRequests_%i'%(int(start))+'.json'
+    parseRequestJson(fileName,start,nowish,False,datasetMovement,datasetPattern)
+    fileName = os.environ.get('MONITOR_DB') + '/datasets/' + 'xferRequests_%i'%(int(start))+'.json'
+    parseRequestJson(fileName,start,nowish,True,datasetMovement,datasetPattern)
+
     nSites = {}
-
-    # read in the data from the phedex history database cache
-    #========================================================
-    for file in files:
-        try:                                                      # check that we can parse the xml file
-            document = ElementTree.parse(file)
-        except:
-            print ' WARNING - file reading failed (%s).'%file
-            continue
-        filename = file.split('/')[-1].replace('%','/')
-        for request in document.findall('request'):
-            type = request.attrib['type']
-
-            for node in request.findall('node'):
-                site = node.attrib['name']
-                time = node.attrib['time_decided']
-
-                #print ' Checking %s versus %s'%(sitePattern,site)
-
-                if not re.match(sitePattern,site):                # consider only specified sites
-                    #print ' WARNING - no site match.'
-                    continue
-
-                if not filename in datasetMovement:               # only for datasets from correct sites
-                    datasetMovement[filename] = {}
-
-                if node.attrib['decision'] == 'approved':         # only consider things that happened
-# 1
-                    try:                                          # check for bad times
-                        time = int(float(node.attrib['time_decided']))   # whole number for easy binning
-                    except:
-                        print ' WARNING - time decided is corrupt.'
-                        continue
-
-                    if not site in datasetMovement[filename]:     # initialization
-                        datasetMovement[filename][site] = [[],[]] # allow multiple dataset instances/site
-
-                    if type == 'xfer':                            # (datasets can be requested again)
-                        datasetMovement[filename][site][0].append(time)     # time transferred
-                        #print ' transfer [%s]: %d'%(site,time)
-                    elif type == 'delete':
-                        datasetMovement[filename][site][1].append(time)     # time deleted
-                        #print ' delete   [%s]: %d'%(site,time)
-                    else:
-                        continue
-
     # match the intervals from the phedex history to the requested time interval
     #===========================================================================
-    for filename in datasetMovement:
-#        print datasetMovement[filename]
-        # ensure datasetMovement entry is complete
-        for site in datasetMovement[filename]:
-            #print ' Adding site: ' + site
-            if not re.match(sitePattern,site):                   # only requested sites
-                print ' WARNING - no site match. ' + site
+    for datasetName in datasetMovement:
+        if not datasetName in nSites:
+            nSites[datasetName] = 0
+        for siteName in datasetMovement[datasetName]:
+            if not re.match(sitePattern,siteName):                   # only requested sites
+                print ' WARNING - no site match. ' + siteName
                 continue
 
-            datasetMovement[filename][site][0].sort()            # sort lists to match items
-            datasetMovement[filename][site][1].sort()
+            datasetMovement[datasetName][siteName][0].sort()            # sort lists to match items
+            datasetMovement[datasetName][siteName][1].sort()
 
-            lenXfer = len(datasetMovement[filename][site][0])
-            lenDel  = len(datasetMovement[filename][site][1])
-
-            if lenXfer == lenDel:                                # ensure reasonable time lists
-                pass
-            elif lenXfer == lenDel - 1:
-                datasetMovement[filename][site][0].insert(0,0)
-                lenXfer+=1
-            elif lenXfer == lenDel + 1:
-                #print 'Add interval end: %d'%end
-                datasetMovement[filename][site][1].append(end)
-            elif lenXfer==0:
-                # this actually doesn't make sense
-                continue
-            else:
-                # doesn't make sense, so skip
-                continue
-                # or don't skip
-                xfers= datasetMovement[filename][site][0]
-                dels=  datasetMovement[filename][site][1]
-                datasetMovement[filename][site][0],datasetMovement[filename][site][1] = cleanHistories(xfers,dels,end)
-
-
-        for site in datasetMovement[filename]:
-            #print ' Adding site: ' + site
-            if not re.match(sitePattern,site):                   # only requested sites
-                print ' WARNING - no site match. ' + site
-                continue
-            lenXfer = len(datasetMovement[filename][site][0])
-            lenDel  = len(datasetMovement[filename][site][1])
-            if not lenXfer == lenDel:
-                #should have been fixed in previous loop
-                continue
-            
+            xfers = datasetMovement[datasetName][siteName][0]
+            dels =  datasetMovement[datasetName][siteName][1]
+            xfers,dels = cleanHistories(xfers,dels,start,end)
+            datasetMovement[datasetName][siteName][0] = xfers
+            datasetMovement[datasetName][siteName][1] = dels
+            lenXfer = len(xfers)
+            lenDel  = len(dels)
 
             # find this site's fraction for nSites
-            if not filename in nSites:
-                nSites[filename] = 0
+            if not datasetName in nSites:
+                nSites[datasetName] = 0
 
             siteSum = 0
             i       = 0
-            
+            if (lenXfer > 0 and lenDel > 0 and xfers[-1] > dels[-1]) or (lenDel==0 and lenXfer > 0 and xfers[-1] < end):
+                try:
+                    predictedDatasetsOnSites[datasetName].add(siteName)
+                except KeyError:
+                    predictedDatasetsOnSites[datasetName] = set([siteName])
             # loop through the transfer/deletion intervals
             while i < lenXfer:
                 try:
-                    tXfer = datasetMovement[filename][site][0][i]
-                    tDel  = datasetMovement[filename][site][1][i]
+                    tXfer = datasetMovement[datasetName][siteName][0][i]
+                    tDel  = datasetMovement[datasetName][siteName][1][i]
                 except IndexError:
-                    continue
-                
+                    break
                 i = i + 1                                        # iterate before all continue statements
-
-                if tXfer == 0 and tDel == end:                   # skip if defaults, meaning no xfer or del time found
-                    continue                                     # shouldn't happen, but just to be sure
-
-                # four ways to be in interval                    # (though this prevents you from having the same
-                                                                 #  start and end date)
+                # four ways to be in interval                 
+                # (though this prevents you from having the same
+                #  start and end date)
                 if tXfer <= start <= end <= tDel:
                     siteSum += 1                                 # should happen at most once, but okay
                 elif tXfer <= start < tDel < end:
                     siteSum += float(tDel - start)/float(interval)
-#                    print ' Adding: %d %f'%(i,float(tDel - start)/float(interval))
                 elif start < tXfer < end <= tDel:
                     siteSum += float(end - tXfer)/float(interval)
- #                   print ' Adding: %d %f'%(i,float(end - tXfer)/float(interval))
                 elif start < tXfer < tDel <= end:
                     siteSum += float(tDel - tXfer)/float(interval)
-  #                  print ' Adding: %d %f'%(i,float(tDel - tXfer)/float(interval))
-                else:                                            # have ensured tXfer < tDel
+                else:                                            # have ensured tXfer > tDel
                     continue
-
-            if siteSum < 0:                                      # how can this happen??
-                print " WARNING - siteNum < 0 ??"
-                continue
-
-            nSites[filename] += siteSum
-
+            nSites[datasetName] += siteSum
+        try:
+            diff = datasetsOnSites[datasetName] - predictedDatasetsOnSites[datasetName]
+        except KeyError:
+            try:
+                diff = datasetsOnSites[datasetName]
+            except KeyError:
+                diff=set([])
+        for siteName in diff:
+            if siteName not in datasetMovement[datasetName]:
+                # no phedex history, but the dataset exists (it was created there?)
+                if datasetName in cTimes:
+                    cTime = cTimes[datasetName]
+                else:
+                    cTime = start
+                    # cTime = findDatasetCreationTime(datasetName,creationTimeCache)
+                    # cTimes[datasetName]=cTime
+                nSites[datasetName]+=(end - max(cTime,start))/interval
+            elif len(datasetMovement[datasetName][siteName][1])==0:
+                # it was never deleted...
+                if len(datasetMovement[datasetName][siteName][0])==0:
+                    # it was never transferred...
+                    if datasetName in cTimes:
+                        cTime = cTimes[datasetName]
+                    else:
+                        cTime = start
+                        # cTime = findDatasetCreationTime(datasetName,creationTimeCache)
+                        # cTimes[datasetName]=(end - max(cTime,start))/interval
+                    nSites[datasetName]+=(end - max(cTime,start))/interval
+                    # nSites[datasetName]+=1
+                elif datasetMovement[datasetName][siteName][0][-1] < end:
+                    # it was transferred recently?
+                    nSites[datasetName]+= (end-datasetMovement[datasetName][siteName][0][-1])/interval
     n     = 0
     nSkip =  0
     sum   = float(0)
-    for filename in nSites:
-        if nSites[filename] == 0:                                # dataset not on sites in interval
+    for datasetName in nSites:
+        if nSites[datasetName] == 0:                                # dataset not on sites in interval
             nSkip += 1
             continue
-        '''elif nSites[filename] < 1:
-            print nSites[filename],filename
-            for sites in datasetMovement[filename]:
-                print sites
-                print "\t",datasetMovement[filename][sites][0]
-                print "\t",datasetMovement[filename][sites][1]'''
-        sum += nSites[filename]
+        sum += nSites[datasetName]
         n   += 1
-        #print ' %s \t%f'%(filename,nSites[filename])
+        #print ' %s \t%f'%(datasetName,nSites[datasetName])
 
     print '\n Dataset  --  average number of sites\n'
 
@@ -432,7 +368,7 @@ def calculateAverageNumberOfSites(sitePattern,start,end):
         avg = sum/n
         print '\n overall average n sites: %f\n'%(avg)
         print '\n number of datasets:      %d\n'%(n)
-        print '\n number of datasets skip: %d\n'%(nSkip)
+        print '\n number of datasets skipped: %d\n'%(nSkip)
     else:
         print 'no datasets found in specified time interval'
 
@@ -446,10 +382,12 @@ sizeAnalysis = True
 addNotAccessedDatasets = True
 
 usage  = "\n"
-usage += " readJsonSnapshot.py  <sitePattern> [ <datePattern>=????-??-?? ]\n"
+usage += " readJsonSnapshot.py  <sitePattern> [ <startDate> <endDate> ]\n"
 usage += "\n"
 usage += "   sitePattern  - pattern to select particular sites (ex. T2* or T2_U[SK]* etc.)\n"
-usage += "   datePattern  - pattern to select date pattern (ex. 201[34]-0[0-7]-??)\n\n"
+usage += "   startDate  - epoch time of starting date\n"
+usage += "   endDate  - epoch time of ending date\n\n"
+# usage += "   datePattern  - pattern to select date pattern (ex. 201[34]-0[0-7]-??)\n\n"
 
 # decode command line parameters
 if   len(sys.argv)<2:
@@ -457,14 +395,21 @@ if   len(sys.argv)<2:
     sys.exit(1)
 elif len(sys.argv)==2:
     site = str(sys.argv[1])
-    date = '????-??-??'
+    start = 1378008000
+    end = int(time.time())
 elif len(sys.argv)==3:
     site = str(sys.argv[1])
-    date = str(sys.argv[2])
+    start = int(sys.argv[2])
+    end = int(time.time())
+elif len(sys.argv)==4:
+    site = str(sys.argv[1])
+    start = int(sys.argv[2])
+    end = int(sys.argv[3])
 else:
     print ' ERROR - too many arguments\n' + usage
     sys.exit(2)
 
+siterx=re.sub("\*",".*",site) # to deal with stuff like T2* --> T2.*
 # figure out which datases to consider using phedex cache as input
 if addNotAccessedDatasets:
     file = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS'] + '/' + \
@@ -480,30 +425,39 @@ fileNumbers  = {}
 if sizeAnalysis:
     (fileNumbers,sizesGb) = readDatasetProperties()
 
+# form date regexps
+starttmp = time.gmtime(start)
+endtmp = time.gmtime(end)
+dates=[]
+for year in range(starttmp[0],endtmp[0]+1):
+    for month in range(1,13):
+        if year==starttmp[0] and month<starttmp[1]:
+            continue
+        elif year==endtmp[0] and month>=endtmp[1]:
+            continue
+        else:
+            dates.append("%i-%02i-??"%(year,month))
+
 # --------------------------------------------------------------------------------------------------
 # loop through all matching snapshot files
 # --------------------------------------------------------------------------------------------------
 # figure out which snapshot files to consider
 workDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS']
-files = glob.glob(workDirectory + '/' + site + '/' + os.environ['DETOX_SNAPSHOTS'] + '/' + date)
+files=[]
+for date in dates:
+    files += glob.glob(workDirectory + '/' + site + '/' + os.environ['DETOX_SNAPSHOTS'] + '/' + date)
+phedexFile = open(workDirectory+'/DatasetsInPhedexAtSites.dat','r')
+creationTimeCache = os.environ['MONITOR_DB'] + '/datasets/creationTimes.txt'
 # say what we are goign to do
 print "\n = = = = S T A R T  A N A L Y S I S = = = =\n"
 print " Logfiles in:  %s"%(workDirectory)
 print " Site pattern: %s"%(site)
-print " Date pattern: %s"%(date)
 if sizeAnalysis:
     print "\n Size Analysis is on. Please be patient, this might take a while!\n"
-
-firstFile = ''
-lastFile = ''
 
 for fileName in sorted(files):
     if debug>0:
         print ' Analyzing: ' + fileName
-
-    if firstFile == '':
-        firstFile = fileName
-
     g = fileName.split("/")
     siteName = g[-3]
 
@@ -520,34 +474,6 @@ for fileName in sorted(files):
     nAllSkipped      += nSkipped
     nSiteAccessEntry = addData(nSiteAccessEntry,nAccessed,debug)
     nAllAccessed     = addData(nAllAccessed,    nAccessed,debug)
-
-if lastFile == '':
-    lastFile = fileName
-
-#print " First: %s  Last: %s"%(firstFile,lastFile)
-
-# find start and end times
-
-dir = '/'.join(lastFile.split("/")[0:-1])
-startDate = firstFile.split("/")[-1]
-
-files = glob.glob(dir + '/????-??-??')
-last = ''
-endDate = ''
-for fileName in sorted(files):
-    #print ' Filename: ' + fileName
-    #print " Compare: " + last + ' ' + lastFile.split("/")[-1]
-    if last == lastFile.split("/")[-1]:
-        endDate = fileName.split("/")[-1]
-    last = fileName.split("/")[-1]
-
-# convert to epoch time
-start = int(time.mktime(time.strptime(startDate,'%Y-%m-%d')))
-if endDate != '':
-    end = int(time.mktime(time.strptime(endDate,'%Y-%m-%d')))
-else:
-    endDate = lastFile.split("/")[-1]
-    end = int(time.mktime(time.strptime(endDate,'%Y-%m-%d'))) + 7*24*3600  # one week
 
 # --------------------------------------------------------------------------------------------------
 # add all datasets that are in phedex but have never been used
@@ -573,7 +499,7 @@ if addNotAccessedDatasets:
         # loop through all datasets at the site and check'em
         for dataset in sizesPerSitePerDataset:
             # exclude non AOD samples
-            if not re.search(r'/.*/.*/.*AOD.*',dataset):
+            if not re.match(datasetPattern,dataset):
                 # update our local counters
                 nExcludedSamples += 1
                 excludedSize += sizesPerSitePerDataset[dataset]
@@ -609,16 +535,20 @@ nAll = 0
 nAllAccess = 0
 sizeTotalGb = 0.
 nFilesTotal = 0
+findDatasetHistoryAll(start)
+counter=0
 for key in nAllAccessed:
+    counter+=1
     value = nAllAccessed[key]
     nAllAccess += value
     nAll += 1
     if sizeAnalysis:
         if not key in fileNumbers:
+            print counter
             # update the dataset history
-            cmd = os.environ.get('MONITOR_BASE') + '/findDatasetHistory.py ' + key + ' 2> /dev/null'
-            print ' CMD: ' + cmd
-            os.system(cmd)
+            # cmd = os.environ.get('MONITOR_BASE') + '/findDatasetHistoryAll.py ' + key + ' 2> /dev/null'
+            # print ' CMD: ' + cmd
+            # os.system(cmd)
             # update the dataset properties
             (nFiles,sizeGb) = findDatasetSize(key)
             # add to our memory
@@ -661,8 +591,28 @@ for site in sorted(nSiteAccess):
     # count the number of sites carrying a given dataset
     nSites = addSites(nSites,nSiteAccessEntry,debug)
 
+# datasetsOnSites[k]=v, where k is a dataset and v is a set of sites
+# this can probably be done smarter and combined with nSites computation
+datasetsOnSites={}
+for line in phedexFile:
+    l = line.split()
+    datasetName=l[0]
+    siteName=l[7]
+    if not re.match(siterx,siteName):
+        continue
+    if not re.search(datasetPattern,datasetName):
+        continue
+    if datasetName in datasetsOnSites:
+        datasetsOnSites[datasetName].add(siteName)
+    else:
+        datasetsOnSites[datasetName] = set([siteName])
+
+# load creation time cache
+creationTimes=readDatasetCreationTimes(creationTimeCache)
+
+
 # figure out properly the 'average number of sites' in the given time interval
-nAverageSites = calculateAverageNumberOfSites('T2',start,end)
+nAverageSites = calculateAverageNumberOfSites(siterx,datasetsOnSites,start,end,creationTimes)
 
 # last step: produce monitoring information
 # ========================================
@@ -677,8 +627,8 @@ for dataset in nAllAccessed:
         nAverageSite = float(nAverageSites[dataset])
     else:
         #print ' Fix dataset: ' + dataset
-        cmd = os.environ.get('MONITOR_BASE') + '/findDatasetHistory.py ' + dataset
-        os.system(cmd)
+        # cmd = os.environ.get('MONITOR_BASE') + '/findDatasetHistory.py ' + dataset
+        # os.system(cmd)
         nAverageSite = 0
     nAccess = nAllAccessed[dataset]
     nFiles = fileNumbers[dataset]

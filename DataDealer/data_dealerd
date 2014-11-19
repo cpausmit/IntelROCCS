@@ -38,14 +38,14 @@ do
     touch $logFile
     rm $oldLogFile
 
-    echo " "                                                                >> $logFile
-    echo " data dealer loop started -- $tag (cycle wait $loopInterval sec)" >> $logFile
-    echo " "                                                                >> $logFile
-    echo "   --> "`date`                                                    >> $logFile
-    echo " "                                                                >> $logFile
-    stdbuf -o0 -e0 /usr/local/IntelROCCS/Install/DataDealer/dataDealer.py   >> $logFile 2>&1
+    echo " "                                                           >> $logFile
+    echo " data dealer started -- $tag (cycle wait ${loopInterval}h)" >> $logFile
+    echo " "                                                           >> $logFile
+    echo "   --> "`date`                                               >> $logFile
+    echo " "                                                           >> $logFile
+    stdbuf -o0 -e0 /usr/local/IntelROCCS/DataDealer/dataDealer.py      >> $logFile 2>&1
 
-    # insure that the log information is updated
+    # ensure that the log and report information is updated
     rsync -Cavz --delete /local/cmsprod/IntelROCCS/DataDealer /home/cmsprod/public_html/IntelROCCS >& /dev/null
 
     # change symlinks for todays report and log

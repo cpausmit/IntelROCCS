@@ -12,15 +12,16 @@
 # If a query fail we print an error message and return an empty list, leaving it up to caller to
 # abort or keep executing.
 #---------------------------------------------------------------------------------------------------
-import sys, os, MySQLdb, datetime, subprocess
-import initDb
+import sys, os, MySQLdb, datetime, subprocess, ConfigParser
 
 class dbApi():
     def __init__(self):
-        host = os.environ['DB_SERVER']
-        db = os.environ['DB_DB']
-        user = os.environ['DB_USER']
-        passwd = os.environ['DB_PW']
+        config = ConfigParser.RawConfigParser()
+        config.read('/usr/local/IntelROCCS/DataDealer/intelroccs.cfg')
+        host = config.get('DB', 'host')
+        db = config.get('DB', 'db')
+        user = config.get('DB', 'username')
+        passwd = config.get('DB', 'password')
         try:
             self.dbCon = MySQLdb.connect(host=host, user=user, passwd=passwd, db=db)
         except MySQLdb.Error, e:
@@ -44,24 +45,3 @@ class dbApi():
             print(" ERROR -- %s\nMost likely caused by an incorrect number of values\n for query: %s\n and values: %s" % (str(e), str(query), str(values)))
         return data
 
-#===================================================================================================
-#  S C R I P T
-#===================================================================================================
-# Use this for testing purposes or as a script.
-# Usage: python ./dbApi.py <'db query'> ['value1', 'value2', ...]
-# Example: $ python ./dbApi.py 'SELECT * WHERE DatasetName=%s' 'Dataset1'
-if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        print "Usage: python ./dbApi.py <'db query'> ['value1', 'value2', ...]"
-        sys.exit(2)
-    dbApi_ = dbApi()
-    query = sys.argv[1]
-    values = []
-    for v in sys.argv[2:]:
-        values.append(v)
-    data = dbApi_.dbQuery(query, values=values)
-    if not data:
-        print "DB call failed"
-        sys.exit(1)
-    print data
-    sys.exit(0)

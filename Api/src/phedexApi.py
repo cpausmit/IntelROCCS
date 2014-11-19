@@ -19,26 +19,17 @@
 # If a valid call is made but no data was found a JSON structure is still returned, it is up to
 # the caller to check for actual data.
 #---------------------------------------------------------------------------------------------------
-import sys, re, os, urllib, urllib2, httplib, json, datetime, subprocess
-import initPhedex
+import sys, re, os, urllib, urllib2, httplib, json, datetime, subprocess, ConfigParser
 
 class phedexApi:
-    def __init__(self, userCert, userKey):
-        self.phedexBase = os.environ['PHEDEX_BASE']
-        self.cert = userCert
-        self.key = userKey
+    def __init__(self):
+        config = ConfigParser.RawConfigParser()
+        config.read('/usr/local/IntelROCCS/DataDealer/intelroccs.cfg')
+        self.phedexBase = config.get('Phedex', 'base')
 
 #===================================================================================================
 #  H E L P E R S
 #===================================================================================================
-    def renewProxy(self):
-        process = subprocess.Popen(["grid-proxy-init", "-valid", "24:00", "-cert", self.cert, "-key", self.key], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=False)
-        strout = process.communicate()[0]
-        if process.returncode != 0:
-            # email
-            raise Exception(" FATAL -- Could not generate proxy\nError msg: %s" % (str(strout)))
-        return 0
-
     def call(self, url, values):
         data = urllib.urlencode(values)
         opener = urllib2.build_opener(HTTPSGridAuthHandler())
@@ -190,64 +181,3 @@ class HTTPSGridAuthHandler(urllib2.HTTPSHandler):
     def getConnection(self, host, timeout=300):
         return httplib.HTTPSConnection(host, key_file=self.key, cert_file=self.cert)
 
-#===================================================================================================
-#  S C R I P T
-#===================================================================================================
-# Use this for testing purposes or as a script.
-# Usage: python ./phedexApi.py <apiCall> <instance> ['arg1_name=arg1' 'arg2_name=arg2' ...]
-if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        print "Usage: python ./phedexApi.py <apiCall> ['arg1_name=arg1' 'arg2_name=arg2' ...]"
-        sys.exit(2)
-    phedexApi_ = phedexApi()
-    error = phedexApi_.renewProxy()
-    if error:
-        print "Failed to renew proxy"
-        sys.exit(1)
-    print "Renewed proxy"
-    func = getattr(phedexApi_, sys.argv[1], None)
-    if not func:
-        print "%s is not a valid phedex api call" % (sys.argv[1])
-        print "Usage: python ./phedexApi.py <apiCall> ['arg1_name=arg1' 'arg2_name=arg2' ...]"
-        sys.exit(3)
-    args = dict()
-    for arg in sys.argv[2:]:
-        try:
-            a, v = arg.split('=')
-        except ValueError, e:
-            print "Passed argument %s does not follow the correct usage" % (arg)
-            print "Usage: python ./phedexApi.py <apiCall> ['arg1_name=arg1' 'arg2_name=arg2' ...]"
-            sys.exit(2)
-        args[a] = v
-    jsonData = 0
-    try:
-        jsonData = func(**args)
-    except TypeError, e:
-        print e
-        print "Usage: python ./phedexApi.py <apiCall> ['arg1_name=arg1' 'arg2_name=arg2' ...]"
-        sys.exit(1)
-    if not jsonData:
-        print " ERROR -- Phedex call failed."
-        sys.exit(1)
-    stored = 0
-    nDatasets = 0
-    datasets = jsonData.get('phedex').get('dataset')
-    for dataset in datasets:
-        nDatasets += 1
-        sizeGb = 0
-        sizeByte = 0
-        datasetName = dataset.get('name')
-        print datasetName
-        if re.match('.+/USER', datasetName):
-            continue
-        for block in dataset.get('block'):
-            size = int(block.get('bytes'))
-            for replica in dataset.get('block')[0].get('replica'):
-                siteName = replica.get('node')
-                groupName = replica.get('group')
-                if siteName == 'T2_BE_IIHE' and groupName == 'AnalysisOps':
-                    sizeByte += size
-        sizeGb = float(sizeByte)/10**9
-        stored += sizeGb
-    print "%.2f" % (stored/10**3)
-    sys.exit(0)

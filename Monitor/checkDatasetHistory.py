@@ -9,11 +9,14 @@ import os, sys, re, glob, subprocess, time, json, pprint, MySQLdb
 import datasetProperties
 from   xml.etree import ElementTree
 from math import log
+from findDatasetHistoryAll import *
 
 if not os.environ.get('DETOX_DB') or not os.environ.get('MONITOR_DB'):
     print '\n ERROR - DETOX environment not defined: source setup.sh\n'
     sys.exit(0)
 
+datasetPattern=r'/.*/.*/.*AOD.*'
+# datasetPattern='/wprime_oppsign_mu_M2200_g1_ptl1000to1d5_8TeV/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM'
 #===================================================================================================
 #  H E L P E R S
 #===================================================================================================
@@ -41,7 +44,7 @@ def processFile(fileName,debug=0):
         if debug>0:
             print " NAccess - %6d %s"%(value,key)
         # filter out non-AOD data
-        if not re.search(r'/.*/.*/.*AOD.*',key):
+        if not re.search(datasetPattern,key):
             if debug>0:
                 print ' WARNING -- rejecting non *AOD* type data: ' + key
             continue
@@ -81,8 +84,6 @@ def addSites(nSites,nAccessed,debug=0):
             nSites[key] += 1
         else:
             nSites[key] = 1
-
-
     # return the updated all hash array
     return nSites
 
@@ -100,9 +101,7 @@ def getDbCursor():
 def readDatasetProperties():
     sizesGb     = {}
     fileNumbers = {}
-
     #print " START reading database"
-
     # get access to the database
     cursor = getDbCursor()
     sql  = "select Datasets.DatasetName, DatasetProperties.NFiles, DatasetProperties.Size "
@@ -121,156 +120,119 @@ def readDatasetProperties():
             sizesGb[dataset]     = float(sizeGb)
     except:
         pass
-
     #print " DONE reading database"
-
     return (fileNumbers, sizesGb)
 
-def cleanHistories(xfers,dels,end):
-    # used to clean up messy histories
-    i=0
-    j=0
-    ld=-1
-    if len(dels)==0:
-        # if there are no deletions in the history, assume it's still there
-        # if there are no transfers in the history, and you are here, SOMETHING IS VERY WRONG
-        dels=[end]
-    if xfers[0] > dels[0]:
-        xfers.insert(0,0)
-    while True:
-        nx=len(xfers)
-        nd=len(dels)
-        try:
-            if i==nx and j==nd:
-                break
-            elif xfers[i] < ld:
-                xfers.pop(i)
-            elif xfers[i] > dels[j]:
-                dels.pop(j)
-            else:
-                i+=1
-                j+=1
-                ld=dels[j-1]
-                if i>=len(xfers):
-                    while j<len(dels):
-                        dels.pop(j)
-                        j+=1
-                    break
-                elif j>=len(dels):
-                    while i<len(xfers):
-                        xfers.pop(i)
-                        i+=1
-                    break
-        except IndexError:
-            print xfers
-            print dels
-            print i,j
-            sys.exit(-1)
-    #    print xfers
-    #    print dels
-    return xfers,dels
-
-def checkHistory(sitePattern,datasetsOnSites):
+def checkHistory(sitePattern,datasetsOnSites,start,end,cleaned=True):
     # predictedSiteDatasets[k]=v, where k is a dataset and v is a set of sites containing k, as predicted by transfer/delete history
     predictedDatasetsOnSites={}
 
-    # define our variables
-    phedDirectory = os.environ['MONITOR_DB']+'/datasets/'
-    datasetPattern = '%*%*%*'                                        # consider only xml filename pattern
-    #datasetPattern = '%GJet_Pt-15to3000_Tune4C_13TeV_pythia8%Spring14dr-PU20bx25_POSTLS170_V5-v1%AODSIM'
-    files = glob.glob(phedDirectory + datasetPattern)
     datasetMovement = {}
+    for datasetName in datasetsOnSites:
+        datasetMovement[datasetName]={}
     sitePattern=re.sub("\*",".*",sitePattern) # to deal with stuff like T2* --> T2.*
     # read in the data from the phedex history database cache
-    #========================================================
-    for dataset in files:
-        if dataset.find("AOD")==-1:
-            continue
-        try:                                                      # check that we can parse the xml file
-            document = ElementTree.parse(dataset)
-        except:
-            sys.stderr.write(' WARNING - file reading failed (%s).\n'%dataset)
-            continue
-        datasetName = dataset.split('/')[-1].replace('%','/')
-        for request in document.findall('request'):
-            type = request.attrib['type']
-
-            for node in request.findall('node'):
-                site = node.attrib['name']
-                time = node.attrib['time_decided']
-                
-                if not re.match(sitePattern,site):                # consider only specified sites
-                    #print ' WARNING - no site match.'
-                    continue
-                if not datasetName in datasetMovement:               # only for datasets from correct sites
-                    datasetMovement[datasetName] = {}
-
-                if node.attrib['decision'] == 'approved':         # only consider things that happened
-
-                    try:                                          # check for bad times
-                        time = int(float(node.attrib['time_decided']))   # whole number for easy binning
-                    except:
-                        print ' WARNING - time decided is corrupt.'
-                        continue
-
-                    if not site in datasetMovement[datasetName]:     # initialization
-                        datasetMovement[datasetName][site] = [[],[]] # allow multiple dataset instances/site
-
-                    if type == 'xfer':                            # (datasets can be requested again)
-                        datasetMovement[datasetName][site][0].append(time)     # time transferred
-                        #print ' transfer [%s]: %d'%(site,time)
-                    elif type == 'delete':
-                        datasetMovement[datasetName][site][1].append(time)     # time deleted
-                        #print ' delete   [%s]: %d'%(site,time)
-                    else:
-                        continue
-
+    fileName = os.environ.get('MONITOR_DB') + '/datasets/' + 'delRequests_%i'%(int(start))+'.json'
+    parseRequestJson(fileName,start,end,False,datasetMovement,datasetPattern)
+    fileName = os.environ.get('MONITOR_DB') + '/datasets/' + 'xferRequests_%i'%(int(start))+'.json'
+    parseRequestJson(fileName,start,end,True,datasetMovement,datasetPattern)
     # match the intervals from the phedex history to the requested time interval
     #===========================================================================
-    for filename in datasetMovement:
-        historyFile.write("%s\n"%(filename))
+    for datasetName in datasetMovement:
+        # historyFile.write("%s\n"%(datasetName))
         #only look at datasets which we know are on sites
-        for siteName in datasetMovement[filename]:
+        for siteName in datasetMovement[datasetName]:
             if not re.match(sitePattern,siteName):                   # only requested sites
                 print ' WARNING - no site match. ' + siteName
                 continue
-            datasetMovement[filename][siteName][0].sort()            # sort lists to match items
-            datasetMovement[filename][siteName][1].sort()
-            lenXfer = len(datasetMovement[filename][siteName][0])
-            lenDel  = len(datasetMovement[filename][siteName][1])
+            datasetMovement[datasetName][siteName][0].sort()            # sort lists to match items
+            datasetMovement[datasetName][siteName][1].sort()
+            lenXfer = len(datasetMovement[datasetName][siteName][0])
+            lenDel  = len(datasetMovement[datasetName][siteName][1])
 
-            xfers= datasetMovement[filename][siteName][0]
-            dels=  datasetMovement[filename][siteName][1]
-            if lenXfer == lenDel:                                # ensure reasonable time lists
-                pass
-            elif lenXfer == lenDel - 1:
-                datasetMovement[filename][siteName][0].insert(0,0)
-                lenXfer+=1
-            elif lenXfer == lenDel + 1:
-                #print 'Add interval end: %d'%end
-                datasetMovement[filename][siteName][1].append(nowish)
-            elif lenXfer==0:
-                # this actually doesn't make sense
-                continue
-            elif lenDel==0:
-                datasetMovement[filename][siteName][1].append(nowish)
-            else:
-                # doesn't make sense, so skip
-                continue
-                # or don't skip
-                #datasetMovement[filename][siteName][0],datasetMovement[filename][siteName][1] = cleanHistories(xfers,dels,nowish)
-#            lastXfer=xfers[-1]
-#            lastDel=dels[-1]
-#            historyFile.write("%25s\t%s\n"%(siteName,str(xfers)))
-#            historyFile.write("%25s\t%s\n"%(" ",str(dels)))
-#            historyFile.write("%25s\t%i -> %i ; %i\n"%(" ",lastXfer,lastDel,nowish))
-            if  lastXfer > lastDel or lastDel > nowish-5*60: 
-                # last transfer was more recent than last deletion
-                # or last deletion was at no more than 5 minutes ago
-                if filename in predictedDatasetsOnSites:
-                    predictedDatasetsOnSites[filename].add(siteName)
+            xfers= datasetMovement[datasetName][siteName][0]
+            dels=  datasetMovement[datasetName][siteName][1]
+            if not cleaned:
+                if len(dels)==0:
+                    if len(xfers)==0:
+                        continue
+                    elif xfers[-1] < nowish:
+                        if datasetName in predictedDatasetsOnSites:
+                            predictedDatasetsOnSites[datasetName].add(siteName)
+                        else:
+                            predictedDatasetsOnSites[datasetName]=set([siteName])
+                    else:
+                        continue
                 else:
-                    predictedDatasetsOnSites[filename]=set([siteName])
+                    if len(xfers)==0:
+                        continue
+                    elif nowish > xfers[-1] > dels[-1]:
+                        if datasetName in predictedDatasetsOnSites:
+                            predictedDatasetsOnSites[datasetName].add(siteName)
+                        else:
+                            predictedDatasetsOnSites[datasetName]=set([siteName])
+                continue
+
+            xfers,dels = cleanHistories(xfers,dels,start,end)
+            datasetMovement[datasetName][siteName][0] = xfers
+            datasetMovement[datasetName][siteName][1] = dels
+            # sys.exit(-1)
+            if len(dels)==0:
+                # there is no deletion history
+                if len(xfers)==0 and siteName in datasetsOnSites[datasetName]:
+                    # if there are no transfers but we know the dataset 
+                    # is there right now, assume it's always been there
+                    if datasetName in predictedDatasetsOnSites:
+                        predictedDatasetsOnSites[datasetName].add(siteName)
+                    else:
+                        predictedDatasetsOnSites[datasetName]=set([siteName])
+                elif xfers[-1] < nowish:
+                    # or if there was a recent transfer
+                    if datasetName in predictedDatasetsOnSites:
+                        predictedDatasetsOnSites[datasetName].add(siteName)
+                    else:
+                        predictedDatasetsOnSites[datasetName]=set([siteName])
+            else:
+                lastXfer=xfers[-1]
+                lastDel=dels[-1]
+                if  lastXfer > lastDel or lastDel > nowish-5*60: 
+                    # last transfer was more recent than last deletion
+                    # or last deletion was at no more than 5 minutes ago
+                    if datasetName in predictedDatasetsOnSites:
+                        predictedDatasetsOnSites[datasetName].add(siteName)
+                    else:
+                        predictedDatasetsOnSites[datasetName]=set([siteName])
+        if not cleaned:
+            continue
+        try:
+            diff = datasetsOnSites[datasetName] - predictedDatasetsOnSites[datasetName]
+        except KeyError:
+            if datasetName in datasetsOnSites:
+                diff = datasetsOnSites[datasetName]
+            else:
+                diff=set([])
+        for siteName in diff:
+            if siteName not in datasetMovement[datasetName]:
+                # no phedex history, but the dataset exists (it was created there?)
+                if datasetName in predictedDatasetsOnSites:
+                    predictedDatasetsOnSites[datasetName].add(siteName)
+                else:
+                    predictedDatasetsOnSites[datasetName]=set([siteName])
+            elif len(datasetMovement[datasetName][siteName][1])==0:
+                # it was never deleted...
+                if len(datasetMovement[datasetName][siteName][0])==0:
+                    # it was never transferred...
+                    if datasetName in predictedDatasetsOnSites:
+                        predictedDatasetsOnSites[datasetName].add(siteName)
+                    else:
+                        predictedDatasetsOnSites[datasetName]=set([siteName])
+                elif datasetMovement[datasetName][siteName][0][-1] < nowish:
+                    # it was transferred recently?
+                    if datasetName in predictedDatasetsOnSites:
+                        predictedDatasetsOnSites[datasetName].add(siteName)
+                    else:
+                        predictedDatasetsOnSites[datasetName]=set([siteName])
+
     return predictedDatasetsOnSites
 
 def fillDict(d,k,v):
@@ -323,22 +285,62 @@ nowish         = int(round(time.time()/300)*300)               # now to the near
 # figure out which snapshot files to consider
 workDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS']
 phedexFile = open(workDirectory+'/DatasetsInPhedexAtSites.dat','r')
+files = glob.glob(workDirectory + '/' + site + '/' + os.environ['DETOX_SNAPSHOTS'] + '/' + date)
 # say what we are going to do
 print "\n = = = = S T A R T  A N A L Y S I S = = = =\n"
 print " Logfiles in:  %s"%(workDirectory)
 print " Site pattern: %s"%(site)
 print " Date pattern: %s"%(date)
-fileName = 'HistorySummary.txt'
+fileName = 'HistorySummary_corrected.txt'
 print ' Output file: ' + fileName
 historyFile = open(fileName,'w')
+firstFile = ''
+lastFile = ''
+for fileName in sorted(files):
+    if debug>0:
+        print ' Analyzing: ' + fileName
+    if firstFile == '':
+        firstFile = fileName
+        break
+if lastFile == '':
+    lastFile = fileName
+# find start and end times
+
+dir = '/'.join(lastFile.split("/")[0:-1])
+startDate = firstFile.split("/")[-1]
+
+files = glob.glob(dir + '/????-??-??')
+last = ''
+endDate = ''
+for fileName in sorted(files):
+    #print ' Filename: ' + fileName
+    #print " Compare: " + last + ' ' + lastFile.split("/")[-1]
+    if last == lastFile.split("/")[-1]:
+        endDate = fileName.split("/")[-1]
+    last = fileName.split("/")[-1]
+
+# convert to epoch time
+start = int(time.mktime(time.strptime(startDate,'%Y-%m-%d')))
+if endDate != '':
+    end = int(time.mktime(time.strptime(endDate,'%Y-%m-%d')))
+else:
+    endDate = lastFile.split("/")[-1]
+    end = int(time.mktime(time.strptime(endDate,'%Y-%m-%d'))) + 7*24*3600  # one week
+
+findDatasetHistoryAll(start)
 
 # datasetsOnSites[k]=v, where k is a dataset and v is a set of sites
 datasetsOnSites={}
+site=re.sub("\*",".*",site) # to deal with stuff like T2* --> T2.*
 for line in phedexFile:
     l = line.split()
     datasetName=l[0]
     siteName=l[7]
-    if datasetName.find("AOD")==-1:
+    if not re.match(site,siteName):
+        continue
+    # historyFile.write("Matched %s with %s\n"%(site,siteName))
+    # if datasetName.find("AOD")==-1:
+    if not re.search(datasetPattern,datasetName):
         continue
     if datasetName in datasetsOnSites:
         datasetsOnSites[datasetName].add(siteName)
@@ -346,7 +348,8 @@ for line in phedexFile:
         datasetsOnSites[datasetName] = set([siteName])
 
 # figure out if a dataset is on a site or not based on history 
-predictedDatasetsOnSites = checkHistory(site,datasetsOnSites)
+# but do it really, really poorly
+predictedDatasetsOnSites = checkHistory(site,datasetsOnSites,start,nowish,True)
 
 # last step: produce monitoring information
 # ========================================
@@ -359,14 +362,14 @@ for datasetName in datasetsOnSites:
     phedexSites = datasetsOnSites[datasetName] 
     try:
         predictedSites = predictedDatasetsOnSites[datasetName]
-        n = len(predictedSites) - len(phedexSites)
+        n = len(predictedSites ^ phedexSites)
     except KeyError:
         predictedSites = None
         n = len(phedexSites)
     fillDict(histErrors,n,1)
     if not predictedSites == phedexSites:
         nErrors+=1
-        historyFile.write("DATASET: %s\n"%(datasetName));
+        historyFile.write("DATASET: %s\n"%(datasetName))
         historyFile.write("\tACTUAL    :\t%s\n"%(set2str(phedexSites)))
         historyFile.write("\tPREDICTED :\t%s\n"%(set2str(predictedSites)))
         historyFile.write("\tDIFFERENCE:\t%i\n"%(n))

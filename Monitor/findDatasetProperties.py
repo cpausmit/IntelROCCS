@@ -124,11 +124,13 @@ def convertSizeToGb(sizeTxt):
     units  = sizeTxt[-2:]
     # decide what to do for the given unit
     if   units == 'MB':
-        sizeGb = sizeGb/1024.
+        # sizeGb = sizeGb/1024.
+        sizeGb = sizeGb/1000. # consistent with CMS
     elif units == 'GB':
         pass
     elif units == 'TB':
-        sizeGb = sizeGb*1024.
+        # sizeGb = sizeGb*1024.
+        sizeGb = sizeGb*1000. # consistent with CMS
     else:
         print ' ERROR - Could not identify size. EXIT!'
         sys.exit(0)
@@ -155,8 +157,8 @@ if nFiles<0:
     cmd = os.environ.get('MONITOR_BASE') \
         + '/das_client.py --format=plain --limit=0 --query="file dataset=' \
         + dataset + ' | sum(file.size), count(file.name)" | sort -u'
-    if debug>-1:
-        print ' CMD: ' + cmd
+    # if debug>-1:
+    sys.stderr.write(' CMD: ' + cmd+"\n")
     nFiles = 0
     sizeGb = 0.
     try:

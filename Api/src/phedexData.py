@@ -9,16 +9,16 @@
 #
 # In case of an error a '0' will be returned, caller must check to make sure data is returned.
 #---------------------------------------------------------------------------------------------------
-import sys, re, os, json, sqlite3, datetime
+import sys, re, os, json, sqlite3, datetime, ConfigParser
 import phedexApi
 
 class phedexData:
-    def __init__(self, phedexCache, cacheDeadline):
-        userCert = os.environ['INTELROCCS_CERT']
-        userKey = os.environ['INTELROCCS_KEY']
-        self.phedexApi = phedexApi.phedexApi(userCert, userKey)
-        self.phedexCache = phedexCache
-        self.cacheDeadline = cacheDeadline
+    def __init__(self):
+        config = ConfigParser.RawConfigParser()
+        config.read('/usr/local/IntelROCCS/DataDealer/intelroccs.cfg')
+        self.phedexCache = config.get('Phedex', 'cache')
+        self.cacheDeadline = config.getint('Phedex', 'expiration_timer')
+        self.phedexApi = phedexApi.phedexApi()
 
 #===================================================================================================
 #  H E L P E R S
@@ -185,16 +185,3 @@ class phedexData:
                 storageGb += row[0]
         return storageGb
 
-#===================================================================================================
-#  M A I N
-#===================================================================================================
-if __name__ == '__main__':
-    phedexCache = "%s/IntelROCCS/Cache/Phedex" % (os.environ['HOME'])
-    phedexData_ = phedexData(phedexCache, 12)
-    siteStorage = phedexData_.getSiteStorage('T2_AT_Vienna')
-    if not siteStorage:
-        print " ERROR -- Could not fetch phedex data"
-        sys.exit(1)
-    print " SUCCESS -- Phedex data successfully fetched"
-    print siteStorage
-    sys.exit(0)

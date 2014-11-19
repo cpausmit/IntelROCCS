@@ -16,13 +16,16 @@ then
   exit 0
 fi
 
+cd $MONITOR_BASE #preventing temp files from being created in weird places
+
 # are we interested in nSites or nSitesAv
-average=0
-if [ -n $1 ]
+average=1
+if [ -z $1 ]
 then
+  average="1"
+else
   average=$1
 fi
-
 # define relevant environment variables
 export MIT_ROOT_STYLE=/home/cmsprod/MitRootStyle/MitRootStyle.C
 export SITE_MONITOR_FILE=$MONITOR_DB/MonitorSummary.txt
@@ -46,24 +49,26 @@ do
   echo "$site $quota $used $toDelete $lastCp" >> $SITE_MONITOR_FILE
 
 done
-
 # make nice histograms
 pwd
  root -q -b -l $MONITOR_BASE/plotSites.C
 echo "Done making site plots"
 
 # extract dataset info
- $MONITOR_BASE/readJsonSnapshot.py T2*
-export DATASET_MONITOR_TEXT="since 07/2013"
+$MONITOR_BASE/readJsonSnapshotAll.py T2*
+let interval=$(date --date=$(date +"%m/%d/%Y") +%s)-1378008000
+export DATASET_MONITOR_TEXT="since 09/2013"
   mv DatasetSummary.txt DatasetSummaryAll.txt
   export DATASET_MONITOR_FILE=DatasetSummaryAll
-root -q -b -l $MONITOR_BASE/plotDatasets.C\("$1"\)
-
-$MONITOR_BASE/readJsonSnapshot.py T2* 2014*
+root -q -b -l $MONITOR_BASE/plotDatasets.C\("$average",$interval\)
+start=$(date --date=01/01/2014 +%s)
+end=$(date --date=$(date +"%m/%d/%Y") +%s)
+let interval=$(date --date=$(date +"%m/%d/%Y") +%s)-$(date --date=01/01/2014 +%s)
+$MONITOR_BASE/readJsonSnapshotAll.py T2* $start $end
 export DATASET_MONITOR_TEXT="Summary 2014"
   mv DatasetSummary.txt DatasetSummary2014.txt
   export DATASET_MONITOR_FILE=DatasetSummary2014
-root -q -b -l $MONITOR_BASE/plotDatasets.C\($1\)
+root -q -b -l $MONITOR_BASE/plotDatasets.C\("$average",$interval\)
 
 month=`date +%m`
 for period in $(seq 01 $month) 
@@ -72,12 +77,24 @@ do
   then 
     period=0$period 
   fi 
-  $MONITOR_BASE/readJsonSnapshot.py T2* 2014-$period*
+  case $period in
+    0[13578] | 1[02] ) 
+      lastday=31;;
+    0[469] | 11 )
+      lastday=30;;
+    02 )
+      lastday=28;;
+  esac
+  start=$(date --date=01/${period}/2014 +%s)
+  end=$(date --date=${period}/${lastday}/2014 +%s)
+  let interval=$(date --date=${period}/${lastday}/2014 +%s)-$(date --date=${period}/01/2014 +%s)
+  $MONITOR_BASE/readJsonSnapshotAll.py T2* $start $end
   export DATASET_MONITOR_TEXT="${period}/2014"
     mv DatasetSummary.txt DatasetSummary${period}-2014.txt
     export DATASET_MONITOR_FILE=DatasetSummary${period}-2014
-  root -q -b -l $MONITOR_BASE/plotDatasets.C\($1\)
+  root -q -b -l $MONITOR_BASE/plotDatasets.C\("$average",$interval\)
 done
+
 
 # move the results to the log file area ( to be updated to the monitor areas )
 mkdir -p    $MONITOR_DB

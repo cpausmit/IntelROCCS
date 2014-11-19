@@ -8,7 +8,7 @@
 #        Total data subscribed
 #        Data subscribed per site
 #---------------------------------------------------------------------------------------------------
-import sys, os, datetime, sqlite3
+import sys, os, datetime, sqlite3, ConfigParser
 from operator import itemgetter
 from email.MIMEText import MIMEText
 from email.MIMEMultipart import MIMEMultipart
@@ -19,12 +19,12 @@ import dbApi, phedexData, popDbData
 
 class dataDealerReport():
     def __init__(self):
-        phedexCache = os.environ['DATA_DEALER_PHEDEX_CACHE']
-        popDbCache = os.environ['DATA_DEALER_POP_DB_CACHE']
-        cacheDeadline = int(os.environ['DATA_DEALER_CACHE_DEADLINE'])
-        self.rankingsCachePath = os.environ['DATA_DEALER_RANKINGS_CACHE']
-        self.phedexData = phedexData.phedexData(phedexCache, cacheDeadline)
-        self.popDbData = popDbData.popDbData(popDbCache, cacheDeadline)
+        config = ConfigParser.RawConfigParser()
+        config.read('/usr/local/IntelROCCS/DataDealer/intelroccs.cfg')
+        self.rankingsCachePath = config.get('DataDealer', 'cache')
+        self.reportPath = config.get('DataDealer', 'report_path')
+        self.phedexData = phedexData.phedexData()
+        self.popDbData = popDbData.popDbData()
         self.dbApi = dbApi.dbApi()
         self.sites = sites.sites()
 
@@ -36,10 +36,10 @@ class dataDealerReport():
         # Send email
         fromEmail = ("Bjorn Barrefors", "bjorn.peter.barrefors@cern.ch")
         #toList = (["Bjorn Barrefors"], ["bjorn.peter.barrefors@cern.ch"])
-        #toList = (["Bjorn Barrefors"], ["barrefors@gmail.com"])
+        toList = (["Bjorn Barrefors"], ["barrefors@gmail.com"])
         #toList = (["Data Management Group"], ["hn-cms-dmDevelopment@cern.ch"])
-        toList = (["Bjorn Barrefors", "Brian Bockelman", "Maxim Goncharov", "Christoph Paus"],
-                  ["bjorn.peter.barrefors@cern.ch", "bbockelm@cse.unl.edu", "maxi@mit.edu", "paus@mit.edu"])
+        #toList = (["Bjorn Barrefors", "Brian Bockelman", "Maxim Goncharov", "Christoph Paus"],
+        #          ["bjorn.peter.barrefors@cern.ch", "bbockelm@cse.unl.edu", "maxi@mit.edu", "paus@mit.edu"])
 
         msg = MIMEMultipart()
         msg['Subject'] = title
@@ -169,9 +169,11 @@ class dataDealerReport():
 
         text += topTenTable.plainText()
 
-        fs = open('/local/cmsprod/IntelROCCS/DataDealer/Reports/data_dealer-%s.report' % (date.strftime('%Y%m%d')), 'w')
+        fs = open('%s/data_dealer-%s.report' % (self.reportPath, date.strftime('%Y%m%d')), 'w')
         fs.write(text)
         fs.close()
+
+        text = "http://t3serv001.mit.edu/~cmsprod/IntelROCCS/DataDealer/Logs/data_dealer-latest.log\n\nhttp://t3serv001.mit.edu/~cmsprod/IntelROCCS/DataDealer/Reports/data_dealer-latest.report"
 
         self.sendReport(title, text)
 
