@@ -207,38 +207,41 @@ class CentralManager:
        # or assign if they do not exist
        dataSetIds = {}
        connection = self.getDbConnection()
-       for datasetName in phedexSets.keys():
-           cursor = connection.cursor()
-           sql = "select Datasets.DatasetId,NFiles,Size from Datasets,DatasetProperties"
-           sql = sql + " where DatasetName='"+datasetName+"'"
-           sql = sql + " and Datasets.DatasetId=DatasetProperties.DatasetId"
-           try:
-               cursor.execute(sql)
-               results = cursor.fetchall()
-           except MySQLdb.Error,e:
-               print e[0],e[1]
-               print " -- FAILED extract mysql info: %s"%(sql)
-               connection.close()
-               sys.exit(1)
-           
-           dsetId = None
-           for row in results:
-               dsetId   = row[0]
-               trueNfiles = row[1]
-               trueSize = row[2]
-           dataSetIds[datasetName] = dsetId
-           phedexSets[datasetName].setTrueSize(trueSize)
-           phedexSets[datasetName].setTrueNfiles(trueNfiles)
-           phedexSets[datasetName].findIncomplete()
+       cursor = connection.cursor()
+       sql = "select DatasetName,Datasets.DatasetId,NFiles,Size from Datasets,DatasetProperties"
+       sql = sql + " where Datasets.DatasetId=DatasetProperties.DatasetId"
+       try:
+           cursor.execute(sql)
+           results = cursor.fetchall()
+       except MySQLdb.Error,e:
+           print e[0],e[1]
+           print " -- FAILED extract mysql info: %s"%(sql)
+           connection.close()
+           sys.exit(1)
        connection.close()
+       for row in results:
+           dsetName = row[0]
+           dsetId   =   int(row[1])
+           trueNfiles = int(row[2])
+           trueSize =   float(row[3])
+           if dsetName in phedexSets:
+               dataSetIds[dsetName] = dsetId
+               phedexSets[dsetName].setTrueSize(trueSize)
+               phedexSets[dsetName].setTrueNfiles(trueNfiles)
+
+
+       for datasetName in phedexSets:
+           dsetId = None
+           if datasetName not in dataSetIds:
+               print  " -- WARNING -- not in the database " + datasetName
+               dataSetIds[datasetName] = None
+           phedexSets[datasetName].findIncomplete()
 
        missing = 0
-       for datasetName in phedexSets.keys():
+       for datasetName in phedexSets:
            onSites = phedexSets[datasetName].locatedOnSites()
            if len(onSites) < 1:
                continue
-           if dataSetIds[datasetName] is None:
-               print " -- WARNING -- not in the database " + datasetName
 
            rank =       phedexSets[datasetName].getGlobalRank()
            trueSize =   phedexSets[datasetName].getTrueSize()

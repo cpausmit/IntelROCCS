@@ -221,6 +221,7 @@ class PhedexDataHandler:
 
     def printRunawaySets(self):
         siteSizes = {}
+        siteSets = {}
         for dset in self.phedexDatasets:
             if dset not in self.otherDatasets:
                 continue
@@ -231,7 +232,9 @@ class PhedexDataHandler:
                 size  = dataset.size(site)
                 if site not in siteSizes:
                     siteSizes[site] = 0
+                    siteSets[site] = 0
                 siteSizes[site] = siteSizes[site] + size/1000
+                siteSets[site] = siteSets[site] + 1
                 if site not in self.runAwayGroups:
                     self.runAwayGroups[site] = [group]
                 else:
@@ -242,7 +245,7 @@ class PhedexDataHandler:
             return
         print " !! WARNING !! - those sites have datasets in wrong groups"
         for site in sorted(siteSizes):
-            print ' %6.2f TB'%(siteSizes[site]) + ": " + site
+            print ' %3d %6.2f TB'%(siteSets[site],siteSizes[site]) + ": " + site
 
 
 

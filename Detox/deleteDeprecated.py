@@ -32,9 +32,12 @@ def readDeprecated():
     inputFile = open(os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS'] + '/'
                      + filename, 'r')
     for line in inputFile.xreadlines():
-        line = line.rstrip()
-        deprecated[line] = 1
+        name,status = line.split()
+        deprecated[name] = 1
     inputFile.close()    
+
+    if '/METFwd/Run2010B-Nov4ReReco_v1/RECO' in deprecated.keys():
+        print "found it"
 
 def readMatchPhedex():
     filename = os.environ['DETOX_PHEDEX_CACHE']
@@ -42,13 +45,14 @@ def readMatchPhedex():
                      + filename, "r")
 
     for line in inputFile.xreadlines():
+        line = line.rstrip()
         items = line.split()
         datasetName = items[0]
         group = items[1]
-        if group != 'AnalysisOps':
-            continue
 
         if datasetName not in deprecated:
+            continue
+        if group != 'AnalysisOps':
             continue
 
         size = float(items[3])

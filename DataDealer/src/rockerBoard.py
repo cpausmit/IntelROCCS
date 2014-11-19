@@ -11,6 +11,10 @@ class rockerBoard():
         config.read('/usr/local/IntelROCCS/DataDealer/intelroccs.cfg')
         self.rankingsCachePath = config.get('DataDealer', 'cache')
         self.budget = config.getint('DataDealer', 'budget')
+        self.budget = config.getint('DataDealer', 'lower_budget')
+        self.rankThreshold = config.getint('DataDealer', 'rank_threshold')
+        self.limit = config.getint('DataDealer', 'limit')
+        self.upperLimit = config.getint('DataDealer', 'upper_limit')
         self.phedexData = phedexData.phedexData()
         self.popDbData = popDbData.popDbData()
         self.dbApi = dbApi.dbApi()
@@ -84,14 +88,13 @@ class rockerBoard():
             siteRankings[siteName] = rank
         return siteRankings
 
-    def getNewReplicas(self, datasetRankings, siteRankings, systemLeft):
+    def getNewReplicas(self, datasetRankings, siteRankings, totalQuota, totalUsed):
         subscriptions = dict()
         sizeSubscribedGb = 0
-        print "Available space left until system 80%% full: %dGB" % (systemLeft)
         maxRank = max(siteRankings.iteritems(), key=operator.itemgetter(1))[1]
         for siteName, rank in siteRankings.items():
             siteRankings[siteName] = maxRank - rank
-        while (sizeSubscribedGb < self.budget and datasetRankings and sizeSubscribedGb < systemLeft):
+        while (datasetRankings and (sizeSubscribedGb < self.budget) and (sizeSubscribedGb < (totalQuota*self.limit - totalUsed))) or (datasetRankings and maxRank >= self.rankThreshold and (sizeSubscribedGb < self.lower_budget) and sizeSubscribedGb < (totalQuota*self.upper_limit - totalUsed)):
             datasetName = max(datasetRankings.iteritems(), key=operator.itemgetter(1))[0]
             datasetSizeGb = self.phedexData.getDatasetSize(datasetName)
             if sizeSubscribedGb + datasetSizeGb > self.budget:
@@ -121,6 +124,5 @@ class rockerBoard():
             totalQuota += data[0][0]*10**3
             used = self.phedexData.getSiteStorage(siteName)
             totalUsed += used
-        systemLeft = totalQuota*0.8 - totalUsed
-        subscriptions = self.getNewReplicas(datasetRankings, siteRankings, systemLeft)
+        subscriptions = self.getNewReplicas(datasetRankings, siteRankings, totalQuota, totalUsed)
         return subscriptions
