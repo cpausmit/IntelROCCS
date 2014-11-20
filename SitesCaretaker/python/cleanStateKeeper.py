@@ -36,6 +36,7 @@ class CleanStateKeeper:
             lastpart = fileName.split('/')[-1]
             siteFrom = lastpart.split('-')[0]
             siteTo   = lastpart.split('-')[1]
+
             if siteFrom not in self.deletionFiles:
                 self.deletionFiles[siteFrom] = []
             self.deletionFiles[siteFrom].append(fileName)
@@ -102,7 +103,7 @@ class CleanStateKeeper:
     def processPending(self):
         for siteFrom in self.siteDeletions:
             daysPassed = (self.dateNow - self.startTranferTime[siteFrom]).days
-            printedOnce = False
+            printedLine = ""
 
             datasets = self.siteDeletions[siteFrom]
             transfd = 0
@@ -116,9 +117,10 @@ class CleanStateKeeper:
                         self.sitePendings[siteTo] = []
                     self.sitePendings[siteTo].append(dset)
                     if (daysPassed) > 2:
-                        if not printedOnce:
-                            print "\n " + siteFrom + ' --> ' + siteTo + " might be stuck !!"
-                            printedOnce = True
+                        newLine = " !! " + siteFrom + ' --> ' + siteTo + " might be stuck !!"
+                        if newLine != printedLine :
+                            printedLine = newLine
+                            print "\n " + printedLine + "\n"
                         print "  " + dset
 
             allSets = len(datasets)
