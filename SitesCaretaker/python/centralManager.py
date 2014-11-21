@@ -125,8 +125,11 @@ class CentralManager:
                     continue
                 if site == 'T2_TH_CUNSTDA':
                     continue
+                if site == 'T1_US_FNAL_Disk':
+                    continue
                 sizeCanTake = (self.siteSpace[site][0]*0.9 - self.siteSpace[site][1])*1000
                 addedSize = 0
+                addedSets = 0
 
                 for dset in datasets.keys():
                     #part of the datasets might be already in pending request
@@ -139,7 +142,8 @@ class CentralManager:
                         continue
 
                     addedSize = addedSize + datasets[dset][1]
-                    if addedSize > sizeCanTake or addedSize > 25000:
+                    datasets[dset][1]
+                    if (addedSize > sizeCanTake or addedSize > 40000) and addedSets > 0:
                         addedSize = addedSize - datasets[dset][1]
                         break
                     if site not in setsToSites:
@@ -147,6 +151,7 @@ class CentralManager:
                     else:
                         setsToSites[site].append(dset)
                     del datasets[dset]
+                    addedSets = addedSets + 1
                 print " - site " + site + " can take " + str(addedSize)
                 siteToSites[siteName].append(site)
                 (quota,totalSize,lastCopy) = self.siteSpace[site]
@@ -244,12 +249,14 @@ class CentralManager:
     def localCompare(self,a,b):
         sa = self.siteSpace[a]
         sb = self.siteSpace[b]
-        lastCopyPercA = sa[2]/sa[0]
-        lastCopyPercB = sb[2]/sb[0]
-        if lastCopyPercA >= lastCopyPercB:
-            return 1
-        else:
+        #lastCopyPercA = sa[2]/sa[0]
+        #lastCopyPercB = sb[2]/sb[0]
+        spaceFreeA = sa[0]-sa[1]
+        spaceFreeB = sb[0]-sb[1]
+        if spaceFreeA >= spaceFreeB:
             return -1
+        else:
+            return 1
 
     def printResults(self):
         for site in sorted(self.allSites):
