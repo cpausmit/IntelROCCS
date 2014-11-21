@@ -36,10 +36,12 @@ def getJsonFile(requestType,start,debug=False):
     fileName = os.environ.get('MONITOR_DB') + '/datasets/' + fileName
 
     # test whether the file exists and it was just created
-    if os.path.exists(fileName) and abs(os.path.getmtime(fileName) - time.time()) < 24*60*60:
+    if os.path.exists(fileName) and abs(os.path.getmtime(fileName) - time.time()) < 24*60*60 and not(os.stat(fileName).st_size==0):
         sys.stderr.write("getJsonFile(%s,%i): file already exists!\n"%(requestType,start))
         return
     else:        # check failed so need to go to the source
+        if os.path.exists(fileName):
+            os.remove(fileName) # in case the last download was corrupted and wget can't overwrite it
         cmd = 'wget --no-check-certificate -O ' + fileName + \
               ' https://cmsweb.cern.ch/phedex/datasvc/json/prod/%s?create_since=%i'%(requestType,int(start))
         print ' CMD: ' + cmd
@@ -49,10 +51,17 @@ def getJsonFile(requestType,start,debug=False):
 
 
 def parseRequestJson(fileName,start,end,isXfer,datasetHistory,datasetPattern):
-    print fileName
+    print "Parsing ",fileName
     # isXfer = True if xfer history, False if deletions
     with open(fileName) as dataFile:
-        data = json.load(dataFile)
+        try:
+            data = json.load(dataFile)
+        except ValueError:
+            # json is not loadable
+            if isXfer:
+                getJsonFile("xfer",start)
+            else:
+                getJsonFile("del",start)
     requests = data["phedex"]["request"]
     if isXfer:
         for request in requests:
@@ -60,7 +69,7 @@ def parseRequestJson(fileName,start,end,isXfer,datasetHistory,datasetPattern):
                 for dataset in request["data"]["dbs"]["dataset"]: 
                     datasetName = dataset["name"]
                     if not re.match(datasetPattern,datasetName):
-                        #not AOD or AODSIM
+                        #not AOD or AODSIM or whatever
                         continue
                     siteName = node["name"]
                     if not re.search(r'T2.*',siteName):

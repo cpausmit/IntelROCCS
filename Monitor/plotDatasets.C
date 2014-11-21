@@ -22,7 +22,7 @@ using namespace std;
 void plotDatasetUsage();
 
 //--------------------------------------------------------------------------------------------------
-void plotDatasets(int type=0, int interval=1)
+void plotDatasets(int type=0, float interval=1)
 {
   TString  styleMacro = gSystem->Getenv("MIT_ROOT_STYLE");
   long int rc = gROOT->LoadMacro(styleMacro+"+");
@@ -32,7 +32,7 @@ void plotDatasets(int type=0, int interval=1)
 }
 
 //--------------------------------------------------------------------------------------------------
-void plotDatasetUsage(int type=0, int interval=1)
+void plotDatasetUsage(int type=0, float interval=1.)
 {
   TString text        = gSystem->Getenv("DATASET_MONITOR_TEXT");
   TString fileName    = gSystem->Getenv("DATASET_MONITOR_FILE");
@@ -59,21 +59,21 @@ void plotDatasetUsage(int type=0, int interval=1)
 
   // book our histogram
   Int_t nBins = int(xMax-xMin);
-  if (interval!=1) xMax = xMax/14.; // divide by approximate number of months
+  if (interval!=1.) xMax = xMax/14.; // divide by approximate number of months
   Int_t nBinsy = 20;
   TH1D *h;
   TH1D *h2 ; // h is used for plotting, h2 is for computing some stuff
-  if (interval==1) h = new TH1D("dataUsage","Data Usage",nBins,xMin-0.5,xMax+0.5);
+  if (interval==1.) h = new TH1D("dataUsage","Data Usage",nBins,xMin-0.5,xMax+0.5);
   else h = new TH1D("dataUsage","Data Usage",nBins+1,xMin-(0.5+1)/14.,xMax+0.5/14.);
-  if (interval==1) h2 = new TH1D("dataUsage2","Data Usage",nBins,xMin-0.5,xMax+0.5);
+  if (interval==1.) h2 = new TH1D("dataUsage2","Data Usage",nBins,xMin-0.5,xMax+0.5);
   else h2 = new TH1D("dataUsage2","Data Usage",nBins,xMin-(0.5)/14.,xMax+0.5/14.);
   MitRootStyle::InitHist(h,"","",kBlack);
   //TString titles = TString("; Accesses ") + text + TString(";Data Size [TB]");
   //if(interval!=1) titles = TString("; Accesses/day ") + TString(";Data Size [TB]");
   TString titles = TString("; Accesses ") + text + TString("; Fraction of total data volume");
-  if(interval!=1) titles = TString("; Accesses/month ") + TString("; Fraction of total data volume");
+  if(interval!=1.) titles = TString("; Accesses/month ") + TString("; Fraction of total data volume");
   h->SetTitle(titles.Data());
-  if(interval!=1)  interval=interval/(86400*30);
+  if(interval!=1.)  interval=interval/(86400*30);
   // Loop over the file
   //-------------------
   while (1) {
@@ -90,7 +90,7 @@ void plotDatasetUsage(int type=0, int interval=1)
       // do we want nSites or nSitesAv
       // show what we are reading
       if (nLines < 5)
-        printf(" nSitesAv=%.3f  nAccesses=%d  nFiles=%d  size=%8f\n",nSitesAv, nAccesses, nFiles, size);
+        printf(" nSitesAv=%.3f  nAccesses=%d  nFiles=%d  size=%8f interval=%.3f\n",nSitesAv, nAccesses, nFiles, size,interval);
     } else {
       // show what we are reading
       if (nLines < 5)
@@ -100,10 +100,10 @@ void plotDatasetUsage(int type=0, int interval=1)
     
     if (type==1) {
       value = double(nAccesses)/double(nFiles*nSitesAv*interval); 
-      weight = double(nSitesAv)*size/1024.;
+      weight = double(nSitesAv)*size/1000.;
     } else {  
       value = double(nAccesses)/double(nFiles*nSites*interval); 
-      weight = double(nSites)*size/1024.;
+      weight = double(nSites)*size/1000.;
     }
 
     // treat the cases of few accesses:
@@ -129,8 +129,8 @@ void plotDatasetUsage(int type=0, int interval=1)
     }
 
     // keep track of the total size
-    if (type) totalSize += double(nSitesAv)*size/1024.;
-    else totalSize += double(nSites)*size/1024.;
+    if (type) totalSize += double(nSitesAv)*size/1000.;
+    else totalSize += double(nSites)*size/1000.;
 
     // count the number of lines
     nLines++;
@@ -139,7 +139,7 @@ void plotDatasetUsage(int type=0, int interval=1)
 
   printf(" \n");
   printf(" Found %d entries.\n",nLines);
-  printf(" Found %.3f [PB] total volume.\n",totalSize/1024.);
+  printf(" Found %.3f [PB] total volume.\n",totalSize/1000.);
   printf(" \n");
 
   // Open a canvas
@@ -148,14 +148,16 @@ void plotDatasetUsage(int type=0, int interval=1)
   cv->Draw();
   Double_t integral=h->Integral();
   h->Scale(1/integral);
-  h->SetMaximum(0.3); // for easy comparison between plots
+  // h->SetMaximum(0.3); // for easy comparison between plots
+  Double_t maxy = h->GetMaximum();
+  h->SetMaximum(maxy*1.1); 
   h->Draw("hist");
 
   MitRootStyle::OverlayFrame();
   MitRootStyle::AddText("Overflow in last bin. nAccesses=0 in first bin.");
   TString integralText = "Data managed: ";
   char buffer[32];
-  sprintf(buffer,"%.3f PB",totalSize/1024.);
+  sprintf(buffer,"%.3f PB",totalSize/1000.);
   integralText+=buffer;
   TText *plotText = new TText(.4,.75,integralText.Data());
   plotText->SetTextSize(0.04);

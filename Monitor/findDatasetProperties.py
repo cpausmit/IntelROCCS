@@ -7,19 +7,6 @@
 #---------------------------------------------------------------------------------------------------
 import os, sys, re, subprocess, MySQLdb
 
-short = False
-if   len(sys.argv)<2:
-    print ' not enough arguments. EXIT!\n'
-    sys.exit(1)
-elif len(sys.argv)==2:
-    dataset = str(sys.argv[1])
-elif len(sys.argv)==3:
-    dataset = str(sys.argv[1])
-    short = True
-else:
-    print ' too many arguments. EXIT!\n'
-    sys.exit(2)
-
 #===================================================================================================
 #  H E L P E R S
 #===================================================================================================
@@ -35,25 +22,29 @@ def getDbCursor():
     return db.cursor()
 
 def getDatasetId(dataset):
-    id = -1                          # initialize the id (-1 -> invalid)
+    dbId = -1                          # initialize the id (-1 -> invalid)
     # get access to the database
     cursor = getDbCursor()
-    sql = "select * from Datasets where DatasetName=\'" + dataset + "\'"
+    sql = "select * from Datasets where DatasetName='" + dataset + "'"
     # go ahead and try
+    print sql
     try:
         cursor.execute(sql)
         results = cursor.fetchall()
+        # print results
         for row in results:
-            id     = row[0]
+            dbId     = row[0]
     except:
+        sys.stderr.write("Could not get dataset ID %s\n"%(dataset))
         pass
-    return id
+    return dbId
 
 def addDataset(dataset):
     # get access to the database
     cursor = getDbCursor()
     sql = "insert into Datasets (DatasetName) values (\'" + dataset + "\')"
-    cursor.execute(sql)
+    print sql
+    # sys.exit(-1)
     try:
         # Execute the SQL command
         print '        ' + sql
@@ -63,12 +54,17 @@ def addDataset(dataset):
         return False
     return True
 
-def addDatasetProperties(dataset,nFiles,sizeGb):
+def addDatasetProperties(dbId,nFiles,sizeGb):
     # get access to the database
     cursor = getDbCursor()
     sql = "insert into DatasetProperties values " + \
-          "((select DatasetId from Datasets where DatasetName='" + dataset + "' LIMIT 1),%d,%f)" \
-          %(nFiles,sizeGb) #added LIMIT 1 because there are duplicate entries in Datasets
+          "(%d,%d,%f)" \
+          %(dbId,nFiles,sizeGb) #added LIMIT 1 because there are duplicate entries in Datasets
+    # sql = "insert into DatasetProperties values " + \
+    #       "((select DatasetId from Datasets where DatasetName='" + dataset + "' LIMIT 1),%d,%f)" \
+    #       %(nFiles,sizeGb) #added LIMIT 1 because there are duplicate entries in Datasets
+    print sql
+    # sys.exit(-1)
     try:
         # Execute the SQL command
         print '        ' + sql
@@ -83,35 +79,38 @@ def checkDatabase(dataset):
     nFiles = -1
     sizeGb = 0.
     # get access to the database
-    id = getDatasetId(dataset)
-    if id==-1:
+    dbId = getDatasetId(dataset)
+    if dbId==-1:
+        print dataset,dbId
         if (addDataset(dataset)):
             print " Added the dataset %s successfully."%(dataset)
         else:
             sys.stderr.write(" Error: Dataset %s addition failed.\n"%(dataset))
             sys.exit(1)
-        id = getDatasetId(dataset)
+        dbId = getDatasetId(dataset)
 
     # make sure we have a valid id to continue
-    if id==-1:
+    if dbId==-1:
         sys.stderr.write("Error: unable to assign proper Id to dataset (%s). Stopping here.\n"%(dataset))
         sys.exit(3)
 
     # define sql
     cursor = getDbCursor()
-    sql = "select * from DatasetProperties where DatasetId=" + str(id)
+    sql = "select * from DatasetProperties where DatasetId=" + str(dbId)
+    print sql
     # go ahead and try
     try:
         cursor.execute(sql)
         results = cursor.fetchall()
+        # print results
         for row in results:
-            id     = row[0]
+            dbId     = row[0]
             nFiles = row[1]
             sizeGb = row[2]
         #print " Properties -- Id:  %d  NFiles:  %d  Size:  %f.2"%(id,nFiles,sizeGb)
     except:
         print ' Info (%s) -- dataset properties not in database.'%(sql)
-    return nFiles,sizeGb
+    return nFiles,sizeGb,dbId
 
 def convertSizeToGb(sizeTxt):
 
@@ -141,55 +140,57 @@ def convertSizeToGb(sizeTxt):
 #===================================================================================================
 #  M A I N
 #===================================================================================================
-debug = 0
 
-# first make sure not to analyze any weird data (require /*/*/* name pattern)
-if not re.search(r'/.*/.*/.*',dataset,re.S):
-    print ' Error: Dataset does NOT match expected pattern'
-    sys.exit(0)
+def findDatasetProperties(dataset,short=False):
 
-# test whether we know this dataset already
-(nFiles,sizeGb) = checkDatabase(dataset)
+    debug = 0
 
-# check failed so need to go to the source
-if nFiles<0:
-    # use das client to find the present size of the dataset
-    cmd = os.environ.get('MONITOR_BASE') \
-        + '/das_client.py --format=plain --limit=0 --query="file dataset=' \
-        + dataset + ' | sum(file.size), count(file.name)" | sort -u'
-    # if debug>-1:
-    sys.stderr.write(' CMD: ' + cmd+"\n")
-    nFiles = 0
-    sizeGb = 0.
-    try:
-        for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
-            line = line[:-1]
-            if   re.search('file.name',line):
-                if debug>0:
-                    print ' count ' + line
-                nFiles = int(line.split("=")[1])
-            elif re.search('file.size',line):
-                if debug>0:
-                    print ' size  ' + line
-                size = line.split("=")[1]
-                sizeGb = convertSizeToGb(size)
-    except:
-        print ' Error: output data not compliant.'
+    # first make sure not to analyze any weird data (require /*/*/* name pattern)
+    if not re.search(r'/.*/.*/.*',dataset,re.S):
+        sys.stderr.write(' Error: Dataset does NOT match expected pattern\n')
         sys.exit(0)
 
-    # add it to our database
-    addDatasetProperties(dataset,nFiles,sizeGb)
+    # test whether we know this dataset already
+    (nFiles,sizeGb,dbId) = checkDatabase(dataset)
 
-# some derived quantities
-averageSizeGb = 0
-if nFiles>0:
-    averageSizeGb = sizeGb/nFiles
+    # check failed so need to go to the source
+    if nFiles<0:
+        # use das client to find the present size of the dataset
+        cmd = os.environ.get('MONITOR_BASE') \
+            + '/das_client.py --format=plain --limit=0 --query="file dataset=' \
+            + dataset + ' | sum(file.size), count(file.name)" | sort -u'
+        # if debug>-1:
+        sys.stdout.write(' CMD: ' + cmd+"\n")
+        nFiles = 0
+        sizeGb = 0.
+        try:
+            for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
+                line = line[:-1]
+                if   re.search('file.name',line):
+                    if debug>0:
+                        print ' count ' + line
+                    nFiles = int(line.split("=")[1])
+                elif re.search('file.size',line):
+                    if debug>0:
+                        print ' size  ' + line
+                    size = line.split("=")[1]
+                    sizeGb = convertSizeToGb(size)
+        except:
+            sys.stderr.write(' Error: output data not compliant.\n')
+            sys.exit(0)
 
-# give us the print
-if short:
-    print '%d %.1f %.3f %s'%(nFiles,sizeGb,averageSizeGb,dataset)
-else:
-    print ' nFiles:%d  size:%.1f GB [average file size:%.3f GB] -- dataset:%s'\
-          %(nFiles,sizeGb,averageSizeGb,dataset)
+        # add it to our database
+        addDatasetProperties(dbId,nFiles,sizeGb)
 
-sys.exit(0)
+    # some derived quantities
+    averageSizeGb = 0
+    if nFiles>0:
+        averageSizeGb = sizeGb/nFiles
+
+    # give us the print
+    # if short:
+    #     print '%d %.1f %.3f %s'%(nFiles,sizeGb,averageSizeGb,dataset)
+    # else:
+    #     print ' nFiles:%d  size:%.1f GB [average file size:%.3f GB] -- dataset:%s'\
+    #           %(nFiles,sizeGb,averageSizeGb,dataset)
+    return nFiles,sizeGb,averageSizeGb
