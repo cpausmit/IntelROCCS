@@ -9,6 +9,7 @@ import os, sys, re, glob, subprocess, time, json, pprint, MySQLdb
 import datasetProperties
 from   xml.etree import ElementTree
 from findDatasetHistoryAll import *
+import findDatasetProperties as fDP
 
 datasetPattern=r'/.*/.*/.*AOD.*'
 # datasetPattern=r'(?!/.*/.*/USER.*)' # exclude USER since das_client doesn't return useful info
@@ -144,11 +145,11 @@ def convertSizeToGb(sizeTxt):
     units   = sizeTxt[-2:]
     # decide what to do for the given unit
     if   units == 'MB':
-        sizeGb = sizeGb/1024.
+        sizeGb = sizeGb/1000.
     elif units == 'GB':
         pass
     elif units == 'TB':
-        sizeGb = sizeGb*1024.
+        sizeGb = sizeGb*1000.
     else:
         print ' ERROR - Could not identify size. EXIT!'
         sys.exit(0)
@@ -160,22 +161,24 @@ def findDatasetSize(dataset,debug=0):
     # find the file size of a given data set (dataset) and return the number of files in the dataset
     # and its size in GB
 
-    cmd = os.environ.get('MONITOR_BASE') + '/findDatasetProperties.py ' + dataset + ' short | tail -1'
-    # if debug>-1:
-    #     print ' CMD: ' + cmd
-    nFiles = 0
-    sizeGb = 0.
-    for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
-        line = line[:-1]
-        g = line.split()
-        try:
-            nFiles = int(g[0])
-            sizeGb = float(g[1])
-        except:
-            # when the decoding fails either there was an extra line or no information found
-            # which means the counts are zero
-            print ' WARNING - decoding failed: %d %f.3 -- %s'%(nFiles,sizeGb,dataset)
-            pass
+    # cmd = os.environ.get('MONITOR_BASE') + '/findDatasetProperties.py ' + dataset + ' short | tail -1'
+    # # if debug>-1:
+    # #     print ' CMD: ' + cmd
+    # nFiles = 0
+    # sizeGb = 0.
+    # for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
+    #     line = line[:-1]
+    #     g = line.split()
+    #     try:
+    #         nFiles = int(g[0])
+    #         sizeGb = float(g[1])
+    #     except:
+    #         # when the decoding fails either there was an extra line or no information found
+    #         # which means the counts are zero
+    #         print ' WARNING - decoding failed: %d %f.3 -- %s'%(nFiles,sizeGb,dataset)
+    #         pass
+    # print "fDP.findDatasetProperties(%s)"%(dataset)
+    nFiles,sizeGb,averageSizeGb = fDP.findDatasetProperties(dataset,False)
     return nFiles, sizeGb
 
 def findDatasetCreationTime(dataset,fileName,debug=0):
@@ -238,6 +241,7 @@ def readDatasetProperties():
             nFiles  = row[1]
             sizeGb  = row[2]
             # add to our memory
+            # print dataset,nFiles,sizeGb
             fileNumbers[dataset] = int(nFiles)
             sizesGb[dataset]     = float(sizeGb)
     except:
@@ -433,7 +437,7 @@ for year in range(starttmp[0],endtmp[0]+1):
     for month in range(1,13):
         if year==starttmp[0] and month<starttmp[1]:
             continue
-        elif year==endtmp[0] and month>=endtmp[1]:
+        elif year==endtmp[0] and month>endtmp[1]:
             continue
         else:
             dates.append("%i-%02i-??"%(year,month))
@@ -454,6 +458,29 @@ print " Logfiles in:  %s"%(workDirectory)
 print " Site pattern: %s"%(site)
 if sizeAnalysis:
     print "\n Size Analysis is on. Please be patient, this might take a while!\n"
+
+
+# datasetsOnSites[k]=v, where k is a dataset and v is a set of sites
+# this can probably be done smarter and combined with nSites computation
+datasetsOnSites={}
+phedexSize=0
+for line in phedexFile:
+    l = line.split()
+    if not l[1]=="AnalysisOps":
+        continue
+    datasetName=l[0]
+    siteName=l[7]
+    if not re.match(siterx,siteName):
+        continue
+    if not re.search(datasetPattern,datasetName):
+        continue
+    if datasetName in datasetsOnSites:
+        datasetsOnSites[datasetName].add(siteName)
+    else:
+        datasetsOnSites[datasetName] = set([siteName])
+    phedexSize+=float(l[3])
+print "Phedex Size: ",phedexSize
+
 
 for fileName in sorted(files):
     if debug>0:
@@ -537,9 +564,14 @@ sizeTotalGb = 0.
 nFilesTotal = 0
 findDatasetHistoryAll(start)
 counter=0
-for key in nAllAccessed:
+# for key in nAllAccessed:
+for key in datasetsOnSites:
     counter+=1
-    value = nAllAccessed[key]
+    try:
+        value = nAllAccessed[key]
+    except KeyError:
+        sys.stderr.write("WARNING: %s is on a site but not accessed in interval"%(key))
+        continue
     nAllAccess += value
     nAll += 1
     if sizeAnalysis:
@@ -570,7 +602,7 @@ print " "
 print " - number of datasets:         %d"%(nAll)
 print " - number of accesses:         %d"%(nAllAccess)
 if sizeAnalysis:
-    print " - data volume [TB]:           %.3f"%(sizeTotalGb/1024.)
+    print " - data volume [TB]:           %.3f"%(sizeTotalGb/1000.)
 
 # careful watch cases where no datasets were found
 if nAll>0:
@@ -591,22 +623,6 @@ for site in sorted(nSiteAccess):
     # count the number of sites carrying a given dataset
     nSites = addSites(nSites,nSiteAccessEntry,debug)
 
-# datasetsOnSites[k]=v, where k is a dataset and v is a set of sites
-# this can probably be done smarter and combined with nSites computation
-datasetsOnSites={}
-for line in phedexFile:
-    l = line.split()
-    datasetName=l[0]
-    siteName=l[7]
-    if not re.match(siterx,siteName):
-        continue
-    if not re.search(datasetPattern,datasetName):
-        continue
-    if datasetName in datasetsOnSites:
-        datasetsOnSites[datasetName].add(siteName)
-    else:
-        datasetsOnSites[datasetName] = set([siteName])
-
 # load creation time cache
 creationTimes=readDatasetCreationTimes(creationTimeCache)
 
@@ -621,7 +637,8 @@ nAverageSites = calculateAverageNumberOfSites(siterx,datasetsOnSites,start,end,c
 fileName = 'DatasetSummary.txt'
 print ' Output file: ' + fileName
 totalAccesses = open(fileName,'w')
-for dataset in nAllAccessed:
+# for dataset in nAllAccessed:
+for dataset in datasetsOnSites:
     nSite = nSites[dataset]
     if dataset in nAverageSites:
         nAverageSite = float(nAverageSites[dataset])
@@ -630,12 +647,19 @@ for dataset in nAllAccessed:
         # cmd = os.environ.get('MONITOR_BASE') + '/findDatasetHistory.py ' + dataset
         # os.system(cmd)
         nAverageSite = 0
-    nAccess = nAllAccessed[dataset]
-    nFiles = fileNumbers[dataset]
-    sizeGb = sizesGb[dataset]
+    try:
+        nAccess = nAllAccessed[dataset]
+        nFiles = fileNumbers[dataset]
+        sizeGb = sizesGb[dataset]
+        # value = nAllAccessed[key]
+    except KeyError:
+        # sys.stderr.write("WARNING: %s is on a site but not accessed in interval"%(key))
+        continue
     #if nAccess == 0:
     #    print " NOT USED - %d %d %d %f"%(nSite,nAccess,nFiles,sizeGb)
-    totalAccesses.write("%d %f %d %d %f %s\n"%(nSite,nAverageSite,nAccess,nFiles,sizeGb,dataset))
+    if nAverageSite!=0:
+        # if the dataset was not on any sites during the interval, it wasn't accessed, so don't print it
+        totalAccesses.write("%d %f %d %d %f %s\n"%(nSite,nAverageSite,nAccess,nFiles,sizeGb,dataset))
     if nSite>42:
         print " WARNING - nSites suspicious: %3d %s"%(nSite,dataset)
     if nAverageSite>42:
