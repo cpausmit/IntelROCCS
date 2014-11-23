@@ -14,7 +14,7 @@ class rockerBoard():
         self.budget = config.getint('DataDealer', 'lower_budget')
         self.rankThreshold = config.getint('DataDealer', 'rank_threshold')
         self.limit = config.getfloat('DataDealer', 'limit')
-        self.upperLimit = config.getint('DataDealer', 'upper_limit')
+        self.upperLimit = config.getfloat('DataDealer', 'upper_limit')
         self.phedexData = phedexData.phedexData()
         self.popDbData = popDbData.popDbData()
         self.dbApi = dbApi.dbApi()
