@@ -39,11 +39,12 @@ do
     rm $oldLogFile
 
     echo " "                                                           >> $logFile
-    echo " data dealer started -- $tag (cycle wait ${loopInterval}h)" >> $logFile
+    echo " data dealer started -- $tag (cycle wait ${loopInterval}h)"  >> $logFile
     echo " "                                                           >> $logFile
     echo "   --> "`date`                                               >> $logFile
     echo " "                                                           >> $logFile
     stdbuf -o0 -e0 /usr/local/IntelROCCS/DataDealer/dataDealer.py      >> $logFile 2>&1
+    stdbuf -o0 -e0 /usr/local/IntelROCCS/DataDealer/datasetTrend.py    >> $logFile 2>&1
 
     # ensure that the log and report information is updated
     rsync -Cavz --delete /local/cmsprod/IntelROCCS/DataDealer /home/cmsprod/public_html/IntelROCCS >& /dev/null
