@@ -56,7 +56,7 @@ cp $api_src/* $install_path
 cp $data_dealer_src/../data_dealerd $install_path
 cp $data_dealer_src/../data_dealer.cfg $install_path/intelroccs.cfg
 cp $data_dealer_src/../html/* /local/cmsprod/IntelROCCS/DataDealer/Demo
-chown ${INTELROCCS_GROUP}:${INTELROCCS_USER} /local/cmsprod/IntelROCCS/DataDealer/Demo/*
+chown ${INTELROCCS_USER}:${INTELROCCS_GROUP} /local/cmsprod/IntelROCCS/DataDealer/Demo/*
 
 if [ $daemon -eq 1 ]
 then
