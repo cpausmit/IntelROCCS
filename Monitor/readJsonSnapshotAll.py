@@ -11,8 +11,8 @@ from   xml.etree import ElementTree
 from findDatasetHistoryAll import *
 import findDatasetProperties as fDP
 
-datasetPattern=r'/.*/.*/.*AOD.*'
-# datasetPattern=r'(?!/.*/.*/USER.*)' # exclude USER since das_client doesn't return useful info
+# datasetPattern=r'/.*/.*/.*AOD.*'
+datasetPattern=r'(?!/.*/.*/USER.*)' # exclude USER since das_client doesn't return useful info
 # datasetPattern='/wprime_oppsign_mu_M2200_g1_ptl1000to1d5_8TeV/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM'
 
 if not os.environ.get('DETOX_DB') or not os.environ.get('MONITOR_DB'):
@@ -90,7 +90,7 @@ def processFile(fileName,debug=0):
         # filter out non-AOD data
         if not re.match(datasetPattern,key):
             if debug>0:
-                print ' WARNING -- rejecting non *AOD* type data: ' + key
+                print ' WARNING -- rejecting *USER* type data: ' + key
             nSkipped += 1
             continue
 
@@ -336,9 +336,9 @@ def calculateAverageNumberOfSites(sitePattern,datasetsOnSites,start,end,cTimes={
                 if datasetName in cTimes:
                     cTime = cTimes[datasetName]
                 else:
-                    cTime = start
-                    # cTime = findDatasetCreationTime(datasetName,creationTimeCache)
-                    # cTimes[datasetName]=cTime
+                    # cTime = start
+                    cTime = findDatasetCreationTime(datasetName,creationTimeCache)
+                    cTimes[datasetName]=cTime
                 nSites[datasetName]+=(end - max(cTime,start))/interval
             elif len(datasetMovement[datasetName][siteName][1])==0:
                 # it was never deleted...
@@ -347,9 +347,9 @@ def calculateAverageNumberOfSites(sitePattern,datasetsOnSites,start,end,cTimes={
                     if datasetName in cTimes:
                         cTime = cTimes[datasetName]
                     else:
-                        cTime = start
-                        # cTime = findDatasetCreationTime(datasetName,creationTimeCache)
-                        # cTimes[datasetName]=(end - max(cTime,start))/interval
+                        # cTime = start
+                        cTime = findDatasetCreationTime(datasetName,creationTimeCache)
+                        cTimes[datasetName]=(end - max(cTime,start))/interval
                     nSites[datasetName]+=(end - max(cTime,start))/interval
                     # nSites[datasetName]+=1
                 elif datasetMovement[datasetName][siteName][0][-1] < end:
@@ -472,7 +472,7 @@ for line in phedexFile:
     siteName=l[7]
     if not re.match(siterx,siteName):
         continue
-    if not re.search(datasetPattern,datasetName):
+    if not re.match(datasetPattern,datasetName):
         continue
     if datasetName in datasetsOnSites:
         datasetsOnSites[datasetName].add(siteName)
@@ -570,8 +570,10 @@ for key in datasetsOnSites:
     try:
         value = nAllAccessed[key]
     except KeyError:
-        sys.stderr.write("WARNING: %s is on a site but not accessed in interval"%(key))
-        continue
+        nAllAccessed[key]=0
+        value=0
+        # sys.stderr.write("WARNING: %s is on a site but not accessed in interval\n"%(key))
+        # continue
     nAllAccess += value
     nAll += 1
     if sizeAnalysis:
@@ -653,8 +655,9 @@ for dataset in datasetsOnSites:
         sizeGb = sizesGb[dataset]
         # value = nAllAccessed[key]
     except KeyError:
+        pass
         # sys.stderr.write("WARNING: %s is on a site but not accessed in interval"%(key))
-        continue
+        # continue
     #if nAccess == 0:
     #    print " NOT USED - %d %d %d %f"%(nSite,nAccess,nFiles,sizeGb)
     if nAverageSite!=0:
