@@ -187,13 +187,13 @@ def findDatasetCreationTime(dataset,fileName,debug=0):
     for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
         try:
             cTime = time.mktime(time.strptime(line,'%Y-%m-%d %H:%M:%S\n'))
+            with open(fileName,'a') as dataFile:
+                dataFile.write("%s %i\n"%(dataset,cTime))
+            return cTime
         except ValueError:
             # bad response; assume it was always there
             print line
             return 0
-        with open(fileName,'a') as dataFile:
-            dataFile.write("%s %i\n"%(dataset,cTime))
-    return cTime
 
 def readDatasetCreationTimes(fileName,debug=0):
     creationTimes={}
