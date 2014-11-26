@@ -182,7 +182,7 @@ def findDatasetSize(dataset,debug=0):
     return nFiles, sizeGb
 
 def findDatasetCreationTime(dataset,fileName,debug=0):
-    cmd = os.environ.get('MONITOR_BASE') + 'das_client.py --format=plain --limit=0 --query="dataset=' + dataset + ' | grep dataset.creation_time " '
+    cmd = os.environ.get('MONITOR_BASE') + '/das_client.py --format=plain --limit=0 --query="dataset=' + dataset + ' | grep dataset.creation_time " '
     print cmd
     for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
         try:
