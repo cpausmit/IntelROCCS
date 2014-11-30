@@ -339,7 +339,7 @@ def calculateAverageNumberOfSites(sitePattern,datasetsOnSites,start,end,cTimes={
                     # cTime = start
                     cTime = findDatasetCreationTime(datasetName,creationTimeCache)
                     cTimes[datasetName]=cTime
-                nSites[datasetName]+=(end - max(cTime,start))/interval
+                nSites[datasetName]+=max(0,(end - max(cTime,start))/interval)
             elif len(datasetMovement[datasetName][siteName][1])==0:
                 # it was never deleted...
                 if len(datasetMovement[datasetName][siteName][0])==0:
@@ -350,7 +350,7 @@ def calculateAverageNumberOfSites(sitePattern,datasetsOnSites,start,end,cTimes={
                         # cTime = start
                         cTime = findDatasetCreationTime(datasetName,creationTimeCache)
                         cTimes[datasetName]=(end - max(cTime,start))/interval
-                    nSites[datasetName]+=(end - max(cTime,start))/interval
+                    nSites[datasetName]+=max(0,(end - max(cTime,start))/interval)
                     # nSites[datasetName]+=1
                 elif datasetMovement[datasetName][siteName][0][-1] < end:
                     # it was transferred recently?

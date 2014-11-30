@@ -16,6 +16,7 @@ then
   exit 0
 fi
 
+mkdir -p    $MONITOR_DB
 cd $MONITOR_DB #preventing temp files from being created in weird places
 
 # are we interested in nSites or nSitesAv
@@ -100,8 +101,7 @@ done
 
 
 # move the results to the log file area ( to be updated to the monitor areas )
-mkdir -p    $MONITOR_DB
-mv    *.txt $MONITOR_DB
-mv    *.png $MONITOR_DB
+#mv    *.txt $MONITOR_DB
+#mv    *.png $MONITOR_DB
 
 exit 0
