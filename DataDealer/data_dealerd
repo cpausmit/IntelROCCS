@@ -44,6 +44,7 @@ do
     echo "   --> "`date`                                               >> $logFile
     echo " "                                                           >> $logFile
     stdbuf -o0 -e0 /usr/local/IntelROCCS/DataDealer/dataDealer.py      >> $logFile 2>&1
+    stdbuf -o0 -e0 /usr/local/IntelROCCS/DataDealer/systemData.py      >> $logFile 2>&1
 
     # ensure that the log and report information is updated
     rsync -Cavz --delete /local/cmsprod/IntelROCCS/DataDealer /home/cmsprod/public_html/IntelROCCS >& /dev/null
