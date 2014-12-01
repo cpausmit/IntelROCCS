@@ -18,7 +18,7 @@ date = today - datetime.timedelta(days=1)
 for siteName in availableSites:
     query = "SELECT Quotas.SizeTb FROM Quotas INNER JOIN Sites ON Quotas.SiteId=Sites.SiteId INNER JOIN Groups ON Groups.GroupId=Quotas.GroupId WHERE Sites.SiteName=%s AND Groups.GroupName=%s"
     values = [siteName, "AnalysisOps"]
-    data = dbApi.dbQuery(query, values=values)
+    data = dbApi_.dbQuery(query, values=values)
     quota = data[0][0]*10**3
     used = phedexData_.getSiteStorage(siteName)
     cpu = popDbData_.getSiteCpu(siteName, date.strftime('%Y-%m-%d'))
