@@ -8,7 +8,7 @@ import phedexData, popDbData, phedexApi, popDbApi
 phedexData = phedexData.phedexData()
 datasets = phedexData.getAllDatasets()
 phedexApi_ = phedexApi.phedexApi()
-popDbApi = popDbApi.popDbApi()
+popDbApi_ = popDbApi.popDbApi()
 startDates = []
 dates = dict()
 for dataset in datasets:
