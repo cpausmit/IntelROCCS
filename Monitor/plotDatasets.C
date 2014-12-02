@@ -155,20 +155,20 @@ void plotDatasetUsage(int type=0, float interval=1.)
 
   MitRootStyle::OverlayFrame();
   MitRootStyle::AddText("Overflow in last bin. nAccesses=0 in first bin.");
-  TString integralText = "Data managed: ";
+  TString integralText = "Average data managed: ";
   char buffer[32];
   sprintf(buffer,"%.3f PB",totalSize/1000.);
   integralText+=buffer;
-  TText *plotText = new TText(.4,.75,integralText.Data());
+  TText *plotText = new TText(.3,.75,integralText.Data());
   plotText->SetTextSize(0.04);
   plotText->Draw();
-  TText *plotText2 = new TText(.4,.8,text.Data());
+  TText *plotText2 = new TText(.3,.8,text.Data());
   plotText2->SetTextSize(0.04);
   plotText2->Draw();
   text = "Mean: ";
   sprintf(buffer,"%.3f accesses/month",h2->GetMean(1));
   text += buffer;
-  TText *plotText3 = new TText(.4,.7,text.Data());
+  TText *plotText3 = new TText(.3,.7,text.Data());
   plotText3->SetTextSize(0.04);
   plotText3->Draw();
   cv->SaveAs(pngFileName.Data());
