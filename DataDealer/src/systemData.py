@@ -5,7 +5,7 @@
 import sys, json, datetime
 import sites, dbApi, phedexData, popDbData
 
-fs = open('/local/cmsprod/IntelROCCS/DataDealer/Visualizations/System.tsv', 'w')
+fs = open('/local/cmsprod/IntelROCCS/DataDealer/Visualizations/system.tsv', 'w')
 fs.write("site\tquota\tused\tcpu\n")
 fs.close()
 dbApi_ = dbApi.dbApi()
@@ -22,6 +22,6 @@ for siteName in availableSites:
     quota = data[0][0]*10**3
     used = phedexData_.getSiteStorage(siteName)
     cpu = popDbData_.getSiteCpu(siteName, date.strftime('%Y-%m-%d'))
-    fs = open('/local/cmsprod/IntelROCCS/DataDealer/Visualizations/System.tsv', 'a')
+    fs = open('/local/cmsprod/IntelROCCS/DataDealer/Visualizations/system.tsv', 'a')
     fs.write("%s\t%s\t%s\t%s\n" % (siteName, quota, used, cpu))
     fs.close()
