@@ -6,7 +6,7 @@ import sys, json, datetime
 import sites, dbApi, phedexData, popDbData
 
 fs = open('/local/cmsprod/IntelROCCS/DataDealer/Visualizations/system.tsv', 'w')
-fs.write("site\tquota\tused\tcpu\tsubscribed\n")
+fs.write("site,quota,used,cpu,subscribed\n")
 fs.close()
 dbApi_ = dbApi.dbApi()
 phedexData_ = phedexData.phedexData()
@@ -35,5 +35,5 @@ for siteName in availableSites:
         date = today - datetime.timedelta(days=i)
         cpu += popDbData_.getSiteCpu(siteName, date.strftime('%Y-%m-%d'))
     fs = open('/local/cmsprod/IntelROCCS/DataDealer/Visualizations/system.tsv', 'a')
-    fs.write("%s\t%s\t%s\t%s\t%s\n" % (siteName, quota, used, cpu, subscribed))
+    fs.write("%s,%s,%s,%s,%s\n" % (siteName, quota, used, cpu, subscribed))
     fs.close()
