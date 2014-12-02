@@ -15,16 +15,16 @@ var tooltip = chart.append("text")
 
 d3.tsv("datasetHistory.tsv", type, function(error, data) {
 
-	y.domain([0, d3.max(data, function(d) { return d.cpuh; })]);
+    y.domain([0, d3.max(data, function(d) { return d.cpuh; })]);
 
-	chart.attr("width", margin.left + barWidth * data.length);
+    chart.attr("width", margin.left + barWidth * data.length);
 
-	var bar = allgroup.selectAll("g")
-		.data(data)
-		.enter().append("g")
-		.attr("transform", function(d, i) { return "translate(" + i * barWidth + ", 0)"; });
+    var bar = allgroup.selectAll("g")
+        .data(data)
+        .enter().append("g")
+        .attr("transform", function(d, i) { return "translate(" + i * barWidth + ", 0)"; });
 
-	bar.append("rect")
+    bar.append("rect")
         .attr("y", function(d) { return height - y(d.cpuh); })
         .attr("height", function(d) { return y(d.cpuh); })
         .attr("width", barWidth - 1)
@@ -46,8 +46,7 @@ d3.tsv("datasetHistory.tsv", type, function(error, data) {
 });
 
 function type(d) {
-	d.cpuh = +d.cpuh;
+    d.cpuh = +d.cpuh;
     d.date = d.date;
-	return d;
+    return d;
 }
-
