@@ -106,28 +106,30 @@ class PhedexDataHandler:
                         phedexDatasets[datasetName] = phedexDataset.PhedexDataset(datasetName)
                     dataset = phedexDatasets[datasetName]
 
+                    if site == 'T2_US_MIT':
+                        if datasetName == '/WWJetsTo2L2Nu_TuneZ2star_8TeV-madgraph-tauola/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM':
+                            print siterpl
                     size = float(siterpl["bytes"])/1000/1000/1000
-                    compl = siterpl["complete"]
+                    strdone = siterpl["complete"]
+                    isdone = 1
+                    if strdone == 'n' :
+                        isdone = 0
                     cust = siterpl["custodial"]
-                    subs = int(float(siterpl["time_create"]))
-                    made = int(float(siterpl["time_update"]))
+                    reqtime = int(float(siterpl["time_create"]))
+                    updtime = int(float(siterpl["time_update"]))
                     files = int(siterpl["files"])
+                    
                     iscust = 0
-
                     if len(user) > 0 or cust == 'y':
                         iscust = 1
-                    valid = 1
-                    #if compl == 'n' and (made-subs) < 60*24*14:
-                    #    valid = 0
-                    if (self.epochTime-subs) < 60*60*24*14 and compl == 'n':
-                        valid = 0
-                    dataset.updateForSite(site,size,group,made,files,iscust,valid)
+                    dataset.updateForSite(site,size,group,files,iscust,reqtime,updtime,isdone)
 
         # Create our local cache files of the status per site
         filename = os.environ['DETOX_PHEDEX_CACHE']
         outputFile = open(os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS'] + '/'
                           + filename, "w")
         for datasetName in phedexDatasets:
+            phedexDatasets[datasetName].setFinalValues()
             line = phedexDatasets[datasetName].printIntoLine()
             #any dataset line should be above 10 characters
             if len(line) < 10:
@@ -147,8 +149,8 @@ class PhedexDataHandler:
             items = line.split()
             datasetName = items[0]
             group = items[1]
-            siteName = items[7]
-            size = float(items[3])
+            siteName = items[5]
+            size = float(items[2])
 
             if self.allSites[siteName].getStatus() == 0:
                 continue
@@ -165,6 +167,7 @@ class PhedexDataHandler:
                     self.phedexDatasets[datasetName] = phedexDataset.PhedexDataset(datasetName)
                 dataset = self.phedexDatasets[datasetName]
             dataset.fillFromLine(line)
+            dataset.setFinalValues()
         inputFile.close()
 
         self.printRunawaySets()
