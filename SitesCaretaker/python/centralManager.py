@@ -34,6 +34,19 @@ class CentralManager:
 
     def findStateChanges(self):
 
+        print ""
+        print "W A I T I N G  R O O M:"
+        for site in sorted(self.allSites):
+            siteInfo = self.siteReadinessHandler.getSiteReadiness(site)
+            if siteInfo.inWaitingRoom() :
+                print " - " + site
+        print ""
+        print "G R A V E  Y A R D:"
+        for site in sorted(self.allSites):
+            siteInfo = self.siteReadinessHandler.getSiteReadiness(site)
+            if siteInfo.isDead() :
+                print " - " + site
+
         print "\nSites that need to be disabled:"
         for site in sorted(self.allSites):
             siteInfo = self.siteReadinessHandler.getSiteReadiness(site)
@@ -127,6 +140,14 @@ class CentralManager:
                     continue
                 if site == 'T1_US_FNAL_Disk':
                     continue
+
+                #make sure sets do not go the dead or waiting room site
+                siteInfo = self.siteReadinessHandler.getSiteReadiness(site)
+                dbStatus = self.allSites[site].getStatus() 
+                if  dbStatus == 0 or siteInfo.inWaitingRoom() or siteInfo.isDead():
+                    continue
+
+
                 sizeCanTake = (self.siteSpace[site][0]*0.9 - self.siteSpace[site][1])*1000
                 addedSize = 0
                 addedSets = 0

@@ -39,7 +39,7 @@ export DETOX_TIME_WIND=12
 
 # Email list to notify in case of problems
 
-export DETOX_EMAIL_LIST=sidn@mit.edu
+export DETOX_EMAIL_LIST=maxi@fnal.gov
 
 # Certificate location
 

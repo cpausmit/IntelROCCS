@@ -3,6 +3,8 @@
 # This class provides support for storing datasets information extracted from PhEDEx
 #
 #---------------------------------------------------------------------------------------------------
+import time, sys
+
 class PhedexDataset:
 
     def __init__(self, dataset):
@@ -14,13 +16,16 @@ class PhedexDataset:
         self.sizeAtSite = {}
         self.validAtSite = {}
         self.custodialAtSite = {}
-        self.makeTimeAtSite = {}
+        self.reqTimeAtSite = {}
+        self.updTimeAtSite = {}
+        self.isdoneAtSite = {}
         self.rankAtSite = {}
         self.filesAtSite = {}
         self.partialAtSite = {}
         self.globalRank = 9999.0
+        self.epochTime = int(time.time())
 
-    def updateForSite(self,site,size,group,mtime,files,custodial,valid):
+    def updateForSite(self,site,size,group,files,custodial,reqtime,updtime,isdone):
         if site in self.groupAtSite:
             if self.groupAtSite[site] != group:
                 print " WARNING -- dataset duplicated, subscribed by different groups"
@@ -31,16 +36,31 @@ class PhedexDataset:
             self.siteNames[site] = 1
             self.sizeAtSite[site] = size
             self.filesAtSite[site] = files
-            self.makeTimeAtSite[site] = mtime
+            self.updTimeAtSite[site] = updtime
+            self.reqTimeAtSite[site] = reqtime
+            self.isdoneAtSite[site] =  isdone
         else:
             self.sizeAtSite[site] = self.sizeAtSite[site] + size
             self.filesAtSite[site] = self.filesAtSite[site] + files
-            if mtime < self.makeTimeAtSite[site]:
-                self.makeTimeAtSite[site] = mtime
+            if updtime > self.updTimeAtSite[site]:
+                self.updTimeAtSite[site] = updtime
+            #check if this is changining, it should not
+            if reqtime > self.reqTimeAtSite[site]:
+                self.reqTimeAtSite[site] = reqtime
+            if isdone == 0:
+                self.isdoneAtSite[site] =  isdone
 
-        self.groupAtSite[site] = group
-        self.setValid(site,valid)
         self.setCustodial(site,custodial)
+        self.groupAtSite[site] = group
+
+    def setFinalValues(self):
+        for site in self.siteNames:
+            valid = 1
+            reqtime = self.reqTimeAtSite[site]
+            isdone = self.isdoneAtSite[site]
+            if (self.epochTime - reqtime) < 60*60*24*14 and isdone == 0:
+                valid = 0
+            self.setValid(site,valid)
 
     def locatedOnSites(self,groups=['AnalysisOps']):
         validSites = []
@@ -117,8 +137,8 @@ class PhedexDataset:
         return 'undef'
 
     def creationTime(self,site):
-        if site in self.makeTimeAtSite:
-            return self.makeTimeAtSite[site]
+        if site in self.updTimeAtSite:
+            return self.updTimeAtSite[site]
         return -999
 
     def isValid(self,site):
@@ -139,6 +159,15 @@ class PhedexDataset:
     def getNfiles(self,site):
         return self.filesAtSite[site]
 
+    def reqTime(self,site):
+        return self.reqTimeAtSite[site]
+
+    def updTime(self,site):
+        return self.updTimeAtSite[site]
+
+    def isDone(self,site):
+        return self.isdoneAtSite[site]
+
     def findIncomplete(self):
         for site,files in self.filesAtSite.items():
             if files != self.trueNfiles:
@@ -156,15 +185,16 @@ class PhedexDataset:
         line = ""
         for site in self.siteNames:
             size =  self.sizeAtSite[site]
-            creationTime = self.makeTimeAtSite[site]
             group = self.groupAtSite[site]
-            valid = self.validAtSite[site]
             custd = self.custodialAtSite[site]
             files = self.filesAtSite[site]
+            reqtime = self.reqTimeAtSite[site]
+            updtime = self.updTimeAtSite[site]
+            isdone =  self.isdoneAtSite[site]
 
-            line = line + self.dataset + " " + group + " " + str(creationTime)
-            line = line + " "  + str(size) + " " + str(files) + " " + str(valid) + " " + str(custd)
-            line = line + " " + site + "\n"
+            line = line + self.dataset + " " + group + " " + str(size)
+            line = line + " " + str(files) + " " + str(custd) + " " + site
+            line = line + " " + str(reqtime) + " " + str(updtime) + " " + str(isdone) + "\n"
 
         return line
 
@@ -176,10 +206,11 @@ class PhedexDataset:
             raise Exception(" -- Logical mistake: mismatching dataset names")
 
         group = items[0]
-        mtime = int(items[1])
-        size = float(items[2])
-        files = int(items[3])
-        valid = int(items[4])
-        custd = int(items[5])
-        t2Site = items[6]
-        self.updateForSite(t2Site,size,group,mtime,files,custd,valid)
+        size = float(items[1])
+        files = int(items[2])
+        custd = int(items[3])
+        t2Site = items[4]
+        reqtime = int(items[5])
+        updtime = int(items[6])
+        isdone =  int(items[7])
+        self.updateForSite(t2Site,size,group,files,custd,reqtime,updtime,isdone)

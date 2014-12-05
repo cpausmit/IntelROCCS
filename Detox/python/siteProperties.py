@@ -8,6 +8,8 @@ Class:  SiteProperties(siteName='')
 Each site will be fully described for our application in this class.
 """
 #---------------------------------------------------------------------------------------------------
+import time, math
+
 class SiteProperties:
     "A SiteProperties defines all needed site properties."
 
@@ -19,6 +21,9 @@ class SiteProperties:
         self.dsetIsCustodial = {}
         self.dsetIsPartial = {}
         self.deprecated = {}
+        self.dsetReqTime = {}
+        self.dsetUpdTime = {}
+        self.dsetIsDone = {}
         self.wishList = []
         self.datasetsToDelete = []
         self.protectedList = []
@@ -28,16 +33,20 @@ class SiteProperties:
         self.space2free = 0
         self.deleted = 0
         self.protected = 0
+        self.epochTime = int(time.time())
 
-    def addDataset(self,set,rank,size,valid,partial,custodial,depr):
-        self.dsetIsValid[set] = valid
-        self.dsetIsPartial[set] = partial
-        self.dsetIsCustodial[set] = custodial
-        self.datasetRanks[set] = rank
-        self.datasetSizes[set] = size
+    def addDataset(self,dset,rank,size,valid,partial,custodial,depr,reqtime,updtime,isdone):
+        self.dsetIsValid[dset] = valid
+        self.dsetIsPartial[dset] = partial
+        self.dsetIsCustodial[dset] = custodial
+        self.datasetRanks[dset] = rank
+        self.datasetSizes[dset] = size
         if depr:
-            self.deprecated[set] = depr
+            self.deprecated[dset] = depr
         self.spaceTakenV = self.spaceTakenV + size
+        self.dsetIsDone[dset] = isdone
+        self.dsetReqTime[dset] = reqtime
+        self.dsetUpdTime[dset] = updtime
 
     def makeWishList(self):
         space = 0
@@ -79,13 +88,13 @@ class SiteProperties:
             return True
         return False
 
-    def onWishList(self,set):
-        if set in self.wishList:
+    def onWishList(self,dset):
+        if dset in self.wishList:
             return True
         return False
 
-    def onProtectedList(self,set):
-        if set in self.protectedList:
+    def onProtectedList(self,dset):
+        if dset in self.protectedList:
             return True
         return False
 
@@ -95,45 +104,45 @@ class SiteProperties:
         else:
             return False
 
-    def grantWish(self,set):
-        if set in self.protectedList:
+    def grantWish(self,dset):
+        if dset in self.protectedList:
             return
-        if set in self.datasetsToDelete:
+        if dset in self.datasetsToDelete:
             return
-        self.datasetsToDelete.append(set)
-        self.deleted = self.deleted + self.datasetSizes[set]
+        self.datasetsToDelete.append(dset)
+        self.deleted = self.deleted + self.datasetSizes[dset]
 
-    def revokeWish(self,set):
-        if set in self.datasetsToDelete:
-            self.datasetsToDelete.remove(set)
-            self.deleted = self.deleted - self.datasetSizes[set]
+    def revokeWish(self,dset):
+        if dset in self.datasetsToDelete:
+            self.datasetsToDelete.remove(dset)
+            self.deleted = self.deleted - self.datasetSizes[dset]
 
-    def pinDataset(self,set):
-        if set in self.datasetsToDelete:
+    def pinDataset(self,dset):
+        if dset in self.datasetsToDelete:
             return False
 
         #can't pin partial dataset
-        if self.dsetIsPartial[set] :
+        if self.dsetIsPartial[dset] :
             return False
         #can't pin non-valid dataset
-        if not self.dsetIsValid[set]:
+        if not self.dsetIsValid[dset]:
             return False
 
-        self.protectedList.append(set)
-        self.protected = self.protected + self.datasetSizes[set]
-        if set in self.wishList:
-            self.wishList.remove(set)
+        self.protectedList.append(dset)
+        self.protected = self.protected + self.datasetSizes[dset]
+        if dset in self.wishList:
+            self.wishList.remove(dset)
         return True
 
     def lastCopySpace(self,datasets,nCopyMin):
         space = 0
-        for set in self.datasetSizes.keys():
-            if set in self.datasetsToDelete:
+        for dset in self.datasetSizes.keys():
+            if dset in self.datasetsToDelete:
                 continue
-            dataset = datasets[set]
+            dataset = datasets[dset]
             remaining = dataset.nSites() - dataset.nBeDeleted()
             if remaining <= nCopyMin:
-                space = space + self.datasetSizes[set]
+                space = space + self.datasetSizes[dset]
 	self.spaceLCp = space
 
     def setSiteSize(self,size):
@@ -193,14 +202,14 @@ class SiteProperties:
             nsets = nsets + 1
         return nsets
         
-    def hasDataset(self,set):
-        if set in self.datasetRanks:
+    def hasDataset(self,dset):
+        if dset in self.datasetRanks:
             return True
         else:
             return False
 
-    def willDelete(self,set):
-        if set in self.datasetsToDelete:
+    def willDelete(self,dset):
+        if dset in self.datasetsToDelete:
             return True
         else:
             return False
@@ -216,6 +225,75 @@ class SiteProperties:
 
     def setSpaceToFree(self,size):
         self.space2free = size
+
+    def reqTime(self,dset):
+        return self.dsetReqTime[dset]
+    
+    def dsetLoadTime(self,dset):
+        return (self.dsetUpdTime[dset] - self.dsetReqTime[dset])
+
+    def dsetIsStuck(self,dset):
+        if self.dsetIsDone[dset] == 0:
+            reqtime = self.dsetReqTime[dset]
+            if (self.epochTime - reqtime) > 60*60*24*14:
+                return 1
+        return 0
+
+    def considerForStats(self,dset):
+        if self.dsetLoadTime(dset) > 60*60*24*14:
+            return False
+        if self.dsetLoadTime(dset) <= 0:
+            return False
+        if (self.epochTime - self.dsetReqTime[dset]) > 60*60*24*90:
+            return False
+        return True
+
+    def getDownloadStats(self):
+        loadSize = 0
+        loadTime = 0
+        stuck = 0
+        for dset in self.datasetSizes:
+            if self.dsetIsStuck(dset) == 1:
+                stuck = stuck + 1
+                continue
+            if not self.considerForStats(dset):
+                continue
+
+            if self.datasetSizes[dset] > 10:
+                loadSize = loadSize + self.datasetSizes[dset]
+                loadTime = loadTime + self.dsetLoadTime(dset)
+
+        speed = 0
+        if loadTime > 0:
+            speed = loadSize/loadTime*(60*60*24)
+        return (speed, loadSize, stuck)
+      
+    def getAverage(self,array):
+        if len(array) < 3: return 0
+        sortA = sorted(array)
+
+        diff = 100
+        prevMean = sortA[len(sortA)/2]
+        prevRms = sortA[len(sortA)-1] - sortA[0]
+        print sortA
+        while diff > 0.01:
+            ave = 0
+            aveSq = 0
+            nit = 0
+            for i in range(1, len(sortA)):
+                if abs(sortA[i] - prevMean) > 1.6*prevRms:
+                    continue
+                ave = ave + sortA[i]
+                aveSq = aveSq + sortA[i]*sortA[i]
+                nit = nit + 1
+            ave = ave/nit
+            rms = math.sqrt(aveSq/nit - ave*ave)
+            diff = abs(ave - prevMean)/prevMean
+            prevMean = ave
+            prevRms = rms
+                
+        return prevMean
+            
 
     def compare(self,item1, item2):
         r1 = self.datasetRanks[item1]
