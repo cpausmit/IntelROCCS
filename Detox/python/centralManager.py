@@ -24,6 +24,7 @@ class CentralManager:
 
         self.delRequests = {}
         self.siteRequests = {}
+        self.epochTime = int(time.time())
 
         self.phedexHandler = phedexDataHandler.PhedexDataHandler(self.allSites)
         self.popularityHandler = popularityDataHandler.PopularityDataHandler(self.allSites)
@@ -72,6 +73,8 @@ class CentralManager:
         for row in results:
             siteName = row[0]
             siteSizeGb = float(row[1])*1000
+            if siteName == 'T2_US_MIT':
+                siteSizeGb = siteSizeGb - 10000
             willBeUsed = int(row[2])
             siteId = int(row[3])
             self.allSites[siteName] = siteStatus.SiteStatus(siteName)
@@ -258,12 +261,16 @@ class CentralManager:
                part = phedexSets[datasetName].isPartial(site)
                cust = phedexSets[datasetName].isCustodial(site)
                vali = phedexSets[datasetName].isValid(site)
+               reqtime = phedexSets[datasetName].reqTime(site)
+               updtime = phedexSets[datasetName].updTime(site)
+               isdone = phedexSets[datasetName].isDone(site)
                #since I cant delete dataset that is not in the datase 
                #I will set it as invalid 
                if dataSetIds[datasetName] is None:
                    vali = False
+
                self.sitePropers[site].addDataset(datasetName,rank,size,vali,part,
-                                                 cust,isDeprecated)
+                                                 cust,isDeprecated,reqtime,updtime,isdone)
 
        for site in sorted(self.allSites.keys()):
            if self.allSites[site].getStatus() == 0:
@@ -517,6 +524,19 @@ class CentralManager:
                 outputFile.write("   %-12.1f %-8.1f %-20s \n"%(trueSize,diskSize,site))
         outputFile.close()
 
+        outputFile = open(os.environ['DETOX_DB'] + "/TransferStats.txt",'w')
+        outputFile.write('#- ' + today + " " + ttime + "\n\n")
+        outputFile.write("#- D A T A S E T  D O W N L O A D  S P E E D----\n\n")
+        outputFile.write("#  NStuck LoadSpeed  Volume  SiteName \n")
+        outputFile.write("#         [GB/Day]   [TB]    \n")
+        for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
+            sitePr = self.sitePropers[site]
+            (speed,volume,stuck) = sitePr.getDownloadStats()
+            outputFile.write("   %-6d %-10.1f %-7.1f %-20s \n"\
+                                 %(stuck,speed,volume/1000,site))
+        outputFile.write("#--------------------------------------------\n")
+        outputFile.close()
+
         for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
             sitePr = self.sitePropers[site]
             sitedir = resultDirectory + "/" + site
@@ -529,6 +549,7 @@ class CentralManager:
             fileDeprec = sitedir + "/DeprecatedSets.txt"
             fileIncomp = sitedir + "/IncompleteSets.txt"
             fileWrGroup= sitedir + "/RunAwayGroupSets.txt"
+            fileStuck  = sitedir + "/StuckDatasets.txt" 
 
             outputFile = open(fileTimest,'w')
             outputFile.write('#- ' + today + " " + ttime + "\n\n")
@@ -603,8 +624,8 @@ class CentralManager:
             
             outputFile = open(fileIncomp,'w')
             outputFile.write("# -- " + today + " " + ttime + "\n\n")
-            outputFile.write("#   Rank    TrueSize DiskSize nsites DatasetName\n")
-            outputFile.write("#[~days]    [GB]     [GB]\n")
+            outputFile.write("# Rank     TrueSize  DiskSize  nsites  DatasetName\n")
+            outputFile.write("# [days]   [GB]      [GB]                       \n")
             outputFile.write("#------------------------------------\n")
             for dset in sitePr.allSets():
                 if not sitePr.isPartial(dset): 
@@ -615,7 +636,7 @@ class CentralManager:
                 trueSize = dataPr.getTrueSize()
                 nsites = dataPr.nSites()
                 ndeletes = dataPr.nBeDeleted()
-                outputFile.write("%8.1f %11.1f %8.1f %6d  %s\n"\
+		outputFile.write("  %-8.1f %-9.1f %-9.1f %-7d %-s\n"\
                                      %(rank,trueSize,size,nsites-ndeletes,dset))
             outputFile.close()
 
@@ -631,6 +652,23 @@ class CentralManager:
                         outputFile.write(dset+"\n")
             outputFile.close()
 
+            outputFile = open(fileStuck,'w')
+            outputFile.write("# -- " + today + " " + ttime + "\n")
+            outputFile.write("#------------------------------------\n")
+            outputFile.write("# Rank     TrueSize  DiskSize  nsites  DatasetName \n")
+            outputFile.write("# [days]   [GB]      [GB]                           \n")
+            for dset in sitePr.allSets():
+                if not sitePr.dsetIsStuck(dset): 
+                    continue
+                dataPr = self.dataPropers[dset]
+                rank = sitePr.dsetRank(dset)
+                size = sitePr.dsetSize(dset)
+                trueSize = dataPr.getTrueSize()
+                nsites = dataPr.nSites()
+                ndeletes = dataPr.nBeDeleted()
+                outputFile.write("  %-8.1f %-9.1f %-9.1f %-7d %-s\n"\
+                                     %(rank,trueSize,size,nsites-ndeletes,dset))
+            outputFile.close()
 
     def requestDeletions(self):
         now_tstamp = datetime.datetime.now()
