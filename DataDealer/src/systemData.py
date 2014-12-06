@@ -5,7 +5,7 @@
 import sys, json, datetime
 import sites, dbApi, phedexData, popDbData
 
-fs = open('/local/cmsprod/IntelROCCS/DataDealer/Visualizations/system.tsv', 'w')
+fs = open('/local/cmsprod/IntelROCCS/DataDealer/Visualizations/system.csv', 'w')
 fs.write("site,quota,used,cpu,subscribed\n")
 fs.close()
 dbApi_ = dbApi.dbApi()
@@ -14,11 +14,10 @@ popDbData_ = popDbData.popDbData()
 sites_ = sites.sites()
 availableSites = sites_.getAvailableSites()
 today = datetime.date.today()
-date = today - datetime.timedelta(days=1)
 for siteName in availableSites:
     subscriptions = []
     query = "SELECT Datasets.DatasetName FROM Requests INNER JOIN Datasets ON Datasets.DatasetId=Requests.DatasetId INNER JOIN Sites ON Sites.SiteId=Requests.SiteId WHERE Requests.Date>%s AND Sites.SiteName=%s AND Requests.RequestType=%s"
-    values = [date.strftime('%Y-%m-%d %H:%M:%S'), siteName, 0]
+    values = [today.strftime('%Y-%m-%d %H:%M:%S'), siteName, 0]
     data = dbApi_.dbQuery(query, values=values)
     for sub in data:
         subscriptions.append(sub[0])
@@ -34,6 +33,6 @@ for siteName in availableSites:
     for i in range(1, 8):
         date = today - datetime.timedelta(days=i)
         cpu += popDbData_.getSiteCpu(siteName, date.strftime('%Y-%m-%d'))
-    fs = open('/local/cmsprod/IntelROCCS/DataDealer/Visualizations/system.tsv', 'a')
+    fs = open('/local/cmsprod/IntelROCCS/DataDealer/Visualizations/system.csv', 'a')
     fs.write("%s,%s,%s,%s,%s\n" % (siteName, quota, used, cpu, subscribed))
     fs.close()
