@@ -86,8 +86,8 @@ class CleanStateKeeper:
                 continue
             dsetname = items[0]
             group = items[1]
-            valid = int(items[5])
-            sitename = items[7]
+            valid = int(items[7])
+            sitename = items[5]
             if sitename in self.siteDeletions:
                 continue
             if group != 'AnalysisOps':
