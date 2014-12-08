@@ -32,18 +32,18 @@ def processPhedexCacheFile(fileName,debug=0):
     for line in iFile.xreadlines():
         line = line[:-1]
         f = line.split()
-        if len(f) == 8:
+        if len(f) == 9:
             dataset = f[0]
             group   = f[1]
-            date    = int(f[2])
-            size    = float(f[3])
-            nFiles  = int(f[4])
-            valid   = int(f[5])
-            custd   = int(f[6])
-            site    = f[7]
+            size    = float(f[2])
+            nFiles  = int(f[3])
+            custd   = int(f[4])
+            site    = f[5]
+            date    = int(f[6])
+            valid   = int(f[8])
 
         else:
-            print 'Columns not equal 8: \n %s'%(line)
+            print 'Columns not equal 9: \n %s'%(line)
             sys.exit(1)
 
         # first step, find the sizes per site per dataset hash array
@@ -251,7 +251,7 @@ def readDatasetProperties():
 
     return (fileNumbers, sizesGb)
 
-def calculateAverageNumberOfSites(sitePattern,datasetsOnSites,start,end,cTimes={}):
+def calculateAverageNumberOfSites(sitePattern,datasetSet,datasetsOnSites,start,end,cTimes={}):
 
     print ' Relevant time interval: %d %d  --> %d'%(start,end,end-start)
 
@@ -259,7 +259,7 @@ def calculateAverageNumberOfSites(sitePattern,datasetsOnSites,start,end,cTimes={
     interval = end - start
     datasetMovement = {}
     predictedDatasetsOnSites={}
-    for datasetName in datasetsOnSites:
+    for datasetName in datasetSet:
         datasetMovement[datasetName]={}
         predictedDatasetsOnSites[datasetName]=set([])
     nowish = time.time()
@@ -323,13 +323,13 @@ def calculateAverageNumberOfSites(sitePattern,datasetsOnSites,start,end,cTimes={
                 else:                                            # have ensured tXfer > tDel
                     continue
             nSites[datasetName] += siteSum
-        try:
-            diff = datasetsOnSites[datasetName] - predictedDatasetsOnSites[datasetName]
-        except KeyError:
-            try:
+        if datasetName in datasetsOnSites:
+            if datasetName in predictedDatasetsOnSites:
+                diff = datasetsOnSites[datasetName] - predictedDatasetsOnSites[datasetName]
+            else:
                 diff = datasetsOnSites[datasetName]
-            except KeyError:
-                diff=set([])
+        else:
+            diff=set([])
         for siteName in diff:
             if siteName not in datasetMovement[datasetName]:
                 # no phedex history, but the dataset exists (it was created there?)
@@ -463,24 +463,29 @@ if sizeAnalysis:
 # datasetsOnSites[k]=v, where k is a dataset and v is a set of sites
 # this can probably be done smarter and combined with nSites computation
 datasetsOnSites={}
+datasetSet=set([])
 phedexSize=0
 for line in phedexFile:
     l = line.split()
     if not l[1]=="AnalysisOps":
         continue
     datasetName=l[0]
-    siteName=l[7]
-    if not re.match(siterx,siteName):
-        continue
+    siteName=l[5]
     if not re.match(datasetPattern,datasetName):
+        continue
+    datasetSet.add(datasetName) # we don't care if it doesn't currently exist on an interesting site
+    if not re.match(siterx,siteName):
         continue
     if datasetName in datasetsOnSites:
         datasetsOnSites[datasetName].add(siteName)
     else:
         datasetsOnSites[datasetName] = set([siteName])
-    phedexSize+=float(l[3])
+    phedexSize+=float(l[2])
 print "Phedex Size: ",phedexSize
 
+getJsonFile("del",1378008000) # all deletions
+delDatasetSet=getAnalysisOpsDeletions(start,end,datasetPattern)
+datasetSet.update(delDatasetSet) # this should be every AnalysisOp dataset, even the deleted ones
 
 for fileName in sorted(files):
     if debug>0:
@@ -565,7 +570,7 @@ nFilesTotal = 0
 findDatasetHistoryAll(start)
 counter=0
 # for key in nAllAccessed:
-for key in datasetsOnSites:
+for key in datasetSet:
     counter+=1
     try:
         value = nAllAccessed[key]
@@ -630,7 +635,7 @@ creationTimes=readDatasetCreationTimes(creationTimeCache)
 
 
 # figure out properly the 'average number of sites' in the given time interval
-nAverageSites = calculateAverageNumberOfSites(siterx,datasetsOnSites,start,end,creationTimes)
+nAverageSites = calculateAverageNumberOfSites(siterx,datasetSet,datasetsOnSites,start,end,creationTimes)
 
 # last step: produce monitoring information
 # ========================================
@@ -640,8 +645,11 @@ fileName = 'DatasetSummary.txt'
 print ' Output file: ' + fileName
 totalAccesses = open(fileName,'w')
 # for dataset in nAllAccessed:
-for dataset in datasetsOnSites:
-    nSite = nSites[dataset]
+for dataset in datasetSet:
+    try:
+        nSite = nSites[dataset]
+    except KeyError:
+        nSite=0
     if dataset in nAverageSites:
         nAverageSite = float(nAverageSites[dataset])
     else:
@@ -651,17 +659,24 @@ for dataset in datasetsOnSites:
         nAverageSite = 0
     try:
         nAccess = nAllAccessed[dataset]
-        nFiles = fileNumbers[dataset]
-        sizeGb = sizesGb[dataset]
-        # value = nAllAccessed[key]
     except KeyError:
-        pass
+        nAccess=0
+    try:
+        nFiles = fileNumbers[dataset]
+    except KeyError:
+        nFiles=0
+    try:
+        sizeGb = sizesGb[dataset]
+    except KeyError:
+        nFiles=0
+        # value = nAllAccessed[key]
         # sys.stderr.write("WARNING: %s is on a site but not accessed in interval"%(key))
         # continue
     #if nAccess == 0:
     #    print " NOT USED - %d %d %d %f"%(nSite,nAccess,nFiles,sizeGb)
-    if nAverageSite!=0:
+    if nAverageSite>0 and nFiles>0 and sizeGb>0:
         # if the dataset was not on any sites during the interval, it wasn't accessed, so don't print it
+        # also only print if DAS didn't give nonsense
         totalAccesses.write("%d %f %d %d %f %s\n"%(nSite,nAverageSite,nAccess,nFiles,sizeGb,dataset))
     if nSite>42:
         print " WARNING - nSites suspicious: %3d %s"%(nSite,dataset)

@@ -177,7 +177,8 @@ def findDatasetProperties(dataset,short=False):
                     sizeGb = convertSizeToGb(size)
         except:
             sys.stderr.write(' Error: output data not compliant.\n')
-            sys.exit(0)
+            return -1,-1,-1 # this will never be used in readJsonSnapshotAll
+            # sys.exit(0)
 
         # add it to our database
         addDatasetProperties(dbId,nFiles,sizeGb)
