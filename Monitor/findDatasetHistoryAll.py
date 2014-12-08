@@ -49,6 +49,30 @@ def getJsonFile(requestType,start,debug=False):
             print line
         return
 
+def getAnalysisOpsDeletions(start,end,datasetPattern):
+    delFileName = os.environ.get('MONITOR_DB') + '/datasets/delRequests_1378008000.json'
+    # returns all datasets in the requests which match the pattern and are in AnalysisOps
+    print "Parsing ",delFileName
+    # isXfer = True if xfer history, False if deletions
+    datasetSet=set([])
+    with open(delFileName) as dataFile:
+        try:
+            data = json.load(dataFile)
+        except ValueError:
+            sys.exit(-1)
+    requests = data["phedex"]["request"]
+    for request in requests:
+        for dataset in request["data"]["dbs"]["dataset"]:
+            datasetName = dataset["name"]
+            requestedBy = request["requested_by"]["name"]
+            try:
+                if re.match(datasetPattern,datasetName) and (requestedBy=="Maxim Goncharov" or requestedBy=="Christoph Paus"):
+                # if re.match(datasetPattern,datasetName):
+                    datasetSet.add(datasetName)
+            except TypeError:
+                print "weird"
+                pass
+    return datasetSet
 
 def parseRequestJson(fileName,start,end,isXfer,datasetHistory,datasetPattern):
     print "Parsing ",fileName
