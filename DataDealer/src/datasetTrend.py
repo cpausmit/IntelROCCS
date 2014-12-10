@@ -8,7 +8,7 @@ import phedexData, popDbData, phedexApi, popDbApi
 
 phedexData = phedexData.phedexData()
 #datasets = phedexData.getAllDatasets()
-datasets = ['/DYJetsToLL_M-50_TuneZ2Star_8TeV-madgraph-tarball/Summer12-PU_S7_START52_V9-v2/AODSIM']
+datasets = ['/QCD_Pt-15to3000_Tune4C_Flat_14TeV_pythia8/GEM2019Upg14DR-final_phase1_PU50bx25_DES19_62_V8-v1/AODSIM']
 phedexApi_ = phedexApi.phedexApi()
 popDbApi_ = popDbApi.popDbApi()
 startDates = []
