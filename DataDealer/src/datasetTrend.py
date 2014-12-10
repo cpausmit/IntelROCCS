@@ -23,5 +23,5 @@ for dataset in datasets:
     print norm
     for week in cpuHours:
         date = datetime.datetime.fromtimestamp(float(week[0])/10**3).strftime('%Y-%m-%d')
-        cpuH = week[1]
-        print date + "\t" + '*' * int(int(cpuH)/norm)*100
+        cpuH = float(week[1])
+        print date + "\t" + '*' * int((cpuH/norm)*100)

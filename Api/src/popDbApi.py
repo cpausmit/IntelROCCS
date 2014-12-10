@@ -26,7 +26,8 @@ class popDbApi():
         self.cert = config.get('PopDB', 'certificate')
         self.key = config.get('PopDB', 'key')
         self.cookie = config.get('PopDB', 'sso_cookie')
-        self.renewSsoCookie()
+        if not os.path.isfile(self.cookie):
+            self.renewSsoCookie()
 
 #===================================================================================================
 #  H E L P E R S
