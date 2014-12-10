@@ -19,9 +19,9 @@ for dataset in datasets:
     datasetName = jsonData.get('name')
     print datasetName
     cpuHours = jsonData.get('data')
-    norm = max(cpuHours, key=itemgetter(1))[1]/100.0
+    norm = float(max(cpuHours, key=itemgetter(1))[1])
     print norm
     for week in cpuHours:
         date = datetime.datetime.fromtimestamp(float(week[0])/10**3).strftime('%Y-%m-%d')
         cpuH = week[1]
-        print date + "\t" + '*' * cpuH
+        print date + "\t" + '*' * int(int(cpuH)/norm)*100
