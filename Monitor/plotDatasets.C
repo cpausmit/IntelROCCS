@@ -27,7 +27,6 @@ void plotDatasets(int type=0, float interval=1)
   TString  styleMacro = gSystem->Getenv("MIT_ROOT_STYLE");
   long int rc = gROOT->LoadMacro(styleMacro+"+");
   printf(" Return code of loading styles: %d\n",rc);
-
   plotDatasetUsage(type,interval);
 }
 
@@ -72,6 +71,7 @@ void plotDatasetUsage(int type=0, float interval=1.)
   //if(interval!=1) titles = TString("; Accesses/day ") + TString(";Data Size [TB]");
   TString titles = TString("; Accesses ") + text + TString("; Fraction of total data volume");
   if(interval!=1.) titles = TString("; Accesses/month ") + TString("; Fraction of total data volume");
+  // printf("%f %s\n",interval,titles.Data());   exit(-1);
   h->SetTitle(titles.Data());
   if(interval!=1.)  interval=interval/(86400*30);
   // Loop over the file

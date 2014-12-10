@@ -31,7 +31,7 @@ fi
 export MIT_ROOT_STYLE=/home/cmsprod/MitRootStyle/MitRootStyle.C
 export SITE_MONITOR_FILE=$MONITOR_DB/MonitorSummary.txt
 rm -f $SITE_MONITOR_FILE
-touch $SITE_MONITOR_FILE
+# touch $SITE_MONITOR_FILE
 #echo "# Site Quota Used ToDelete LastCp" >> $SITE_MONITOR_FILE
 
 echo ""
@@ -63,6 +63,8 @@ export DATASET_MONITOR_TEXT="since 09/2013"
   export DATASET_MONITOR_FILE=DatasetSummaryAll
 root -q -b -l $MONITOR_BASE/plotDatasets.C\("$average",$interval\)
 
+# exit -1
+
 start=$(date --date=01/01/2014 +%s)
 end=$(date --date=$(date +"%m/%d/%Y") +%s)
 let interval=end-start
@@ -90,14 +92,16 @@ do
   esac
   start=$(date --date=01/${period}/2014 +%s)
   end=$(date --date=${period}/${lastday}/2014 +%s)
+  # end=$(date --date=$(date +"%m/%d/%Y") +%s)
   let interval=end-start
   # let interval=$(date --date=${period}/${lastday}/2014 +%s)-$(date --date=${period}/01/2014 +%s)
   $MONITOR_BASE/readJsonSnapshotAll.py T2* $start $end
-  export DATASET_MONITOR_TEXT="${period}/2014"
+  export DATASET_MONITOR_TEXT="Since ${period}/2014"
     mv DatasetSummary.txt DatasetSummary${period}-2014.txt
     export DATASET_MONITOR_FILE=DatasetSummary${period}-2014
   root -q -b -l $MONITOR_BASE/plotDatasets.C\("$average",$interval\)
 done
+exit -1
 
 
 # move the results to the log file area ( to be updated to the monitor areas )
