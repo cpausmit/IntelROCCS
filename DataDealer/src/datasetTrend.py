@@ -19,6 +19,8 @@ for dataset in datasets:
     weeksBefore = 0
     weeksAfter = 0
     jsonDataCPU = popDbApi_.getSingleDSstat(aggr='week', orderby='totcpu', name=dataset)
+    if not jsonDataCPU:
+        continue
     jsonData = jsonDataCPU.get('data')[0]
     datasetName = jsonData.get('name')
     cpuData = jsonData.get('data')
@@ -53,6 +55,8 @@ for dataset in datasets:
     age = maxIndex*7
     size = phedexData_.getDatasetSize(datasetName)
     jsonDataAcc = popDbApi_.getSingleDSstat(aggr='week', orderby='naccess', name=dataset)
+    if not jsonDataAcc:
+        continue
     jsonData = jsonDataCPU.get('data')[0]
     accData = jsonData.get('data')
     maxAccValue = int(accData[maxIndex][1])
