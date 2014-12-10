@@ -10,8 +10,7 @@ fs = open('/local/cmsprod/IntelROCCS/DataDealer/Visualizations/datasets.csv', 'w
 fs.write("dataset,maxCPU,deltaCPU,maxAcc,deltaAcc,popularityTime,dataTier,size,age\n")
 fs.close()
 phedexData_ = phedexData.phedexData()
-#datasets = phedexData_.getAllDatasets()
-datasets = ['/DYJetsToLL_M-50_TuneZ2Star_8TeV-madgraph-tarball/Summer12-PU_S7_START52_V9-v2/AODSIM']
+datasets = phedexData_.getAllDatasets()
 phedexApi_ = phedexApi.phedexApi()
 popDbApi_ = popDbApi.popDbApi()
 startDates = []
