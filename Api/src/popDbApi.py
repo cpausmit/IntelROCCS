@@ -26,7 +26,7 @@ class popDbApi():
         self.cert = config.get('PopDB', 'certificate')
         self.key = config.get('PopDB', 'key')
         self.cookie = config.get('PopDB', 'sso_cookie')
-        #self.renewSsoCookie()
+        self.renewSsoCookie()
 
 #===================================================================================================
 #  H E L P E R S
@@ -42,8 +42,7 @@ class popDbApi():
         data = urllib.urlencode(values)
         request = urllib2.Request(url, data)
         fullUrl = request.get_full_url() + request.get_data()
-        #process = subprocess.Popen(["curl", "-k", "-s", "-L", "--cookie", self.cookie, "--cookie-jar", self.cookie, fullUrl], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=False)
-        process = subprocess.Popen(["curl", "-k", "-s", "-L", fullUrl], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=False)
+        process = subprocess.Popen(["curl", "-k", "-s", "-L", "--cookie", self.cookie, "--cookie-jar", self.cookie, fullUrl], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=False)
         strout = process.communicate()[0]
         if process.returncode != 0:
             print(" ERROR -- Access to popularity database failed\nError msg: %s" % (str(strout)))
