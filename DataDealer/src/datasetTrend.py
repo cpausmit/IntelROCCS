@@ -49,7 +49,7 @@ for dataset in datasets:
     popularityTime = weeksBefore + weeksAfter + 1
     if (popularityTime > 2):
         continue
-    deltaCpu = cpuData[maxIndex-weeksBefore] - cpuData[maxIndex-weeksBefore-1]
+    deltaCpu = cpuData[maxIndex-weeksBefore][1] - cpuData[maxIndex-weeksBefore-1][1]
     dataTier = datasetName.split('/')[2]
     age = maxIndex*7
     size = phedexData_.getDatasetSize(datasetName)
@@ -57,7 +57,7 @@ for dataset in datasets:
     jsonData = jsonDataCPU.get('data')[0]
     accData = jsonData.get('data')
     maxAccValue = int(accData[maxIndex][1])
-    deltaCpu = accData[maxIndex-weeksBefore] - accData[maxIndex-weeksBefore-1]
+    deltaAcc = accData[maxIndex-weeksBefore][1] - accData[maxIndex-weeksBefore-1][1]
     fs = open('/local/cmsprod/IntelROCCS/DataDealer/Visualizations/datasetTrend.csv', 'a')
     fs.write("%s,%d,%d,%d,%d,%d,%s,%d,%d\n" % (datasetName, maxCpuValue, deltaCpu, maxAccValue, deltaAcc, popularityTime, dataTier, size, age))
     fs.close()
