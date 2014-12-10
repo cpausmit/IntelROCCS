@@ -6,7 +6,7 @@ import sys, json, datetime
 from operator import itemgetter
 import phedexData, popDbData, phedexApi, popDbApi
 
-fs = open('/local/cmsprod/IntelROCCS/DataDealer/Visualizations/datasetTrend.csv', 'w')
+fs = open('/local/cmsprod/IntelROCCS/DataDealer/Visualizations/datasets.csv', 'w')
 fs.write("dataset,maxCPU,deltaCPU,maxAcc,deltaAcc,popularityTime,dataTier,size,age\n")
 fs.close()
 phedexData_ = phedexData.phedexData()
@@ -50,7 +50,7 @@ for dataset in datasets:
     if (popularityTime < 2):
         continue
     deltaCpu = cpuData[maxIndex-weeksBefore][1] - cpuData[maxIndex-weeksBefore-1][1]
-    dataTier = datasetName.split('/')[2]
+    dataTier = datasetName.split('/')[3]
     age = maxIndex*7
     size = phedexData_.getDatasetSize(datasetName)
     jsonDataAcc = popDbApi_.getSingleDSstat(aggr='week', orderby='naccess', name=dataset)
@@ -58,6 +58,6 @@ for dataset in datasets:
     accData = jsonData.get('data')
     maxAccValue = int(accData[maxIndex][1])
     deltaAcc = accData[maxIndex-weeksBefore][1] - accData[maxIndex-weeksBefore-1][1]
-    fs = open('/local/cmsprod/IntelROCCS/DataDealer/Visualizations/datasetTrend.csv', 'a')
+    fs = open('/local/cmsprod/IntelROCCS/DataDealer/Visualizations/datasets.csv', 'a')
     fs.write("%s,%d,%d,%d,%d,%d,%s,%d,%d\n" % (datasetName, maxCpuValue, deltaCpu, maxAccValue, deltaAcc, popularityTime, dataTier, size, age))
     fs.close()
