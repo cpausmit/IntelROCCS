@@ -24,7 +24,7 @@ for dataset in datasets:
     jsonData = jsonDataCPU.get('data')[0]
     datasetName = jsonData.get('name')
     cpuData = jsonData.get('data')
-    maxValue = max(cpuData, key=itemgetter(1)
+    maxValue = max(cpuData, key=itemgetter(1))
     maxIndex = cpuData.index(maxValue)
     print maxIndex
     print maxValue
