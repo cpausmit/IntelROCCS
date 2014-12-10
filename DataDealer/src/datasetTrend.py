@@ -19,7 +19,6 @@ dates = dict()
 for dataset in datasets:
     weeksBefore = 0
     weeksAfter = 0
-    deltaValue = 0.0
     jsonDataCPU = popDbApi_.getSingleDSstat(aggr='week', orderby='totcpu', name=dataset)
     jsonData = jsonDataCPU.get('data')[0]
     datasetName = jsonData.get('name')
@@ -32,7 +31,7 @@ for dataset in datasets:
     index = maxIndex - 1
     check = 0
     while index >=0:
-        if cpuData[index][1] < 0.5*maxCpuValue:
+        if cpuData[index][1] < 0.25*maxCpuValue:
             check += 1
             if check == 2:
                 weeksBefore = maxIndex - index - 2
