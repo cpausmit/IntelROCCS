@@ -3,27 +3,24 @@
 # Data modeling
 #---------------------------------------------------------------------------------------------------
 import sys, json, datetime
+from operator import itemgetter
 import phedexData, popDbData, phedexApi, popDbApi
 
 phedexData = phedexData.phedexData()
-datasets = phedexData.getAllDatasets()
+#datasets = phedexData.getAllDatasets()
+datasets = ['/DYJetsToLL_M-50_TuneZ2Star_8TeV-madgraph-tarball/Summer12-PU_S7_START52_V9-v2/AODSIM']
 phedexApi_ = phedexApi.phedexApi()
 popDbApi_ = popDbApi.popDbApi()
 startDates = []
 dates = dict()
 for dataset in datasets:
-    jsonData = phedexApi_.data(dataset=dataset, level='block', create_since='0')
-    timestamp = jsonData.get('phedex').get('dbs')[0].get('dataset')[0].get('time_create')
-    startDate = datetime.datetime.fromtimestamp(timestamp)
-    dates[dataset] = startDate
-    startDates.append(startDate)
-startDate = min(startDates)
-endDate = datetime.datetime.now()
-jsonDataCPU = popDbApi_.getDSNdata(tstart=startDate.strftime('%Y-%m-%d'), tstop=endDate.strftime('%Y-%m-%d'), aggr='week', orderby='totcpu')
-fs = open('/local/cmsprod/IntelROCCS/DataDealer/Visualizations/cpu.tsv', 'w')
-json.dump(jsonDataCPU, fs)
-fs.close()
-jsonDataAcc = popDbApi_.getDSNdata(tstart=startDate.strftime('%Y-%m-%d'), tstop=endDate.strftime('%Y-%m-%d'), aggr='week', orderby='naccess')
-fs = open('/local/cmsprod/IntelROCCS/DataDealer/Visualizations/acc.tsv', 'w')
-json.dump(jsonDataAcc, fs)
-fs.close()
+    jsonDataCPU = popDbApi_.getSingleDSstat(aggr='week', orderby='totcpu', name=dataset)
+    jsonData = jsonDataCPU.get('data')[0]
+    datasetName = jsonData.get('name')
+    print datasetName
+    cpuHours = jsonData.get('data')
+    norm = max(cpuHours, key=itemgetter(1))/100.0
+    for week in cpuHours:
+        date = datetime.datetime.fromtimestamp(float(week[0])/10**3).strftime('%Y-%m-%d')
+        cpuH = week[1]/norm
+        print date + "\t" + '*' * cpuH
