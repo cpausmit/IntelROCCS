@@ -26,12 +26,10 @@ for dataset in datasets:
     maxValue = max(cpuData, key=itemgetter(1))
     maxIndex = cpuData.index(maxValue)
     maxCpuValue = int(maxValue[1])
-    print maxIndex
-    print maxCpuValue
     index = maxIndex - 1
     check = 0
     while index >=0:
-        if cpuData[index][1] < 0.25*maxCpuValue:
+        if cpuData[index][1] < 0.5*maxCpuValue:
             check += 1
             if check == 2:
                 weeksBefore = maxIndex - index - 2
@@ -49,7 +47,7 @@ for dataset in datasets:
             check = 0
         index += 1
     popularityTime = weeksBefore + weeksAfter + 1
-    if (popularityTime > 2):
+    if (popularityTime < 2):
         continue
     deltaCpu = cpuData[maxIndex-weeksBefore][1] - cpuData[maxIndex-weeksBefore-1][1]
     dataTier = datasetName.split('/')[2]
