@@ -7,7 +7,7 @@ from operator import itemgetter
 import phedexData, popDbData, phedexApi, popDbApi
 
 fs = open('/local/cmsprod/IntelROCCS/DataDealer/Visualizations/datasets.csv', 'w')
-fs.write("dataset,maxCPU,deltaCPU,maxAcc,deltaAcc,popularityTime,dataTier,size,age\n")
+fs.write("dataset,maxCPU,deltaCPU,maxAcc,deltaAcc,popularityTime,dataTier,sizeGb,age\n")
 fs.close()
 phedexData_ = phedexData.phedexData()
 datasets = phedexData_.getAllDatasets()
