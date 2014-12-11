@@ -57,7 +57,7 @@ for dataset in datasets:
     jsonDataAcc = popDbApi_.getSingleDSstat(aggr='week', orderby='naccess', name=dataset)
     if not jsonDataAcc:
         continue
-    jsonData = jsonDataCPU.get('data')[0]
+    jsonData = jsonDataAcc.get('data')[0]
     accData = jsonData.get('data')
     maxAccValue = int(accData[maxIndex][1])
     deltaAcc = accData[maxIndex-weeksBefore][1] - accData[maxIndex-weeksBefore-1][1]
