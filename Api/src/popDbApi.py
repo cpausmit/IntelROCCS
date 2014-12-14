@@ -26,7 +26,16 @@ class popDbApi():
         self.cert = config.get('PopDB', 'certificate')
         self.key = config.get('PopDB', 'key')
         self.cookie = config.get('PopDB', 'sso_cookie')
-        self.renewSsoCookie()
+        self.deadline = config.getint('Phedex', 'expiration_timer')
+        timeNow = datetime.datetime.now()
+        deltaNhours = datetime.timedelta(seconds = 60*60*(self.deadline))
+        modTime = datetime.datetime.fromtimestamp(0)
+        if (not os.path.isfile(self.cookie)) or (os.path.getsize(self.cookie) == 0):
+            self.renewSsoCookie()
+        else:
+            modTime = datetime.datetime.fromtimestamp(os.path.getmtime(self.cookie))
+            if (timeNow-deltaNhours) > modTime:
+                self.renewSsoCookie()
 
 #===================================================================================================
 #  H E L P E R S

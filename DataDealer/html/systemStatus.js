@@ -49,7 +49,7 @@ var colors = headerBoxes.selectAll("g")
 colors.append("rect")
     .attr("height", 10)
     .attr("width", 10)
-    .style("fill", function(d) { console.log(d); return d});
+    .style("fill", function(d) { return d;});
 
 headerSvg.append("text")
     .attr("x", 125)
@@ -70,9 +70,9 @@ d3.csv("system.csv", type, function(error, data) {
         .enter().append("g")
         .attr("transform", function(d, i) { return "translate(0, " + (margin.top + (i * barHeight)) + ")"; })
         .on("mouseover", function(d, i){
-            d3.select("#rec" + i).style("fill", function() { return d3.rgb(d3.select("#rec" + i).style("fill")).darker()});
-            d3.select("#bar" + i).style("fill", function() { return d3.rgb(d3.select("#bar" + i).style("fill")).darker()});
-            d3.select("#sub" + i).style("fill", function() { return d3.rgb(d3.select("#sub" + i).style("fill")).darker()});
+            d3.select("#rec" + i).style("fill", function() { return d3.rgb(d3.select("#rec" + i).style("fill")).darker();});
+            d3.select("#bar" + i).style("fill", function() { return d3.rgb(d3.select("#bar" + i).style("fill")).darker();});
+            d3.select("#sub" + i).style("fill", function() { return d3.rgb(d3.select("#sub" + i).style("fill")).darker();});
             var tipx = d3.select("#rec" + i).attr("width");
             var tipy = margin.top + (barHeight * i) - 7;
             cputip.attr("x", tipx);
@@ -89,9 +89,9 @@ d3.csv("system.csv", type, function(error, data) {
             storagetip.style("fill", d3.rgb("white").brighter());
             storagetip.text((d.used/1000).toFixed(2) + " TB");})
         .on("mouseout", function(d, i){
-            d3.select("#rec" + i).style("fill", function() { return d3.rgb(d3.select("#rec" + i).style("fill")).brighter()});
-            d3.select("#bar" + i).style("fill", function() { return d3.rgb(d3.select("#bar" + i).style("fill")).brighter()});
-            d3.select("#sub" + i).style("fill", function() { return d3.rgb(d3.select("#sub" + i).style("fill")).brighter()});
+            d3.select("#rec" + i).style("fill", function() { return d3.rgb(d3.select("#rec" + i).style("fill")).brighter();});
+            d3.select("#bar" + i).style("fill", function() { return d3.rgb(d3.select("#bar" + i).style("fill")).brighter();});
+            d3.select("#sub" + i).style("fill", function() { return d3.rgb(d3.select("#sub" + i).style("fill")).brighter();});
             cputip.style("visibility", "hidden");
             storagetip.style("visibility", "hidden");});
 
@@ -104,7 +104,7 @@ d3.csv("system.csv", type, function(error, data) {
         .text(function(d) { return d.site; });
 
     site.append("rect")
-        .attr("id", function(d, i) { return "rec" + i })
+        .attr("id", function(d, i) { return "rec" + i; })
         .attr("class", "rec")
         .attr("x", margin.left)
         .attr("width", barWidth)
@@ -112,14 +112,14 @@ d3.csv("system.csv", type, function(error, data) {
         .style("fill", d3.rgb("gray").brighter());
 
     site.append("rect")
-        .attr("id", function(d, i) { return "bar" + i })
+        .attr("id", function(d, i) { return "bar" + i; })
         .attr("x", margin.left)
         .attr("width", function(d) { return x(d.used/d.quota); })
         .attr("height", barHeight-1)
         .style("fill", function(d) { return color(d.cpu/d.used); });
 
     site.append("rect")
-        .attr("id", function(d, i) { return "sub" + i })
+        .attr("id", function(d, i) { return "sub" + i; })
         .attr("x", function(d) { return margin.left + x(d.used/d.quota); })
         .attr("width", function(d) { return x(((d.used + d.subscribed)/d.quota) - (d.used/d.quota)); })
         .attr("height", barHeight-1)

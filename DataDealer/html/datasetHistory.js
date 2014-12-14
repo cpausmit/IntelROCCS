@@ -1,52 +1,87 @@
-var margin = {top: 30, right: 20, bottom: 20, left: 30};
-var height = 500 - margin.bottom - margin.top;
-var barWidth = 20;
+var margin = {top: 100, right: 50, bottom: 50, left: 50};
+var graphWidth = screen.width - margin.left - margin.right;
+var graphHeight = screen.height - margin.top - margin.bottom;
 
-var y = d3.scale.linear().range([0, height]);
+var headers = ["CPU Hours", "Accesses", "CPU Threshold", "Acc Threshold"];
+var ids = ["maxcpu", "maxacc", "dcpu", "dacc"]
+
+var x = d3.scale.linear().domain([0, headers.length]).range([0, graphWidth]);
+var yMaxCpu = d3.scale.linear().range([0, graphHeight]);
+var yMaxAcc = d3.scale.linear().range([0, graphHeight]);
+var yDeltaCpu = d3.scale.linear().range([0, graphHeight]);
+var yDeltaAcc = d3.scale.linear().range([0, graphHeight]);
 
 var chart = d3.select(".chart")
-        .attr("height", height + margin.bottom + margin.top);
+    .attr("width", graphWidth + margin.left + margin.right)
+    .attr("height", graphHeight + margin.top + margin.bottom);
 
-var allgroup = chart.append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+var graph = chart.append("g");
 
-var tooltip = chart.append("text")
-        .style("visibility", "hidden");
+var axises = graph.selectAll("g")
+    .data(headers)
+    .enter().append("g")
+        .attr("id", function(d, i) { return ids[i];});
 
-d3.tsv("datasetHistory.tsv", type, function(error, data) {
+axises.append("line")
+    .attr("transform", function(d, i) { return "translate(" + (margin.left + x(i)) + ", " + margin.top + ")"; })
+    .attr("x1", 0)
+    .attr("y1", 0)
+    .attr("x2", 0)
+    .attr("y2", graphHeight)
+    .attr("stroke-width", 3)
+    .attr("stroke", "black");
 
-    y.domain([0, d3.max(data, function(d) { return d.cpuh; })]);
+axises.append("text")
+    .attr("transform", function(d, i) { return "translate(" + (margin.left + x(i)) + ", " + margin.top + ")"; })
+    .attr("dy", graphHeight + 15)
+    .style("fill", "gray")
+    .style("text-anchor", "middle")
+    .text(function(d) { return d;});
 
-    chart.attr("width", margin.left + barWidth * data.length);
+axises.append("text")
+    .attr("class", "maxVal")
+    .attr("transform", function(d, i) { return "translate(" + (margin.left + x(i)) + ", " + margin.top + ")"; })
+    .attr("dy", -15)
+    .style("fill", "gray")
+    .style("text-anchor", "middle");
 
-    var bar = allgroup.selectAll("g")
+d3.csv("datasets.csv", type, function(error, data) {
+    var maxVals = [d3.max(data, function(d) { return d.maxCPU; }), d3.max(data, function(d) { return d.maxAcc; }), d3.max(data, function(d) { return d.deltaCPU; }), d3.max(data, function(d) { return d.deltaAcc; })];
+
+    console.log(maxVals[0]);
+    console.log(maxVals[1]);
+    console.log(maxVals[2]);
+    console.log(maxVals[3]);
+
+    yMaxCpu.domain([0, function() { return maxVals[0];}]);
+    yMaxAcc.domain([0, function() { return maxVals[1];}]);
+    yDeltaCpu.domain([0, function() { return maxVals[2];}]);
+    yDeltaAcc.domain([0, function() { return maxVals[3];}]);
+
+    axises.selectAll(".maxVal")
+        .data(headers)
+        .text(function(d, i) { return maxVals[i];});
+
+/*    var maxCpu = chart.select("#maxcpu")
         .data(data)
-        .enter().append("g")
-        .attr("transform", function(d, i) { return "translate(" + i * barWidth + ", 0)"; });
-
-    bar.append("rect")
-        .attr("y", function(d) { return height - y(d.cpuh); })
-        .attr("height", function(d) { return y(d.cpuh); })
-        .attr("width", barWidth - 1)
-        .on("mouseover", function(d, i){
-            var tipx = (barWidth) * i + margin.left + margin.right - 1;
-            var tipy = height - d3.select(this).attr("height");
-            tooltip.attr("x", tipx);
-            tooltip.attr("y", tipy);
-            tooltip.attr("dx", (barWidth-1)/2);
-            tooltip.attr("dy", 25);
-            tooltip.style("text-anchor", "center")
-            tooltip.style("visibility", "visible");
-            tooltip.style("fill", "black");
-            tooltip.text(d.cpuh);
-            d3.select(this).style("fill", "orange");})
-        .on("mouseout", function(){
-            tooltip.style("visibility", "hidden");
-            d3.select(this).style("fill", "steelblue");});
+        .enter().append("g").append("line")
+            .attr("x1", function() { return chart.select("#maxcpu").attr("x1");})
+            .attr("y1", function(d) { return yMaxCpu(d.maxCPU);})
+            .attr("x2", function() { return chart.select("#maxacc").attr("x1");})
+            .attr("y2", function(d) { return yMaxAcc(d.maxAcc);})
+            .attr("stroke-width", 1)
+            .attr("stroke", "steelblue");*/
 });
 
 function type(d) {
-    d.cpuh = +d.cpuh;
-    d.date = d.date;
+    d.dataset = d.dataset;
+    d.maxCPU = +d.maxCPU;
+    d.deltaCPU = +d.deltaCPU;
+    d.maxAcc = +d.maxAcc;
+    d.deltaAcc = +d.deltaAcc;
+    d.popularityTime = +d.popularityTime;
+    d.dataTier = d.dataTier;
+    d.sizeGb = +d.sizeGb;
+    d.age = +d.age;
     return d;
 }
