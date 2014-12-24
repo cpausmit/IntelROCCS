@@ -427,6 +427,8 @@ class CentralManager:
             if site in nstuckAtSite and abs(stmean -  nstuckAtSite[site]) > 3*strms:
                 print (" -- %-16s has too many stuck sets, disabling in SitesInfo"%(site))
                 active = 0
+            if site == 'T1_FR_CCIN2P3_Disk':
+                active = 0
             
             # summary of all sites
             outputFile.write("   %-6d %-9d %-9d %-12d %-20s \n"\
