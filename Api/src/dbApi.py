@@ -50,7 +50,7 @@ class dbApi():
         msg = msg.as_string()
         p = Popen(["/usr/sbin/sendmail", "-toi"], stdin=PIPE)
         p.communicate(msg)
-        raise Exception(" FATAL (%s - %s) -- Could not connect to db %s:%s" % (str(e.args[0]), str(e.args[1]), host, db))
+        raise Exception("FATAL (%s - %s) -- Could not connect to db %s:%s" % (str(e.args[0]), str(e.args[1]), host, db))
 
 #===================================================================================================
 #  M A I N   F U N C T I O N
@@ -77,8 +77,8 @@ class dbApi():
                 break
         else:
             if mysqlError:
-                print(" ERROR -- %s\nError msg: %s\n for query: %s\n and values: %s" % (str(e.args[0]), str(e.args[1]), str(query), str(values)))
+                print("ERROR -- %s -- \tfor query: %s -- \t and values: %s\n" % (str(e.args[1]), str(query), str(values)))
             else:
-                print(" ERROR -- %s\nMost likely caused by an incorrect number of values\n for query: %s\n and values: %s" % (str(e), str(query), str(values)))
+                print("ERROR -- %s -- \tfor  query: %s -- \t and values: %s\n" % (str(e), str(query), str(values)))
         return data
 
