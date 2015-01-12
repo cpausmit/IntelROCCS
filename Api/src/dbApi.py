@@ -58,15 +58,27 @@ class dbApi():
     def dbQuery(self, query, values=()):
         data = []
         values = tuple([str(value) for value in values])
-        try:
-            with self.dbCon:
-                cur = self.dbCon.cursor()
-                cur.execute(query, values)
-                for row in cur:
-                    data.append(row)
-        except MySQLdb.Error, e:
-            print(" ERROR -- %s\nError msg: %s\n for query: %s\n and values: %s" % (str(e.args[0]), str(e.args[1]), str(query), str(values)))
-        except TypeError, e:
-            print(" ERROR -- %s\nMost likely caused by an incorrect number of values\n for query: %s\n and values: %s" % (str(e), str(query), str(values)))
+        for attempt in range(3):
+            try:
+                mysqlError = 0
+                typeError = 0
+                with self.dbCon:
+                    cur = self.dbCon.cursor()
+                    cur.execute(query, values)
+                    for row in cur:
+                        data.append(row)
+            except MySQLdb.Error, e:
+                mysqlError = 1
+                continue
+            except TypeError, e:
+                typeError = 1
+                continue
+            else:
+                break
+        else:
+            if mysqlError:
+                print(" ERROR -- %s\nError msg: %s\n for query: %s\n and values: %s" % (str(e.args[0]), str(e.args[1]), str(query), str(values)))
+            else:
+                print(" ERROR -- %s\nMost likely caused by an incorrect number of values\n for query: %s\n and values: %s" % (str(e), str(query), str(values)))
         return data
 
