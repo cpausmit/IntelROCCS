@@ -30,4 +30,4 @@ class sites():
         values = [1, "AnalysisOps"]
         data = self.dbApi.dbQuery(query, values=values)
         invalid = re.compile('T1_*')
-        return [site[0] if (not (invalid.match(site[0]))) for site in data]
+        return [site[0] for site in data if (not (invalid.match(site[0])))]
