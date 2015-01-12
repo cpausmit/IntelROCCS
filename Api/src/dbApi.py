@@ -56,6 +56,10 @@ class dbApi():
         p.communicate(msg)
         raise Exception("FATAL (%s - %s) -- Could not connect to db %s:%s" % (str(e.args[0]), str(e.args[1]), host, db))
 
+    def _toStr(self, toList):
+        names = [formataddr(i) for i in zip(*toList)]
+        return ', '.join(names)
+
 #===================================================================================================
 #  M A I N   F U N C T I O N
 #===================================================================================================
