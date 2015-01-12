@@ -37,8 +37,8 @@ class dbApi():
             self.error(e, host, db)
 
     def error(self, e, host, db):
-        title = " FATAL IntelROCCS Error -- MIT Database"
-        text = " FATAL (%s - %s) -- Could not connect to db %s:%s" % (str(e.args[0]), str(e.args[1]), host, db)
+        title = "FATAL IntelROCCS Error -- MIT Database"
+        text = "FATAL -- %s" % (str(e.args[1]),)
         fromEmail = ("Bjorn Barrefors", "bjorn.peter.barrefors@cern.ch")
         toList = (["Bjorn Barrefors"], ["barrefors@gmail.com"])
         msg = MIMEMultipart()
@@ -54,7 +54,7 @@ class dbApi():
         msg = msg.as_string()
         p = Popen(["/usr/sbin/sendmail", "-toi"], stdin=PIPE)
         p.communicate(msg)
-        raise Exception("FATAL (%s - %s) -- Could not connect to db %s:%s" % (str(e.args[0]), str(e.args[1]), host, db))
+        raise Exception("FATAL -- %s" % (str(e.args[1]),))
 
     def _toStr(self, toList):
         names = [formataddr(i) for i in zip(*toList)]
