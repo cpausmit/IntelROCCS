@@ -83,7 +83,7 @@ class rockerBoard():
     def getSiteRankings(self, sites, datasetRankings):
         siteRankings = dict()
         for siteName in sites:
-            datasets = self.phedexData.getDatasetsAtSite(siteName)
+            datasets = self.phedexData.getAnalysisOpsDatasetsAtSite(siteName)
             rank = sum(datasetRankings[d] for d in datasets)
             siteRankings[siteName] = rank
         return siteRankings
@@ -100,7 +100,11 @@ class rockerBoard():
             if sizeSubscribedGb + datasetSizeGb > self.budget:
                 break
             del datasetRankings[datasetName]
-            siteName = self.weightedChoice(siteRankings)
+            siteRank = siteRankings
+            invalidSites = getSitesWithDataset(datasetName)
+            for siteName in invalidSites:
+                del siteRank[siteName]
+            siteName = self.weightedChoice(siteRank)
             sizeSubscribedGb += datasetSizeGb
             if siteName in subscriptions:
                 subscriptions[siteName].append(datasetName)
