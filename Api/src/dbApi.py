@@ -13,6 +13,10 @@
 # abort or keep executing.
 #---------------------------------------------------------------------------------------------------
 import sys, os, MySQLdb, datetime, subprocess, ConfigParser
+from email.MIMEText import MIMEText
+from email.MIMEMultipart import MIMEMultipart
+from email.Utils import formataddr
+from subprocess import Popen, PIPE
 
 class dbApi():
     def __init__(self):
