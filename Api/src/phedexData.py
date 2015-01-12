@@ -52,7 +52,7 @@ class phedexData:
         if apiCall == "blockReplicas":
             jsonData = self.phedexApi.blockReplicas(node='T*', subscribed='y', show_dataset='y')
             if not jsonData:
-                print(" FATAL -- Could not update cache due to phedex error")
+                print("FATAL -- Could not update cache due to phedex error")
                 return 1
             self.buildBlockReplicasCache(jsonData)
         return 0
