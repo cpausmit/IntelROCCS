@@ -17,7 +17,7 @@ import sys, os, MySQLdb, datetime, subprocess, ConfigParser
 class dbApi():
     def __init__(self):
         config = ConfigParser.RawConfigParser()
-        config.read('/usr/local/IntelROCCS/DataDealer/intelroccs.cfg')
+        config.read('/usr/local/IntelROCCS/DataDealer/intelroccs.test.cfg')
         host = config.get('DB', 'host')
         db = config.get('DB', 'db')
         user = config.get('DB', 'username')
