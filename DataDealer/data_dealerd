@@ -7,7 +7,7 @@
 # set up variables
 tag=`date "+%Y%m%d"`
 logFile=/local/cmsprod/IntelROCCS/DataDealer/Logs/data_dealer-$tag.log
-stdbuf -o0 -e0 /usr/local/IntelROCCS/DataDealer/datasetTrend.py    >> $logFile 2>&1
+#stdbuf -o0 -e0 /usr/local/IntelROCCS/DataDealer/datasetTrend.py    >> $logFile 2>&1
 
 # always run on the same tim
 today=$(date -d "now" +%Y/%m/%d)

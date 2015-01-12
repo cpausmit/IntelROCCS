@@ -22,10 +22,35 @@ class dbApi():
         db = config.get('DB', 'db')
         user = config.get('DB', 'username')
         passwd = config.get('DB', 'password')
-        try:
-            self.dbCon = MySQLdb.connect(host=host, user=user, passwd=passwd, db=db)
-        except MySQLdb.Error, e:
-            raise Exception(" FATAL (%s - %s) -- Could not connect to db %s:%s" % (str(e.args[0]), str(e.args[1]), host, db))
+        for attempt in range(3):
+            try:
+                self.dbCon = MySQLdb.connect(host=host, user=user, passwd=passwd, db=db)
+            except MySQLdb.Error, e:
+                continue
+            else:
+                break
+        else:
+            self.error(e, host, db)
+
+    def error(self, e, host, db):
+        title = " FATAL IntelROCCS Error -- MIT Database"
+        text = " FATAL (%s - %s) -- Could not connect to db %s:%s" % (str(e.args[0]), str(e.args[1]), host, db)
+        fromEmail = ("Bjorn Barrefors", "bjorn.peter.barrefors@cern.ch")
+        toList = (["Bjorn Barrefors"], ["barrefors@gmail.com"])
+        msg = MIMEMultipart()
+        msg['Subject'] = title
+        msg['From'] = formataddr(fromEmail)
+        msg['To'] = self._toStr(toList)
+        msg1 = MIMEMultipart("alternative")
+        msgText1 = MIMEText("<pre>%s</pre>" % text, "html")
+        msgText2 = MIMEText(text)
+        msg1.attach(msgText2)
+        msg1.attach(msgText1)
+        msg.attach(msg1)
+        msg = msg.as_string()
+        p = Popen(["/usr/sbin/sendmail", "-toi"], stdin=PIPE)
+        p.communicate(msg)
+        raise Exception(" FATAL (%s - %s) -- Could not connect to db %s:%s" % (str(e.args[0]), str(e.args[1]), host, db))
 
 #===================================================================================================
 #  M A I N   F U N C T I O N
