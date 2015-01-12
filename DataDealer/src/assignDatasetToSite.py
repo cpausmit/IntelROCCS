@@ -341,7 +341,7 @@ def getActiveSites(debug=0):
 	# get the active site list
 	#cmd  = 'wget http://t3serv001.mit.edu/~cmsprod/IntelROCCS/Detox/ActiveSites.txt'
 	cmd  = 'wget http://t3serv001.mit.edu/~cmsprod/IntelROCCS/Detox/SitesInfo.txt'
-	cmd += ' -O - 2> /dev/null | grep -v "#" | tr -s " "'
+	cmd += ' -O - 2> /dev/null | grep -v "#" | grep T2_ | tr -s " "'
 	for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
 		site = line[:-1]
 		f = site.split(' ')

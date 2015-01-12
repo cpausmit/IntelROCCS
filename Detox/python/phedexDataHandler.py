@@ -106,8 +106,8 @@ class PhedexDataHandler:
                         phedexDatasets[datasetName] = phedexDataset.PhedexDataset(datasetName)
                     dataset = phedexDatasets[datasetName]
 
-                    if site == 'T2_US_MIT':
-                        if datasetName == '/WWJetsTo2L2Nu_TuneZ2star_8TeV-madgraph-tauola/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM':
+                    if site == 'T2_US_CALTECH':
+                        if datasetName == '/QCD_Pt-10to20_EMEnriched_Tune4C_13TeV_pythia8/Spring14miniaod-castor_PU20bx25_POSTLS170_V5-v1/MINIAODSIM':
                             print siterpl
                     size = float(siterpl["bytes"])/1000/1000/1000
                     strdone = siterpl["complete"]
