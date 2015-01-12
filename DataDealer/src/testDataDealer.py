@@ -14,26 +14,16 @@ config.read('/usr/local/IntelROCCS/DataDealer/intelroccs.test.cfg')
 #===================================================================================================
 #  M A I N
 #===================================================================================================
-# test db api
-print " ----  Test DB API  ---- "
-dbApi_ = dbApi.dbApi()
-siteName = "T2_US_Nebraska"
-# passing test
-query = "SELECT Quotas.SizeTb FROM Quotas INNER JOIN Sites ON Quotas.SiteId=Sites.SiteId INNER JOIN Groups ON Groups.GroupId=Quotas.GroupId WHERE Sites.SiteName=%s AND Groups.GroupName=%s"
-values = [siteName, "AnalysisOps"]
-data = dbApi_.dbQuery(query, values=values)
-print data
-
-# incorrect number of values
-query = "SELECT Quotas.SizeTb FROM Quotas INNER JOIN Sites ON Quotas.SiteId=Sites.SiteId INNER JOIN Groups ON Groups.GroupId=Quotas.GroupId WHERE Sites.SiteName=%s AND Groups.GroupName=%s"
-values = [siteName]
-data = dbApi_.dbQuery(query, values=values)
-
-# incorrect value
-query = "SELECT Quotas.SizeTb FROM Quotas INNER JOIN Sites ON Quotas.SiteI=Sites.SiteId INNER JOIN Groups ON Groups.GroupId=Quotas.GroupId WHERE Sites.SiteName=%s AND Groups.GroupName=%s"
-values = [siteName, "AnalysisOps"]
-data = dbApi_.dbQuery(query, values=values)
-print ""
+# # test db api
+# print " ----  Test DB API  ---- "
+# dbApi_ = dbApi.dbApi()
+# siteName = "T2_US_Nebraska"
+# # passing test
+# query = "SELECT Quotas.SizeTb FROM Quotas INNER JOIN Sites ON Quotas.SiteId=Sites.SiteId INNER JOIN Groups ON Groups.GroupId=Quotas.GroupId WHERE Sites.SiteName=%s AND Groups.GroupName=%s"
+# values = [siteName, "AnalysisOps"]
+# data = dbApi_.dbQuery(query, values=values)
+# print data
+# print ""
 
 # # get all datasets
 # print " ----  Get Datasets  ---- "
@@ -41,11 +31,12 @@ print ""
 # datasets = phedexData.getAllDatasets()
 # print ""
 
-# # get all sites
-# print " ----  Get Sites  ---- "
-# sites_ = sites.sites()
-# availableSites = sites_.getAvailableSites()
-# print ""
+# get all sites
+print " ----  Get Sites  ---- "
+sites_ = sites.sites()
+availableSites = sites_.getAvailableSites()
+print availableSites
+print ""
 
 # # rocker board algorithm
 # print " ----  Rocker Board Algorithm  ---- "
