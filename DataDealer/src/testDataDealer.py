@@ -2,7 +2,7 @@
 #---------------------------------------------------------------------------------------------------
 # This is a test script for data dealer
 #---------------------------------------------------------------------------------------------------
-import sys, datetime
+import sys, datetime, ConfigParser
 import sites, rockerBoard, subscribe, dataDealerReport
 import dbApi, phedexData
 
