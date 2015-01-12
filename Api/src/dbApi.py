@@ -21,7 +21,7 @@ from subprocess import Popen, PIPE
 class dbApi():
     def __init__(self):
         config = ConfigParser.RawConfigParser()
-        config.read('/usr/local/IntelROCCS/DataDealer/intelroccs.test.cfg')
+        config.read('/usr/local/IntelROCCS/DataDealer/intelroccs.cfg')
         host = config.get('DB', 'host')
         db = config.get('DB', 'db')
         user = config.get('DB', 'username')
