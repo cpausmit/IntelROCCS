@@ -2,7 +2,8 @@
 #---------------------------------------------------------------------------------------------------
 #
 # This script will find a Tier-2 appropriate to serve as the initial location for the specifified
-# dataset.
+# dataset. It will also make sure that the sample copies on all Tier-1 disk spaces owned by
+# 'DataOps' phedex group will be signed over to the 'AnalysisOps' group.
 #
 #---------------------------------------------------------------------------------------------------
 import os, sys, subprocess, getopt, re, random, urllib, urllib2, httplib, json
@@ -211,6 +212,23 @@ class phedexApi:
 		if check:
 			return 1, " Error - self.phedexCall with response: " + response
 		return 0, response
+	
+	def updateSubscription(self, node='', dataset='', group='AnalysisOps',
+						   format='json', instance='prod'):
+		"""
+		_updateSubscription_
+
+		Update an existing subscription through a call to PhEDEx API.
+		"""
+		name = "updatesubscription"
+		if not (node and dataset):
+			return 1, "Error - %s: node and dataset are needed."%(name)
+		values = {'node' : node, 'dataset' : dataset, 'group' : group}
+		url = urllib.basejoin(self.phedexBase, "%s/%s/%s" % (format,instance,name))
+		check, response = self.phedexCall(url, values)
+		if check:
+			return 1, "ERROR - self.phedexCall with response: " + response
+		return 0, response
 
 #---------------------------------------------------------------------------------------------------
 class HTTPSGridAuthHandler(urllib2.HTTPSHandler):
@@ -292,10 +310,11 @@ def convertSizeToGb(sizeTxt):
 	# return the size in GB as a float
 	return sizeGb
 
-def findExistingSubscriptions(dataset,debug=0):
+def findExistingSubscriptions(dataset,group='AnalysisOps',sitePattern='T2*',debug=0):
 
 	webServer = 'https://cmsweb.cern.ch/'
-	phedexBlocks = 'phedex/datasvc/xml/prod/blockreplicas?subscribed=y&group=AnalysisOps&node=T2*&dataset=' + dataset
+	phedexBlocks = 'phedex/datasvc/xml/prod/blockreplicas?subscribed=y&group=%s&node=%s&dataset=%s'\
+		       %(group,sitePattern,dataset)
 	cert = os.environ.get('X509_USER_PROXY')
 	url = '"'+webServer+phedexBlocks + '"'
 	#cmd = 'curl --cert ' + cert + ' -k -H "Accept: text/xml" ' + url + ' 2> /dev/null'
@@ -458,6 +477,36 @@ def submitSubscriptionRequests(sites,datasets=[],debug=0):
 			print response
 			continue
 
+def submitUpdateSubscriptionRequest(sites,datasets=[],debug=0):
+	# submit the request for an update of the subscription
+
+	# check our paramters for phedex call
+	group  = 'AnalysisOps'
+	# make sure we have datasets to subscribe
+	dataset = 'EMPTY'
+	if len(datasets) < 1:
+		print " ERROR - Trying to submit empty update subscription request for " + site
+		return
+	else:
+		dataset = datasets[0]
+		
+	# setup phedex api
+	phedex = phedexApi()
+
+	# loop through all identified sites
+	for site in sites:
+		if debug>-1:
+			print " --> phedex.updateSubscription(node=%s, \ "%(site)
+			print "                               data=%s, \ "%(dataset)
+			print "                               group=%s ) "%(group)
+
+		check,response = phedex.updateSubscription(node=site,dataset=dataset,group=group,
+							   instance='prod')
+		if check:
+			print " ERROR - phedexApi.updateSubscription failed for site: " + site
+			print response
+			continue
+
 #===================================================================================================
 #  M A I N
 #===================================================================================================
@@ -524,6 +573,29 @@ else:
 if not exe:
 	print '\n DAS information:  %.1f GB  %s'%(sizeGb,dataset)
 
+# prepare subscription list
+datasets = []
+datasets.append(dataset)
+
+
+# first make sure this dataset is not owned by DataOps group anymore at the Tier-1 site(s)
+#-----------------------------------------------------------------------------------------
+
+tier1Sites = findExistingSubscriptions(dataset,'DataOps','T1_*_Disk',debug)
+if len(tier1Sites) > 0:
+	print '\n Resident under DataOps group on the following Tier-1 disks:'
+	for tier1Site in tier1Sites:
+		print ' --> ' + tier1Site
+	print ''
+
+	# update subscription at Tier-1 sites
+	if exe:
+		# make AnalysisOps the owner of all copies at Tier-1 site(s)
+		submitUpdateSubscriptionRequest(tier1Sites,datasets,debug)
+	else:
+		print '\n -> WARNING: not doing anything .... please use  --exec  option.\n'
+
+
 # has the dataset already been subscribed?
 #-----------------------------------------
 # - no test that the complete dataset has been subscribed (could be just one block?)
@@ -531,11 +603,11 @@ if not exe:
 #
 # --> need to verify this is sufficient
 
-siteNames = findExistingSubscriptions(dataset,debug)
+siteNames = findExistingSubscriptions(dataset,'AnalysisOps','T2_*',debug)
 nAdditionalCopies = nCopies - len(siteNames)
 
 if len(siteNames) >= nCopies:
-	print ' Already subscribed on Tier-2:'
+	print '\n Already subscribed on Tier-2:'
 	for siteName in siteNames:
 		print ' --> ' + siteName
 	print '\n The job is done already: EXIT!\n'
@@ -568,12 +640,9 @@ if not exe:
 # make phedex subscription
 #-------------------------
 
-# prepare subscription list
-datasets = []
-datasets.append(dataset)
-
 # subscribe them
 if exe:
+	# make subscriptions to Tier-2 site(s)
 	submitSubscriptionRequests(sites,datasets)
 else:
-	print ' -> not subscribing .... please use  --exec  option.'
+	print '\n -> WARNING: not doing anything .... please use  --exec  option.\n'
