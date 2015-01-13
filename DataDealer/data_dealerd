@@ -5,11 +5,7 @@
 # v1.1                                                                   B.Barrefors (Aug 11, 2014)
 # --------------------------------------------------------------------------------------------------
 # set up variables
-tag=`date "+%Y%m%d"`
-logFile=/local/cmsprod/IntelROCCS/DataDealer/Logs/data_dealer-$tag.log
-#stdbuf -o0 -e0 /usr/local/IntelROCCS/DataDealer/datasetTrend.py    >> $logFile 2>&1
-
-# always run on the same tim
+# always run on the same time
 today=$(date -d "now" +%Y/%m/%d)
 runTime=$(date -d "$today 03:00" +%s)
 currentTime=$(date -d "now" +%s)
@@ -47,7 +43,7 @@ do
     echo "   --> "`date`                                               >> $logFile
     echo " "                                                           >> $logFile
     stdbuf -o0 -e0 /usr/local/IntelROCCS/DataDealer/dataDealer.py      >> $logFile 2>&1
-    stdbuf -o0 -e0 /usr/local/IntelROCCS/DataDealer/systemData.py      >> $logFile 2>&1
+    #stdbuf -o0 -e0 /usr/local/IntelROCCS/DataDealer/systemData.py      >> $logFile 2>&1
 
     # ensure that the log and report information is updated
     rsync -Cavz --delete /local/cmsprod/IntelROCCS/DataDealer /home/cmsprod/public_html/IntelROCCS >& /dev/null
