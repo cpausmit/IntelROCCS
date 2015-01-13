@@ -20,11 +20,15 @@
 # the caller to check for actual data.
 #---------------------------------------------------------------------------------------------------
 import sys, re, os, urllib, urllib2, httplib, json, datetime, subprocess, ConfigParser
+from email.MIMEText import MIMEText
+from email.MIMEMultipart import MIMEMultipart
+from email.Utils import formataddr
+from subprocess import Popen, PIPE
 
 class phedexApi:
     def __init__(self):
         config = ConfigParser.RawConfigParser()
-        config.read('/usr/local/IntelROCCS/DataDealer/intelroccs.cfg')
+        config.read('/usr/local/IntelROCCS/DataDealer/intelroccs.test.cfg')
         self.phedexBase = config.get('Phedex', 'base')
 
 #===================================================================================================
@@ -35,23 +39,21 @@ class phedexApi:
         opener = urllib2.build_opener(HTTPSGridAuthHandler())
         request = urllib2.Request(url, data)
         strout = ""
-        try:
-            strout = opener.open(request)
-        except urllib2.HTTPError, e:
-            errorMsg = str(e)
-            phedexMsg = e.read()
-            print(" FATAL -- %s\PHEDEX msg: %s" % (errorMsg, phedexMsg))
-            return 0
-        except urllib2.URLError, e:
-            errorMsg = str(e)
-            print(" FATAL -- %s\nMost likely due to invalid proxy or error in phedex base: %s" % (errorMsg, self.phedexBase))
-            return 0
-        response = strout.read()
-        try:
-            jsonData = json.loads(response)
-        except ValueError, e:
-            print(" FATAL -- No JSON data returned\nMost likely due to error in phedex url base: %s" % (self.phedexBase))
-            return 0
+        for attempt in range(3):
+            try:
+                strout = opener.open(request)
+                response = strout.read()
+                jsonData = json.loads(response)
+            except urllib2.HTTPError, e:
+                continue
+            except urllib2.URLError, e:
+                continue
+            except ValueError, e:
+                continue
+            else:
+                break
+        else:
+            self.error(e)
         return jsonData
 
     # Information about the correct xml structure can be found here: https://cmsweb.cern.ch/phedex/datasvc/doc/inject
@@ -85,6 +87,30 @@ class phedexApi:
         xmlData = xml + "</data>"
         return successDatasets, xmlData
 
+    def error(self, e):
+        title = "FATAL IntelROCCS Error -- PhEDEx"
+        text = "FATAL -- %s" % (str(e),)
+        fromEmail = ("Bjorn Barrefors", "bjorn.peter.barrefors@cern.ch")
+        toList = (["Bjorn Barrefors"], ["barrefors@gmail.com"])
+        msg = MIMEMultipart()
+        msg['Subject'] = title
+        msg['From'] = formataddr(fromEmail)
+        msg['To'] = self._toStr(toList)
+        msg1 = MIMEMultipart("alternative")
+        msgText1 = MIMEText("<pre>%s</pre>" % text, "html")
+        msgText2 = MIMEText(text)
+        msg1.attach(msgText2)
+        msg1.attach(msgText1)
+        msg.attach(msg1)
+        msg = msg.as_string()
+        p = Popen(["/usr/sbin/sendmail", "-toi"], stdin=PIPE)
+        p.communicate(msg)
+        raise Exception("FATAL -- %s" % (str(e),))
+
+    def _toStr(self, toList):
+        names = [formataddr(i) for i in zip(*toList)]
+        return ', '.join(names)
+
 #===================================================================================================
 #  A P I   C A L L S
 #===================================================================================================
@@ -93,7 +119,7 @@ class phedexApi:
         url = "%s/json/%s/blockreplicas" % (self.phedexBase, instance)
         jsonData = self.call(url, values)
         if not jsonData:
-            print(" ERROR -- blockReplicas call failed for values: block=%s, dataset=%s, node=%s, se=%s, update_since=%s, create_since=%s, complete=%s, dist_complete=%s, subscribed=%s, custodial=%s, group=%s, show_dataset=%s, instance=%s" % (block, dataset, node, se, update_since, create_since, complete, dist_complete, subscribed, custodial, group, show_dataset, instance))
+            print("ERROR -- blockReplicas call failed for values: block=%s, dataset=%s, node=%s, se=%s, update_since=%s, create_since=%s, complete=%s, dist_complete=%s, subscribed=%s, custodial=%s, group=%s, show_dataset=%s, instance=%s\n" % (block, dataset, node, se, update_since, create_since, complete, dist_complete, subscribed, custodial, group, show_dataset, instance))
         return jsonData
 
     def data(self, dataset='', block='', file_='', level='', create_since='', instance='prod'):
@@ -101,7 +127,7 @@ class phedexApi:
         url = "%s/json/%s/data" % (self.phedexBase, instance)
         jsonData = self.call(url, values)
         if not jsonData:
-            print(" ERROR -- data call failed for values: dataset=%s, block=%s, file=%s, level=%s, create_since=%s, instance=%s" % (dataset, block, file_, level, create_since, instance))
+            print("ERROR -- data call failed for values: dataset=%s, block=%s, file=%s, level=%s, create_since=%s, instance=%s\n" % (dataset, block, file_, level, create_since, instance))
         return jsonData
 
     def delete(self, node='', data='', level='', rm_subscriptions='', comments='', instance='prod'):
@@ -109,7 +135,7 @@ class phedexApi:
         url = "%s/json/%s/delete" % (self.phedexBase, instance)
         jsonData = self.call(url, values)
         if not jsonData:
-            logFile.write(" ERROR -- delete call failed for values: node=%s, level=%s, rm_subscriptions=%s, comments=%s, instance=%s" % (node, level, rm_subscriptions, comments, instance))
+            logFile.write("ERROR -- delete call failed for values: node=%s, level=%s, rm_subscriptions=%s, comments=%s, instance=%s\n" % (node, level, rm_subscriptions, comments, instance))
         return jsonData
 
     def deleteRequests(self, request='', node='', create_since='', limit='', approval='', requested_by='', instance='prod'):
@@ -117,7 +143,7 @@ class phedexApi:
         url = "%s/json/%s/deleterequests" % (self.phedexBase, instance)
         jsonData = self.call(url, values)
         if not jsonData:
-            print(" ERROR -- deleteRequests call failed for values: request=%s, node=%s, create_since=%s, limit=%s, approval=%s, requested_by=%s, instance=%s" % (request, node, create_since, limit, approval, requested_by, instance))
+            print("ERROR -- deleteRequests call failed for values: request=%s, node=%s, create_since=%s, limit=%s, approval=%s, requested_by=%s, instance=%s\n" % (request, node, create_since, limit, approval, requested_by, instance))
         return jsonData
 
     def deletions(self, node='', se='', block='', dataset='', id_='', request='', request_since='', complete='', complete_since='', instance='prod'):
@@ -125,7 +151,7 @@ class phedexApi:
         url = "%s/json/%s/deletions" % (self.phedexBase, instance)
         jsonData = self.call(url, values)
         if not jsonData:
-            print(" ERROR -- deletions call failed for values: node=%s, se=%s, block=%s, dataset=%s, id=%s, request=%s, request_since=%s, complete=%s, complete_since=%s, instance=%s" % (node, se, block, dataset, id_, request, request_since, complete, complete_since, instance))
+            print("ERROR -- deletions call failed for values: node=%s, se=%s, block=%s, dataset=%s, id=%s, request=%s, request_since=%s, complete=%s, complete_since=%s, instance=%s\n" % (node, se, block, dataset, id_, request, request_since, complete, complete_since, instance))
         return jsonData
 
     def requestList(self, request='', type_='', approval='', requested_by='', node='', decision='', group='', create_since='', create_until='', decide_since='', decide_until='', dataset='', block='', decided_by='', instance='prod'):
@@ -133,7 +159,7 @@ class phedexApi:
         url = "%s/json/%s/requestlist" % (self.phedexBase, instance)
         jsonData = self.call(url, values)
         if not jsonData:
-            print(" ERROR -- requestList call failed for values: request=%s, type=%s, approval=%s, requested_by=%s, node=%s, decision=%s, group=%s, create_since=%s, create_until=%s, decide_since=%s, decide_until=%s, dataset=%s, block=%s, decided_by=%s, instance=%s" % (request, type_, approval, requested_by, node, decision, group, create_since, create_until, decide_since, decide_until, dataset, block, decided_by, instance))
+            print("ERROR -- requestList call failed for values: request=%s, type=%s, approval=%s, requested_by=%s, node=%s, decision=%s, group=%s, create_since=%s, create_until=%s, decide_since=%s, decide_until=%s, dataset=%s, block=%s, decided_by=%s, instance=%s\n" % (request, type_, approval, requested_by, node, decision, group, create_since, create_until, decide_since, decide_until, dataset, block, decided_by, instance))
         return jsonData
 
     def subscribe(self, node='', data='', level='', priority='', move='', static='', custodial='', group='', time_start='', request_only='', no_mail='', comments='', instance='prod'):
@@ -141,7 +167,7 @@ class phedexApi:
         url = "%s/json/%s/subscribe" % (self.phedexBase, instance)
         jsonData = self.call(url, values)
         if not jsonData:
-            print(" ERROR -- subscribe call failed for values: node=%s, level=%s, priority=%s, move=%s, static=%s, custodial=%s, group=%s, time_start=%s, request_only=%s, no_mail=%s, comments=%s, instance=%s" % (node, level, priority, move, static, custodial, group, time_start, request_only, no_mail, comments, instance))
+            print("ERROR -- subscribe call failed for values: node=%s, level=%s, priority=%s, move=%s, static=%s, custodial=%s, group=%s, time_start=%s, request_only=%s, no_mail=%s, comments=%s, instance=%s\n" % (node, level, priority, move, static, custodial, group, time_start, request_only, no_mail, comments, instance))
         return jsonData
 
     def transferRequests(self, request='', node='', group='', create_since='', limit='', approval='', requested_by='', instance='prod'):
@@ -149,7 +175,7 @@ class phedexApi:
         url = "%s/json/%s/transferrequests" % (self.phedexBase, instance)
         jsonData = self.call(url, values)
         if not jsonData:
-            print(" ERROR -- transferRequests call failed for values: request=%s, node=%s, group=%s, create_since=%s, limit=%s, approval=%s, requested_by=%s, instance=%s" % (request, node, group, create_since, limit, approval, requested_by, instance))
+            print("ERROR -- transferRequests call failed for values: request=%s, node=%s, group=%s, create_since=%s, limit=%s, approval=%s, requested_by=%s, instance=%s\n" % (request, node, group, create_since, limit, approval, requested_by, instance))
         return jsonData
 
     def updateRequest(self, decision='', request='', node='', comments='', instance='prod'):
@@ -157,7 +183,7 @@ class phedexApi:
         url = "%s/json/%s/updaterequests" % (self.phedexBase, instance)
         jsonData = self.call(url, values)
         if not jsonData:
-            print(" ERROR -- updateRequest call failed for values: decision=%s, request=%s, node=%s, comments=%s, instance=%s" % (decision, request, node, comments, instance))
+            print("ERROR -- updateRequest call failed for values: decision=%s, request=%s, node=%s, comments=%s, instance=%s\n" % (decision, request, node, comments, instance))
         return jsonData
 
 #===================================================================================================

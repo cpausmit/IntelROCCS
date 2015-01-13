@@ -13,6 +13,10 @@
 # abort or keep executing.
 #---------------------------------------------------------------------------------------------------
 import sys, os, MySQLdb, datetime, subprocess, ConfigParser
+from email.MIMEText import MIMEText
+from email.MIMEMultipart import MIMEMultipart
+from email.Utils import formataddr
+from subprocess import Popen, PIPE
 
 class dbApi():
     def __init__(self):
@@ -22,10 +26,39 @@ class dbApi():
         db = config.get('DB', 'db')
         user = config.get('DB', 'username')
         passwd = config.get('DB', 'password')
-        try:
-            self.dbCon = MySQLdb.connect(host=host, user=user, passwd=passwd, db=db)
-        except MySQLdb.Error, e:
-            raise Exception(" FATAL (%s - %s) -- Could not connect to db %s:%s" % (str(e.args[0]), str(e.args[1]), host, db))
+        for attempt in range(3):
+            try:
+                self.dbCon = MySQLdb.connect(host=host, user=user, passwd=passwd, db=db)
+            except MySQLdb.Error, e:
+                continue
+            else:
+                break
+        else:
+            self.error(e, host, db)
+
+    def error(self, e, host, db):
+        title = "FATAL IntelROCCS Error -- MIT Database"
+        text = "FATAL -- %s" % (str(e.args[1]),)
+        fromEmail = ("Bjorn Barrefors", "bjorn.peter.barrefors@cern.ch")
+        toList = (["Bjorn Barrefors"], ["barrefors@gmail.com"])
+        msg = MIMEMultipart()
+        msg['Subject'] = title
+        msg['From'] = formataddr(fromEmail)
+        msg['To'] = self._toStr(toList)
+        msg1 = MIMEMultipart("alternative")
+        msgText1 = MIMEText("<pre>%s</pre>" % text, "html")
+        msgText2 = MIMEText(text)
+        msg1.attach(msgText2)
+        msg1.attach(msgText1)
+        msg.attach(msg1)
+        msg = msg.as_string()
+        p = Popen(["/usr/sbin/sendmail", "-toi"], stdin=PIPE)
+        p.communicate(msg)
+        raise Exception("FATAL -- %s" % (str(e.args[1]),))
+
+    def _toStr(self, toList):
+        names = [formataddr(i) for i in zip(*toList)]
+        return ', '.join(names)
 
 #===================================================================================================
 #  M A I N   F U N C T I O N
@@ -33,15 +66,27 @@ class dbApi():
     def dbQuery(self, query, values=()):
         data = []
         values = tuple([str(value) for value in values])
-        try:
-            with self.dbCon:
-                cur = self.dbCon.cursor()
-                cur.execute(query, values)
-                for row in cur:
-                    data.append(row)
-        except MySQLdb.Error, e:
-            print(" ERROR -- %s\nError msg: %s\n for query: %s\n and values: %s" % (str(e.args[0]), str(e.args[1]), str(query), str(values)))
-        except TypeError, e:
-            print(" ERROR -- %s\nMost likely caused by an incorrect number of values\n for query: %s\n and values: %s" % (str(e), str(query), str(values)))
+        for attempt in range(3):
+            try:
+                mysqlError = 0
+                typeError = 0
+                with self.dbCon:
+                    cur = self.dbCon.cursor()
+                    cur.execute(query, values)
+                    for row in cur:
+                        data.append(row)
+            except MySQLdb.Error, e:
+                mysqlError = 1
+                continue
+            except TypeError, e:
+                typeError = 1
+                continue
+            else:
+                break
+        else:
+            if mysqlError:
+                print("ERROR -- %s -- \tfor query: %s -- \t and values: %s\n" % (str(e.args[1]), str(query), str(values)))
+            else:
+                print("ERROR -- %s -- \tfor  query: %s -- \t and values: %s\n" % (str(e), str(query), str(values)))
         return data
 
