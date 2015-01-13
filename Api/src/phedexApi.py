@@ -28,7 +28,7 @@ from subprocess import Popen, PIPE
 class phedexApi:
     def __init__(self):
         config = ConfigParser.RawConfigParser()
-        config.read('/usr/local/IntelROCCS/DataDealer/intelroccs.test.cfg')
+        config.read('/usr/local/IntelROCCS/DataDealer/intelroccs.cfg')
         self.phedexBase = config.get('Phedex', 'base')
 
 #===================================================================================================
