@@ -62,16 +62,18 @@ class phedexApi:
         xml = xml + '<dbs name="https://cmsweb.cern.ch/dbs/%s/global/DBSReader" dls="dbs">' % (instance)
         successDatasets = []
         for dataset in datasets:
-            jsonData = self.data(dataset=dataset, level='file')
-            if not jsonData:
-                print(" FATAL -- Couldn't create xml data for dataset %s" % (dataset))
-                # email
-                continue
-            try:
-                data = jsonData.get('phedex').get('dbs')[0].get('dataset')[0]
-            except IndexError, e:
-                print(" FATAL -- Couldn't create xml data for dataset %s" % (dataset))
-                # email
+            for attempt in range(3):
+                jsonData = self.data(dataset=dataset, level='file')
+                if not jsonData:
+                    continue
+                try:
+                    data = jsonData.get('phedex').get('dbs')[0].get('dataset')[0]
+                except IndexError, e:
+                    continue
+                else:
+                    break
+            else:
+                print("ERROR -- Couldn't create xml data for dataset %s\n" % (dataset))
                 continue
             successDatasets.append(dataset)
             xml = xml + '<dataset name="%s" is-open="%s">' % (data.get('name'), data.get('is_open'))

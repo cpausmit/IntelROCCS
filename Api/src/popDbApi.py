@@ -74,7 +74,7 @@ class popDbApi():
                     continue
                 break
         else:
-            self.error("Pop DB call failed for url: %s" % (str(url)))
+            self.error("Pop DB call failed for url: %s %s" % (str(url), str(values)))
         return jsonData
 
     def error(self, e):
