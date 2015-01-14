@@ -102,7 +102,7 @@ class rockerBoard():
                 break
             del datasetRankings[datasetName]
             siteRank = siteRankings
-            invalidSites = getSitesWithDataset(datasetName)
+            invalidSites = self.phedexData.getSitesWithDataset(datasetName)
             for siteName in invalidSites:
                 del siteRank[siteName]
             siteName = self.weightedChoice(siteRank)
