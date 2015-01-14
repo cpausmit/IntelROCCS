@@ -17,6 +17,10 @@
 # the caller to check for actual data.
 #---------------------------------------------------------------------------------------------------
 import sys, os, re, json, urllib, urllib2, datetime, subprocess, ConfigParser
+from email.MIMEText import MIMEText
+from email.MIMEMultipart import MIMEMultipart
+from email.Utils import formataddr
+from subprocess import Popen, PIPE
 
 class popDbApi():
     def __init__(self):
