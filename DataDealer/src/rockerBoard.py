@@ -104,7 +104,8 @@ class rockerBoard():
             siteRank = siteRankings
             invalidSites = self.phedexData.getSitesWithDataset(datasetName)
             for siteName in invalidSites:
-                del siteRank[siteName]
+                if siteName in siteRank:
+                    del siteRank[siteName]
             siteName = self.weightedChoice(siteRank)
             sizeSubscribedGb += datasetSizeGb
             if siteName in subscriptions:
