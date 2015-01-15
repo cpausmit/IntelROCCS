@@ -2,7 +2,7 @@
 #---------------------------------------------------------------------------------------------------
 # Data modeling
 #---------------------------------------------------------------------------------------------------
-import sys, json, datetime
+import sys, json, datetime, re
 import sites, dbApi, phedexData, popDbData
 
 fs = open('/local/cmsprod/IntelROCCS/DataDealer/Visualizations/system.csv', 'w')
