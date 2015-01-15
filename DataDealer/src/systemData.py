@@ -16,7 +16,7 @@ allSites = sites_.getAllSites()
 blacklistedSites = sites_.getBlacklistedSites()
 today = datetime.date.today()
 today = datetime.datetime.combine(today, datetime.time(0,0,0,0))
-for siteName in availableSites:
+for siteName in allSites:
     subscriptions = []
     query = "SELECT Datasets.DatasetName FROM Requests INNER JOIN Datasets ON Datasets.DatasetId=Requests.DatasetId INNER JOIN Sites ON Sites.SiteId=Requests.SiteId WHERE Requests.Date>%s AND Sites.SiteName=%s AND Requests.RequestType=%s"
     values = [today, siteName, 0]
