@@ -17,8 +17,8 @@ print ""
 # get all datasets
 print " ----  Get Datasets  ---- "
 startTime = datetime.datetime.now()
-phedexData = phedexData.phedexData()
-datasets = phedexData.getAllDatasets()
+phedexData_ = phedexData.phedexData()
+datasets = phedexData_.getAllDatasets()
 totalTime = datetime.datetime.now() - startTime
 print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
 print ""
@@ -35,8 +35,8 @@ print ""
 # rocker board algorithm
 print " ----  Rocker Board Algorithm  ---- "
 startTime = datetime.datetime.now()
-rba = rockerBoard.rockerBoard()
-subscriptions = rba.rba(datasets, availableSites)
+rockerBoard_ = rockerBoard.rockerBoard()
+subscriptions = rockerBoard_.rba(datasets, availableSites)
 totalTime = datetime.datetime.now() - startTime
 print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
 print ""
