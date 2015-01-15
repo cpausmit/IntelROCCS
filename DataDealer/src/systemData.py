@@ -34,7 +34,7 @@ for siteName in allSites:
     used = phedexData_.getSiteStorage(siteName)
     cpu = 0
     if t1.match(siteName):
-        siteName = rsttrip(siteName, "_Disk")
+        siteName = rstrip(siteName, "_Disk")
     for i in range(1, 8):
         date = today - datetime.timedelta(days=i)
         cpu += popDbData_.getSiteCpu(siteName, date.strftime('%Y-%m-%d'))
