@@ -8,18 +8,19 @@ import sites, dbApi, phedexData, popDbData
 fs = open('/local/cmsprod/IntelROCCS/DataDealer/Visualizations/system.csv', 'w')
 fs.write("site,quota,used,cpu,subscribed\n")
 fs.close()
-sys.exit(0)
 dbApi_ = dbApi.dbApi()
 phedexData_ = phedexData.phedexData()
 popDbData_ = popDbData.popDbData()
 sites_ = sites.sites()
 availableSites = sites_.getAvailableSites()
 today = datetime.date.today()
+today = datetime.datetime.combine(today, datetime.time(0,0,0,0))
 for siteName in availableSites:
     subscriptions = []
     query = "SELECT Datasets.DatasetName FROM Requests INNER JOIN Datasets ON Datasets.DatasetId=Requests.DatasetId INNER JOIN Sites ON Sites.SiteId=Requests.SiteId WHERE Requests.Date>%s AND Sites.SiteName=%s AND Requests.RequestType=%s"
-    values = [today.strftime('%Y-%m-%d %H:%M:%S'), siteName, 0]
+    values = [today, siteName, 0]
     data = dbApi_.dbQuery(query, values=values)
+    print data
     for sub in data:
         subscriptions.append(sub[0])
     subscribed = 0
