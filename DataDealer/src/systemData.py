@@ -12,6 +12,7 @@ dbApi_ = dbApi.dbApi()
 phedexData_ = phedexData.phedexData()
 popDbData_ = popDbData.popDbData()
 sites_ = sites.sites()
+t1 = re.compile('T1_*')
 allSites = sites_.getAllSites()
 blacklistedSites = sites_.getBlacklistedSites()
 today = datetime.date.today()
@@ -32,6 +33,8 @@ for siteName in allSites:
     quota = data[0][0]*10**3
     used = phedexData_.getSiteStorage(siteName)
     cpu = 0
+    if t1.match(siteName):
+        siteName = rsttrip(siteName, "_Disk")
     for i in range(1, 8):
         date = today - datetime.timedelta(days=i)
         cpu += popDbData_.getSiteCpu(siteName, date.strftime('%Y-%m-%d'))
