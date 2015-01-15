@@ -8,6 +8,7 @@ import sites, dbApi, phedexData, popDbData
 fs = open('/local/cmsprod/IntelROCCS/DataDealer/Visualizations/system.csv', 'w')
 fs.write("site,quota,used,cpu,subscribed\n")
 fs.close()
+sys.exit(0)
 dbApi_ = dbApi.dbApi()
 phedexData_ = phedexData.phedexData()
 popDbData_ = popDbData.popDbData()
