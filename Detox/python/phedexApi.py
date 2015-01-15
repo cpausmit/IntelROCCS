@@ -290,6 +290,21 @@ class phedexApi:
             return 1, "ERROR - self.phedexCall with response: " + response
         return 0, response
 
+    def changeGroup(self, node, dataset, group, comments='',format='json', 
+                    instance='prod', level='dataset'):
+        name = "changegroup"
+        values = {'node':node, 'dataset':dataset, 'group':group}
+        url = urllib.basejoin(self.phedexBase, "%s/%s/updatesubscription" % (format, instance))
+
+        check, response = self.phedexCall(url, values)
+        if check:
+            self.logger.error(name, "Change group call failed")
+            print response
+            print check
+            return 1, "ERROR - self.phedexCall with response: " + response
+        return 0, response
+    
+
 ####################################################################################################
 #
 #                       H T T P S   G R I D   A U T H   H A N D L E R

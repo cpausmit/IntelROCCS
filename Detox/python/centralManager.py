@@ -427,8 +427,6 @@ class CentralManager:
             if site in nstuckAtSite and abs(stmean -  nstuckAtSite[site]) > 3*strms:
                 print (" -- %-16s has too many stuck sets, disabling in SitesInfo"%(site))
                 active = 0
-            if site == 'T1_FR_CCIN2P3_Disk':
-                active = 0
             
             # summary of all sites
             outputFile.write("   %-6d %-9d %-9d %-12d %-20s \n"\
@@ -867,6 +865,15 @@ class CentralManager:
         check,response = phedex.updateRequest(decision='approve',request=reqid,node=site,instance='prod')
         if check:
             print " ERROR - phedexApi.updateRequest failed - reqid="+ str(reqid)
+            print response
+        del phedex
+
+    def changeGroup(self,site,dataset,group):
+        # here we brute force deletion to be approved
+        phedex = phedexApi.phedexApi(logPath='./')
+        check,response = phedex.changeGroup(site,dataset,group)
+        if check:
+            print " ERROR - phedexApi.updateRequest failed"
             print response
         del phedex
 

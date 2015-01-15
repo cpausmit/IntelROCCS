@@ -4,6 +4,7 @@
 import os, subprocess, re, signal, sys, MySQLdb, json
 import datetime, time
 import phedexDataset
+import phedexApi
 
 class Alarm(Exception):
     pass
@@ -239,6 +240,23 @@ class PhedexDataHandler:
                 siteSizes[site] = siteSizes[site] + size/1000
                 siteSets[site] = siteSets[site] + 1
                 if site not in self.runAwayGroups:
+                    dsetName = dataset.dataset
+                    if 'AOD' in dsetName:
+#                        if group != 'RelVal' and group != 'DataOps':
+                         if not site.startswith('T1_'):
+                            print site
+                            print dataset.dataset
+                            print group + '--> AnalysisOps'
+                            phedex = phedexApi.phedexApi(logPath='./')
+                            check,response = phedex.changeGroup(site,dsetName,'AnalysisOps')
+                            if check:
+                                print " ERROR - phedexApi.updateRequest failed"
+                                print response
+                                del phedex
+                            else:
+                                del phedex
+                                continue
+
                     self.runAwayGroups[site] = [group]
                 else:
                     if group not in self.runAwayGroups[site]:
