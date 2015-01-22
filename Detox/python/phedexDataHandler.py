@@ -244,6 +244,8 @@ class PhedexDataHandler:
                     if 'AOD' in dsetName:
 #                        if group != 'RelVal' and group != 'DataOps':
                          if not site.startswith('T1_'):
+                            if group == 'local':
+                               continue
                             print site
                             print dataset.dataset
                             print group + '--> AnalysisOps'
