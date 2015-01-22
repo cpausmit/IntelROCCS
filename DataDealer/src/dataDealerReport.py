@@ -37,6 +37,7 @@ class dataDealerReport():
         fromEmail = ("Bjorn Barrefors", "bjorn.peter.barrefors@cern.ch")
         #toList = (["Bjorn Barrefors"], ["bjorn.peter.barrefors@cern.ch"])
         toList = (["Bjorn Barrefors"], ["barrefors@gmail.com"])
+        toList = (["Bjorn Barrefors", "Brian Bockelman"], ["barrefors@gmail.com", "bbockelm@cse.unl.edu"])
         #toList = (["Data Management Group"], ["hn-cms-dmDevelopment@cern.ch"])
         #toList = (["Bjorn Barrefors", "Brian Bockelman", "Maxim Goncharov", "Christoph Paus"],
         #          ["bjorn.peter.barrefors@cern.ch", "bbockelm@cse.unl.edu", "maxi@mit.edu", "paus@mit.edu"])
