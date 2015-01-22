@@ -122,6 +122,7 @@ class CentralManager:
         pendingSets = self.cleanStateKeeper.pendingSets()
         setsToSites = {}
         siteToSites = {}
+        worstStuck = self.detoxWebReader.getWorstStuck()
         for siteName in self.sitesToDisable:
             print "Re-signing datasets for SITE=" + siteName
             siteToSites[siteName] = []
@@ -136,9 +137,9 @@ class CentralManager:
                     continue
                 if site in self.siteSizeShift:
                     continue
-                if site == 'T2_TH_CUNSTDA':
-                    continue
                 if site == 'T1_US_FNAL_Disk':
+                    continue
+                if site in worstStuck:
                     continue
 
                 #make sure sets do not go the dead or waiting room site

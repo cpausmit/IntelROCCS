@@ -1,7 +1,7 @@
 #===================================================================================================
 #  C L A S S
 #===================================================================================================
-import sys, os, subprocess, re, time, datetime, smtplib, MySQLdb, shutil, string, glob
+import sys, os, subprocess, re, time, datetime, smtplib, MySQLdb, shutil, string, glob, math
 import phedexDataHandler, popularityDataHandler, phedexApi, deprecateDataHandler
 import siteProperties, datasetProperties
 import siteStatus, deletionRequest
@@ -394,6 +394,13 @@ class CentralManager:
         today = str(datetime.date.today())
         ttime = time.strftime("%H:%M")
 
+        nstuckAtSite = {}
+        for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
+            sitePr = self.sitePropers[site]
+            (speed,volume,stuck) = sitePr.getDownloadStats()
+            nstuckAtSite[site] = int(stuck)
+        stmean,strms = self.getMeanValue(nstuckAtSite,3,0.5)
+
         usedSets = self.popularityHandler.getUsedDatasets()
         totalSpaceTaken = 0
         totalSpaceLcopy = 0
@@ -407,7 +414,9 @@ class CentralManager:
             theSite = self.allSites[site]
             taken = 0
             lcopy = 0
-            if theSite.getStatus() != 0:
+            active = theSite.getStatus()
+
+            if active != 0:
                 sitePr = self.sitePropers[site]
                 taken = sitePr.spaceTaken()/1000
                 lcopy = sitePr.spaceLastCp()/1000
@@ -415,9 +424,13 @@ class CentralManager:
                 totalSpaceLcopy = totalSpaceLcopy + lcopy
                 totalSpaceTaken = totalSpaceTaken + taken
 
+            if site in nstuckAtSite and abs(stmean -  nstuckAtSite[site]) > 3*strms:
+                print (" -- %-16s has too many stuck sets, disabling in SitesInfo"%(site))
+                active = 0
+            
             # summary of all sites
             outputFile.write("   %-6d %-9d %-9d %-12d %-20s \n"\
-                                 %(theSite.getStatus(),theSite.getSize()/1000,taken,lcopy,site))
+                                 %(active,theSite.getSize()/1000,taken,lcopy,site))
         outputFile.write("#------------------------------------------------------\n")
         outputFile.write("#  %-6d %-9d %-9d %-12d %-20s \n"\
                              %(len(self.allSites.keys()),totalDisk,
@@ -585,7 +598,7 @@ class CentralManager:
                 ndeletes = dataPr.nBeDeleted()
                 outputFile.write("%8.1f %9.1f %6d %6d  %s\n"\
                                  %(rank,size,nsites,nsites-ndeletes,dset))
-                print '  -> ' + dset
+                print dset
             outputFile.close()
 
             outputFile = open(fileRemain,'w')
@@ -855,6 +868,15 @@ class CentralManager:
             print response
         del phedex
 
+    def changeGroup(self,site,dataset,group):
+        # here we brute force deletion to be approved
+        phedex = phedexApi.phedexApi(logPath='./')
+        check,response = phedex.changeGroup(site,dataset,group)
+        if check:
+            print " ERROR - phedexApi.updateRequest failed"
+            print response
+        del phedex
+
     def getDbConnection(self,db=os.environ.get('DETOX_SITESTORAGE_DB')):
         # configuration
         server = os.environ.get('DETOX_SITESTORAGE_SERVER')
@@ -895,3 +917,26 @@ class CentralManager:
             return -1
         else:
             return 0
+
+    def getMeanValue(self,aa,rmsW,frac):
+        meanPr = 999.0
+        mean = 0.0
+        rms = 999.9
+        while True:
+            mean = 0.0
+            meansq = 0.0
+            items = 0.0
+            for vkey in aa:
+                value = aa[vkey]
+                if abs(value - meanPr) > rmsW*rms:
+                    continue
+                mean = mean + value
+                meansq = meansq + value*value
+                items = items + 1
+            mean = mean/items
+            rms = math.sqrt(meansq/items - mean*mean)
+            if abs(mean - meanPr) < frac*rms:
+                break
+            else:
+                meanPr = mean
+        return (mean, rms)

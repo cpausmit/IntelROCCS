@@ -43,7 +43,9 @@ centralManager = centralManager.CentralManager()
 centralManager.checkProxyValid()
 
 #if you need to approve requests by hand
-#centralManager.submitUpdateRequest('T2_FI_HIP',424548)
+#centralManager.submitUpdateRequest('T2_US_Nebraska',431875)
+#dataset='/SMHiggsToWWTo2Tau2Nu_M-125_7TeV-jhu-pythia6/Fall11-PU_S6_START42_V14B-v1/AODSIM'
+#centralManager.changeGroup('T2_US_MIT', dataset, 'AnalysisOps')
 
 # Make directories to hold cache data
 

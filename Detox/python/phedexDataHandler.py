@@ -4,6 +4,7 @@
 import os, subprocess, re, signal, sys, MySQLdb, json
 import datetime, time
 import phedexDataset
+import phedexApi
 
 class Alarm(Exception):
     pass
@@ -106,8 +107,8 @@ class PhedexDataHandler:
                         phedexDatasets[datasetName] = phedexDataset.PhedexDataset(datasetName)
                     dataset = phedexDatasets[datasetName]
 
-                    if site == 'T2_US_MIT':
-                        if datasetName == '/WWJetsTo2L2Nu_TuneZ2star_8TeV-madgraph-tauola/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM':
+                    if site == 'T2_US_CALTECH':
+                        if datasetName == '/QCD_Pt-10to20_EMEnriched_Tune4C_13TeV_pythia8/Spring14miniaod-castor_PU20bx25_POSTLS170_V5-v1/MINIAODSIM':
                             print siterpl
                     size = float(siterpl["bytes"])/1000/1000/1000
                     strdone = siterpl["complete"]
@@ -239,6 +240,25 @@ class PhedexDataHandler:
                 siteSizes[site] = siteSizes[site] + size/1000
                 siteSets[site] = siteSets[site] + 1
                 if site not in self.runAwayGroups:
+                    dsetName = dataset.dataset
+                    if 'AOD' in dsetName:
+#                        if group != 'RelVal' and group != 'DataOps':
+                         if not site.startswith('T1_'):
+                            if group == 'local':
+                               continue
+                            print site
+                            print dataset.dataset
+                            print group + '--> AnalysisOps'
+                            phedex = phedexApi.phedexApi(logPath='./')
+                            check,response = phedex.changeGroup(site,dsetName,'AnalysisOps')
+                            if check:
+                                print " ERROR - phedexApi.updateRequest failed"
+                                print response
+                                del phedex
+                            else:
+                                del phedex
+                                continue
+
                     self.runAwayGroups[site] = [group]
                 else:
                     if group not in self.runAwayGroups[site]:

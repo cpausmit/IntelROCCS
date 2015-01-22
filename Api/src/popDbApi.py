@@ -17,6 +17,10 @@
 # the caller to check for actual data.
 #---------------------------------------------------------------------------------------------------
 import sys, os, re, json, urllib, urllib2, datetime, subprocess, ConfigParser
+from email.MIMEText import MIMEText
+from email.MIMEMultipart import MIMEMultipart
+from email.Utils import formataddr
+from subprocess import Popen, PIPE
 
 class popDbApi():
     def __init__(self):
@@ -32,27 +36,61 @@ class popDbApi():
 #  H E L P E R S
 #===================================================================================================
     def renewSsoCookie(self):
-        process = subprocess.Popen(["cern-get-sso-cookie", "--cert", self.cert, "--key", self.key, "-u", self.popDbBase, "-o", self.cookie], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=False)
-        strout = process.communicate()[0]
-        if process.returncode != 0:
-            raise Exception(" FATAL -- could not generate SSO cookie\nError msg: %s" % (str(strout)))
+        strout = ""
+        for attempt in range(3):
+            process = subprocess.Popen(["cern-get-sso-cookie", "--cert", self.cert, "--key", self.key, "-u", self.popDbBase, "-o", self.cookie], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=False)
+            strout = process.communicate()[0]
+            if process.returncode != 0:
+                continue
+            else:
+                break
+        else:
+            self.error("Could not generate SSO cookie")
         return 0
 
     def call(self, url, values):
         data = urllib.urlencode(values)
         request = urllib2.Request(url, data)
         fullUrl = request.get_full_url() + request.get_data()
-        process = subprocess.Popen(["curl", "-k", "-s", "-L", "--cookie", self.cookie, "--cookie-jar", self.cookie, fullUrl], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=False)
-        strout = process.communicate()[0]
-        if process.returncode != 0:
-            print(" ERROR -- Access to popularity database failed\nError msg: %s" % (str(strout)))
-            return 0
-        try:
-            jsonData = json.loads(strout)
-        except ValueError, e:
-            print(" ERROR -- no JSON data returned from popularity database failed\nError msg: %s" % (str(strout)))
-            return 0
+        strout = ""
+        for attempt in range(3):
+            process = subprocess.Popen(["curl", "-k", "-s", "-L", "--cookie", self.cookie, "--cookie-jar", self.cookie, fullUrl], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=False)
+            strout = process.communicate()[0]
+            if process.returncode != 0:
+                continue
+            else:
+                try:
+                    jsonData = json.loads(strout)
+                except ValueError, e:
+                    continue
+                break
+        else:
+            self.error("Pop DB call failed for url: %s %s" % (str(url), str(values)))
         return jsonData
+
+    def error(self, e):
+        title = "FATAL IntelROCCS Error -- Pop DB"
+        text = "FATAL -- %s" % (str(e),)
+        fromEmail = ("Bjorn Barrefors", "bjorn.peter.barrefors@cern.ch")
+        toList = (["Bjorn Barrefors"], ["barrefors@gmail.com"])
+        msg = MIMEMultipart()
+        msg['Subject'] = title
+        msg['From'] = formataddr(fromEmail)
+        msg['To'] = self._toStr(toList)
+        msg1 = MIMEMultipart("alternative")
+        msgText1 = MIMEText("<pre>%s</pre>" % text, "html")
+        msgText2 = MIMEText(text)
+        msg1.attach(msgText2)
+        msg1.attach(msgText1)
+        msg.attach(msg1)
+        msg = msg.as_string()
+        p = Popen(["/usr/sbin/sendmail", "-toi"], stdin=PIPE)
+        p.communicate(msg)
+        raise Exception("FATAL -- %s" % (str(e),))
+
+    def _toStr(self, toList):
+        names = [formataddr(i) for i in zip(*toList)]
+        return ', '.join(names)
 
 #===================================================================================================
 #  A P I   C A L L S
@@ -62,7 +100,7 @@ class popDbApi():
         url = urllib.basejoin(self.popDbBase, "%s/?&" % ("DataTierStatInTimeWindow"))
         jsonData = self.call(url, values)
         if not jsonData:
-            logFile.write(" ERROR -- DataTierStatInTimeWindow call failed for values: tstart=%s, tstop=%s, sitename=%s" % (tstart, tstop, sitename))
+            logFile.write("ERROR -- DataTierStatInTimeWindow call failed for values: tstart=%s, tstop=%s, sitename=%s\n" % (tstart, tstop, sitename))
         return jsonData
 
     def DSNameStatInTimeWindow(self, tstart='', tstop='', sitename='summary'):
@@ -70,7 +108,7 @@ class popDbApi():
         url = urllib.basejoin(self.popDbBase, "%s/?&" % ("DSNameStatInTimeWindow"))
         jsonData = self.call(url, values)
         if not jsonData:
-            print(" ERROR -- DSNameStatInTimeWindow call failed for values: tstart=%s, tstop=%s, sitename=%s" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), tstart, tstop, sitename))
+            print("ERROR -- DSNameStatInTimeWindow call failed for values: tstart=%s, tstop=%s, sitename=%s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), tstart, tstop, sitename))
         return jsonData
 
     def DSStatInTimeWindow(self, tstart='', tstop='', sitename='summary'):
@@ -78,7 +116,7 @@ class popDbApi():
         url = urllib.basejoin(self.popDbBase, "%s/?&" % ("DSStatInTimeWindow"))
         jsonData = self.call(url, values)
         if not jsonData:
-            print(" ERROR -- DSStatInTimeWindow call failed for values: tstart=%s, tstop=%s, sitename=%s" % (tstart, tstop, sitename))
+            print("ERROR -- DSStatInTimeWindow call failed for values: tstart=%s, tstop=%s, sitename=%s\n" % (tstart, tstop, sitename))
         return jsonData
 
     def getCorruptedFiles(self, sitename='summary', orderby=''):
@@ -86,7 +124,7 @@ class popDbApi():
         url = urllib.basejoin(self.popDbBase, "%s/?&" % ("getCorruptedFiles"))
         jsonData = self.call(url, values)
         if not jsonData:
-            print(" ERROR -- getCorruptedFiles call failed for values: sitename=%s, orderby=%s" % (sitename, orderby))
+            print("ERROR -- getCorruptedFiles call failed for values: sitename=%s, orderby=%s\n" % (sitename, orderby))
         return jsonData
 
     def getDSdata(self, tstart='', tstop='', sitename='summary', aggr='', n='', orderby=''):
@@ -94,7 +132,7 @@ class popDbApi():
         url = urllib.basejoin(self.popDbBase, "%s/?&" % ("getDSdata"))
         jsonData = self.call(url, values)
         if not jsonData:
-            print(" ERROR -- getDSdata call failed for values: tstart=%s, tstop=%s, sitename=%s, aggr=%s, n=%s, orderby=%s" % (tstart, tstop, sitename, aggr, n, orderby))
+            print("ERROR -- getDSdata call failed for values: tstart=%s, tstop=%s, sitename=%s, aggr=%s, n=%s, orderby=%s\n" % (tstart, tstop, sitename, aggr, n, orderby))
         return jsonData
 
     def getDSNdata(self, tstart='', tstop='', sitename='summary', aggr='', n='', orderby=''):
@@ -102,7 +140,7 @@ class popDbApi():
         url = urllib.basejoin(self.popDbBase, "%s/?&" % ("getDSNdata"))
         jsonData = self.call(url, values)
         if not jsonData:
-            print(" ERROR -- getDSNdata call failed for values: tstart=%s, tstop=%s, sitename=%s, aggr=%s, n=%s, orderby=%s" % (tstart, tstop, sitename, aggr, n, orderby))
+            print("ERROR -- getDSNdata call failed for values: tstart=%s, tstop=%s, sitename=%s, aggr=%s, n=%s, orderby=%s\n" % (tstart, tstop, sitename, aggr, n, orderby))
         return jsonData
 
     def getDTdata(self, tstart='', tstop='', sitename='summary', aggr='', n='', orderby=''):
@@ -110,7 +148,7 @@ class popDbApi():
         url = urllib.basejoin(self.popDbBase, "%s/?&" % ("getDTdata"))
         jsonData = self.call(url, values)
         if not jsonData:
-            print(" ERROR: getDTdata call failed for values: tstart=%s, tstop=%s, sitename=%s, aggr=%s, n=%s, orderby=%s" % (tstart, tstop, sitename, aggr, n, orderby))
+            print("ERROR: getDTdata call failed for values: tstart=%s, tstop=%s, sitename=%s, aggr=%s, n=%s, orderby=%s\n" % (tstart, tstop, sitename, aggr, n, orderby))
         return jsonData
 
     def getSingleDNstat(self, name='', sitename='summary', aggr='', orderby=''):
@@ -118,7 +156,7 @@ class popDbApi():
         url = urllib.basejoin(self.popDbBase, "%s/?&" % ("getSingleDNstat"))
         jsonData = self.call(url, values)
         if not jsonData:
-            print(" ERROR: getSingleDNstat call failed for values: sitename=%s, aggr=%s, orderby=%s" % (sitename, aggr, orderby))
+            print("ERROR: getSingleDNstat call failed for values: sitename=%s, aggr=%s, orderby=%s\n" % (sitename, aggr, orderby))
         return jsonData
 
     def getSingleDSstat(self, name='', sitename='summary', aggr='', orderby=''):
@@ -126,7 +164,7 @@ class popDbApi():
         url = urllib.basejoin(self.popDbBase, "%s/?&" % ("getSingleDSstat"))
         jsonData = self.call(url, values)
         if not jsonData:
-            print(" ERROR: getSingleDSstat call failed for values: name=%s, sitename=%s, aggr=%s, orderby=%s" % (name, sitename, aggr, orderby))
+            print("ERROR: getSingleDSstat call failed for values: name=%s, sitename=%s, aggr=%s, orderby=%s\n" % (name, sitename, aggr, orderby))
         return jsonData
 
     def getSingleDTstat(self, name='', sitename='summary', aggr='', orderby=''):
@@ -134,7 +172,7 @@ class popDbApi():
         url = urllib.basejoin(self.popDbBase, "%s/?&" % ("getSingleDTstat"))
         jsonData = self.call(url, values)
         if not jsonData:
-            print(" ERROR: getSingleDTstat call failed for values: name=%s, sitename=%s, aggr=%s, orderby=%s" % (name, sitename, aggr, orderby))
+            print("ERROR: getSingleDTstat call failed for values: name=%s, sitename=%s, aggr=%s, orderby=%s\n" % (name, sitename, aggr, orderby))
         return jsonData
 
     def getUserStat(self, tstart='', tstop='', collname='', orderby=''):
@@ -142,6 +180,5 @@ class popDbApi():
         url = urllib.basejoin(self.popDbBase, "%s/?&" % ("getUserStat"))
         jsonData = self.call(url, values)
         if not jsonData:
-            print(" ERROR: getUserStat call failed for values: tstart=%s, tstop=%s, collname=%s, orderby=%s" % (tstart, tstop, collname, orderby))
+            print("ERROR: getUserStat call failed for values: tstart=%s, tstop=%s, collname=%s, orderby=%s\n" % (tstart, tstop, collname, orderby))
         return jsonData
-

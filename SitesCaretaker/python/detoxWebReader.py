@@ -1,7 +1,7 @@
 #===================================================================================================
 #  C L A S S
 #===================================================================================================
-import os, subprocess, re, signal, sys, json
+import os, subprocess, re, signal, sys, json, math
 
 class Alarm(Exception):
     pass
@@ -14,8 +14,11 @@ class DetoxWebReader:
         self.webLocation = {}
         self.siteSpace = {}
         self.siteDiskSpace = {}
+        self.stuckAtSite = {}
         self.extractDetoxData()
         self.extractAllSiteSizes()
+        self.extractStuckDsets()
+        self.getWorstStuck()
     
     def extractDetoxData(self):
         webServer = os.environ.get('CARETAKER_DETOXWEB') + '/SitesInfo.txt'
@@ -167,6 +170,38 @@ class DetoxWebReader:
                 self.siteDiskSpace[site] = 0
             self.siteDiskSpace[site] = self.siteDiskSpace[site] + size
 
+    def extractStuckDsets(self):
+
+        webServer = os.environ.get('CARETAKER_DETOXWEB')
+        url = '"' + webServer +'/TransferStats.txt' + '"'
+        cmd = 'curl -k -H "Accept: text" ' + url
+
+        process = subprocess.Popen(cmd,stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE,shell=True)
+        signal.signal(signal.SIGALRM, alarm_handler)
+        signal.alarm(10*60)  # 10 minutes
+        try:
+            mystring, error = process.communicate()
+            signal.alarm(0)
+        except Alarm:
+            print " Oops, taking too long!"
+            raise Exception(" FATAL -- Call to TransferStats timed out, stopping")
+
+        if process.returncode != 0:
+            print " Received non-zero exit status: " + str(process.returncode)
+            raise Exception(" FATAL -- Call to TransferStats failed, stopping")
+
+        lines = mystring.splitlines()
+        for li in lines:
+            if li.startswith('#'):
+                continue
+            items = li.split()
+            if len(items) < 4:
+                continue
+            nstuck = int(items[0])
+            siteName = items[3]
+            self.stuckAtSite[siteName] = nstuck
+
     def getSiteSpace(self):
         return self.siteSpace
     
@@ -174,3 +209,9 @@ class DetoxWebReader:
         if site not in self.siteDiskSpace:
             return 0
         return self.siteDiskSpace[site]
+
+    def getWorstStuck(self):
+        count = 0
+        aa = self.stuckAtSite
+        worstFive = dict(sorted(aa.items(),key = lambda x: x[1],reverse=True)[:5])
+        return worstFive

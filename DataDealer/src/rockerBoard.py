@@ -12,7 +12,8 @@ class rockerBoard():
         self.rankingsCachePath = config.get('DataDealer', 'cache')
         self.budget = config.getint('DataDealer', 'budget')
         self.budget = config.getint('DataDealer', 'lower_budget')
-        self.rankThreshold = config.getint('DataDealer', 'rank_threshold')
+        self.lowerThreshold = config.getfloat('DataDealer', 'lower_threshold')
+        self.upperThreshold = config.getfloat('DataDealer', 'upper_threshold')
         self.limit = config.getfloat('DataDealer', 'limit')
         self.upperLimit = config.getfloat('DataDealer', 'upper_limit')
         self.phedexData = phedexData.phedexData()
@@ -83,7 +84,7 @@ class rockerBoard():
     def getSiteRankings(self, sites, datasetRankings):
         siteRankings = dict()
         for siteName in sites:
-            datasets = self.phedexData.getDatasetsAtSite(siteName)
+            datasets = self.phedexData.getAnalysisOpsDatasetsAtSite(siteName)
             rank = sum(datasetRankings[d] for d in datasets)
             siteRankings[siteName] = rank
         return siteRankings
@@ -94,18 +95,25 @@ class rockerBoard():
         maxRank = max(siteRankings.iteritems(), key=operator.itemgetter(1))[1]
         for siteName, rank in siteRankings.items():
             siteRankings[siteName] = maxRank - rank
-        while (datasetRankings and (sizeSubscribedGb < self.budget) and (sizeSubscribedGb < (totalQuota*self.limit - totalUsed))) or (datasetRankings and maxRank >= self.rankThreshold and (sizeSubscribedGb < self.lowerBudget) and sizeSubscribedGb < (totalQuota*self.upperLimit - totalUsed)):
-            datasetName = max(datasetRankings.iteritems(), key=operator.itemgetter(1))[0]
+        while (datasetRankings and (sizeSubscribedGb < self.budget) and (sizeSubscribedGb < (totalQuota*self.limit - totalUsed)) and dataset[1] >= self.lowerThreshold) or (datasetRankings and maxRank >= self.upperThreshold and (sizeSubscribedGb < self.lowerBudget) and sizeSubscribedGb < (totalQuota*self.upperLimit - totalUsed)):
+            dataset = max(datasetRankings.iteritems(), key=operator.itemgetter(1))
+            datasetName = dataset[0]
             datasetSizeGb = self.phedexData.getDatasetSize(datasetName)
             if sizeSubscribedGb + datasetSizeGb > self.budget:
                 break
             del datasetRankings[datasetName]
-            siteName = self.weightedChoice(siteRankings)
+            siteRank = siteRankings
+            invalidSites = self.phedexData.getSitesWithDataset(datasetName)
+            for siteName in invalidSites:
+                if siteName in siteRank:
+                    del siteRank[siteName]
+            siteName = self.weightedChoice(siteRank)
             sizeSubscribedGb += datasetSizeGb
             if siteName in subscriptions:
                 subscriptions[siteName].append(datasetName)
             else:
                 subscriptions[siteName] = [datasetName]
+            dataset = max(datasetRankings.iteritems(), key=operator.itemgetter(1))
         return subscriptions
 
 #===================================================================================================

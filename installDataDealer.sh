@@ -55,6 +55,7 @@ cp $data_dealer_src/* $install_path
 cp $api_src/* $install_path
 cp $data_dealer_src/../data_dealerd $install_path
 cp $data_dealer_src/../data_dealer.cfg $install_path/intelroccs.cfg
+cp $data_dealer_src/../data_dealer.test.cfg $install_path/intelroccs.test.cfg
 cp $data_dealer_src/../html/* /local/cmsprod/IntelROCCS/DataDealer/Visualizations/
 chown -R ${INTELROCCS_USER}:${INTELROCCS_GROUP} /local/cmsprod/IntelROCCS/DataDealer/Visualizations/*
 

@@ -5,8 +5,7 @@
 # v1.1                                                                   B.Barrefors (Aug 11, 2014)
 # --------------------------------------------------------------------------------------------------
 # set up variables
-
-# always run on the same tim
+# always run on the same time
 today=$(date -d "now" +%Y/%m/%d)
 runTime=$(date -d "$today 03:00" +%s)
 currentTime=$(date -d "now" +%s)
@@ -50,8 +49,8 @@ do
     rsync -Cavz --delete /local/cmsprod/IntelROCCS/DataDealer /home/cmsprod/public_html/IntelROCCS >& /dev/null
 
     # change symlinks for todays report and log
-    ln -s /home/cmsprod/public_html/IntelROCCS/DataDealer/Logs/data_dealer-$tag.log /home/cmsprod/public_html/IntelROCCS/DataDealer/Logs/data_dealer-latest.log
-    ln -s /home/cmsprod/public_html/IntelROCCS/DataDealer/Reports/data_dealer-$tag.report /home/cmsprod/public_html/IntelROCCS/DataDealer/Reports/data_dealer-latest.report
+    ln -sf /home/cmsprod/public_html/IntelROCCS/DataDealer/Logs/data_dealer-$tag.log /home/cmsprod/public_html/IntelROCCS/DataDealer/Logs/data_dealer-latest.log
+    ln -sf /home/cmsprod/public_html/IntelROCCS/DataDealer/Reports/data_dealer-$tag.report /home/cmsprod/public_html/IntelROCCS/DataDealer/Reports/data_dealer-latest.report
 
     # calculate the time until next run should start
     currentTime=$(date -d "now" +%s)

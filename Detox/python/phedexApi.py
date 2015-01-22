@@ -279,7 +279,11 @@ class phedexApi:
             self.logger.error(name, "Delete call failed")
             return 1, "ERROR - self.phedexCall with response: " + response
         return 0, response
-
+    ############################################################################
+    #                                                                          #
+    #                        U P D A T E R E Q U E S T                         #
+    #                                                                          #
+    ############################################################################
     def updateRequest(self, decision, request, node, comments='',format='json', instance='prod'):
         name = "update"
         values = {'decision':decision, 'request':request, 'node':node, 'comments':comments}
@@ -289,6 +293,21 @@ class phedexApi:
             self.logger.error(name, "Update call failed")
             return 1, "ERROR - self.phedexCall with response: " + response
         return 0, response
+
+    def changeGroup(self, node, dataset, group, comments='',format='json', 
+                    instance='prod', level='dataset'):
+        name = "changegroup"
+        values = {'node':node, 'dataset':dataset, 'group':group}
+        url = urllib.basejoin(self.phedexBase, "%s/%s/updatesubscription" % (format, instance))
+
+        check, response = self.phedexCall(url, values)
+        if check:
+            self.logger.error(name, "Change group call failed")
+            print response
+            print check
+            return 1, "ERROR - self.phedexCall with response: " + response
+        return 0, response
+    
 
 ####################################################################################################
 #

@@ -52,7 +52,7 @@ class phedexData:
         if apiCall == "blockReplicas":
             jsonData = self.phedexApi.blockReplicas(node='T*', subscribed='y', show_dataset='y')
             if not jsonData:
-                print(" FATAL -- Could not update cache due to phedex error")
+                print("FATAL -- Could not update cache due to phedex error")
                 return 1
             self.buildBlockReplicasCache(jsonData)
         return 0
@@ -100,7 +100,7 @@ class phedexData:
                 datasets.append(row[0])
         return datasets
 
-    def getDatasetsAtSite(self, siteName):
+    def getAnalysisOpsDatasetsAtSite(self, siteName):
         datasets = []
         if self.shouldAccessPhedex('blockReplicas'):
             # update
@@ -118,6 +118,23 @@ class phedexData:
                     continue
                 datasets.append(row[0])
         return datasets
+
+    def getSitesWithDataset(self, datasetName):
+        datasets = []
+        if self.shouldAccessPhedex('blockReplicas'):
+            # update
+            error = self.updateCache('blockReplicas')
+            if error:
+                return datasets
+        # access cache
+        blockReplicasCache = sqlite3.connect("%s/blockReplicas.db" % (self.phedexCache))
+        with blockReplicasCache:
+            cur = blockReplicasCache.cursor()
+            cur.execute('SELECT DISTINCT SiteName FROM Replicas NATURAL JOIN Datasets WHERE DatasetName=?', (datasetName,))
+            sites = []
+            for row in cur:
+                sites.append(row[0])
+        return sites
 
     def getDatasetSize(self, datasetName):
         sizeGb = 1000000
