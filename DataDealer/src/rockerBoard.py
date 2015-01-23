@@ -95,8 +95,8 @@ class rockerBoard():
         maxRank = max(siteRankings.iteritems(), key=operator.itemgetter(1))[1]
         for siteName, rank in siteRankings.items():
             siteRankings[siteName] = maxRank - rank
+        dataset = max(datasetRankings.iteritems(), key=operator.itemgetter(1))
         while (datasetRankings and (sizeSubscribedGb < self.budget) and (sizeSubscribedGb < (totalQuota*self.limit - totalUsed)) and dataset[1] >= self.lowerThreshold) or (datasetRankings and maxRank >= self.upperThreshold and (sizeSubscribedGb < self.lowerBudget) and sizeSubscribedGb < (totalQuota*self.upperLimit - totalUsed)):
-            dataset = max(datasetRankings.iteritems(), key=operator.itemgetter(1))
             datasetName = dataset[0]
             datasetSizeGb = self.phedexData.getDatasetSize(datasetName)
             if sizeSubscribedGb + datasetSizeGb > self.budget:
