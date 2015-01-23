@@ -11,7 +11,7 @@ class rockerBoard():
         config.read('/usr/local/IntelROCCS/DataDealer/intelroccs.cfg')
         self.rankingsCachePath = config.get('DataDealer', 'cache')
         self.budget = config.getint('DataDealer', 'budget')
-        self.budget = config.getint('DataDealer', 'lower_budget')
+        self.lowerBudget = config.getint('DataDealer', 'lower_budget')
         self.lowerThreshold = config.getfloat('DataDealer', 'lower_threshold')
         self.upperThreshold = config.getfloat('DataDealer', 'upper_threshold')
         self.limit = config.getfloat('DataDealer', 'limit')
