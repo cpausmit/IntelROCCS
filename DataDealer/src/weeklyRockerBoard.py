@@ -90,7 +90,7 @@ class weeklyRockerBoard():
         for siteName, rank in siteRankings.items():
             siteRankings[siteName] = maxRank - rank
         dataset = max(datasetRankings.iteritems(), key=operator.itemgetter(1))
-        while (datasetRankings and (sizeSubscribedGb + totalUsed) <= :
+        while (datasetRankings):
             datasetName = dataset[0]
             datasetSizeGb = self.phedexData.getDatasetSize(datasetName)
             if sizeSubscribedGb + datasetSizeGb > self.budget:
