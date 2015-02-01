@@ -42,12 +42,12 @@ install_path=/usr/local/IntelROCCS/DataDealer
 if [ $testing -eq 1 ]
 then
   install_path=/usr/local/IntelROCCS/DataDealer-test
-done
+fi
 data_path=/local/cmsprod/IntelROCCS/DataDealer
 if [ $testing -eq 1 ]
 then
   data_path=/local/cmsprod/IntelROCCS/DataDealer-test
-done
+fi
 
 # copy the software
 #==================
