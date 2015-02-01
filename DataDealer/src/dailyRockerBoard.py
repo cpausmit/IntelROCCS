@@ -5,7 +5,7 @@
 import sys, os, math, datetime, sqlite3, operator, random, ConfigParser
 import phedexData, popDbData, dbApi
 
-class rockerBoard():
+class dailyRockerBoard():
     def __init__(self):
         config = ConfigParser.RawConfigParser()
         config.read('/usr/local/IntelROCCS/DataDealer/intelroccs.cfg')
@@ -119,7 +119,7 @@ class rockerBoard():
 #===================================================================================================
 #  M A I N
 #===================================================================================================
-    def rba(self, datasets, sites):
+    def dailyRba(self, datasets, sites):
         datasetRankings = self.getDatasetRankings(datasets)
         siteRankings = self.getSiteRankings(sites, datasetRankings)
         self.rankingsCache(datasetRankings, siteRankings)
