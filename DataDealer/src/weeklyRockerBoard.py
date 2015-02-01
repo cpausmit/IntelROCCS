@@ -116,12 +116,10 @@ class weeklyRockerBoard():
     def weeklyRba(self, datasets, sites):
         subscriptions = []
         datasetRankings = self.getDatasetRankings(datasets)
-        for i in range(10):
-            dataset = max(datasetRankings.iteritems(), key=operator.itemgetter(1))
-            print str(dataset[1]) + " " + str(dataset[0])
-            del datasetRankings[dataset[0]]
-        return subscriptions
         siteRankings = self.getSiteRankings(sites, datasetRankings)
+        for siteName, rank in siteRankings.items():
+            print str(rank) + " " + str(siteName)
+        return subscriptions
         self.rankingsCache(datasetRankings, siteRankings)
         totalQuota = 0
         totalUsed = 0
