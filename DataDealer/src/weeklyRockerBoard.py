@@ -10,12 +10,7 @@ class weeklyRockerBoard():
         config = ConfigParser.RawConfigParser()
         config.read('/usr/local/IntelROCCS/DataDealer/intelroccs.cfg')
         self.rankingsCachePath = config.get('DataDealer', 'cache')
-        self.budget = config.getint('DataDealer', 'budget')
-        self.lowerBudget = config.getint('DataDealer', 'lower_budget')
-        self.lowerThreshold = config.getfloat('DataDealer', 'lower_threshold')
-        self.upperThreshold = config.getfloat('DataDealer', 'upper_threshold')
-        self.limit = config.getfloat('DataDealer', 'limit')
-        self.upperLimit = config.getfloat('DataDealer', 'upper_limit')
+        self.limit = config.getfloat('DataDealer', 'weekly_limit')
         self.phedexData = phedexData.phedexData()
         self.popDbData = popDbData.popDbData()
         self.dbApi = dbApi.dbApi()
@@ -35,13 +30,15 @@ class weeklyRockerBoard():
     def getPopularity(self, datasetName):
         popularity = 0
         today = datetime.date.today()
-        date = today - datetime.timedelta(days=1)
-        cpuh1 = self.popDbData.getDatasetCpus(datasetName, date.strftime('%Y-%m-%d'))
-        for i in range(2, 15):
+        cpusOld = []
+        for i in range(8, 15):
             date = today - datetime.timedelta(days=i)
-            cpuh2 = self.popDbData.getDatasetCpus(datasetName, date.strftime('%Y-%m-%d'))
-            popularity += cpuh1 - cpuh2
-            cpuh1 = cpuh2
+            cpusOld.append(self.popDbData.getDatasetCpus(datasetName, date.strftime('%Y-%m-%d')))
+        for i in range(1, 8):
+            date = today - datetime.timedelta(days=i)
+            cpuNew = self.popDbData.getDatasetCpus(datasetName, date.strftime('%Y-%m-%d'))
+            for cpuOld in cpusOld:
+                popularity += cpuNew - cpuOld
         return popularity
 
     def rankingsCache(self, datasetRankings, siteRankings):
@@ -83,31 +80,50 @@ class weeklyRockerBoard():
             siteRankings[siteName] = rank
         return siteRankings
 
-    def getNewReplicas(self, datasetRankings, siteRankings, totalQuota, totalUsed):
+    def getSiteQuotas(self, sites):
+        siteQuotas = dict()
+        for siteName in sites:
+            query = "SELECT Quotas.SizeTb FROM Quotas INNER JOIN Sites ON Quotas.SiteId=Sites.SiteId INNER JOIN Groups ON Groups.GroupId=Quotas.GroupId WHERE Sites.SiteName=%s AND Groups.GroupName=%s"
+            values = [siteName, "AnalysisOps"]
+            data = self.dbApi.dbQuery(query, values=values)
+            quota = data[0][0]*10**3
+            used = self.phedexData.getSiteStorage(siteName)
+            left = quota*weekly_limit - used
+            if left <= 0:
+                continue
+            siteQuotas[siteName] = left
+        return siteQuotas
+
+    def getNewReplicas(self, datasetRankings, siteRankings, siteQuotas):
         subscriptions = dict()
-        sizeSubscribedGb = 0
-        maxRank = max(siteRankings.iteritems(), key=operator.itemgetter(1))[1]
-        for siteName, rank in siteRankings.items():
-            siteRankings[siteName] = maxRank - rank
-        dataset = max(datasetRankings.iteritems(), key=operator.itemgetter(1))
         while (datasetRankings):
-            datasetName = dataset[0]
-            datasetSizeGb = self.phedexData.getDatasetSize(datasetName)
-            if sizeSubscribedGb + datasetSizeGb > self.budget:
+            if not siteRankings:
                 break
-            del datasetRankings[datasetName]
+            dataset = max(datasetRankings.iteritems(), key=operator.itemgetter(1))
+            datasetName = dataset[0]
+            datasetRank = dataset[1]
+            if datasetRank <= 0:
+                break
             siteRank = siteRankings
             invalidSites = self.phedexData.getSitesWithDataset(datasetName)
             for siteName in invalidSites:
                 if siteName in siteRank:
                     del siteRank[siteName]
-            siteName = self.weightedChoice(siteRank)
-            sizeSubscribedGb += datasetSizeGb
+            if not siteRank:
+                continue
+            site = min(siteRank.iteritems(), key=operator.itemgetter(1))
+            siteName =site[0]
+            siteRank = site[1]
             if siteName in subscriptions:
                 subscriptions[siteName].append(datasetName)
             else:
                 subscriptions[siteName] = [datasetName]
-            dataset = max(datasetRankings.iteritems(), key=operator.itemgetter(1))
+            siteRankings[siteName] += datasetRank
+            datasetSizeGb = self.phedexData.getDatasetSize(datasetName)
+            siteQuotas[siteName] -= datasetSizeGb
+            if siteQuotas[siteName] <= 0:
+                del siteRankings[siteName]
+            del datasetRankings[datasetName]
         return subscriptions
 
 #===================================================================================================
@@ -117,18 +133,7 @@ class weeklyRockerBoard():
         subscriptions = []
         datasetRankings = self.getDatasetRankings(datasets)
         siteRankings = self.getSiteRankings(sites, datasetRankings)
-        for siteName, rank in siteRankings.items():
-            print str(rank) + " " + str(siteName)
-        return subscriptions
+        siteQuotas = self.getSiteQuotas(sites)
         self.rankingsCache(datasetRankings, siteRankings)
-        totalQuota = 0
-        totalUsed = 0
-        for siteName in sites:
-            query = "SELECT Quotas.SizeTb FROM Quotas INNER JOIN Sites ON Quotas.SiteId=Sites.SiteId INNER JOIN Groups ON Groups.GroupId=Quotas.GroupId WHERE Sites.SiteName=%s AND Groups.GroupName=%s"
-            values = [siteName, "AnalysisOps"]
-            data = self.dbApi.dbQuery(query, values=values)
-            totalQuota += data[0][0]*10**3
-            used = self.phedexData.getSiteStorage(siteName)
-            totalUsed += used
-        subscriptions = self.getNewReplicas(datasetRankings, siteRankings, totalQuota, totalUsed)
+        subscriptions = self.getNewReplicas(datasetRankings, siteRankings, siteQuotas)
         return subscriptions

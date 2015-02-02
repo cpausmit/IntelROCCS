@@ -40,7 +40,6 @@ subscriptions = weeklyRockerBoard_.weeklyRba(datasets, availableSites)
 totalTime = datetime.datetime.now() - startTime
 print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
 print ""
-sys.exit(0)
 
 # subscribe selected datasets
 print " ----  Subscribe Datasets  ---- "
