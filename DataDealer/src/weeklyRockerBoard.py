@@ -8,7 +8,7 @@ import phedexData, popDbData, dbApi
 class weeklyRockerBoard():
     def __init__(self):
         config = ConfigParser.RawConfigParser()
-        config.read('/usr/local/IntelROCCS/DataDealer/intelroccs.cfg')
+        config.read('intelroccs.cfg')
         self.rankingsCachePath = config.get('DataDealer', 'cache')
         self.limit = config.getfloat('DataDealer', 'weekly_limit')
         self.phedexData = phedexData.phedexData()
