@@ -109,7 +109,7 @@ class weeklyRockerBoard():
             for siteName in invalidSites:
                 if siteName in siteRanks:
                     del siteRanks[siteName]
-            if not siteRank:
+            if not siteRanks:
                 continue
             site = min(siteRanks.iteritems(), key=operator.itemgetter(1))
             siteName =site[0]
