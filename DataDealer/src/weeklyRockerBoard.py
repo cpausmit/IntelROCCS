@@ -104,14 +104,14 @@ class weeklyRockerBoard():
             datasetRank = dataset[1]
             if datasetRank <= 0:
                 break
-            siteRank = siteRankings
+            siteRanks = siteRankings
             invalidSites = self.phedexData.getSitesWithDataset(datasetName)
             for siteName in invalidSites:
-                if siteName in siteRank:
-                    del siteRank[siteName]
+                if siteName in siteRanks:
+                    del siteRanks[siteName]
             if not siteRank:
                 continue
-            site = min(siteRank.iteritems(), key=operator.itemgetter(1))
+            site = min(siteRanks.iteritems(), key=operator.itemgetter(1))
             siteName =site[0]
             siteRank = site[1]
             if siteName in subscriptions:
@@ -132,8 +132,9 @@ class weeklyRockerBoard():
     def weeklyRba(self, datasets, sites):
         subscriptions = []
         datasetRankings = self.getDatasetRankings(datasets)
-        siteRankings = self.getSiteRankings(sites, datasetRankings)
         siteQuotas = self.getSiteQuotas(sites)
+        sites = siteQuotas.keys()
+        siteRankings = self.getSiteRankings(sites, datasetRankings)
         self.rankingsCache(datasetRankings, siteRankings)
         subscriptions = self.getNewReplicas(datasetRankings, siteRankings, siteQuotas)
         return subscriptions
