@@ -26,11 +26,11 @@ else
 fi
 # define relevant environment variables
 export MIT_ROOT_STYLE=/home/cmsprod/MitRootStyle/MitRootStyle.C
-export INCLUDE_DELETED='yes'
-export PRORATE_REPLICAS='yes'
-export FILL_BY_REPLICAS='yes'
+export INCLUDE_DELETED='no'
+export PRORATE_REPLICAS='no'
+export FILL_BY_REPLICAS='no'
 
-RUN_AGGREGATION='yes' # turn off if you just want to make plots
+RUN_AGGREGATION='no' # turn off if you just want to make plots
 
 begin=$(date --date=10/01/2014 +%s)
 end=$(date --date=12/31/2015 +%s)
