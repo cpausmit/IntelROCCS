@@ -3,7 +3,7 @@
 # This is the main script of the DataDealer. See README.md for more information.
 #---------------------------------------------------------------------------------------------------
 import sys, datetime
-import sites, rockerBoard, subscribe, dataDealerReport
+import sites, weeklyRockerBoard, subscribe, dataDealerReport
 import phedexData
 
 # initialize
@@ -35,8 +35,8 @@ print ""
 # rocker board algorithm
 print " ----  Rocker Board Algorithm  ---- "
 startTime = datetime.datetime.now()
-rockerBoard_ = rockerBoard.rockerBoard()
-subscriptions = rockerBoard_.rba(datasets, availableSites)
+weeklyRockerBoard_ = weeklyRockerBoard.weeklyRockerBoard()
+subscriptions = weeklyRockerBoard_.weeklyRba(datasets, availableSites)
 totalTime = datetime.datetime.now() - startTime
 print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
 print ""
@@ -46,15 +46,6 @@ print " ----  Subscribe Datasets  ---- "
 startTime = datetime.datetime.now()
 subscribe_ = subscribe.subscribe()
 subscribe_.createSubscriptions(subscriptions)
-totalTime = datetime.datetime.now() - startTime
-print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
-print ""
-
-# send summary report
-print " ----  Daily Summary  ---- "
-startTime = datetime.datetime.now()
-dataDealerReport_ = dataDealerReport.dataDealerReport()
-dataDealerReport_.createReport()
 totalTime = datetime.datetime.now() - startTime
 print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
 print ""

@@ -8,16 +8,18 @@
 OPTIND=1
 
 # Initialize our own variables:
-clear_cache=0
+testing=0
 daemon=0
-install_path=/usr/local/IntelROCCS/DataDealer
 
-while getopts "dh" opt; do
+while getopts "dth" opt; do
     case "$opt" in
     d) daemon=1
        ;;
+    t) testing=1
+       ;;
     h) echo "usage: sudo ./installDataDealer [-d | -h]"
        echo "d: install a new daemon and restart it"
+       echo "t: install in test folder"
        echo "h: show this message"
        exit 0
        ;;
@@ -36,7 +38,16 @@ intelroccs_path="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 data_dealer_src=${intelroccs_path}/DataDealer/src
 api_src=${intelroccs_path}/Api/src
 
-
+install_path=/usr/local/IntelROCCS/DataDealer
+if [ $testing -eq 1 ]
+then
+  install_path=/usr/local/IntelROCCS/DataDealer-test
+fi
+data_path=/local/cmsprod/IntelROCCS/DataDealer
+if [ $testing -eq 1 ]
+then
+  data_path=/local/cmsprod/IntelROCCS/DataDealer-test
+fi
 
 # copy the software
 #==================
@@ -55,9 +66,8 @@ cp $data_dealer_src/* $install_path
 cp $api_src/* $install_path
 cp $data_dealer_src/../data_dealerd $install_path
 cp $data_dealer_src/../data_dealer.cfg $install_path/intelroccs.cfg
-cp $data_dealer_src/../data_dealer.test.cfg $install_path/intelroccs.test.cfg
-cp $data_dealer_src/../html/* /local/cmsprod/IntelROCCS/DataDealer/Visualizations/
-chown -R ${INTELROCCS_USER}:${INTELROCCS_GROUP} /local/cmsprod/IntelROCCS/DataDealer/Visualizations/*
+cp $data_dealer_src/../html/* $data_path/Visualizations/
+chown -R ${INTELROCCS_USER}:${INTELROCCS_GROUP} $data_path/Visualizations/*
 
 if [ $daemon -eq 1 ]
 then

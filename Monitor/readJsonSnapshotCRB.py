@@ -1,5 +1,5 @@
 #!/usr/bin/python
-#-------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------
 #
 # This script reads the information from a set of JSON snapshot files that we use to cache our
 # popularity information.
@@ -10,17 +10,17 @@ import datasetProperties
 from   xml.etree import ElementTree
 from findDatasetHistoryAll import *
 import findDatasetProperties as fDP
-from ROOT import TH1F
-# datasetPattern=r'/.*/.*/.*AOD$'
-datasetPattern=r'/.*/.*/.*AOD.*'
-# datasetPattern=r'(?!/.*/.*/USER.*)' # exclude USER since das_client doesn't return useful info
-# datasetPattern='/QCD_Pt-10to20_EMEnriched_Tune4C_13TeV_pythia8/Phys14DR-PU4bx50_castor_PHYS14_25_V1-v1/MINIAODSIM'
-# datasetPattern=r'/DYJetsToLL_M-50_HT-200to400_Tune4C_13TeV-madgraph-tauola/Phys14DR-PU20bx25_PHYS14_25_V1-v1/MINIAODSIM'
 genesis=1378008000
 
 if not os.environ.get('DETOX_DB') or not os.environ.get('MONITOR_DB'):
     print '\n ERROR - DETOX environment not defined: source setup.sh\n'
     sys.exit(0)
+
+# get the dataset pattern to consider (careful the pattern will be translated, better implementation
+# should be done at some point)
+datasetPattern = os.environ.get('MONITOR_PATTERN')
+datasetPattern = datasetPattern.replace("_",".*")
+datasetPattern = r'/.*/.*/%s$'%(datasetPattern)
 
 #===================================================================================================
 #  H E L P E R S
@@ -166,9 +166,13 @@ def findDatasetSize(dataset,debug=0):
     return nFiles, sizeGb
 
 def findDatasetCreationTime(dataset,fileName,cTimes,debug=0):
+    # determine the creation time for each dataset
+
     if dataset in cTimes:
         return cTimes[dataset]
-    cmd = os.environ.get('MONITOR_BASE') + '/das_client.py --format=plain --limit=0 --query="dataset=' + dataset + ' | grep dataset.creation_time " '
+    cmd = os.environ.get('MONITOR_BASE') + \
+        '/das_client.py --format=plain --limit=0 --query="dataset=' + dataset + \
+        ' | grep dataset.creation_time " '
     print cmd
     for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
         try:
@@ -187,6 +191,8 @@ def findDatasetCreationTime(dataset,fileName,cTimes,debug=0):
             return cTime
 
 def readDatasetCreationTimes(fileName,debug=0):
+    # read the creation time for each dataset from a given file
+
     creationTimes={}
     if not os.path.exists(fileName):
         return creationTimes
@@ -202,6 +208,8 @@ def readDatasetCreationTimes(fileName,debug=0):
     return creationTimes
 
 def getDbCursor():
+    # get access to the detox database
+
     # configuration
     db = os.environ.get('DETOX_SITESTORAGE_DB')
     server = os.environ.get('DETOX_SITESTORAGE_SERVER')
@@ -213,10 +221,10 @@ def getDbCursor():
     return db.cursor()
 
 def readDatasetProperties():
+    # read dataset properties fromt he database
+
     sizesGb     = {}
     fileNumbers = {}
-
-    #print " START reading database"
 
     # get access to the database
     cursor = getDbCursor()
@@ -238,11 +246,10 @@ def readDatasetProperties():
     except:
         pass
 
-    #print " DONE reading database"
-
     return (fileNumbers, sizesGb)
 
 def calculateAverageNumberOfSites(sitePattern,datasetSet,datasetsOnSites,fullStart,end,cTimes={}):
+    # calculate the average number of replicas (sites) for a dataset in a given time interval
 
     print ' Relevant time interval: %d %d  --> %d'%(fullStart,end,end-fullStart)
 
@@ -261,19 +268,22 @@ def calculateAverageNumberOfSites(sitePattern,datasetSet,datasetsOnSites,fullSta
     parseRequestJson(fileName,genesis,end,True,datasetMovement,datasetPattern,datasetSet)
     nSites = {}
     timeOnSites = {} #timeOnSites[dataset][site] = time
+
     # match the intervals from the phedex history to the requested time interval
     #===========================================================================
     for datasetName in datasetMovement:
+
         # don't penalize a dataset for not existing
         cTime = findDatasetCreationTime(datasetName,creationTimeCache,cTimes)
         start = max(fullStart,cTime)
+
         interval = end - start
         if not datasetName in nSites:
             nSites[datasetName] = 0
         if not datasetName in timeOnSites:
             timeOnSites[datasetName] = {}
         for siteName in datasetMovement[datasetName]:
-            if not re.match(sitePattern,siteName):                   # only requested sites
+            if not re.match(sitePattern,siteName):                      # only requested sites
                 print ' WARNING - no site match. ' + siteName
                 continue
             if not siteName in timeOnSites[datasetName]:
@@ -296,7 +306,8 @@ def calculateAverageNumberOfSites(sitePattern,datasetSet,datasetsOnSites,fullSta
 
             siteSum = 0
             i       = 0
-            if (lenXfer > 0 and lenDel > 0 and xfers[-1] > dels[-1]) or (lenDel==0 and lenXfer > 0 and xfers[-1] < end):
+            if (lenXfer > 0 and lenDel > 0 and xfers[-1] > dels[-1]) or \
+               (lenDel==0 and lenXfer > 0 and xfers[-1] < end):
                 try:
                     predictedDatasetsOnSites[datasetName].add(siteName)
                 except KeyError:
@@ -313,7 +324,7 @@ def calculateAverageNumberOfSites(sitePattern,datasetSet,datasetsOnSites,fullSta
                 # (though this prevents you from having the same
                 #  start and end date)
                 if tXfer <= start <= end <= tDel:
-                    siteSum += 1                                 # should happen at most once, but okay
+                    siteSum += 1                                 # should happen at most once (?)
                 elif tXfer <= start < tDel < end:
                     siteSum += float(tDel - start)/float(interval)
                 elif start < tXfer < end <= tDel:
@@ -347,18 +358,20 @@ def calculateAverageNumberOfSites(sitePattern,datasetSet,datasetsOnSites,fullSta
                     # nSites[datasetName]+=1
                 elif datasetMovement[datasetName][siteName][0][-1] < end:
                     # it was transferred recently?
-                    nSites[datasetName]+= (end-datasetMovement[datasetName][siteName][0][-1])/interval
-                    timeOnSites[datasetName][siteName]+=(end-datasetMovement[datasetName][siteName][0][-1])/interval
+                    nSites[datasetName] += \
+                        (end-datasetMovement[datasetName][siteName][0][-1])/interval
+                    timeOnSites[datasetName][siteName] += \
+                        (end-datasetMovement[datasetName][siteName][0][-1])/interval
+
     n     = 0
     nSkip =  0
     Sum   = float(0)
     for datasetName in nSites:
-        if nSites[datasetName] == 0:                                # dataset not on sites in interval
+        if nSites[datasetName] == 0:                            # dataset not on sites in interval
             nSkip += 1
             continue
         Sum += nSites[datasetName]
         n   += 1
-        #print ' %s \t%f'%(datasetName,nSites[datasetName])
 
     print '\n Dataset  --  average number of sites\n'
 
@@ -385,7 +398,6 @@ usage += "\n"
 usage += "   sitePattern  - pattern to select particular sites (ex. T2* or T2_U[SK]* etc.)\n"
 usage += "   startDate  - epoch time of starting date\n"
 usage += "   endDate  - epoch time of ending date\n\n"
-# usage += "   datePattern  - pattern to select date pattern (ex. 201[34]-0[0-7]-??)\n\n"
 
 # decode command line parameters
 if   len(sys.argv)<2:
@@ -451,6 +463,7 @@ phedexFile = open(workDirectory+'/DatasetsInPhedexAtSites.dat','r')
 creationTimeCache = os.environ['MONITOR_DB'] + '/datasets/creationTimes.txt'
 # say what we are goign to do
 print "\n = = = = S T A R T  A N A L Y S I S = = = =\n"
+print " Pattern:      %s"%(datasetPattern)
 print " Logfiles in:  %s"%(workDirectory)
 print " Site pattern: %s"%(site)
 if sizeAnalysis:
@@ -483,12 +496,13 @@ for line in phedexFile:
 print "Phedex Size: ",phedexSize
 
 getJsonFile("del",genesis) # all deletions
-# delDatasetSet=getAnalysisOpsDeletions(start,end,datasetPattern) # use this if analysisops
+#delDatasetSet=getAnalysisOpsDeletions(start,end,datasetPattern) # use this if analysisops
+
 delDatasetSet=getAllDeletions(start,end,datasetPattern)
 datasetSet.update(delDatasetSet) # this should be every dataset, even the deleted ones
 for ds in delDatasetSet:
     if ds not in isDeleted:
-        isDeleted[ds] = 1 # if the dataset is in delDatasetSet but wasn't previously seen, it was actually deleted
+        isDeleted[ds] = 1 # if dataset is in delDatasetSet but was actually deleted
 
 # removing blacklisted datasets (no DAS info)
 blacklistFile = open(os.environ.get('MONITOR_DB')+'/datasets/blacklist.log','r')
@@ -615,6 +629,48 @@ for d in datasetSet:
 print "Computing average number of sites"
 nAverageSites,timeOnSites = calculateAverageNumberOfSites(siterx,datasetSet,datasetsOnSites,start,end,creationTimes)
 
+# adjust xrootd accesses
+# ======================
+# - determine all access per dataset that are through xrootd
+# - remove recordings of sites that have xrootd access (remove by setting nAccess = -1)
+# - find sites that hold the datasets for real
+# - add the number of accesses equally distributed to all sites that have a copy of the dataset
+for dataset in datasetSet:
+
+    realSites = []
+    nRealSites = 0
+    nXrootdAccesses = 0
+    timeDatasetOnSites = timeOnSites[dataset]
+
+    # loop through all sites and see what the dataset has to contribute
+    for site in siteList:
+        try:
+            nAccess = nAllAccessed[site][dataset]
+        except KeyError:
+            # when a dataset was not accessed at a given site
+            nAccess = 0
+            continue
+
+        # now see whether the data is at the given site
+        try:
+            timeOnSite = timeDatasetOnSites[site]
+            nRealSites += 1
+            realSites.append(site)
+        except KeyError:
+            # these access numbers are from xrootd as the sample is not really at this site
+            if nAccess > 0:
+                nXrootdAccesses += nAccess
+                nAllAccessed[site][dataset] = -1
+
+    # redistribute the number of accesses
+    if nRealSites > 0:
+        nAdditional = float(nXrootdAccesses)/float(nRealSites)
+        for site in realSites:
+            nAllAccessed[site][dataset] += nAdditional
+    else:
+        print " No site records dataset %s -- xrootd at Tier-1?"%(dataset)
+
+
 # last step: produce monitoring information
 # ========================================
 # ready to use: nAllAccessed[dataset], fileNumbers[dataset], sizesGb[dataset], nSites[dataset]
@@ -626,25 +682,38 @@ totalAccessesByDS = open('DatasetSummaryByDS.txt','w')
 for dataset in datasetSet:
     if dataset not in nSites:
         nSites[dataset] = 0 # if we haven't found it on a site, nSites=0
+
     nAccess = 0
     nSumAccess = 0
     timeDatasetOnSites = timeOnSites[dataset]
     for site in siteList:
+
+        # number of accesses: could be zero if not used or present (real sites determined later)
         try:
             nAccess = nAllAccessed[site][dataset]
         except KeyError:
             # print "missing nAccesses for %s %s?"%(dataset,site)
-            nAccess=0
+            nAccess = 0
+
+        # remove xrootd accesses, they were already added to the real sites before
+        if nAccess<0:
+            continue
+
+        # add all accesses for per-dataset summary
         nSumAccess+=nAccess
+
+        # determine time prorating and 'real sites'
+        timeOnSite = 0
         try:
-          timeOnSite = timeDatasetOnSites[site]
+            timeOnSite = timeDatasetOnSites[site]
         except KeyError:
-            if nAccess > 0:
-                timeOnSite = 0.5 # it was accessed but no history...take expectation value of uniform dist
-            else:
-                timeOnSite = 0
+            pass
+
+        # filter out cases when the sample was not at the site
         if timeOnSite == 0:
-          continue # this replica didn't exist in relevant interval
+            continue               # this replica didn't exist in relevant interval
+
+        # get relevant parameters (nFiles, sizeGb)
         try:
             nFiles = fileNumbers[dataset]
         except KeyError:
@@ -655,12 +724,14 @@ for dataset in datasetSet:
         except KeyError:
             print "missing sizeGb for %s %s?"%(dataset)
             nFiles=0
+
         if nFiles>0 and sizeGb>0:
             # also only print if DAS didn't give nonsense
             if creationTimes[dataset] > start:
                 totalAccesses.write("%d %d %f %.3f %s %s %d %d\n"%(nAccess,nFiles,sizeGb,timeOnSite,dataset,site,0,isDeleted[dataset]))
             else:
                 totalAccesses.write("%d %d %f %.3f %s %s %d %d\n"%(nAccess,nFiles,sizeGb,timeOnSite,dataset,site,1,isDeleted[dataset]))
+
     if nFiles > 0 and sizeGb > 0:
         if creationTimes[dataset] > start:
             totalAccessesByDS.write("%d %d %f %d %s %d %d\n"%(nSumAccess,nFiles,sizeGb,nSites[dataset],dataset,0,isDeleted[dataset]))

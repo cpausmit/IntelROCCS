@@ -91,6 +91,15 @@ class dataDealerReport():
             subscriptions.append([info for info in sub])
         subscriptions.sort(reverse=True, key=itemgetter(2))
 
+        # Get all deletions
+        deletions = []
+        query = "SELECT Datasets.DatasetName, Sites.SiteName, Requests.Rank FROM Requests INNER JOIN Datasets ON Datasets.DatasetId=Requests.DatasetId INNER JOIN Sites ON Sites.SiteId=Requests.SiteId WHERE Requests.Date>%s AND Requests.RequestType=%s"
+        values = [date.strftime('%Y-%m-%d %H:%M:%S'), 1]
+        data = self.dbApi.dbQuery(query, values=values)
+        for sub in data:
+            deletions.append([info for info in sub])
+        deletions.sort(reverse=True, key=itemgetter(2))
+
         # Get top 10 datasets not subscribed
         cacheFile = "%s/%s.db" % (self.rankingsCachePath, "rankingsCache")
         nSubbed = len(subscriptions)
@@ -154,6 +163,21 @@ class dataDealerReport():
             subscriptionTable.addRow([rank, size, replicas, cpuH, dataset])
 
         text += subscriptionTable.plainText()
+
+         # create subscription table
+        text += "\n\nNew Deletions\n\n"
+
+        deletionTable = makeTable.Table(add_numbers=False)
+        deletionTable.setHeaders(['Rank', 'Size GB', 'Replicas', 'CPU Hours', 'Dataset'])
+        for deletion in deletions:
+            dataset = deletion[0]
+            rank = float(deletion[2])
+            size = self.phedexData.getDatasetSize(dataset)
+            replicas = int(self.phedexData.getNumberReplicas(dataset))
+            cpuH = int(self.popDbData.getDatasetCpus(dataset, (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y-%m-%d')))
+            deletionTable.addRow([rank, size, replicas, cpuH, dataset])
+
+        text += deletionTable.plainText()
 
         # create top ten datasets not subscribed table
         text += "\n\nTop Ten Datasets Not Subscribed\n\n"

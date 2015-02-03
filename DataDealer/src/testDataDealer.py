@@ -4,7 +4,7 @@
 #---------------------------------------------------------------------------------------------------
 import sys, datetime, ConfigParser
 import sites, rockerBoard, subscribe, dataDealerReport
-import dbApi, popDbApi, phedexData
+import dbApi, popDbApi, phedexData, htcondor
 
 # get variables
 config = ConfigParser.RawConfigParser()
@@ -25,12 +25,12 @@ config.read('/usr/local/IntelROCCS/DataDealer/intelroccs.test.cfg')
 # print data
 # print ""
 
-# test pop db api
-print " ----  Test Pop DB API  ---- "
-popDbApi_ = popDbApi.popDbApi()
-data = popDbApi_.DSNameStatInTimeWindow(tstart='2015-01-12', tstop='2015-01-12')
-print data
-print ""
+# # test pop db api
+# print " ----  Test Pop DB API  ---- "
+# popDbApi_ = popDbApi.popDbApi()
+# data = popDbApi_.DSNameStatInTimeWindow(tstart='2015-01-12', tstop='2015-01-12')
+# print data
+# print ""
 
 # # get all datasets
 # print " ----  Get Datasets  ---- "
