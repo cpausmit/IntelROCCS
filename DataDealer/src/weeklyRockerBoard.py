@@ -88,7 +88,7 @@ class weeklyRockerBoard():
             data = self.dbApi.dbQuery(query, values=values)
             quota = data[0][0]*10**3
             used = self.phedexData.getSiteStorage(siteName)
-            left = quota*weekly_limit - used
+            left = quota*self.limit - used
             if left <= 0:
                 continue
             siteQuotas[siteName] = left
