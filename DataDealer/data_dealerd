@@ -4,12 +4,6 @@
 #
 # v1.1                                                                   B.Barrefors (Aug 11, 2014)
 # --------------------------------------------------------------------------------------------------
-# run weekly script
-# generate specific log file
-tag=`date "+%Y%m%d"`
-logFile=/local/cmsprod/IntelROCCS/DataDealer/Logs/data_dealer-$tag.log
-stdbuf -o0 -e0 /usr/local/IntelROCCS/DataDealer/weeklyDealer.py >> $logFile 2>&1
-
 # always run on the same time
 today=$(date -d "now" +%Y/%m/%d)
 runTime=$(date -d "$today 03:00" +%s)

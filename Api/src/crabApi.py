@@ -8,7 +8,7 @@ from email.MIMEMultipart import MIMEMultipart
 from email.Utils import formataddr
 from subprocess import Popen, PIPE
 
-class dbApi():
+class crabApiApi():
     def __init__(self):
         config = ConfigParser.RawConfigParser()
         config.read('/usr/local/IntelROCCS/DataDealer/intelroccs.cfg')
@@ -60,3 +60,10 @@ class dbApi():
                 data.append(job)
         return data
 
+if __name__ == '__main__':
+    crabApi_ = crabApi()
+    query = 'TaskType =?= "ROOT" && JobStatus =?= 1'
+    attributes = ["CRAB_InputData"]
+    data = crabApi_.crabCall(query, attributes)
+    print data
+    sys.exit(0)
