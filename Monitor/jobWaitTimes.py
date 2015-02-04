@@ -157,10 +157,13 @@ else:
     curlPath = curlPath.replace("@","%")
     # print "curl -H 'Accept: application/json' '%s' "%(curlPath)
     os.system("mkdir -p tmp")
+    print "curl -H 'Accept: application/json' '%s' > tmp/%i.json"%(curlPath,pid)
     os.system("curl -H 'Accept: application/json' '%s' > tmp/%i.json"%(curlPath,pid))
     # os.system("curl -H 'Accept: application/json' '%s'| python -mjson.tool > tmp/%i.json"%(curlPath,pid))
     waitTimes, compressedList, maxWait = processFileJson("tmp/%i.json"%(pid))
     # os.system("rm tmp/%i.json"%(pid))
+
+## waitTimes are available
 
 formatString = ["%i ", "%s ", "%s ", "%i ", "%i ", "%i ", "%i "]
 
