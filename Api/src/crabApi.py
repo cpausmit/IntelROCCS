@@ -65,8 +65,5 @@ if __name__ == '__main__':
     query = 'TaskType =?= "ROOT" && JobStatus =?= 1'
     attributes = ["CRAB_InputData"]
     data = crabApi_.crabCall(query, attributes)
-    print type(data)
-    print type(data[0])
-    print type(data[0][0])
-    print data
+    print data[0].get("CRAB_InputData")
     sys.exit(0)
