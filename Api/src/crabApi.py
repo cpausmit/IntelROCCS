@@ -61,7 +61,7 @@ class crabApi():
         return data
 
 if __name__ == '__main__':
-    crabApi_ = crabApi.crabApi()
+    crabApi_ = crabApi()
     query = 'TaskType =?= "ROOT" && JobStatus =?= 1'
     attributes = ["CRAB_InputData"]
     data = crabApi_.crabCall(query, attributes)
