@@ -41,6 +41,9 @@ totalTime = datetime.datetime.now() - startTime
 print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
 print ""
 
+print subscriptions
+sys.exit(0)
+
 # subscribe selected datasets
 print " ----  Subscribe Datasets  ---- "
 startTime = datetime.datetime.now()

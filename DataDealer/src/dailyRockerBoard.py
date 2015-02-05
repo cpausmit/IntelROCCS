@@ -15,10 +15,12 @@ class dailyRockerBoard():
 #===================================================================================================
     def getDatasets(self, datasets):
         newDatasets = []
-        query = ""
-        attributes = []
+        query = 'TaskType =?= "ROOT" && JobStatus =?= 1'
+        attributes = ["CRAB_InputData"]
         data = self.crabApi.crabCall(query, attributes)
-        newDatasets = []
+        for classAd in data:
+            newDatasets.append(classAd.get("CRAB_InputData"))
+        print newDatasets
         newDatasets = [dataset for dataset in newDatasets if dataset in datasets]
         return newDatasets
 
@@ -40,6 +42,8 @@ class dailyRockerBoard():
 #  M A I N
 #===================================================================================================
     def dailyRba(self, sites, datasets):
+        subscriptions = []
         newDatasets = self.getDatasets(datasets)
+        print newDatasets
         subscriptions = self.getNewReplicas(datasetRankings)
         return subscriptions
