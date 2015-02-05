@@ -43,7 +43,7 @@ centralManager = centralManager.CentralManager()
 centralManager.checkProxyValid()
 
 #if you need to approve requests by hand
-#centralManager.submitUpdateRequest('T2_US_Nebraska',431875)
+#centralManager.submitUpdateRequest('T2_HU_Budapest',432965)
 #dataset='/SMHiggsToWWTo2Tau2Nu_M-125_7TeV-jhu-pythia6/Fall11-PU_S6_START42_V14B-v1/AODSIM'
 #centralManager.changeGroup('T2_US_MIT', dataset, 'AnalysisOps')
 
@@ -74,6 +74,8 @@ print ' - Collecting site information took: %d seconds'%(timeNow-timePre)
 timePre = timeNow
 
 centralManager.rankDatasetsLocally()
+centralManager.extractCacheRequests()
+centralManager.findExtraUsage()
 centralManager.rankDatasetsGlobally()
 centralManager.makeDeletionLists()
 
@@ -81,7 +83,7 @@ timeNow = time.time()
 print ' - Making deletion lists took: %d seconds'%(timeNow-timePre)
 timePre = timeNow
 
-centralManager.extractCacheRequests()
+#centralManager.extractCacheRequests()
 
 if requestDeletions:
     centralManager.requestDeletions()

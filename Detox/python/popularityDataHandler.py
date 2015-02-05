@@ -153,6 +153,7 @@ class PopularityDataHandler:
 
             if dataset not in self.datasets :
                 self.datasets[dataset] = usedDataset.UsedDataset(dataset)
+
             self.datasets[dataset].updateForSite(site,date,nAccessed)
 
     def cleanOutdatedSnapshots(self,dirname):

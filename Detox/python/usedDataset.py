@@ -5,15 +5,36 @@
 #----------------------------------------------------------------------------------------------------
 import time, datetime
 
+class TimeSequence:
+    def __init__(self):
+        self.timeStamps = {}
+
+    def update(self,utime,nacc):
+        self.timeStamps[utime] = nacc
+
+    def timesUsed(self,tstamp):
+        timeLine = int(time.mktime(tstamp.timetuple()))
+
+        nacc = 0
+        for stamp in self.timeStamps:
+            thisTime = int(time.mktime(time.strptime(stamp, "%Y-%m-%d")))
+            if thisTime > timeLine:
+                nacc = nacc + self.timeStamps[stamp]
+        return nacc
+
 class UsedDataset:
 
     def __init__(self, dataset):
         self.dataset = dataset
         self.siteNames = {}
+        self.siteSequence = {}
         self.lastUsedAtSite = {}
         self.timesUsedAtSite = {}
 
     def updateForSite(self,site,utime,nacc):
+        if site.startswith("T1_"):
+            site += "_Disk"
+
         if site not in self.siteNames:
             self.siteNames[site] = 1
 
@@ -27,11 +48,19 @@ class UsedDataset:
 
         if site not in self.timesUsedAtSite:
             self.timesUsedAtSite[site] = nacc
+            self.siteSequence[site] = TimeSequence()
         else:
             self.timesUsedAtSite[site] =  self.timesUsedAtSite[site] + nacc
+        self.siteSequence[site].update(utime,nacc)
+
+    def timesUsedSince(self,tstamp,site):
+        if site not in self.siteSequence:
+            return 0
+        else:
+            return self.siteSequence[site].timesUsed(tstamp)
 
     def locatedOnSites(self):
-        return siteNames.keys()
+        return self.siteNames.keys()
 
     def isOnSite(self,site):
         if site in self.siteNames:
