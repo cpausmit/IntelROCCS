@@ -48,5 +48,5 @@ class dailyRockerBoard():
         subscriptions = []
         newDatasets = self.getDatasets(datasets)
         print newDatasets
-        subscriptions = self.getNewReplicas(newDatasets)
+        subscriptions = self.getNewReplicas(newDatasets, sites)
         return subscriptions
