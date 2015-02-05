@@ -54,10 +54,18 @@ class crabApi():
     def crabCall(self, query, attributes=[]):
         data = []
         for scheduler in self.schedulers:
-            schedd = htcondor.Schedd(scheduler)
-            jobs = schedd.query(query, attributes)
-            for job in jobs:
-                data.append(job)
+            for attempt in range(3):
+                try:
+                    schedd = htcondor.Schedd(scheduler)
+                    jobs = schedd.query(query, attributes)
+                    for job in jobs:
+                        data.append(job)
+                except IOError, e:
+                    continue
+                else:
+                    break
+            else:
+                self.error(e)
         return data
 
 if __name__ == '__main__':
