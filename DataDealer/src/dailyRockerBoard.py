@@ -22,7 +22,7 @@ class dailyRockerBoard():
         for classAd in data:
             newDatasets.append(classAd.get("CRAB_InputData"))
         dSets = set(newDatasets)
-        print dsets
+        print dSets
         newDatasets = [dataset for dataset in dSets if dataset in oldDatasets]
         return newDatasets
 
