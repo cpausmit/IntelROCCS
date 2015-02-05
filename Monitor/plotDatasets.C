@@ -22,7 +22,7 @@ using namespace std;
 void plotDatasetUsage();
 
 //--------------------------------------------------------------------------------------------------
-void plotDatasets(int type=0, float interval=1)
+void plotDatasets(int type=1, float interval=1)
 {
   TString  styleMacro = gSystem->Getenv("MIT_ROOT_STYLE");
   long int rc = gROOT->LoadMacro(styleMacro+"+");
@@ -31,7 +31,7 @@ void plotDatasets(int type=0, float interval=1)
 }
 
 //--------------------------------------------------------------------------------------------------
-void plotDatasetUsage(int type=0, float interval=1.)
+void plotDatasetUsage(int type=1, float interval=1.)
 {
   TString text        = gSystem->Getenv("DATASET_MONITOR_TEXT");
   TString fileName    = gSystem->Getenv("DATASET_MONITOR_FILE");
@@ -139,7 +139,7 @@ void plotDatasetUsage(int type=0, float interval=1.)
 
   printf(" \n");
   printf(" Found %d entries.\n",nLines);
-  printf(" Found %.3f [PB] total volume.\n",totalSize/1000.);
+  printf(" Found %.3f [PB] average volume.\n",totalSize/1000.);
   printf(" \n");
 
   // Open a canvas

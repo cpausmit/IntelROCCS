@@ -69,12 +69,40 @@ def getAnalysisOpsDeletions(start,end,datasetPattern):
                 if re.match(datasetPattern,datasetName) and (requestedBy=="Maxim Goncharov" or requestedBy=="Christoph Paus"):
                 # if re.match(datasetPattern,datasetName):
                     datasetSet.add(datasetName)
+                    if re.match(r".*BUNN.*",datasetName):
+                        print "added superbunny dataset %s because it was requested by %s"%(datasetName,requestedBy)
             except TypeError:
                 print "weird"
                 pass
     return datasetSet
 
-def parseRequestJson(fileName,start,end,isXfer,datasetHistory,datasetPattern):
+def getAllDeletions(start,end,datasetPattern):
+    delFileName = os.environ.get('MONITOR_DB') + '/datasets/delRequests_1378008000.json'
+    # returns all datasets in the requests which match the pattern and are in AnalysisOps
+    print "Parsing ",delFileName
+    # isXfer = True if xfer history, False if deletions
+    datasetSet=set([])
+    with open(delFileName) as dataFile:
+        try:
+            data = json.load(dataFile)
+        except ValueError:
+            sys.exit(-1)
+    requests = data["phedex"]["request"]
+    for request in requests:
+        for dataset in request["data"]["dbs"]["dataset"]:
+            datasetName = dataset["name"]
+            requestedBy = request["requested_by"]["name"]
+            try:
+                # if re.match(datasetPattern,datasetName) and (requestedBy=="Maxim Goncharov" or requestedBy=="Christoph Paus"):
+                if re.match(datasetPattern,datasetName):
+                    datasetSet.add(datasetName)
+            except TypeError:
+                print "weird"
+                pass
+    return datasetSet
+
+
+def parseRequestJson(fileName,start,end,isXfer,datasetHistory,datasetPattern,datasetSet):
     print "Parsing ",fileName
     # isXfer = True if xfer history, False if deletions
     with open(fileName) as dataFile:
@@ -92,7 +120,8 @@ def parseRequestJson(fileName,start,end,isXfer,datasetHistory,datasetPattern):
             for node in request["destinations"]["node"]:
                 for dataset in request["data"]["dbs"]["dataset"]: 
                     datasetName = dataset["name"]
-                    if not re.match(datasetPattern,datasetName):
+                    # if not re.match(datasetPattern,datasetName):
+                    if not datasetName in datasetSet:
                         #not AOD or AODSIM or whatever
                         continue
                     siteName = node["name"]
@@ -105,8 +134,8 @@ def parseRequestJson(fileName,start,end,isXfer,datasetHistory,datasetPattern):
                             continue
                     except KeyError:
                         # missing decision info?
-                        continue
-                        # pass
+                        # continue
+                        pass
                     try:
                         xferTime = node["decided_by"]["time_decided"]
                     except KeyError:
@@ -124,7 +153,8 @@ def parseRequestJson(fileName,start,end,isXfer,datasetHistory,datasetPattern):
             for node in request["nodes"]["node"]:
                 for dataset in request["data"]["dbs"]["dataset"]:
                     datasetName = dataset["name"]
-                    if not re.match(datasetPattern,datasetName):
+                    # if not re.match(datasetPattern,datasetName):
+                    if not datasetName in datasetSet:
                         #not AOD or AODSIM
                         continue
                     siteName = node["name"]
@@ -137,8 +167,8 @@ def parseRequestJson(fileName,start,end,isXfer,datasetHistory,datasetPattern):
                             continue
                     except KeyError:
                         # missing decision info?
-                        continue
-                        # pass
+                        # continue
+                        pass
                     try:
                         delTime = node["decided_by"]["time_decided"]
                     except KeyError:

@@ -5,17 +5,12 @@
 import sys, os, math, datetime, sqlite3, operator, random, ConfigParser
 import phedexData, popDbData, dbApi
 
-class rockerBoard():
+class weeklyRockerBoard():
     def __init__(self):
         config = ConfigParser.RawConfigParser()
-        config.read('/usr/local/IntelROCCS/DataDealer/intelroccs.cfg')
+        config.read('intelroccs.cfg')
         self.rankingsCachePath = config.get('DataDealer', 'cache')
-        self.budget = config.getint('DataDealer', 'budget')
-        self.budget = config.getint('DataDealer', 'lower_budget')
-        self.lowerThreshold = config.getfloat('DataDealer', 'lower_threshold')
-        self.upperThreshold = config.getfloat('DataDealer', 'upper_threshold')
-        self.limit = config.getfloat('DataDealer', 'limit')
-        self.upperLimit = config.getfloat('DataDealer', 'upper_limit')
+        self.limit = config.getfloat('DataDealer', 'weekly_limit')
         self.phedexData = phedexData.phedexData()
         self.popDbData = popDbData.popDbData()
         self.dbApi = dbApi.dbApi()
@@ -35,19 +30,15 @@ class rockerBoard():
     def getPopularity(self, datasetName):
         popularity = 0
         today = datetime.date.today()
+        cpusOld = []
+        for i in range(8, 15):
+            date = today - datetime.timedelta(days=i)
+            cpusOld.append(self.popDbData.getDatasetCpus(datasetName, date.strftime('%Y-%m-%d')))
         for i in range(1, 8):
             date = today - datetime.timedelta(days=i)
-            cpuh = self.popDbData.getDatasetCpus(datasetName, date.strftime('%Y-%m-%d'))
-            if not (cpuh == 0):
-                if i == 1:
-                    popularity += cpuh
-                elif i == 2:
-                    popularity += cpuh*math.log(i)
-                else:
-                    popularity += cpuh**(1/math.log(i))
-            else:
-                if i == 1:
-                    return 0
+            cpuNew = self.popDbData.getDatasetCpus(datasetName, date.strftime('%Y-%m-%d'))
+            for cpuOld in cpusOld:
+                popularity += cpuNew - cpuOld
         return popularity
 
     def rankingsCache(self, datasetRankings, siteRankings):
@@ -89,48 +80,61 @@ class rockerBoard():
             siteRankings[siteName] = rank
         return siteRankings
 
-    def getNewReplicas(self, datasetRankings, siteRankings, totalQuota, totalUsed):
+    def getSiteQuotas(self, sites):
+        siteQuotas = dict()
+        for siteName in sites:
+            query = "SELECT Quotas.SizeTb FROM Quotas INNER JOIN Sites ON Quotas.SiteId=Sites.SiteId INNER JOIN Groups ON Groups.GroupId=Quotas.GroupId WHERE Sites.SiteName=%s AND Groups.GroupName=%s"
+            values = [siteName, "AnalysisOps"]
+            data = self.dbApi.dbQuery(query, values=values)
+            quota = data[0][0]*10**3
+            used = self.phedexData.getSiteStorage(siteName)
+            left = quota*self.limit - used
+            if left <= 0:
+                continue
+            siteQuotas[siteName] = left
+        return siteQuotas
+
+    def getNewReplicas(self, datasetRankings, siteRankings, siteQuotas):
         subscriptions = dict()
-        sizeSubscribedGb = 0
-        maxRank = max(siteRankings.iteritems(), key=operator.itemgetter(1))[1]
-        for siteName, rank in siteRankings.items():
-            siteRankings[siteName] = maxRank - rank
-        dataset = max(datasetRankings.iteritems(), key=operator.itemgetter(1))
-        datasetName = dataset[0]
-        while (datasetRankings and (sizeSubscribedGb < self.budget) and (sizeSubscribedGb < (totalQuota*self.limit - totalUsed)) and dataset[1] >= self.lowerThreshold) or (datasetRankings and maxRank >= self.upperThreshold and (sizeSubscribedGb < self.lowerBudget) and sizeSubscribedGb < (totalQuota*self.upperLimit - totalUsed)):
-            datasetSizeGb = self.phedexData.getDatasetSize(datasetName)
-            if sizeSubscribedGb + datasetSizeGb > self.budget:
+        while (datasetRankings):
+            if not siteRankings:
                 break
-            del datasetRankings[datasetName]
-            siteRank = siteRankings
+            dataset = max(datasetRankings.iteritems(), key=operator.itemgetter(1))
+            datasetName = dataset[0]
+            datasetRank = dataset[1]
+            if datasetRank <= 0:
+                break
+            siteRanks = siteRankings
             invalidSites = self.phedexData.getSitesWithDataset(datasetName)
             for siteName in invalidSites:
-                if siteName in siteRank:
-                    del siteRank[siteName]
-            siteName = self.weightedChoice(siteRank)
-            sizeSubscribedGb += datasetSizeGb
+                if siteName in siteRanks:
+                    del siteRanks[siteName]
+            if not siteRanks:
+                continue
+            site = min(siteRanks.iteritems(), key=operator.itemgetter(1))
+            siteName =site[0]
+            siteRank = site[1]
             if siteName in subscriptions:
                 subscriptions[siteName].append(datasetName)
             else:
                 subscriptions[siteName] = [datasetName]
-            dataset = max(datasetRankings.iteritems(), key=operator.itemgetter(1))
+            siteRankings[siteName] += datasetRank
+            datasetSizeGb = self.phedexData.getDatasetSize(datasetName)
+            siteQuotas[siteName] -= datasetSizeGb
+            if siteQuotas[siteName] <= 0:
+                del siteRankings[siteName]
+            del datasetRankings[datasetName]
         return subscriptions
 
 #===================================================================================================
 #  M A I N
 #===================================================================================================
-    def rba(self, datasets, sites):
+    def weeklyRba(self, datasets, sites):
+        subscriptions = []
         datasetRankings = self.getDatasetRankings(datasets)
+        siteQuotas = self.getSiteQuotas(sites)
+        sites = siteQuotas.keys()
         siteRankings = self.getSiteRankings(sites, datasetRankings)
         self.rankingsCache(datasetRankings, siteRankings)
-        totalQuota = 0
-        totalUsed = 0
-        for siteName in sites:
-            query = "SELECT Quotas.SizeTb FROM Quotas INNER JOIN Sites ON Quotas.SiteId=Sites.SiteId INNER JOIN Groups ON Groups.GroupId=Quotas.GroupId WHERE Sites.SiteName=%s AND Groups.GroupName=%s"
-            values = [siteName, "AnalysisOps"]
-            data = self.dbApi.dbQuery(query, values=values)
-            totalQuota += data[0][0]*10**3
-            used = self.phedexData.getSiteStorage(siteName)
-            totalUsed += used
-        subscriptions = self.getNewReplicas(datasetRankings, siteRankings, totalQuota, totalUsed)
+        subscriptions = self.getNewReplicas(datasetRankings, siteRankings, siteQuotas)
         return subscriptions

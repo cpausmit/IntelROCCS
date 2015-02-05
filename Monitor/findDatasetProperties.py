@@ -177,6 +177,9 @@ def findDatasetProperties(dataset,short=False):
                     sizeGb = convertSizeToGb(size)
         except:
             sys.stderr.write(' Error: output data not compliant.\n')
+            with open(os.environ.get('MONITOR_DB')+'/datasets/blacklist.log','a') as blacklistFile:
+                print "WARNING blacklisting ",dataset
+                blacklistFile.write("%s\n"%(dataset))
             return -1,-1,-1 # this will never be used in readJsonSnapshotAll
             # sys.exit(0)
 

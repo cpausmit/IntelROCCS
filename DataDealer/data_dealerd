@@ -4,7 +4,6 @@
 #
 # v1.1                                                                   B.Barrefors (Aug 11, 2014)
 # --------------------------------------------------------------------------------------------------
-# set up variables
 # always run on the same time
 today=$(date -d "now" +%Y/%m/%d)
 runTime=$(date -d "$today 03:00" +%s)
@@ -20,30 +19,56 @@ fi
 
 sleep $timeToWait
 
+secs=$(date +%s --date="now")
+runTime=$(date '+%s' --date="@$((secs + $loopInterval*60*60))")
+
 while [ 1 ]
 do
-    loopInterval=24
-    numLogFiles=15
-    # prepare to start on the same time every time based on loop interval
-    secs=$(date +%s --date="now")
-    runTime=$(date '+%s' --date="@$((secs + $loopInterval*60*60))")
+    for index in `echo 0 1 2 3 4 5 6 7 8 9 10 11 12 13`
+    do
+        # calculate the time until next run should start
+        currentTime=$(date -d "now" +%s)
+        timeToWait=$(($runTime- $currentTime))
+        sleep $timeToWait
 
-    # generate specific log file
-    tag=`date "+%Y%m%d"`
-    oldTag=$(date '+%Y%m%d' --date="@$((secs - $numLogFiles*24*60*60))")
-    logFile=/local/cmsprod/IntelROCCS/DataDealer/Logs/data_dealer-$tag.log
-    oldLogFile=/local/cmsprod/IntelROCCS/DataDealer/Logs/data_dealer-$oldTag.log
-    reportFile=/local/cmsprod/IntelROCCS/DataDealer/Reports/data_dealer-$tag.report
-    touch $logFile
-    rm $oldLogFile
+        loopInterval=24
+        numLogFiles=15
+        # prepare to start on the same time every time based on loop interval
+        secs=$(date +%s --date="now")
+        runTime=$(date '+%s' --date="@$((secs + $loopInterval*60*60))")
+
+        # generate specific log file
+        tag=`date "+%Y%m%d"`
+        oldTag=$(date '+%Y%m%d' --date="@$((secs - $numLogFiles*24*60*60))")
+        logFile=/local/cmsprod/IntelROCCS/DataDealer/Logs/data_dealer-$tag.log
+        oldLogFile=/local/cmsprod/IntelROCCS/DataDealer/Logs/data_dealer-$oldTag.log
+        reportFile=/local/cmsprod/IntelROCCS/DataDealer/Reports/data_dealer-$tag.report
+        touch $logFile
+        rm $oldLogFile
+
+        echo " "                                                           >> $logFile
+        echo " daily data dealer started -- $tag "                         >> $logFile
+        echo " "                                                           >> $logFile
+        echo "   --> "`date`                                               >> $logFile
+        echo " "                                                           >> $logFile
+        stdbuf -o0 -e0 /usr/local/IntelROCCS/DataDealer/dailyDealer.py     >> $logFile 2>&1
+#        stdbuf -o0 -e0 /usr/local/IntelROCCS/DataDealer/systemData.py      >> $logFile 2>&1
+
+        # ensure that the log and report information is updated
+        rsync -Cavz --delete /local/cmsprod/IntelROCCS/DataDealer /home/cmsprod/public_html/IntelROCCS >& /dev/null
+
+        # change symlinks for todays report and log
+        ln -sf /home/cmsprod/public_html/IntelROCCS/DataDealer/Logs/data_dealer-$tag.log /home/cmsprod/public_html/IntelROCCS/DataDealer/Logs/data_dealer-latest.log
+        ln -sf /home/cmsprod/public_html/IntelROCCS/DataDealer/Reports/data_dealer-$tag.report /home/cmsprod/public_html/IntelROCCS/DataDealer/Reports/data_dealer-latest.report
+
+    done
 
     echo " "                                                           >> $logFile
-    echo " data dealer started -- $tag (cycle wait ${loopInterval}h)"  >> $logFile
+    echo " weekly data dealer started -- $tag"                         >> $logFile
     echo " "                                                           >> $logFile
     echo "   --> "`date`                                               >> $logFile
     echo " "                                                           >> $logFile
-    stdbuf -o0 -e0 /usr/local/IntelROCCS/DataDealer/dataDealer.py      >> $logFile 2>&1
-    stdbuf -o0 -e0 /usr/local/IntelROCCS/DataDealer/systemData.py      >> $logFile 2>&1
+    stdbuf -o0 -e0 /usr/local/IntelROCCS/DataDealer/weeklyDealer.py    >> $logFile 2>&1
 
     # ensure that the log and report information is updated
     rsync -Cavz --delete /local/cmsprod/IntelROCCS/DataDealer /home/cmsprod/public_html/IntelROCCS >& /dev/null
@@ -51,11 +76,6 @@ do
     # change symlinks for todays report and log
     ln -sf /home/cmsprod/public_html/IntelROCCS/DataDealer/Logs/data_dealer-$tag.log /home/cmsprod/public_html/IntelROCCS/DataDealer/Logs/data_dealer-latest.log
     ln -sf /home/cmsprod/public_html/IntelROCCS/DataDealer/Reports/data_dealer-$tag.report /home/cmsprod/public_html/IntelROCCS/DataDealer/Reports/data_dealer-latest.report
-
-    # calculate the time until next run should start
-    currentTime=$(date -d "now" +%s)
-    timeToWait=$(($runTime- $currentTime))
-    sleep $timeToWait
 done
 
 exit 0;
