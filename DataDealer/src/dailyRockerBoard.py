@@ -45,7 +45,7 @@ class dailyRockerBoard():
 #  M A I N
 #===================================================================================================
     def dailyRba(self, sites, datasets):
-        subscriptions = []
+        print len(datasets)
         newDatasets = self.getDatasets(datasets)
         print newDatasets
         subscriptions = self.getNewReplicas(newDatasets, sites)
