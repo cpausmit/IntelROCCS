@@ -15,13 +15,15 @@ class dailyRockerBoard():
 #===================================================================================================
     def getDatasets(self, datasets):
         newDatasets = []
+        oldDatasets = set(datasets)
         query = 'TaskType =?= "ROOT" && JobStatus =?= 1'
         attributes = ["CRAB_InputData"]
         data = self.crabApi.crabCall(query, attributes)
         for classAd in data:
             newDatasets.append(classAd.get("CRAB_InputData"))
-        print newDatasets
-        newDatasets = [dataset for dataset in newDatasets if dataset in datasets]
+        dSets = set(newDatasets)
+        print dsets
+        newDatasets = [dataset for dataset in dSets if dataset in oldDatasets]
         return newDatasets
 
     def getNewReplicas(self, datasets, sites):
@@ -29,9 +31,10 @@ class dailyRockerBoard():
         invalidSites = []
         for datasetName in datasets:
             invalidSites.append(self.phedexData.getSitesWithDataset(datasetName))
-        sites = [site for site in sites if site not in invalidSites]
+        iSets = set(invalidSites)
+        newSites = [site for site in sites if site not in invalidSites]
         for datasetName in datasets:
-            siteName = random.choice(sites)
+            siteName = random.choice(newSites)
             if siteName in subscriptions:
                 subscriptions[siteName].append(datasetName)
             else:
@@ -45,5 +48,5 @@ class dailyRockerBoard():
         subscriptions = []
         newDatasets = self.getDatasets(datasets)
         print newDatasets
-        subscriptions = self.getNewReplicas(datasetRankings)
+        subscriptions = self.getNewReplicas(newDatasets)
         return subscriptions
