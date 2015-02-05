@@ -67,11 +67,3 @@ class crabApi():
             else:
                 self.error(e)
         return data
-
-if __name__ == '__main__':
-    crabApi_ = crabApi()
-    query = 'TaskType =?= "ROOT" && JobStatus =?= 1'
-    attributes = ["CRAB_InputData"]
-    data = crabApi_.crabCall(query, attributes)
-    print data[0].get("CRAB_InputData")
-    sys.exit(0)

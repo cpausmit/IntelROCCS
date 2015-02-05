@@ -36,7 +36,7 @@ print ""
 print " ----  Rocker Board Algorithm  ---- "
 startTime = datetime.datetime.now()
 dailyRockerBoard_ = dailyRockerBoard.dailyRockerBoard()
-subscriptions = rockerBoard_.dailyRba(datasets, availableSites)
+subscriptions = dailyRockerBoard_.dailyRba(datasets, availableSites)
 totalTime = datetime.datetime.now() - startTime
 print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
 print ""
