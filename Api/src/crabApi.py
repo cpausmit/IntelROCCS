@@ -24,7 +24,7 @@ class crabApi():
         else:
             self.error(e)
 
-    def error(self, e, host, db):
+    def error(self, e):
         title = "FATAL IntelROCCS Error -- CRAB"
         text = "FATAL -- %s" % (str(e),)
         fromEmail = ("Bjorn Barrefors", "bjorn.peter.barrefors@cern.ch")
