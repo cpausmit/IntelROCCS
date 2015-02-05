@@ -22,7 +22,6 @@ class dailyRockerBoard():
         for classAd in data:
             newDatasets.append(classAd.get("CRAB_InputData"))
         dSets = set(newDatasets)
-        print dSets
         newDatasets = [dataset for dataset in dSets if dataset in oldDatasets]
         return newDatasets
 
@@ -45,9 +44,6 @@ class dailyRockerBoard():
 #  M A I N
 #===================================================================================================
     def dailyRba(self, datasets, sites):
-        subscriptions = dict()
-        print len(datasets)
-        return subscriptions
         newDatasets = self.getDatasets(datasets)
         print newDatasets
         subscriptions = self.getNewReplicas(newDatasets, sites)
