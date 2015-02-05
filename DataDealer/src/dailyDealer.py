@@ -23,9 +23,6 @@ totalTime = datetime.datetime.now() - startTime
 print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
 print ""
 
-print len(datasets)
-sys.exit(0)
-
 # get all sites
 print " ----  Get Sites  ---- "
 startTime = datetime.datetime.now()
