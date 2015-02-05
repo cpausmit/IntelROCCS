@@ -8,7 +8,7 @@ from email.MIMEMultipart import MIMEMultipart
 from email.Utils import formataddr
 from subprocess import Popen, PIPE
 
-class crabApiApi():
+class crabApi():
     def __init__(self):
         config = ConfigParser.RawConfigParser()
         config.read('/usr/local/IntelROCCS/DataDealer/intelroccs.cfg')
