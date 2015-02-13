@@ -8,7 +8,7 @@ from email.MIMEMultipart import MIMEMultipart
 from email.Utils import formataddr
 from subprocess import Popen, PIPE
 
-class dbApi():
+class crabApi():
     def __init__(self):
         config = ConfigParser.RawConfigParser()
         config.read('/usr/local/IntelROCCS/DataDealer/intelroccs.cfg')
@@ -24,7 +24,7 @@ class dbApi():
         else:
             self.error(e)
 
-    def error(self, e, host, db):
+    def error(self, e):
         title = "FATAL IntelROCCS Error -- CRAB"
         text = "FATAL -- %s" % (str(e),)
         fromEmail = ("Bjorn Barrefors", "bjorn.peter.barrefors@cern.ch")
@@ -54,9 +54,16 @@ class dbApi():
     def crabCall(self, query, attributes=[]):
         data = []
         for scheduler in self.schedulers:
-            schedd = htcondor.Schedd(scheduler)
-            jobs = schedd.query(query, attributes)
-            for job in jobs:
-                data.append(job)
+            for attempt in range(3):
+                try:
+                    schedd = htcondor.Schedd(scheduler)
+                    jobs = schedd.query(query, attributes)
+                    for job in jobs:
+                        data.append(job)
+                except IOError, e:
+                    continue
+                else:
+                    break
+            else:
+                self.error(e)
         return data
-

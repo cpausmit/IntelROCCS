@@ -21,6 +21,7 @@ class CentralManager:
 
         self.sitePropers = {}
         self.dataPropers = {}
+        self.dataAccCorr = {}
 
         self.delRequests = {}
         self.siteRequests = {}
@@ -168,6 +169,44 @@ class CentralManager:
         copyFile = statusDirectory+'/'+site+'/'+os.environ['DETOX_DATASETS_TO_DELETE']+'-local'
         shutil.copy2(origFile,copyFile)
 
+    def findExtraUsage(self):
+        usedSets = self.popularityHandler.getUsedDatasets()
+        phedexDsets = self.phedexHandler.getPhedexDatasets()
+
+        for dataset in usedSets.keys():
+            phedexSites = []
+            if dataset in phedexDsets:
+                phedexSites = phedexDsets[dataset].locatedOnSites()
+            popSites = usedSets[dataset].locatedOnSites()
+
+            if len(phedexSites) < 1 :
+                continue
+            remoteSites = list(set(popSites) - set(phedexSites))
+            if len(remoteSites) < 1 :
+                continue
+
+            missedNacc = {}
+            for reqid in self.delRequests:
+                delReq = self.delRequests[reqid]
+                if delReq.hasDataset(dataset):
+                    tstamp = delReq.getTimeStamp()
+                    siteName = delReq.siteName()
+                    if siteName not in remoteSites:
+                        continue
+                    missedNacc[siteName] = usedSets[dataset].timesUsedSince(tstamp,siteName)
+
+            for siteName in remoteSites:
+                if siteName in missedNacc:
+                    continue
+                missedNacc[siteName] = usedSets[dataset].timesUsed(siteName)
+
+            nAccessed = 0
+            for siteName in missedNacc:
+                nAccessed = nAccessed + missedNacc[siteName]
+
+            if nAccessed > 0:
+                self.dataAccCorr[dataset] = nAccessed
+
     def rankDatasetsGlobally(self):
         secsPerDay = 60*60*24
         now = float(time.time())
@@ -195,6 +234,16 @@ class CentralManager:
                 globalRank = 9999
             else:
                 globalRank = globalRank/nSites
+
+            if datasetName in self.dataAccCorr:
+                maxSize = 0.1
+                for site in siteNames:
+                    size = phedexDset.size(site)
+                    if size > maxSize:
+                        maxSize = size
+                if maxSize > 0:
+                    nAccessed = self.dataAccCorr[datasetName]
+                    globalRank = globalRank - nAccessed/maxSize
 
             phedexDset.setGlobalRank(globalRank)
 

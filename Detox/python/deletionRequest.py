@@ -89,3 +89,5 @@ class DeletionRequest:
         return self.ndsets
     def getSize(self):
         return self.size
+    def siteName(self):
+        return self.site
