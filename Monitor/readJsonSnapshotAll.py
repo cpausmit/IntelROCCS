@@ -7,14 +7,13 @@
 #---------------------------------------------------------------------------------------------------
 import os, sys, re, glob, subprocess, time, json, pprint, MySQLdb
 import datasetProperties
-from   xml.etree import ElementTree
-from findDatasetHistoryAll import *
+from findDatasetHistoryOld import *
 import findDatasetProperties as fDP
 
 # datasetPattern=r'/.*/.*/.*AOD.*'
 # datasetPattern=r'(?!/.*/.*/USER.*)' # exclude USER since das_client doesn't return useful info
 # datasetPattern='/DYJetsToEEMuMu_M-2300To3500_13TeV-madgraph/Spring14dr-PU20bx25_POSTLS170_V5-v1/AODSIM'
-datasetPattern=r'/DYJetsToLL_M-50_HT-200to400_Tune4C_13TeV-madgraph-tauola/Phys14DR-PU20bx25_PHYS14_25_V1-v1/MINIAODSIM'
+datasetPattern=r'/VBFHiggs0PHToGG_M-125p6_8TeV-JHUGenV4-pythia6-tauola/Summer12_DR53X-PU_RD1_START53_V7N-v2/AODSIM'
 genesis=1378008000
 
 if not os.environ.get('DETOX_DB') or not os.environ.get('MONITOR_DB'):
@@ -278,7 +277,7 @@ def calculateAverageNumberOfSites(sitePattern,datasetSet,datasetsOnSites,fullSta
             datasetMovement[datasetName][siteName][1] = dels
             lenXfer = len(xfers)
             lenDel  = len(dels)
-
+            print xfers,dels
             # find this site's fraction for nSites
             if not datasetName in nSites:
                 nSites[datasetName] = 0
@@ -482,19 +481,13 @@ for fileName in sorted(files):
 
     # analyze this file
     (nSkipped, nAccessed) = processFile(fileName,debug)
-    try:
-        na = nAccessed['/DYJetsToLL_M-50_HT-200to400_Tune4C_13TeV-madgraph-tauola/Phys14DR-PU20bx25_PHYS14_25_V1-v1/MINIAODSIM']
-        print fileName,na
-    except KeyError:
-        pass
     # add the results to our 'all' record
     nAllSkipped      += nSkipped
     nSiteAccessEntry = addData(nSiteAccessEntry,nAccessed,debug)
     nAllAccessed     = addData(nAllAccessed,    nAccessed,debug)
-print nAllAccessed
-print "===="
-print nSiteAccess
-sys.exit(0)
+# print nAllAccessed
+# print "===="
+# print nSiteAccess
 # --------------------------------------------------------------------------------------------------
 # add all datasets that are in phedex but have never been used
 # --------------------------------------------------------------------------------------------------
@@ -615,10 +608,7 @@ creationTimes=readDatasetCreationTimes(creationTimeCache)
 
 
 # figure out properly the 'average number of sites' in the given time interval
-print "bunnies after blacklist:"
-for d in datasetSet:
-    if re.match(r'.*BUN.*',d):
-        print d
+
 nAverageSites = calculateAverageNumberOfSites(siterx,datasetSet,datasetsOnSites,start,end,creationTimes)
 
 # last step: produce monitoring information
@@ -654,6 +644,7 @@ for dataset in datasetSet:
         # if the dataset was not on any sites during the interval, it wasn't accessed, so don't print it
         # also only print if DAS didn't give nonsense
         totalAccesses.write("%d %f %d %d %f %s\n"%(nSite,nAverageSite,nAccess,nFiles,sizeGb,dataset))
+        sys.stdout.write("%d %f %d %d %f %s\n"%(nSite,nAverageSite,nAccess,nFiles,sizeGb,dataset))
     if nSite>42:
         print " WARNING - nSites suspicious: %3d %s"%(nSite,dataset)
     if nAverageSite>42:

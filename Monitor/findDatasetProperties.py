@@ -43,7 +43,6 @@ def addDataset(dataset):
     # get access to the database
     cursor = getDbCursor()
     sql = "insert into Datasets (DatasetName) values (\'" + dataset + "\')"
-    print sql
     # sys.exit(-1)
     try:
         # Execute the SQL command
