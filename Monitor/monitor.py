@@ -20,7 +20,7 @@ for m in range(1,13):
 
 os.environ['MONITOR_PATTERN'] = DDMPattern
 os.environ['MONITOR_GROUP'] = DDMGroup
-# os.system('./readJsonSnapshotPickle.py T2*')
+os.system('./readJsonSnapshotPickle.py T2*')
 
 for i in range(len(DDMTimeStamps)):
     os.environ['MONITOR_PLOTTEXT'] = DDMLabels[i]
@@ -45,7 +45,7 @@ for period in [12,6,3]:
 
 os.environ['MONITOR_PATTERN'] = CRBPattern
 os.environ['MONITOR_GROUP'] = CRBGroup
-# os.system('./readJsonSnapshotPickle.py T2*')
+os.system('./readJsonSnapshotPickle.py T2*')
 
 for i in range(len(CRBTimeStamps)):
     timeStamp = CRBTimeStamps[i]
