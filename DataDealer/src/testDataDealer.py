@@ -2,68 +2,79 @@
 #---------------------------------------------------------------------------------------------------
 # This is a test script for data dealer
 #---------------------------------------------------------------------------------------------------
-import sys, datetime, ConfigParser
-import sites, rockerBoard, subscribe, dataDealerReport
-import dbApi, popDbApi, phedexData, htcondor
+import sys, datetime
+import sites, dailyRockerBoard, subscribe, dataDealerReport, subscriptionProgress
+import phedexData
 
-# get variables
-config = ConfigParser.RawConfigParser()
-config.read('/usr/local/IntelROCCS/DataDealer/intelroccs.test.cfg')
-#rankingsCachePath = config.get('DataDealer', 'cache')
+# initialize
+startingTime = datetime.datetime.now()
+print " ----  Start time : " + startingTime.strftime('%Hh %Mm %Ss') + "  ---- "
+print ""
 
 #===================================================================================================
 #  M A I N
 #===================================================================================================
-# # test db api
-# print " ----  Test DB API  ---- "
-# dbApi_ = dbApi.dbApi()
-# siteName = "T2_US_Nebraska"
-# # passing test
-# query = "SELECT Quotas.SizeTb FROM Quotas INNER JOIN Sites ON Quotas.SiteId=Sites.SiteId INNER JOIN Groups ON Groups.GroupId=Quotas.GroupId WHERE Sites.SiteName=%s AND Groups.GroupName=%s"
-# values = [siteName, "AnalysisOps"]
-# data = dbApi_.dbQuery(query, values=values)
-# print data
-# print ""
-
-# # test pop db api
-# print " ----  Test Pop DB API  ---- "
-# popDbApi_ = popDbApi.popDbApi()
-# data = popDbApi_.DSNameStatInTimeWindow(tstart='2015-01-12', tstop='2015-01-12')
-# print data
-# print ""
-
 # # get all datasets
 # print " ----  Get Datasets  ---- "
+# startTime = datetime.datetime.now()
 # phedexData_ = phedexData.phedexData()
 # datasets = phedexData_.getAllDatasets()
+# totalTime = datetime.datetime.now() - startTime
+# print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
 # print ""
 
 # # get all sites
 # print " ----  Get Sites  ---- "
+# startTime = datetime.datetime.now()
 # sites_ = sites.sites()
 # availableSites = sites_.getAvailableSites()
+# totalTime = datetime.datetime.now() - startTime
+# print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
 # print ""
+
+# update and check progress of subscriptions
+print " ----  Update and Check Subscriptions  ---- "
+startTime = datetime.datetime.now()
+subscriptionProgress_ = subscriptionProgress.subscriptionProgress()
+subscriptionProgress_.updateProgress()
+subscriptionProgress_.checkProgress()
+totalTime = datetime.datetime.now() - startTime
+print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
+print ""
 
 # # rocker board algorithm
 # print " ----  Rocker Board Algorithm  ---- "
-# rba = rockerBoard.rockerBoard()
-# subscriptions = rba.rba(datasets, availableSites)
-# print subscriptions
+# startTime = datetime.datetime.now()
+# dailyRockerBoard_ = dailyRockerBoard.dailyRockerBoard()
+# subscriptions = dailyRockerBoard_.dailyRba(datasets, availableSites)
+# totalTime = datetime.datetime.now() - startTime
+# print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
 # print ""
 
 # # subscribe selected datasets
 # print " ----  Subscribe Datasets  ---- "
+# startTime = datetime.datetime.now()
 # subscribe_ = subscribe.subscribe()
 # subscribe_.createSubscriptions(subscriptions)
+# totalTime = datetime.datetime.now() - startTime
+# print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
 # print ""
 
-# # send summary report
-# print " ----  Daily Summary  ---- "
-# dataDealerReport_ = dataDealerReport.dataDealerReport()
-# dataDealerReport_.createReport()
-# print ""
+# send summary report
+print " ----  Daily Summary  ---- "
+startTime = datetime.datetime.now()
+dataDealerReport_ = dataDealerReport.dataDealerReport()
+dataDealerReport_.createReport()
+totalTime = datetime.datetime.now() - startTime
+print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
+print ""
 
 # done
 print " ----  Done  ---- "
+endingTime = datetime.datetime.now()
+totalTime = endingTime - startingTime
+print " ----  Complete run took " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
+print ""
+print " ----  End time : " + endingTime.strftime('%Hh %Mm %Ss') + "  ---- "
 
 sys.exit(0)

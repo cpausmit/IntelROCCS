@@ -20,9 +20,18 @@ import dbApi, phedexData, popDbData
 class dataDealerReport():
     def __init__(self):
         config = ConfigParser.RawConfigParser()
-        config.read('/usr/local/IntelROCCS/DataDealer/intelroccs.cfg')
+        config.read(os.path.join(os.path.dirname(__file__), 'intelroccs.cfg'))
         self.rankingsCachePath = config.get('DataDealer', 'cache')
         self.reportPath = config.get('DataDealer', 'report_path')
+        fromItems = config.items('from_email')
+        self.fromEmail = fromItems[0]
+        emailItems = config.items('error_emails')
+        toNames = []
+        toEmails = []
+        for name, email in emailItems:
+            toNames.append(name)
+            toEmails.append(email)
+        self.toList = (toNames, toEmails)
         self.phedexData = phedexData.phedexData()
         self.popDbData = popDbData.popDbData()
         self.dbApi = dbApi.dbApi()
@@ -34,18 +43,10 @@ class dataDealerReport():
 
     def sendReport(self, title, text):
         # Send email
-        fromEmail = ("Bjorn Barrefors", "bjorn.peter.barrefors@cern.ch")
-        #toList = (["Bjorn Barrefors"], ["bjorn.peter.barrefors@cern.ch"])
-        toList = (["Bjorn Barrefors"], ["barrefors@gmail.com"])
-        toList = (["Bjorn Barrefors", "Brian Bockelman"], ["barrefors@gmail.com", "bbockelm@cse.unl.edu"])
-        #toList = (["Data Management Group"], ["hn-cms-dmDevelopment@cern.ch"])
-        #toList = (["Bjorn Barrefors", "Brian Bockelman", "Maxim Goncharov", "Christoph Paus"],
-        #          ["bjorn.peter.barrefors@cern.ch", "bbockelm@cse.unl.edu", "maxi@mit.edu", "paus@mit.edu"])
-
         msg = MIMEMultipart()
         msg['Subject'] = title
-        msg['From'] = formataddr(fromEmail)
-        msg['To'] = self._toStr(toList)
+        msg['From'] = formataddr(self.fromEmail)
+        msg['To'] = self._toStr(self.toList)
         msg1 = MIMEMultipart("alternative")
         msgText1 = MIMEText("<pre>%s</pre>" % text, "html")
         msgText2 = MIMEText(text)
@@ -58,7 +59,8 @@ class dataDealerReport():
 
     def createReport(self):
         # Initialize
-        date = datetime.date.today()
+        today = datetime.date.today()
+        date = today
         cacheFile = "%s/%s.db" % (self.rankingsCachePath, "rankingsCache")
         rankingsCache = sqlite3.connect(cacheFile)
 
@@ -70,7 +72,7 @@ class dataDealerReport():
             query = "SELECT Quotas.SizeTb FROM Quotas INNER JOIN Sites ON Quotas.SiteId=Sites.SiteId INNER JOIN Groups ON Groups.GroupId=Quotas.GroupId WHERE Sites.SiteName=%s AND Groups.GroupName=%s"
             values = [site, "AnalysisOps"]
             data = self.dbApi.dbQuery(query, values=values)
-            quota= data[0][0]
+            quota = data[0][0]
             usedStorage = self.phedexData.getSiteStorage(site)
             with rankingsCache:
                 cur = rankingsCache.cursor()
@@ -99,16 +101,6 @@ class dataDealerReport():
         for sub in data:
             deletions.append([info for info in sub])
         deletions.sort(reverse=True, key=itemgetter(2))
-
-        # Get top 10 datasets not subscribed
-        cacheFile = "%s/%s.db" % (self.rankingsCachePath, "rankingsCache")
-        nSubbed = len(subscriptions)
-        topTen = []
-        with rankingsCache:
-            cur = rankingsCache.cursor()
-            cur.execute('SELECT * FROM Datasets ORDER BY Rank DESC LIMIT ? OFFSET ?', (nSubbed+10, nSubbed))
-            for row in cur:
-                topTen.append(row)
 
         # Make title variables
         quota = 0.0
@@ -164,7 +156,7 @@ class dataDealerReport():
 
         text += subscriptionTable.plainText()
 
-         # create subscription table
+        # create deletion table
         text += "\n\nNew Deletions\n\n"
 
         deletionTable = makeTable.Table(add_numbers=False)
@@ -179,26 +171,11 @@ class dataDealerReport():
 
         text += deletionTable.plainText()
 
-        # create top ten datasets not subscribed table
-        text += "\n\nTop Ten Datasets Not Subscribed\n\n"
-
-        topTenTable = makeTable.Table(add_numbers=False)
-        topTenTable.setHeaders(['Rank', 'Size GB', 'Replicas', 'CPU Hours', 'Dataset'])
-        for dataset in topTen:
-            datasetName = dataset[0]
-            rank = float(dataset[1])
-            size = self.phedexData.getDatasetSize(datasetName)
-            replicas = int(self.phedexData.getNumberReplicas(datasetName))
-            cpuH = int(self.popDbData.getDatasetCpus(datasetName, (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y-%m-%d')))
-            topTenTable.addRow([rank, size, replicas, cpuH, datasetName])
-
-        text += topTenTable.plainText()
-
-        fs = open('%s/data_dealer-%s.report' % (self.reportPath, date.strftime('%Y%m%d')), 'w')
+        fs = open('%s/data_dealer-%s.report' % (self.reportPath, today.strftime('%Y%m%d')), 'w')
         fs.write(text)
         fs.close()
 
-        text = "http://t3serv001.mit.edu/~cmsprod/IntelROCCS/DataDealer/Logs/data_dealer-latest.log\n\nhttp://t3serv001.mit.edu/~cmsprod/IntelROCCS/DataDealer/Reports/data_dealer-latest.report"
+        text = "Todays Log: http://t3serv001.mit.edu/~cmsprod/IntelROCCS/DataDealer/Logs/data_dealer-%s.log\n\nTodays Report: http://t3serv001.mit.edu/~cmsprod/IntelROCCS/DataDealer/Reports/data_dealer-%s.report\n\nCurrent Subscription Progress: http://t3serv001.mit.edu/~cmsprod/IntelROCCS/DataDealer/Progress/data_dealer-%s.report" % (today.strftime('%Y%m%d'), today.strftime('%Y%m%d'), today.strftime('%Y%m%d'))
 
         self.sendReport(title, text)
 

@@ -60,6 +60,7 @@ do
         # change symlinks for todays report and log
         ln -sf /home/cmsprod/public_html/IntelROCCS/DataDealer/Logs/data_dealer-$tag.log /home/cmsprod/public_html/IntelROCCS/DataDealer/Logs/data_dealer-latest.log
         ln -sf /home/cmsprod/public_html/IntelROCCS/DataDealer/Reports/data_dealer-$tag.report /home/cmsprod/public_html/IntelROCCS/DataDealer/Reports/data_dealer-latest.report
+        ln -sf /home/cmsprod/public_html/IntelROCCS/DataDealer/Progress/data_dealer-$tag.report /home/cmsprod/public_html/IntelROCCS/DataDealer/Progress/data_dealer-latest.report
 
     done
 
@@ -76,6 +77,7 @@ do
     # change symlinks for todays report and log
     ln -sf /home/cmsprod/public_html/IntelROCCS/DataDealer/Logs/data_dealer-$tag.log /home/cmsprod/public_html/IntelROCCS/DataDealer/Logs/data_dealer-latest.log
     ln -sf /home/cmsprod/public_html/IntelROCCS/DataDealer/Reports/data_dealer-$tag.report /home/cmsprod/public_html/IntelROCCS/DataDealer/Reports/data_dealer-latest.report
+    ln -sf /home/cmsprod/public_html/IntelROCCS/DataDealer/Progress/data_dealer-$tag.report /home/cmsprod/public_html/IntelROCCS/DataDealer/Progress/data_dealer-latest.report
 done
 
 exit 0;

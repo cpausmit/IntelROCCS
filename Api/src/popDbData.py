@@ -2,13 +2,13 @@
 #---------------------------------------------------------------------------------------------------
 # getPhedexData.py
 #---------------------------------------------------------------------------------------------------
-import sys, os, json, sqlite3, datetime, ConfigParser
+import os, sqlite3, ConfigParser
 import popDbApi
 
 class popDbData:
     def __init__(self):
         config = ConfigParser.RawConfigParser()
-        config.read('/usr/local/IntelROCCS/DataDealer/intelroccs.cfg')
+        config.read(os.path.join(os.path.dirname(__file__), 'intelroccs.cfg'))
         self.popDbCache = config.get('PopDB', 'cache')
         self.popDbApi = popDbApi.popDbApi()
 
@@ -158,4 +158,3 @@ class popDbData:
             if row:
                 numberCpus = row[0]
         return numberCpus
-

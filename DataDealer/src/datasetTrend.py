@@ -2,9 +2,8 @@
 #---------------------------------------------------------------------------------------------------
 # Data modeling
 #---------------------------------------------------------------------------------------------------
-import sys, json, datetime
 from operator import itemgetter
-import phedexData, popDbData, phedexApi, popDbApi
+import phedexData, phedexApi, popDbApi
 
 fs = open('/local/cmsprod/IntelROCCS/DataDealer/Visualizations/datasets.csv', 'w')
 fs.write("dataset,maxCPU,deltaCPU,maxAcc,deltaAcc,popularityTime,dataTier,sizeGb,age\n")
@@ -29,7 +28,7 @@ for dataset in datasets:
     maxCpuValue = int(maxValue[1])
     index = maxIndex - 1
     check = 0
-    while index >=0:
+    while index >= 0:
         if cpuData[index][1] < 0.5*maxCpuValue:
             check += 1
             if check == 2:
@@ -43,7 +42,7 @@ for dataset in datasets:
         if cpuData[index][1] < 0.5*maxCpuValue:
             check += 1
             if check == 2:
-                weeksAfter = index - maxIndex -2
+                weeksAfter = index - maxIndex - 2
         else:
             check = 0
         index += 1

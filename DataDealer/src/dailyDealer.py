@@ -3,7 +3,7 @@
 # This is the main script of the DataDealer. See README.md for more information.
 #---------------------------------------------------------------------------------------------------
 import sys, datetime
-import sites, dailyRockerBoard, subscribe, dataDealerReport
+import sites, dailyRockerBoard, subscribe, dataDealerReport, subscriptionProgress
 import phedexData
 
 # initialize
@@ -41,14 +41,21 @@ totalTime = datetime.datetime.now() - startTime
 print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
 print ""
 
-print subscriptions
-sys.exit(0)
-
 # subscribe selected datasets
 print " ----  Subscribe Datasets  ---- "
 startTime = datetime.datetime.now()
 subscribe_ = subscribe.subscribe()
 subscribe_.createSubscriptions(subscriptions)
+totalTime = datetime.datetime.now() - startTime
+print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
+print ""
+
+# update and check progress of subscriptions
+print " ----  Update and Check Subscriptions  ---- "
+startTime = datetime.datetime.now()
+subscriptionProgress_ = subscriptionProgress.subscriptionProgress()
+subscriptionProgress_.updateProgress()
+subscriptionProgress_.checkProgress()
 totalTime = datetime.datetime.now() - startTime
 print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
 print ""
