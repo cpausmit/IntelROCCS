@@ -5,7 +5,7 @@
 #
 #---------------------------------------------------------------------------------------------------
 import os, sys, re, subprocess, MySQLdb, time, json
-from Dataset import *
+from xml.etree import ElementTree
 
 # setup definitions
 if not os.environ.get('MONITOR_DB'):
@@ -49,12 +49,12 @@ def getJsonFile(requestType,start,debug=False):
             print line
         return
 
-def getDeletions(start,end,datasetPattern,groupPattern):
-    # returns all datasets in the requests which match the pattern and are in relevant group
+def getAnalysisOpsDeletions(start,end,datasetPattern):
     delFileName = os.environ.get('MONITOR_DB') + '/datasets/delRequests_1378008000.json'
+    # returns all datasets in the requests which match the pattern and are in AnalysisOps
     print "Parsing ",delFileName
     # isXfer = True if xfer history, False if deletions
-    datasetSet={}
+    datasetSet=set([])
     with open(delFileName) as dataFile:
         try:
             data = json.load(dataFile)
@@ -66,27 +66,43 @@ def getDeletions(start,end,datasetPattern,groupPattern):
             datasetName = dataset["name"]
             requestedBy = request["requested_by"]["name"]
             try:
-                if datasetName in datasetSet:
-                    # we have already accounted for it
-                    continue
-                if not(groupPattern=="AnalysisOps"):
-                    if re.match(datasetPattern,datasetName):
-                        datasetSet[datasetName] = Dataset(datasetName)
-                        datasetObject = datasetSet[datasetName]
-                        datasetObject.isDeleted = True
-                        datasetObject = None
-                elif re.match(datasetPattern,datasetName) and (requestedBy=="Maxim Goncharov" or requestedBy=="Christoph Paus"):
-                    datasetSet[datasetName] = Dataset(datasetName)
-                    datasetObject = datasetSet[datasetName]
-                    datasetObject.isDeleted = True
-                    datasetObject = None
+                if re.match(datasetPattern,datasetName) and (requestedBy=="Maxim Goncharov" or requestedBy=="Christoph Paus"):
+                # if re.match(datasetPattern,datasetName):
+                    datasetSet.add(datasetName)
+                    if re.match(r".*BUNN.*",datasetName):
+                        print "added superbunny dataset %s because it was requested by %s"%(datasetName,requestedBy)
+            except TypeError:
+                print "weird"
+                pass
+    return datasetSet
+
+def getAllDeletions(start,end,datasetPattern):
+    delFileName = os.environ.get('MONITOR_DB') + '/datasets/delRequests_1378008000.json'
+    # returns all datasets in the requests which match the pattern and are in AnalysisOps
+    print "Parsing ",delFileName
+    # isXfer = True if xfer history, False if deletions
+    datasetSet=set([])
+    with open(delFileName) as dataFile:
+        try:
+            data = json.load(dataFile)
+        except ValueError:
+            sys.exit(-1)
+    requests = data["phedex"]["request"]
+    for request in requests:
+        for dataset in request["data"]["dbs"]["dataset"]:
+            datasetName = dataset["name"]
+            requestedBy = request["requested_by"]["name"]
+            try:
+                # if re.match(datasetPattern,datasetName) and (requestedBy=="Maxim Goncharov" or requestedBy=="Christoph Paus"):
+                if re.match(datasetPattern,datasetName):
+                    datasetSet.add(datasetName)
             except TypeError:
                 print "weird"
                 pass
     return datasetSet
 
 
-def parseRequestJson(fileName,start,end,isXfer,datasetPattern,datasetSet):
+def parseRequestJson(fileName,start,end,isXfer,datasetHistory,datasetPattern,datasetSet):
     print "Parsing ",fileName
     # isXfer = True if xfer history, False if deletions
     with open(fileName) as dataFile:
@@ -104,10 +120,9 @@ def parseRequestJson(fileName,start,end,isXfer,datasetPattern,datasetSet):
             for node in request["destinations"]["node"]:
                 for dataset in request["data"]["dbs"]["dataset"]: 
                     datasetName = dataset["name"]
-                    try:
-                        datasetObject = datasetSet[datasetName]
-                    except KeyError:
-                        # not one of the datasets we're considering
+                    # if not re.match(datasetPattern,datasetName):
+                    if not datasetName in datasetSet:
+                        #not AOD or AODSIM or whatever
                         continue
                     siteName = node["name"]
                     if not re.search(r'T2.*',siteName):
@@ -128,16 +143,19 @@ def parseRequestJson(fileName,start,end,isXfer,datasetPattern,datasetSet):
                     if xferTime > end:
                         # too late
                         continue
-                    datasetObject.addTransfer(siteName,xferTime)
+                    if not datasetName in datasetHistory:
+                        datasetHistory[datasetName]={}
+                    if not siteName in datasetHistory[datasetName]:
+                        datasetHistory[datasetName][siteName] = [[],[]]
+                    datasetHistory[datasetName][siteName][0].append(xferTime)
     else:
         for request in requests:
             for node in request["nodes"]["node"]:
                 for dataset in request["data"]["dbs"]["dataset"]:
                     datasetName = dataset["name"]
-                    try:
-                        datasetObject = datasetSet[datasetName]
-                    except KeyError:
-                        # not one of the datasets we're considering
+                    # if not re.match(datasetPattern,datasetName):
+                    if not datasetName in datasetSet:
+                        #not AOD or AODSIM
                         continue
                     siteName = node["name"]
                     if not re.search(r'T2.*',siteName):
@@ -158,7 +176,12 @@ def parseRequestJson(fileName,start,end,isXfer,datasetPattern,datasetSet):
                     if delTime > end:
                         # too late
                         continue
-                    datasetObject.addDeletion(siteName,delTime)
+                    if not datasetName in datasetHistory:
+                        datasetHistory[datasetName]={}
+                    if not siteName in datasetHistory[datasetName]:
+                        datasetHistory[datasetName][siteName] = [[],[]]
+                    datasetHistory[datasetName][siteName][1].append(delTime)
+
 
 def cleanHistories(xfers,dels,start,end):
     # used to clean up messy histories
@@ -179,16 +202,24 @@ def cleanHistories(xfers,dels,start,end):
         nx=len(xfers)
         nd=len(dels)
         if i+1==nx:
-            return (xfers,dels[:nx])
+            return xfers,dels[:nx]
         elif i+1==nd:
             if xfers[i+1] > dels[i]:
-                return (xfers[:nd+1],dels)
+                return xfers[:nd+1],dels
             else:
-                return (xfers[:nd],dels)
+                return xfers[:nd],dels
         if xfers[i+1] < dels[i+1]:
             xfers.pop(i+1)
         elif xfers[i+1] > dels[i+1]:
             dels.pop(i+1)
         else:
             i+=1
-    return (xfers,dels)
+    return xfers,dels
+
+
+#===================================================================================================
+#  M A I N
+#===================================================================================================
+
+# findDatasetHistoryAll()
+# sys.exit(0)
