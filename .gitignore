@@ -1,4 +1,3 @@
 *.py[cod]
 *~
-Install/
-Cache/
+.DS_Store
