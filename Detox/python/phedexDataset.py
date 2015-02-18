@@ -62,7 +62,7 @@ class PhedexDataset:
                 valid = 0
             self.setValid(site,valid)
 
-    def locatedOnSites(self,groups=['AnalysisOps']):
+    def locatedOnSites(self,groups):
         validSites = []
         for site in self.siteNames:
             grp =  self.groupAtSite[site]

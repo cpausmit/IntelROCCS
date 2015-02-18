@@ -15,6 +15,7 @@ class CentralManager:
         self.DETOX_NCOPY_MIN = int(os.environ['DETOX_NCOPY_MIN'])
         self.DETOX_USAGE_MIN = float(os.environ['DETOX_USAGE_MIN'])
         self.DETOX_USAGE_MAX = float(os.environ['DETOX_USAGE_MAX'])
+        self.phedexGroup = os.environ['DETOX_GROUP']
 
         self.allSites = {}
         self.getAllSites()
@@ -57,9 +58,10 @@ class CentralManager:
         connection = self.getDbConnection()
         cursor = connection.cursor()
 
-        # AnalysisOps is GroupId=1
-        sql = "select SiteName,SizeTb,Sites.Status,Sites.SiteId from Quotas,Sites "
-        sql = sql + "where GroupId=1 and Quotas.SiteId=Sites.SiteId"
+        sql = 'select SiteName,SizeTb,Sites.Status,Sites.SiteId from Quotas,Sites,Groups'
+        sql = sql + ' where  Groups.GroupName=\'' + self.phedexGroup + '\''
+        sql = sql + ' and Quotas.SiteId=Sites.SiteId'
+        sql = sql + ' and Quotas.GroupId=Groups.GroupId' 
         
         try:
             cursor.execute(sql)
@@ -74,9 +76,9 @@ class CentralManager:
         for row in results:
             siteName = row[0]
             siteSizeGb = float(row[1])*1000
-            if siteName == 'T2_US_MIT':
-                siteSizeGb = siteSizeGb - 10000
             willBeUsed = int(row[2])
+            if willBeUsed == 1 and siteSizeGb <= 0 :
+                willBeUsed = 0
             siteId = int(row[3])
             self.allSites[siteName] = siteStatus.SiteStatus(siteName)
             self.allSites[siteName].setStatus(willBeUsed)
@@ -176,7 +178,7 @@ class CentralManager:
         for dataset in usedSets.keys():
             phedexSites = []
             if dataset in phedexDsets:
-                phedexSites = phedexDsets[dataset].locatedOnSites()
+                phedexSites = phedexDsets[dataset].locatedOnSites([self.phedexGroup])
             popSites = usedSets[dataset].locatedOnSites()
 
             if len(phedexSites) < 1 :
@@ -217,7 +219,7 @@ class CentralManager:
 
             phedexDset = phedexSets[datasetName]
 
-            siteNames = phedexDset.locatedOnSites()
+            siteNames = phedexDset.locatedOnSites([self.phedexGroup])
             globalRank = 0
             nSites = 0
             for site in siteNames:
@@ -291,7 +293,7 @@ class CentralManager:
 
        missing = 0
        for datasetName in phedexSets:
-           onSites = phedexSets[datasetName].locatedOnSites()
+           onSites = phedexSets[datasetName].locatedOnSites([self.phedexGroup])
            if len(onSites) < 1:
                continue
 
@@ -454,6 +456,10 @@ class CentralManager:
         totalSpaceTaken = 0
         totalSpaceLcopy = 0
         totalDisk = 0
+        totalSpaceTakenT2 = 0
+        totalSpaceLcopyT2 = 0
+        totalDiskT2 = 0
+        t2Sites = 0
         # file with more infortmation on all sites
         outputFile = open(os.environ['DETOX_DB'] + "/SitesInfo.txt",'w')
         outputFile.write('#- ' + today + " " + ttime + "\n#\n")
@@ -472,6 +478,11 @@ class CentralManager:
                 totalDisk = totalDisk + theSite.getSize()/1000
                 totalSpaceLcopy = totalSpaceLcopy + lcopy
                 totalSpaceTaken = totalSpaceTaken + taken
+                if site.startswith("T2_"):
+                    totalDiskT2 += theSite.getSize()/1000
+                    totalSpaceLcopyT2 += lcopy
+                    totalSpaceTakenT2 += taken
+                    t2Sites += 1
 
             if site in nstuckAtSite and abs(stmean -  nstuckAtSite[site]) > 3*strms:
                 print (" -- %-16s has too many stuck sets, disabling in SitesInfo"%(site))
@@ -483,29 +494,56 @@ class CentralManager:
         outputFile.write("#------------------------------------------------------\n")
         outputFile.write("#  %-6d %-9d %-9d %-12d %-20s \n"\
                              %(len(self.allSites.keys()),totalDisk,
-                               totalSpaceTaken,totalSpaceLcopy,'Total'))
+                               totalSpaceTaken,totalSpaceLcopy,'Total T2s+T1s'))
         percTst = totalSpaceTaken/totalDisk*100
         percTslc = totalSpaceLcopy/totalDisk*100
         outputFile.write("#  %-6s %-9s %-4.1f%%     %-4.1f%% %-20s \n"%(' ',' ',percTst,percTslc,' '))
         outputFile.write("# Total Active Quota  = %-9d \n"%(totalDisk))
+        
+        outputFile.write("#------------------------------------------------------\n")
+        outputFile.write("#  %-6d %-9d %-9d %-12d %-20s \n"\
+                             %(t2Sites,totalDiskT2,totalSpaceTakenT2,totalSpaceLcopyT2,'Total T2s'))
+        percTst = totalSpaceTakenT2/totalDiskT2*100
+        percTslc = totalSpaceLcopyT2/totalDiskT2*100
+        outputFile.write("#  %-6s %-9s %-4.1f%%     %-4.1f%% %-20s \n"%(' ',' ',percTst,percTslc,' '))
+        outputFile.write("# Total Active Quota  = %-9d \n"%(totalDiskT2))
         outputFile.close()
 
         outputFile = open(os.environ['DETOX_DB'] + "/DeletionSummary.txt",'w')
         outputFile.write('#- ' + today + " " + ttime + "\n\n")
         outputFile.write("#- D E L E T I O N  R E Q U E S T S ----\n\n")
-        outputFile.write("#  NDatasets Size[TB] SiteName \n")
-        for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
-            sitePr = self.sitePropers[site]
-            datasets2del = sitePr.delTargets()
-            nsets =  len(datasets2del)
-            if nsets < 1:
-                continue
+        outputFile.write("# Date   NSets Size[TB] SiteName \n")
 
-            totalSize = 0
-            for dataset in datasets2del:
-                totalSize =  totalSize + sitePr.dsetSize(dataset)
-            outputFile.write("   %-9d %-8d %-20s \n"\
-                                 %(nsets,totalSize/1000,site))
+
+        #find all requests for site for the last week
+        reqTimes = {}
+        for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
+            if site not in self.siteRequests:
+                continue
+            for reqid in self.siteRequests[site].getReqIds():
+                theRequest = self.delRequests[reqid]
+                timeStamp = theRequest.getTimeStamp()
+                reqEpoch =  int(time.mktime(timeStamp.timetuple()))
+                if (self.epochTime -reqEpoch) > 2 * (60*60*24*7):
+                    continue
+                reqTimes[reqEpoch] = reqid
+        totSets  = 0
+        totSpace = 0
+        totSites = 0
+        for item in sorted(reqTimes):
+            reqid = reqTimes[item]
+            theRequest = self.delRequests[reqid]
+            timeStamp = theRequest.getTimeStamp()
+            site = theRequest.siteName()
+            nsets = theRequest.getNdsets()
+            size = theRequest.getSize()/1000
+            totSets += nsets
+            totSpace += size
+            totSites += 1
+            outputFile.write("  %-5s  %-5d %-8d %-20s \n"\
+                                 %(timeStamp.strftime("%m/%d"),nsets,size,site))
+        outputFile.write("#--------------------------------------------------\n")
+        outputFile.write("# %6s %-5d %-8d %-3d %-10s \n"%(' ',totSets,totSpace,totSites,'Total'))
         outputFile.close()
 
         deprecatedSpace = 0

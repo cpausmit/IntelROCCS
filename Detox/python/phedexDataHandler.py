@@ -15,6 +15,7 @@ def alarm_handler(signum, frame):
 class PhedexDataHandler:
     def __init__(self,allSites):
         self.newAccess = False
+        self.phedexGroup =  os.environ['DETOX_GROUP']
         self.phedexDatasets = {}
         self.otherDatasets = {}
         self.runAwayGroups = {}
@@ -159,7 +160,7 @@ class PhedexDataHandler:
                 continue
 
             dataset = None
-            if group != 'AnalysisOps':
+            if group != self.phedexGroup:
                 if datasetName not in self.otherDatasets:
                     self.otherDatasets[datasetName] = phedexDataset.PhedexDataset(datasetName)
                 dataset = self.otherDatasets[datasetName]
@@ -171,7 +172,8 @@ class PhedexDataHandler:
             dataset.setFinalValues()
         inputFile.close()
 
-        self.printRunawaySets()
+        if self.phedexGroup == 'AnalysisOps':
+            self.printRunawaySets()
 
     def getPhedexDatasets(self):
         return self.phedexDatasets

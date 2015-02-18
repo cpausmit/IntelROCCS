@@ -26,6 +26,10 @@ export DETOX_PHEDEX_CACHE=DatasetsInPhedexAtSites.dat
 export DETOX_USED_DATASETS=UsedDatasets.txt
 export DETOX_DATASETS_TO_DELETE=RankedDatasets.txt
 
+# PhEDEx group that is considered 
+
+export DETOX_GROUP='AnalysisOps'
+
 # Parameters for cleaning
 
 export DETOX_CYCLE_HOURS=12
