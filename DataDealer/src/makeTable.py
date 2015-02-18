@@ -18,7 +18,7 @@ def ftoa(s):
 
 class Table:
 
-    def __init__(self, add_numbers = True):
+    def __init__(self, add_numbers=True):
         self.headers = []
         self.headerLengths = []
         self.maxHeaderLen = 0

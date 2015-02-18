@@ -9,13 +9,13 @@
 #
 # In case of an error a '0' will be returned, caller must check to make sure data is returned.
 #---------------------------------------------------------------------------------------------------
-import sys, re, os, json, sqlite3, datetime, ConfigParser
+import re, os, sqlite3, datetime, ConfigParser
 import phedexApi
 
 class phedexData:
     def __init__(self):
         config = ConfigParser.RawConfigParser()
-        config.read('/usr/local/IntelROCCS/DataDealer/intelroccs.cfg')
+        config.read(os.path.join(os.path.dirname(__file__), 'intelroccs.cfg'))
         self.phedexCache = config.get('Phedex', 'cache')
         self.cacheDeadline = config.getint('Phedex', 'expiration_timer')
         self.phedexApi = phedexApi.phedexApi()
@@ -26,7 +26,7 @@ class phedexData:
     def shouldAccessPhedex(self, apiCall):
         cacheFile = "%s/%s.db" % (self.phedexCache, apiCall)
         timeNow = datetime.datetime.now()
-        deltaNhours = datetime.timedelta(seconds = 60*60*(self.cacheDeadline))
+        deltaNhours = datetime.timedelta(seconds=60*60*(self.cacheDeadline))
         modTime = datetime.datetime.fromtimestamp(0)
         if os.path.isfile(cacheFile):
             modTime = datetime.datetime.fromtimestamp(os.path.getmtime(cacheFile))
@@ -192,7 +192,7 @@ class phedexData:
             # update
             error = self.updateCache('blockReplicas')
             if error:
-                return sites
+                return storageGb
         # access cache
         blockReplicasCache = sqlite3.connect("%s/blockReplicas.db" % (self.phedexCache))
         with blockReplicasCache:
@@ -201,4 +201,3 @@ class phedexData:
             for row in cur:
                 storageGb += row[0]
         return storageGb
-

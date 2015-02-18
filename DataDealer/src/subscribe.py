@@ -2,13 +2,13 @@
 #---------------------------------------------------------------------------------------------------
 # Subscribes selected datasets
 #---------------------------------------------------------------------------------------------------
-import sys, os, datetime, sqlite3, ConfigParser
+import os, datetime, sqlite3, ConfigParser
 import dbApi, phedexApi
 
 class subscribe():
     def __init__(self):
         config = ConfigParser.RawConfigParser()
-        config.read('/usr/local/IntelROCCS/DataDealer/intelroccs.cfg')
+        config.read(os.path.join(os.path.dirname(__file__), 'intelroccs.cfg'))
         self.rankingsCachePath = config.get('DataDealer', 'cache')
         self.phedexApi = phedexApi.phedexApi()
         self.dbApi = dbApi.dbApi()
@@ -30,7 +30,7 @@ class subscribe():
                 request = jsonData.get('phedex')
                 try:
                     requestId = request.get('request_created')[0].get('id')
-                except IndexError, e:
+                except IndexError:
                     continue
                 else:
                     break

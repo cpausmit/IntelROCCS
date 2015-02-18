@@ -12,7 +12,7 @@
 # If a query fail we print an error message and return an empty list, leaving it up to caller to
 # abort or keep executing.
 #---------------------------------------------------------------------------------------------------
-import sys, os, MySQLdb, datetime, subprocess, ConfigParser
+import os, MySQLdb, ConfigParser
 from email.MIMEText import MIMEText
 from email.MIMEMultipart import MIMEMultipart
 from email.Utils import formataddr
@@ -21,11 +21,21 @@ from subprocess import Popen, PIPE
 class dbApi():
     def __init__(self):
         config = ConfigParser.RawConfigParser()
-        config.read('/usr/local/IntelROCCS/DataDealer/intelroccs.cfg')
+        config.read(os.path.join(os.path.dirname(__file__), 'intelroccs.cfg'))
+        fromItems = config.items('from_email')
+        self.fromEmail = fromItems[0]
+        emailItems = config.items('error_emails')
+        toNames = []
+        toEmails = []
+        for name, email in emailItems:
+            toNames.append(name)
+            toEmails.append(email)
+        self.toList = (toNames, toEmails)
         host = config.get('DB', 'host')
         db = config.get('DB', 'db')
         user = config.get('DB', 'username')
         passwd = config.get('DB', 'password')
+        # Will try to connect 3 times before reporting an error
         for attempt in range(3):
             try:
                 self.dbCon = MySQLdb.connect(host=host, user=user, passwd=passwd, db=db)
@@ -34,17 +44,15 @@ class dbApi():
             else:
                 break
         else:
-            self.error(e, host, db)
+            self.error(e.args[1])
 
-    def error(self, e, host, db):
+    def error(self, e):
         title = "FATAL IntelROCCS Error -- MIT Database"
-        text = "FATAL -- %s" % (str(e.args[1]),)
-        fromEmail = ("Bjorn Barrefors", "bjorn.peter.barrefors@cern.ch")
-        toList = (["Bjorn Barrefors"], ["barrefors@gmail.com"])
+        text = "FATAL -- %s" % (str(e))
         msg = MIMEMultipart()
         msg['Subject'] = title
-        msg['From'] = formataddr(fromEmail)
-        msg['To'] = self._toStr(toList)
+        msg['From'] = formataddr(self.fromEmail)
+        msg['To'] = self._toStr(self.toList)
         msg1 = MIMEMultipart("alternative")
         msgText1 = MIMEText("<pre>%s</pre>" % text, "html")
         msgText2 = MIMEText(text)
@@ -54,7 +62,7 @@ class dbApi():
         msg = msg.as_string()
         p = Popen(["/usr/sbin/sendmail", "-toi"], stdin=PIPE)
         p.communicate(msg)
-        raise Exception("FATAL -- %s" % (str(e.args[1]),))
+        raise Exception("FATAL -- %s" % (str(e)))
 
     def _toStr(self, toList):
         names = [formataddr(i) for i in zip(*toList)]
@@ -65,28 +73,24 @@ class dbApi():
 #===================================================================================================
     def dbQuery(self, query, values=()):
         data = []
+        e = ""
         values = tuple([str(value) for value in values])
+        # Will try to call db 3 times before reporting an error
         for attempt in range(3):
             try:
-                mysqlError = 0
-                typeError = 0
                 with self.dbCon:
                     cur = self.dbCon.cursor()
                     cur.execute(query, values)
                     for row in cur:
                         data.append(row)
-            except MySQLdb.Error, e:
-                mysqlError = 1
+            except MySQLdb.Error, err:
+                e = err.args[1]
                 continue
-            except TypeError, e:
-                typeError = 1
+            except TypeError, err:
+                e = err
                 continue
             else:
                 break
         else:
-            if mysqlError:
-                print("ERROR -- %s -- \tfor query: %s -- \t and values: %s\n" % (str(e.args[1]), str(query), str(values)))
-            else:
-                print("ERROR -- %s -- \tfor  query: %s -- \t and values: %s\n" % (str(e), str(query), str(values)))
+            self.error(e)
         return data
-

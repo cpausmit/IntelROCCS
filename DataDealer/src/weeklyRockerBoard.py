@@ -2,13 +2,13 @@
 #---------------------------------------------------------------------------------------------------
 # Collects all the necessary data to generate rankings for all datasets in the AnalysisOps space.
 #---------------------------------------------------------------------------------------------------
-import sys, os, math, datetime, sqlite3, operator, random, ConfigParser
+import os, datetime, sqlite3, operator, random, ConfigParser
 import phedexData, popDbData, dbApi
 
 class weeklyRockerBoard():
     def __init__(self):
         config = ConfigParser.RawConfigParser()
-        config.read('intelroccs.cfg')
+        config.read(os.path.join(os.path.dirname(__file__), 'intelroccs.cfg'))
         self.rankingsCachePath = config.get('DataDealer', 'cache')
         self.limit = config.getfloat('DataDealer', 'weekly_limit')
         self.phedexData = phedexData.phedexData()
@@ -45,17 +45,15 @@ class weeklyRockerBoard():
         if not os.path.exists(self.rankingsCachePath):
             os.makedirs(self.rankingsCachePath)
         cacheFile = "%s/%s.db" % (self.rankingsCachePath, "rankingsCache")
-        if os.path.isfile(cacheFile):
-            os.remove(cacheFile)
         rankingsCache = sqlite3.connect(cacheFile)
         with rankingsCache:
             cur = rankingsCache.cursor()
             cur.execute('CREATE TABLE IF NOT EXISTS Datasets (DatasetName TEXT UNIQUE, Rank REAL)')
             cur.execute('CREATE TABLE IF NOT EXISTS Sites (SiteName TEXT UNIQUE, Rank REAL)')
             for datasetName, rank in datasetRankings.items():
-                cur.execute('INSERT INTO Datasets(DatasetName, Rank) VALUES(?, ?)', (datasetName, rank))
+                cur.execute('INSERT OR REPLACE INTO Datasets(DatasetName, Rank) VALUES(?, ?)', (datasetName, rank))
             for siteName, rank in siteRankings.items():
-                cur.execute('INSERT INTO Sites(SiteName, Rank) VALUES(?, ?)', (siteName, rank))
+                cur.execute('INSERT OR REPLACE INTO Sites(SiteName, Rank) VALUES(?, ?)', (siteName, rank))
 
     def getDatasetRankings(self, datasets):
         alphaValues = dict()
@@ -112,8 +110,7 @@ class weeklyRockerBoard():
             if not siteRanks:
                 continue
             site = min(siteRanks.iteritems(), key=operator.itemgetter(1))
-            siteName =site[0]
-            siteRank = site[1]
+            siteName = site[0]
             if siteName in subscriptions:
                 subscriptions[siteName].append(datasetName)
             else:

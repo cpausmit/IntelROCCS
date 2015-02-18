@@ -50,6 +50,15 @@ totalTime = datetime.datetime.now() - startTime
 print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
 print ""
 
+# send summary report
+print " ----  Daily Summary  ---- "
+startTime = datetime.datetime.now()
+dataDealerReport_ = dataDealerReport.dataDealerReport()
+dataDealerReport_.createReport()
+totalTime = datetime.datetime.now() - startTime
+print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
+print ""
+
 # done
 print " ----  Done  ---- "
 endingTime = datetime.datetime.now()
