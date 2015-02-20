@@ -251,8 +251,12 @@ class HTTPSGridAuthHandler(urllib2.HTTPSHandler):
 		return self.do_open(self.getConnection, req)
 
 	def getProxy(self):
-		proxy = os.environ['X509_USER_PROXY']
-		return proxy
+	    #proxy = os.environ['X509_USER_PROXY']
+	    cmd = 'voms-proxy-info -path'
+	    for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
+		proxy = line[:-1]
+		
+	    return proxy
 
 	def getConnection(self, host, timeout=300):
 		return httplib.HTTPSConnection(host, key_file=self.key, cert_file=self.cert)
@@ -268,12 +272,22 @@ def testLocalSetup(dataset,debug=0):
 		sys.exit(1)
 
 	# check the user proxy
-	if os.environ.get('X509_USER_PROXY'):
-		if debug > 0:
-			print ' Using user proxy: ' + os.environ.get('X509_USER_PROXY')
-	else:
-		print ' Error - no X509_USER_PROXY, please define the variable correctly. EXIT!'
-		sys.exit(1)
+	validProxy = False
+	cmd = 'voms-proxy-info -path'
+	for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
+		proxy = line[:-1]
+	if proxy != "":
+	    if debug>0:
+		print " User proxy in: " + proxy
+	    cmd = 'voms-proxy-info -timeleft'
+	    for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
+		timeleft = int(line[:-1])
+	    if timeleft > 3600:
+		validProxy = True
+
+	if not validProxy:
+	    print ' Error - no X509_USER_PROXY, please check. EXIT!'
+	    sys.exit(0)
 
 	# check das_client.py tool
 	cmd = 'which das_client.py'
@@ -283,7 +297,7 @@ def testLocalSetup(dataset,debug=0):
 		if debug > 0:
 			print ' Using das_client.py from: ' + line
 	else:
-		print ' Error - das_client.py in your path, please find it and add it to PATH. EXIT!'
+		print ' Error - das_client.py in your path, find it and add it to PATH. EXIT!'
 		sys.exit(1)
 
 def convertSizeToGb(sizeTxt):
@@ -315,10 +329,12 @@ def findExistingSubscriptions(dataset,group='AnalysisOps',sitePattern='T2*',debu
 	webServer = 'https://cmsweb.cern.ch/'
 	phedexBlocks = 'phedex/datasvc/xml/prod/blockreplicas?subscribed=y&group=%s&node=%s&dataset=%s'\
 		       %(group,sitePattern,dataset)
-	cert = os.environ.get('X509_USER_PROXY')
 	url = '"'+webServer+phedexBlocks + '"'
-	#cmd = 'curl --cert ' + cert + ' -k -H "Accept: text/xml" ' + url + ' 2> /dev/null'
 	cmd = 'curl -k -H "Accept: text/xml" ' + url + ' 2> /dev/null'
+
+	#cert = os.environ.get('X509_USER_PROXY')
+	#cmd = 'curl --cert ' + cert + ' -k -H "Accept: text/xml" ' + url + ' 2> /dev/null'
+
 	if debug > 1:
 		print ' Access phedexDb: ' + cmd
 
