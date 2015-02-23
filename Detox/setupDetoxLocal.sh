@@ -35,7 +35,7 @@ export DETOX_GROUP='AnalysisOps'
 
 export DETOX_CYCLE_HOURS=12
 export DETOX_USAGE_MAX=0.90
-export DETOX_USAGE_MIN=0.80
+export DETOX_USAGE_MIN=0.85
 export DETOX_NCOPY_MIN=1
 
 # What time window (in months) will be used for counting usage

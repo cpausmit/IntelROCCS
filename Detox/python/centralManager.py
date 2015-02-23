@@ -433,6 +433,35 @@ class CentralManager:
                         sitePr.grantWish(datasetName)
                         dataPr.addDelTarget(site)
 
+
+    def getRequestStats(self,pastWeeks):
+        reqTimes = {}
+        for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
+            if site not in self.siteRequests:
+                continue
+            for reqid in self.siteRequests[site].getReqIds():
+                theRequest = self.delRequests[reqid]
+                timeStamp = theRequest.getTimeStamp()
+                reqEpoch =  int(time.mktime(timeStamp.timetuple()))
+                if (self.epochTime -reqEpoch) > pastWeeks * (60*60*24*7):
+                    continue
+                reqTimes[reqEpoch] = reqid
+        totSets  = 0
+        totSpace = 0
+        totSites = 0
+        for item in sorted(reqTimes):
+            reqid = reqTimes[item]
+            theRequest = self.delRequests[reqid]
+            timeStamp = theRequest.getTimeStamp()
+            site = theRequest.siteName()
+            nsets = theRequest.getNdsets()
+            size = theRequest.getSize()/1000
+            totSets += nsets
+            totSpace += size
+            totSites += 1
+
+        return (totSets,totSpace,totSites)
+
     def printResults(self):
         resultDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_RESULT']
         beDeleted = glob.glob(resultDirectory + "/*")
@@ -512,7 +541,7 @@ class CentralManager:
         outputFile = open(os.environ['DETOX_DB'] + "/DeletionSummary.txt",'w')
         outputFile.write('#- ' + today + " " + ttime + "\n\n")
         outputFile.write("#- D E L E T I O N  R E Q U E S T S ----\n\n")
-        outputFile.write("# Date   NSets Size[TB] SiteName \n")
+        outputFile.write("# Date   ReqId  NSets Size[TB] SiteName \n")
 
 
         #find all requests for site for the last week
@@ -527,9 +556,6 @@ class CentralManager:
                 if (self.epochTime -reqEpoch) > 2 * (60*60*24*7):
                     continue
                 reqTimes[reqEpoch] = reqid
-        totSets  = 0
-        totSpace = 0
-        totSites = 0
         for item in sorted(reqTimes):
             reqid = reqTimes[item]
             theRequest = self.delRequests[reqid]
@@ -537,13 +563,17 @@ class CentralManager:
             site = theRequest.siteName()
             nsets = theRequest.getNdsets()
             size = theRequest.getSize()/1000
-            totSets += nsets
-            totSpace += size
-            totSites += 1
-            outputFile.write("  %-5s  %-5d %-8d %-20s \n"\
-                                 %(timeStamp.strftime("%m/%d"),nsets,size,site))
+            outputFile.write("  %-5s  %-6d %-5d %-8d %-20s \n"\
+                                 %(timeStamp.strftime("%m/%d"),reqid,nsets,size,site))
         outputFile.write("#--------------------------------------------------\n")
-        outputFile.write("# %6s %-5d %-8d %-3d %-10s \n"%(' ',totSets,totSpace,totSites,'Total'))
+        (totSets,totSpace,totSites) =  self.getRequestStats(2)
+        outputFile.write("#  %12s %-5d %-8d %-3d %-10s \n"%(' ',totSets,totSpace,totSites,'Total'))
+        outputFile.write("#\n#---------------l a s t  m o n t h----------------\n#\n")
+        (totSets,totSpace,totSites) =  self.getRequestStats(4)
+        outputFile.write("#  %12s %-5d %-8d %-3d \n"%(' ',totSets,totSpace,totSites))
+        outputFile.write("#\n#---------------l a s t  y e a r------------------\n#\n")
+        (totSets,totSpace,totSites) =  self.getRequestStats(52)
+        outputFile.write("#  %12s %-5d %-8d %-3d \n"%(' ',totSets,totSpace,totSites))
         outputFile.close()
 
         deprecatedSpace = 0
