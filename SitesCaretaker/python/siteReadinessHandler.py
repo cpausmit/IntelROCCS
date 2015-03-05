@@ -53,10 +53,10 @@ class SiteReadinessHandler:
                 self.siteReadiness[site] = siteReadiness.SiteReadiness(site)
             self.siteReadiness[site].update(0,status,timest)
 
-        forced = 'T2_TW_Taiwan'
-        if forced not in self.siteReadiness:
-            self.siteReadiness[forced] = siteReadiness.SiteReadiness(forced)
-        self.siteReadiness[forced].update(0,'in',datetime.strptime('2014-11-03',"%Y-%m-%d").date())
+        #forced = 'T2_TW_Taiwan'
+        #if forced not in self.siteReadiness:
+        #    self.siteReadiness[forced] = siteReadiness.SiteReadiness(forced)
+        #self.siteReadiness[forced].update(0,'in',datetime.strptime('2014-11-03',"%Y-%m-%d").date())
         
     def getWaitingRoomData(self):
         webServer = 'http://dashb-ssb.cern.ch/dashboard/request.py/getplotdata?'
