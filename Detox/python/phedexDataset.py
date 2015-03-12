@@ -20,6 +20,7 @@ class PhedexDataset:
         self.updTimeAtSite = {}
         self.isdoneAtSite = {}
         self.rankAtSite = {}
+        self.usedAtSite = {}
         self.filesAtSite = {}
         self.partialAtSite = {}
         self.globalRank = 9999.0
@@ -97,11 +98,17 @@ class PhedexDataset:
     def setGlobalRank(self,rank):
         self.globalRank = rank
 
+    def setIfUsed(self,site,used):
+        self.usedAtSite[site] = used
+
     def setTrueSize(self,size):
         self.trueSize = size
 
     def setTrueNfiles(self,nfiles):
         self.trueNfiles = nfiles
+
+    def getIfUsed(self,site):
+        return self.usedAtSite[site]
 
     def getTrueSize(self):
         return self.trueSize

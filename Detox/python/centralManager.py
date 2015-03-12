@@ -151,6 +151,7 @@ class CentralManager:
             datasetRank = (1-used)*(now-creationDate)/(60*60*24) + \
                           used*( (now-lastAccessed)/(60*60*24)-nAccessed) - size/1000
             phedexSets[datasetName].setLocalRank(site,datasetRank)
+            phedexSets[datasetName].setIfUsed(site,used)
 
         statusDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS']
         today = str(datetime.date.today())
@@ -315,13 +316,14 @@ class CentralManager:
                reqtime = phedexSets[datasetName].reqTime(site)
                updtime = phedexSets[datasetName].updTime(site)
                isdone = phedexSets[datasetName].isDone(site)
+               wasUsed = phedexSets[datasetName].getIfUsed(site)
                #since I cant delete dataset that is not in the datase 
                #I will set it as invalid 
                if dataSetIds[datasetName] is None:
                    vali = False
 
                self.sitePropers[site].addDataset(datasetName,rank,size,vali,part,
-                                                 cust,isDeprecated,reqtime,updtime,isdone)
+                                                 cust,isDeprecated,reqtime,updtime,wasUsed,isdone)
 
        for site in sorted(self.allSites.keys()):
            if self.allSites[site].getStatus() == 0:
@@ -485,15 +487,17 @@ class CentralManager:
         totalSpaceTaken = 0
         totalSpaceLcopy = 0
         totalDisk = 0
+        totalNotUsed = 0
         totalSpaceTakenT2 = 0
         totalSpaceLcopyT2 = 0
+        totalNotUsedT2 = 0
         totalDiskT2 = 0
         t2Sites = 0
         # file with more infortmation on all sites
         outputFile = open(os.environ['DETOX_DB'] + "/SitesInfo.txt",'w')
         outputFile.write('#- ' + today + " " + ttime + "\n#\n")
         outputFile.write("#- S I T E S  I N F O R M A T I O N ----\n#\n")
-        outputFile.write("#  Active Quota[TB] Taken[TB] LastCopy[TB] SiteName \n")
+        outputFile.write("#  Active Quota[TB] Taken[TB] LastCopy[TB] NotUsed[TB] SiteName \n")
         for site in sorted(self.allSites):
             theSite = self.allSites[site]
             taken = 0
@@ -504,37 +508,47 @@ class CentralManager:
                 sitePr = self.sitePropers[site]
                 taken = sitePr.spaceTaken()/1000
                 lcopy = sitePr.spaceLastCp()/1000
+                notUsed = sitePr.spaceUnused()/1000
                 totalDisk = totalDisk + theSite.getSize()/1000
                 totalSpaceLcopy = totalSpaceLcopy + lcopy
                 totalSpaceTaken = totalSpaceTaken + taken
+                totalNotUsed = totalNotUsed + notUsed
                 if site.startswith("T2_"):
                     totalDiskT2 += theSite.getSize()/1000
                     totalSpaceLcopyT2 += lcopy
                     totalSpaceTakenT2 += taken
+                    totalNotUsedT2 += notUsed
                     t2Sites += 1
 
             if site in nstuckAtSite and abs(stmean -  nstuckAtSite[site]) > 3*strms:
-                print (" -- %-16s has too many stuck sets, disabling in SitesInfo"%(site))
-                active = 0
+                if nstuckAtSite[site] > 4:
+                    print (" -- %-16s has too many stuck sets, disabling in SitesInfo"%(site))
+                    active = 0
             
             # summary of all sites
-            outputFile.write("   %-6d %-9d %-9d %-12d %-20s \n"\
-                                 %(active,theSite.getSize()/1000,taken,lcopy,site))
+            outputFile.write("   %-6d %-9d %-9d %-12d %-11d %-20s \n"\
+                                 %(active,theSite.getSize()/1000,taken,lcopy,notUsed,site))
         outputFile.write("#------------------------------------------------------\n")
-        outputFile.write("#  %-6d %-9d %-9d %-12d %-20s \n"\
+        outputFile.write("#  %-6d %-9d %-9d %-12d %-11d %-20s \n"\
                              %(len(self.allSites.keys()),totalDisk,
-                               totalSpaceTaken,totalSpaceLcopy,'Total T2s+T1s'))
+                               totalSpaceTaken,totalSpaceLcopy,totalNotUsed,'Total T2s+T1s'))
         percTst = totalSpaceTaken/totalDisk*100
         percTslc = totalSpaceLcopy/totalDisk*100
-        outputFile.write("#  %-6s %-9s %-4.1f%%     %-4.1f%% %-20s \n"%(' ',' ',percTst,percTslc,' '))
+        percUnused = totalNotUsed/totalDisk*100
+        outputFile.write("#  %-6s %-9s %-4.1f%%     %-4.1f%%        %-4.1f%% %-20s \n"\
+                             %(' ',' ',percTst,percTslc,percUnused,' '))
+
         outputFile.write("# Total Active Quota  = %-9d \n"%(totalDisk))
         
         outputFile.write("#------------------------------------------------------\n")
-        outputFile.write("#  %-6d %-9d %-9d %-12d %-20s \n"\
-                             %(t2Sites,totalDiskT2,totalSpaceTakenT2,totalSpaceLcopyT2,'Total T2s'))
+        outputFile.write("#  %-6d %-9d %-9d %-12d %-11d %-20s \n"\
+                             %(t2Sites,totalDiskT2,totalSpaceTakenT2,totalSpaceLcopyT2,
+                               totalNotUsedT2,'Total T2s'))
         percTst = totalSpaceTakenT2/totalDiskT2*100
         percTslc = totalSpaceLcopyT2/totalDiskT2*100
-        outputFile.write("#  %-6s %-9s %-4.1f%%     %-4.1f%% %-20s \n"%(' ',' ',percTst,percTslc,' '))
+        percUnused = totalNotUsedT2/totalDiskT2*100
+        outputFile.write("#  %-6s %-9s %-4.1f%%     %-4.1f%%        %-4.1f%% %-20s \n"\
+                             %(' ',' ',percTst,percTslc,percUnused,' '))
         outputFile.write("# Total Active Quota  = %-9d \n"%(totalDiskT2))
         outputFile.close()
 

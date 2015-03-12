@@ -29,13 +29,14 @@ class SiteProperties:
         self.protectedList = []
         self.siteSizeGbV = 0
         self.spaceTakenV = 0
+        self.spaceNotUsed = 0
         self.spaceLCp = 0
         self.space2free = 0
         self.deleted = 0
         self.protected = 0
         self.epochTime = int(time.time())
 
-    def addDataset(self,dset,rank,size,valid,partial,custodial,depr,reqtime,updtime,isdone):
+    def addDataset(self,dset,rank,size,valid,partial,custodial,depr,reqtime,updtime,wasused,isdone):
         self.dsetIsValid[dset] = valid
         self.dsetIsPartial[dset] = partial
         self.dsetIsCustodial[dset] = custodial
@@ -47,6 +48,9 @@ class SiteProperties:
         self.dsetIsDone[dset] = isdone
         self.dsetReqTime[dset] = reqtime
         self.dsetUpdTime[dset] = updtime
+
+        if wasused == 0:
+            self.spaceNotUsed = self.spaceNotUsed + size
 
     def makeWishList(self):
         space = 0
@@ -231,6 +235,9 @@ class SiteProperties:
     
     def dsetLoadTime(self,dset):
         return (self.dsetUpdTime[dset] - self.dsetReqTime[dset])
+
+    def spaceUnused(self):
+        return self.spaceNotUsed
 
     def dsetIsStuck(self,dset):
         if self.dsetIsDone[dset] == 0:
