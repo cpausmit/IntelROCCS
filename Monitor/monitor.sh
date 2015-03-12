@@ -49,4 +49,11 @@ cd $MONITOR_BASE
 
 ./monitor.py 
 
+# copy things for plotting interactively
+# rsync will put them on the web 
+cp findDatasetHistoryAll.py ${MONITOR_DB}
+cp findDatasetProperties.py ${MONITOR_DB}
+cp Dataset.py ${MONITOR_DB}
+cp plotFromPickle.py ${MONITOR_DB}
+
 exit 0
