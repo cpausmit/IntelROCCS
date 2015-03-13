@@ -57,6 +57,13 @@ do
         stdbuf -o0 -e0 "$install_path/dailyDealer.py" >> "$log_file" 2>&1
         if [ $index -eq 13 ]
         then
+            {
+                echo " "
+                echo " weekly data dealer started -- $tag "
+                echo " "
+                echo "   --> $today"
+                echo " "
+            } >> "$log_file"
             stdbuf -o0 -e0 "$install_path/weeklyDealer.py" >> "$log_file" 2>&1
         fi
 
