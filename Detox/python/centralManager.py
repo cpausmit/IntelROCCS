@@ -553,7 +553,7 @@ class CentralManager:
         #                     %(t2Sites,totalDiskT2,totalSpaceTakenT2,totalSpaceLcopyT2,
         #                       totalNotUsedT2,'Total T2s'))
         outputFile.write("#  %-6d %-9d %-9d %-12d %-20s \n"\
-                             %(t2Sites,totalDiskT2,totalSpaceTakenT2,'Total T2s'))
+                             %(t2Sites,totalDiskT2,totalSpaceTakenT2,totalSpaceLcopyT2,'Total T2s'))
         percTst = totalSpaceTakenT2/totalDiskT2*100
         percTslc = totalSpaceLcopyT2/totalDiskT2*100
         percUnused = totalNotUsedT2/totalDiskT2*100
