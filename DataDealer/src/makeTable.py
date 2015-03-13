@@ -12,7 +12,7 @@ def ftoa(s):
     """
     #return ftoa_re.sub(',', str(s))
     if isinstance(s, types.FloatType):
-        return "%.2f" % (s)
+        return "%.3f" % (s)
     else:
         return str(s)
 
@@ -114,6 +114,7 @@ class Table:
         return output
 
     perc_re = re.compile(r"-?(\d+)%")
+
     def plainTextBody(self):
         header_cnt = len(self.headers)
         output = ''
@@ -122,7 +123,7 @@ class Table:
         for row in self.data:
             rowtypes = self.types[idx]
             output += '|'
-            if row == None:
+            if row is None:
                 output += '-' * table_len + '|\n'
                 continue
             for i in range(header_cnt):
@@ -130,7 +131,7 @@ class Table:
                     val = row[i][0]
                 else:
                     val = row[i]
-                if rowtypes[i] == types.StringType and not \
+                if rowtypes[i] == (types.StringType) and not \
                         self.perc_re.match(val):
                     output += (' %%-%is |' % self.headerLengths[i]) % \
                         val

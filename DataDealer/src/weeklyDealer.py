@@ -3,7 +3,7 @@
 # This is the main script of the DataDealer. See README.md for more information.
 #---------------------------------------------------------------------------------------------------
 import sys, datetime
-import sites, weeklyRockerBoard, subscribe, dataDealerReport
+import sites, weeklyRockerBoard, subscribe, report
 import phedexData
 
 # initialize
@@ -51,10 +51,10 @@ print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + 
 print ""
 
 # send summary report
-print " ----  Daily Summary  ---- "
+print " ----  Summary  ---- "
 startTime = datetime.datetime.now()
-dataDealerReport_ = dataDealerReport.dataDealerReport()
-dataDealerReport_.createReport()
+report_ = report.report()
+report_.createWeeklyReport()
 totalTime = datetime.datetime.now() - startTime
 print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
 print ""

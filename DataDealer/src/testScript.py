@@ -3,8 +3,8 @@
 # This is the main script of the DataDealer. See README.md for more information.
 #---------------------------------------------------------------------------------------------------
 import sys, datetime
-import sites, dailyRockerBoard, subscribe, report, subscriptionProgress
-import phedexData
+import sites, dailyRockerBoard, subscribe, report, subscriptionProgress, weeklyRockerBoard
+import phedexData, phedexApi
 
 # initialize
 startingTime = datetime.datetime.now()
@@ -37,18 +37,22 @@ print " ----  Rocker Board Algorithm  ---- "
 startTime = datetime.datetime.now()
 dailyRockerBoard_ = dailyRockerBoard.dailyRockerBoard()
 subscriptions = dailyRockerBoard_.dailyRba(datasets, availableSites)
+print subscriptions
+weeklyRockerBoard_ = weeklyRockerBoard.weeklyRockerBoard()
+subscriptions = weeklyRockerBoard_.weeklyRba(datasets, availableSites)
+print subscriptions
 totalTime = datetime.datetime.now() - startTime
 print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
 print ""
 
-# subscribe selected datasets
-print " ----  Subscribe Datasets  ---- "
-startTime = datetime.datetime.now()
-subscribe_ = subscribe.subscribe()
-subscribe_.createSubscriptions(subscriptions)
-totalTime = datetime.datetime.now() - startTime
-print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
-print ""
+# # subscribe selected datasets
+# print " ----  Subscribe Datasets  ---- "
+# startTime = datetime.datetime.now()
+# subscribe_ = subscribe.subscribe()
+# subscribe_.createSubscriptions(subscriptions)
+# totalTime = datetime.datetime.now() - startTime
+# print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
+# print ""
 
 # update and check progress of subscriptions
 print " ----  Update and Check Subscriptions  ---- "
@@ -65,9 +69,15 @@ print " ----  Daily Summary  ---- "
 startTime = datetime.datetime.now()
 report_ = report.report()
 report_.createDailyReport()
+report_ = report.report()
+report_.createWeeklyReport()
 totalTime = datetime.datetime.now() - startTime
 print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
 print ""
+
+#===================================================================================================
+#  T E S T I N G
+#===================================================================================================
 
 #===================================================================================================
 #  E X I T

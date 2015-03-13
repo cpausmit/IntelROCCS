@@ -21,20 +21,13 @@ from subprocess import Popen, PIPE
 class dbApi():
     def __init__(self):
         config = ConfigParser.RawConfigParser()
-        config.read(os.path.join(os.path.dirname(__file__), 'intelroccs.cfg'))
-        fromItems = config.items('from_email')
-        self.fromEmail = fromItems[0]
-        emailItems = config.items('error_emails')
-        toNames = []
-        toEmails = []
-        for name, email in emailItems:
-            toNames.append(name)
-            toEmails.append(email)
-        self.toList = (toNames, toEmails)
-        host = config.get('DB', 'host')
-        db = config.get('DB', 'db')
-        user = config.get('DB', 'username')
-        passwd = config.get('DB', 'password')
+        config.read(os.path.join(os.path.dirname(__file__), 'api.cfg'))
+        self.fromEmail = config.items('from_email')[0]
+        self.toEmails = config.items('error_emails')
+        host = config.get('db', 'host')
+        db = config.get('db', 'db')
+        user = config.get('db', 'username')
+        passwd = config.get('db', 'password')
         # Will try to connect 3 times before reporting an error
         for attempt in range(3):
             try:
@@ -52,7 +45,7 @@ class dbApi():
         msg = MIMEMultipart()
         msg['Subject'] = title
         msg['From'] = formataddr(self.fromEmail)
-        msg['To'] = self._toStr(self.toList)
+        msg['To'] = self._toStr(self.toEmails)
         msg1 = MIMEMultipart("alternative")
         msgText1 = MIMEText("<pre>%s</pre>" % text, "html")
         msgText2 = MIMEText(text)
@@ -64,8 +57,8 @@ class dbApi():
         p.communicate(msg)
         raise Exception("FATAL -- %s" % (str(e)))
 
-    def _toStr(self, toList):
-        names = [formataddr(i) for i in zip(*toList)]
+    def _toStr(self, toEmails):
+        names = [formataddr(email) for email in toEmails]
         return ', '.join(names)
 
 #===================================================================================================

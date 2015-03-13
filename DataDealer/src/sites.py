@@ -29,5 +29,6 @@ class sites():
         query = "SELECT Sites.SiteName FROM Sites INNER JOIN Quotas ON Sites.SiteId=Quotas.SiteId INNER JOIN Groups ON Groups.GroupId=Quotas.GroupId WHERE Sites.Status=%s AND Groups.GroupName=%s"
         values = [1, "AnalysisOps"]
         data = self.dbApi.dbQuery(query, values=values)
-        invalid = re.compile('T1_*')
-        return [site[0] for site in data if (not (invalid.match(site[0])))]
+        t1_re = re.compile('^T1_.*$')
+        tw_re = re.compile('^T2_TW_Taiwan$')
+        return [site[0] for site in data if (not (t1_re.match(site[0]) or tw_re.match(site[0])))]

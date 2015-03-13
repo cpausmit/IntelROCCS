@@ -8,7 +8,7 @@
 # set up variables
 #=================
 # grab variables from config file
-configfile_secured=/etc/data_dealer.conf
+configfile_secured=/etc/data_dealer_test.conf
 source $configfile_secured
 
 
@@ -32,8 +32,6 @@ sleep $time_to_wait
 #=================
 while [ 1 ]
 do
-    for index in {0..13}
-    do
         # get the start time of the script
         secs=$(date +%s --date="now")
         run_time=$(date '+%s' --date="@$((secs + loop_interval_h*60*60))")
@@ -49,31 +47,25 @@ do
 
         {
             echo " "
-            echo " daily data dealer started -- $tag "
+            echo " daily data dealer test started -- $tag "
             echo " "
             echo "   --> $today"
             echo " "
         } >> "$log_file"
-        stdbuf -o0 -e0 "$install_path/dailyDealer.py" >> "$log_file" 2>&1
-        if [ $index -eq 13 ]
-        then
-            stdbuf -o0 -e0 "$install_path/weeklyDealer.py" >> "$log_file" 2>&1
-        fi
-
+        stdbuf -o0 -e0 "$install_path/testDataDealer.py" >> "$log_file" 2>&1
 
         # ensure that the log and report information is updated
         rsync -Cavz --delete "$data_path" "$html_path" >& /dev/null
 
         # change symlinks for todays report and log
-        ln -sf "$html_path/DataDealer/Logs/data_dealer-$tag.log" "$html_path/DataDealer/Logs/data_dealer-latest.log"
-        ln -sf "$html_path/DataDealer/Reports/data_dealer-$tag.report" "$html_path/DataDealer/Reports/data_dealer-latest.report"
-        ln -sf "$html_path/DataDealer/Progress/data_dealer-$tag.progress" "$html_path/DataDealer/Progress/data_dealer-latest.progress"
+        ln -sf "$html_path/DataDealer-test/Logs/data_dealer-$tag.log" "$html_path/DataDealer-test/Logs/data_dealer-latest.log"
+        ln -sf "$html_path/DataDealer-test/Reports/data_dealer-$tag.report" "$html_path/DataDealer-test/Reports/data_dealer-latest.report"
+        ln -sf "$html_path/DataDealer-test/Progress/data_dealer-$tag.progress" "$html_path/DataDealer-test/Progress/data_dealer-latest.progress"
 
         # calculate the time until next run should start
         current_time=$(date -d "now" +%s)
         time_to_wait=$((run_time - current_time))
         sleep $time_to_wait
-    done
 done
 
 # done

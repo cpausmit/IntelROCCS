@@ -8,9 +8,10 @@ import phedexData, popDbData, dbApi
 class weeklyRockerBoard():
     def __init__(self):
         config = ConfigParser.RawConfigParser()
-        config.read(os.path.join(os.path.dirname(__file__), 'intelroccs.cfg'))
-        self.rankingsCachePath = config.get('DataDealer', 'cache')
-        self.limit = config.getfloat('DataDealer', 'weekly_limit')
+        config.read(os.path.join(os.path.dirname(__file__), 'data_dealer.cfg'))
+        self.rankingsCachePath = config.get('data_dealer', 'rankings_cache')
+        self.threshold = config.getfloat('data_dealer', 'weekly_threshold')
+        self.limit = config.getfloat('data_dealer', 'weekly_limit_gb')
         self.phedexData = phedexData.phedexData()
         self.popDbData = popDbData.popDbData()
         self.dbApi = dbApi.dbApi()
@@ -30,15 +31,15 @@ class weeklyRockerBoard():
     def getPopularity(self, datasetName):
         popularity = 0
         today = datetime.date.today()
-        cpusOld = []
+        accsOld = []
         for i in range(8, 15):
             date = today - datetime.timedelta(days=i)
-            cpusOld.append(self.popDbData.getDatasetCpus(datasetName, date.strftime('%Y-%m-%d')))
+            accsOld.append(self.popDbData.getDatasetAccesses(datasetName, date.strftime('%Y-%m-%d')))
         for i in range(1, 8):
             date = today - datetime.timedelta(days=i)
-            cpuNew = self.popDbData.getDatasetCpus(datasetName, date.strftime('%Y-%m-%d'))
-            for cpuOld in cpusOld:
-                popularity += cpuNew - cpuOld
+            accNew = self.popDbData.getDatasetAccesses(datasetName, date.strftime('%Y-%m-%d'))
+            for accOld in accsOld:
+                popularity += accNew - accOld
         return popularity
 
     def rankingsCache(self, datasetRankings, siteRankings):
@@ -86,7 +87,7 @@ class weeklyRockerBoard():
             data = self.dbApi.dbQuery(query, values=values)
             quota = data[0][0]*10**3
             used = self.phedexData.getSiteStorage(siteName)
-            left = quota*self.limit - used
+            left = quota*self.threshold - used
             if left <= 0:
                 continue
             siteQuotas[siteName] = left
@@ -94,8 +95,12 @@ class weeklyRockerBoard():
 
     def getNewReplicas(self, datasetRankings, siteRankings, siteQuotas):
         subscriptions = dict()
+        subscribedGb = 0
+        datasetName = "Generic/Dataset"
+        datasetSizeGb = 0
         while (datasetRankings):
             if not siteRankings:
+                print " ALERT -- Dataset %s (%d GB) was too big to subscribe" % (datasetName, datasetSizeGb)
                 break
             dataset = max(datasetRankings.iteritems(), key=operator.itemgetter(1))
             datasetName = dataset[0]
@@ -111,15 +116,20 @@ class weeklyRockerBoard():
                 continue
             site = min(siteRanks.iteritems(), key=operator.itemgetter(1))
             siteName = site[0]
+            datasetSizeGb = self.phedexData.getDatasetSize(datasetName)
+            if siteQuotas[siteName] - datasetSizeGb <= 0:
+                del siteRankings[siteName]
+                continue
+            if subscribedGb + datasetSizeGb > self.limit:
+                print " ALERT -- Dataset %s (%d GB) was too big to subscribe" % (datasetName, datasetSizeGb)
+                break
             if siteName in subscriptions:
                 subscriptions[siteName].append(datasetName)
             else:
                 subscriptions[siteName] = [datasetName]
             siteRankings[siteName] += datasetRank
-            datasetSizeGb = self.phedexData.getDatasetSize(datasetName)
             siteQuotas[siteName] -= datasetSizeGb
-            if siteQuotas[siteName] <= 0:
-                del siteRankings[siteName]
+            subscribedGb += datasetSizeGb
             del datasetRankings[datasetName]
         return subscriptions
 

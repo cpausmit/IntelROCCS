@@ -25,20 +25,13 @@ from subprocess import Popen, PIPE
 class popDbApi():
     def __init__(self):
         config = ConfigParser.RawConfigParser()
-        config.read(os.path.join(os.path.dirname(__file__), 'intelroccs.cfg'))
-        fromItems = config.items('from_email')
-        self.fromEmail = fromItems[0]
-        emailItems = config.items('error_emails')
-        toNames = []
-        toEmails = []
-        for name, email in emailItems:
-            toNames.append(name)
-            toEmails.append(email)
-        self.toList = (toNames, toEmails)
-        self.popDbBase = config.get('PopDB', 'base')
-        self.cert = config.get('PopDB', 'certificate')
-        self.key = config.get('PopDB', 'key')
-        self.cookie = config.get('PopDB', 'sso_cookie')
+        config.read(os.path.join(os.path.dirname(__file__), 'api.cfg'))
+        self.fromEmail = config.items('from_email')[0]
+        self.toEmails = config.items('error_emails')
+        self.popDbBase = config.get('pop_db', 'base')
+        self.cert = config.get('pop_db', 'certificate')
+        self.key = config.get('pop_db', 'key')
+        self.cookie = config.get('pop_db', 'sso_cookie')
         self.renewSsoCookie()
 
 #===================================================================================================
@@ -83,7 +76,7 @@ class popDbApi():
         msg = MIMEMultipart()
         msg['Subject'] = title
         msg['From'] = formataddr(self.fromEmail)
-        msg['To'] = self._toStr(self.toList)
+        msg['To'] = self._toStr(self.toEmails)
         msg1 = MIMEMultipart("alternative")
         msgText1 = MIMEText("<pre>%s</pre>" % text, "html")
         msgText2 = MIMEText(text)
@@ -95,8 +88,8 @@ class popDbApi():
         p.communicate(msg)
         raise Exception("FATAL -- %s" % (str(e)))
 
-    def _toStr(self, toList):
-        names = [formataddr(i) for i in zip(*toList)]
+    def _toStr(self, toEmails):
+        names = [formataddr(email) for email in toEmails]
         return ', '.join(names)
 
 #===================================================================================================
