@@ -497,7 +497,8 @@ class CentralManager:
         outputFile = open(os.environ['DETOX_DB'] + "/SitesInfo.txt",'w')
         outputFile.write('#- ' + today + " " + ttime + "\n#\n")
         outputFile.write("#- S I T E S  I N F O R M A T I O N ----\n#\n")
-        outputFile.write("#  Active Quota[TB] Taken[TB] LastCopy[TB] NotUsed[TB] SiteName \n")
+        outputFile.write("#  Active Quota[TB] Taken[TB] LastCopy[TB] SiteName \n")
+        #outputFile.write("#  Active Quota[TB] Taken[TB] LastCopy[TB] NotUsed[TB] SiteName \n")
         for site in sorted(self.allSites):
             theSite = self.allSites[site]
             taken = 0
@@ -526,29 +527,40 @@ class CentralManager:
                     active = 0
             
             # summary of all sites
-            outputFile.write("   %-6d %-9d %-9d %-12d %-11d %-20s \n"\
-                                 %(active,theSite.getSize()/1000,taken,lcopy,notUsed,site))
+            #outputFile.write("   %-6d %-9d %-9d %-12d %-11d %-20s \n"\
+            #                     %(active,theSite.getSize()/1000,taken,lcopy,notUsed,site))
+            outputFile.write("   %-6d %-9d %-9d %-12d %-20s \n"\
+                                 %(active,theSite.getSize()/1000,taken,lcopy,site))
         outputFile.write("#------------------------------------------------------\n")
-        outputFile.write("#  %-6d %-9d %-9d %-12d %-11d %-20s \n"\
+        #outputFile.write("#  %-6d %-9d %-9d %-12d %-11d %-20s \n"\
+        #                     %(len(self.allSites.keys()),totalDisk,
+        #                       totalSpaceTaken,totalSpaceLcopy,totalNotUsed,'Total T2s+T1s'))
+        outputFile.write("#  %-6d %-9d %-9d %-12d %-20s \n"\
                              %(len(self.allSites.keys()),totalDisk,
-                               totalSpaceTaken,totalSpaceLcopy,totalNotUsed,'Total T2s+T1s'))
+                               totalSpaceTaken,totalSpaceLcopy,'Total T2s+T1s'))
         percTst = totalSpaceTaken/totalDisk*100
         percTslc = totalSpaceLcopy/totalDisk*100
         percUnused = totalNotUsed/totalDisk*100
-        outputFile.write("#  %-6s %-9s %-4.1f%%     %-4.1f%%        %-4.1f%% %-20s \n"\
-                             %(' ',' ',percTst,percTslc,percUnused,' '))
+        #outputFile.write("#  %-6s %-9s %-4.1f%%     %-4.1f%%        %-4.1f%% %-20s \n"\
+        #                     %(' ',' ',percTst,percTslc,percUnused,' '))
+        outputFile.write("#  %-6s %-9s %-4.1f%%     %-4.1f%% %-20s \n"\
+                             %(' ',' ',percTst,percTslc,' '))
 
         outputFile.write("# Total Active Quota  = %-9d \n"%(totalDisk))
         
         outputFile.write("#------------------------------------------------------\n")
-        outputFile.write("#  %-6d %-9d %-9d %-12d %-11d %-20s \n"\
-                             %(t2Sites,totalDiskT2,totalSpaceTakenT2,totalSpaceLcopyT2,
-                               totalNotUsedT2,'Total T2s'))
+        #outputFile.write("#  %-6d %-9d %-9d %-12d %-11d %-20s \n"\
+        #                     %(t2Sites,totalDiskT2,totalSpaceTakenT2,totalSpaceLcopyT2,
+        #                       totalNotUsedT2,'Total T2s'))
+        outputFile.write("#  %-6d %-9d %-9d %-12d %-20s \n"\
+                             %(t2Sites,totalDiskT2,totalSpaceTakenT2,'Total T2s'))
         percTst = totalSpaceTakenT2/totalDiskT2*100
         percTslc = totalSpaceLcopyT2/totalDiskT2*100
         percUnused = totalNotUsedT2/totalDiskT2*100
-        outputFile.write("#  %-6s %-9s %-4.1f%%     %-4.1f%%        %-4.1f%% %-20s \n"\
-                             %(' ',' ',percTst,percTslc,percUnused,' '))
+        #outputFile.write("#  %-6s %-9s %-4.1f%%     %-4.1f%%        %-4.1f%% %-20s \n"\
+        #                     %(' ',' ',percTst,percTslc,percUnused,' '))
+        outputFile.write("#  %-6s %-9s %-4.1f%%     %-4.1f%% %-20s \n"\
+                             %(' ',' ',percTst,percTslc,' '))
         outputFile.write("# Total Active Quota  = %-9d \n"%(totalDiskT2))
         outputFile.close()
 
