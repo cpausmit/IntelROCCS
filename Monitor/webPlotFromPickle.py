@@ -183,7 +183,6 @@ usage += "   startDate  - epoch time of starting date\n"
 usage += "   endDate    - epoch time of ending date\n"
 usage += "   pickleJar  - *.pkl file containing the relevant aggregated data\n"
 
-
 # decode command line parameters
 if len(sys.argv)==5:
     sitePattern = str(sys.argv[1])
@@ -220,6 +219,8 @@ if rc:
 else:
     ROOT.MitRootStyle.Init()
 
+with open("/local/IntelROCCSplots/test2.txt","w") as f:
+    f.write("this worked %i\n"%(rc))
 '''==============================================================================
                                  our usage plots
    =============================================================================='''
@@ -302,11 +303,11 @@ for i in range(3):
 if groupPattern == ".*":
     groupPattern = "All"
 try:
-    cUsage.SaveAs(monitorDB+"/Usage_%s_%s.png"%(groupPattern,os.environ['MONITOR_PLOTTEXT']))
+    cUsage.SaveAs("/local/IntelROCCSplots/Usage_%s.png"%(os.environ['MONITOR_PLOTTEXT']))
 except KeyError:
-    cUsage.SaveAs(monitorDB+"/Usage_%s_%i_%i.png"%(groupPattern,start,end))
+    cUsage.SaveAs("/local/IntelROCCSplots/Usage_%s_%i_%i.png"%(groupPattern,start,end))
 
-# houtFile = ROOT.TFile(monitorDB+"/outfile.root","UPDATE")
+# houtFile = ROOT.TFile("/local/IntelROCCSplots/outfile.root","UPDATE")
 # houtFile.cd()
 # hUsage.Write("%s_%s"%(groupPattern,os.environ['MONITOR_PLOTTEXT']))
 # houtFile.Close()
@@ -406,9 +407,9 @@ for i in range(2):
 if groupPattern == ".*":
     groupPattern = "All"
 try:
-    cCRB.SaveAs(monitorDB+"/CRBUsage_%s_%s.png"%(groupPattern,os.environ['MONITOR_PLOTTEXT']))
+    cCRB.SaveAs("/local/IntelROCCSplots/CRBUsage_%s.png"%(os.environ['MONITOR_PLOTTEXT']))
 except KeyError:
-    cCRB.SaveAs(monitorDB+"/CRBUsage_%s_%i_%i.png"%(groupPattern,start,end))
+    cCRB.SaveAs("/local/IntelROCCSplots/CRBUsage_%s_%i_%i.png"%(groupPattern,start,end))
     
 cZeroOne.cd()
 hZeroOne.Draw("hist")
@@ -420,9 +421,9 @@ for i in range(1):
   plotTText[i].SetTextColor(2)
   plotTText[i].Draw()
 try:
-    cZeroOne.SaveAs(monitorDB+"/CRB01_%s_%s.png"%(groupPattern,os.environ['MONITOR_PLOTTEXT']))
+    cZeroOne.SaveAs("/local/IntelROCCSplots/CRB01_%s.png"%(os.environ['MONITOR_PLOTTEXT']))
 except KeyError:
-    cZeroOne.SaveAs(monitorDB+"/CRB01_%s_%i_%i.png"%(groupPattern,start,end))
+    cZeroOne.SaveAs("/local/IntelROCCSplots/CRB01_%s_%i_%i.png"%(groupPattern,start,end))
     
 cTime.cd()
 hTime.Draw("hist")
@@ -434,9 +435,9 @@ for i in range(1):
   plotTText[i].SetTextColor(2)
   plotTText[i].Draw()
 try:
-    cTime.SaveAs(monitorDB+"/CRBTime_%s_%s.png"%(groupPattern,os.environ['MONITOR_PLOTTEXT']))
+    cTime.SaveAs("/local/IntelROCCSplots/CRBTime_%s.png"%(os.environ['MONITOR_PLOTTEXT']))
 except KeyError:
-    cTime.SaveAs(monitorDB+"/CRBTime_%s_%i_%i.png"%(groupPattern,start,end))
+    cTime.SaveAs("/local/IntelROCCSplots/CRBTime_%s_%i_%i.png"%(groupPattern,start,end))
 
 pickleJar.close()
 

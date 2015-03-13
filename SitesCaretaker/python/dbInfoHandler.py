@@ -45,6 +45,9 @@ class DbInfoHandler:
                 print ' Site --- active, status=%d  - %s'%(self.allSites[site].getStatus(),site)
   
     def enableSite(self,site,targetQuota):
+        if site == 'T2_TW_Taiwan':
+            return
+
         siteId = self.allSites[site].getId()
         
         print "\n !! Activating site " + site + " !!" 

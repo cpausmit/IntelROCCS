@@ -11,6 +11,12 @@ export INTELROCCS_USER=cmsprod
 export INTELROCCS_GROUP=zh
 
 source Monitor/setupMonitor.sh
+cp Monitor/html/custom.html /local/IntelROCCSplots/custom.html
+cp Monitor/html/interactiveMonitor.py /var/www/cgi-bin/interactiveMonitor.cgi
+cp Monitor/webPlotFromPickle.py /var/www/cgi-bin/webPlotFromPickle.py
+cp Monitor/findDatasetProperties.py /var/www/cgi-bin/findDatasetProperties.py
+cp Monitor/findDatasetHistoryAll.py /var/www/cgi-bin/findDatasetHistoryAll.py
+cp Monitor/Dataset.py /var/www/cgi-bin/Dataset.py
 
 # make sure mysql is setup properly for server and clients otherwise this will not work
 # check out the README
@@ -52,8 +58,8 @@ fi
 cp /usr/local/IntelROCCS/Monitor/sysv/monitord /etc/init.d/
 
 # copy html files
-cp ../IntelROCCS/Monitor/html/* /home/cmsprod/public_html/IntelROCCS/Monitor
-cp ../IntelROCCS/Monitor/html/* $MONITOR_DB
+cp ../IntelROCCS/Monitor/html/*html /home/cmsprod/public_html/IntelROCCS/Monitor
+cp ../IntelROCCS/Monitor/html/*html $MONITOR_DB
 
 # start new server
 /etc/init.d/monitord status
