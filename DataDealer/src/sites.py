@@ -30,5 +30,4 @@ class sites():
         values = [1, "AnalysisOps"]
         data = self.dbApi.dbQuery(query, values=values)
         t1_re = re.compile('^T1_.*$')
-        tw_re = re.compile('^T2_TW_Taiwan$')
-        return [site[0] for site in data if (not (t1_re.match(site[0]) or tw_re.match(site[0])))]
+        return [site[0] for site in data if not t1_re.match(site[0])]

@@ -34,12 +34,12 @@ class dailyRockerBoard():
         newDatasets = []
         with crabCache:
             cur = crabCache.cursor()
-            cur.execute('CREATE TABLE Jobs (DatasetName TEXT, Timestamp INTEGER, User TEXT, NumJobs INTEGER, JobsLeft INTEGER)')
+            cur.execute('CREATE TABLE Jobs (DatasetName TEXT, Timestamp INTEGER, User TEXT, NumJobs REAL, JobsLeft REAL)')
             cur.execute('CREATE TABLE Sites (SiteName TEXT UNIQUE)')
             for job in jobs:
                 cur.execute('INSERT INTO Jobs(DatasetName, Timestamp, User, NumJobs, JobsLeft) VALUES(?, ?, ?, ?, ?)', (job[0], job[1], job[2], job[3], job[4]))
                 datasetRankings[job[0]] = job[4]/job[3]
-            cur.execute('SELECT DISTINCT DatasetName FROM Jobs WHERE (JobsLeft/numJobs)>?', (self.crab_ratio,))
+            cur.execute('SELECT DISTINCT DatasetName FROM Jobs WHERE (JobsLeft/NumJobs)>?', (self.crab_ratio,))
             for row in cur:
                 newDatasets.append(row[0])
         if not os.path.exists(self.rankingsCachePath):
@@ -80,8 +80,8 @@ class dailyRockerBoard():
     def getDatasetRankings(self, datasets):
         recentSubscriptions = []
         requestTimestamp = datetime.datetime.fromtimestamp(int(time.time()) - 60*60*24*14)
-        query = "SELECT DISTINCT Datasets.DatasetName FROM Requests INNER JOIN Datasets ON Requests.DatasetId=Datasets.DatasetId WHERE Requests.Date>=%s"
-        values = [requestTimestamp]
+        query = "SELECT DISTINCT Datasets.DatasetName FROM Requests INNER JOIN Datasets ON Requests.DatasetId=Datasets.DatasetId WHERE Requests.Date>=%s AND Requests.RequestType=%s"
+        values = [requestTimestamp, 0]
         data = self.dbApi.dbQuery(query, values=values)
         for row in data:
             recentSubscriptions.append(row[0])

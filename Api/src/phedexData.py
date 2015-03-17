@@ -9,7 +9,7 @@
 #
 # In case of an error a '0' will be returned, caller must check to make sure data is returned.
 #---------------------------------------------------------------------------------------------------
-import re, os, sqlite3, datetime, ConfigParser
+import re, os, sqlite3, ConfigParser, time
 import phedexApi
 
 class phedexData:
@@ -25,15 +25,14 @@ class phedexData:
 #===================================================================================================
     def shouldAccessPhedex(self, apiCall):
         cacheFile = "%s/%s.db" % (self.phedexCache, apiCall)
-        timeNow = datetime.datetime.now()
-        deltaNhours = datetime.timedelta(seconds=60*60*(self.cacheDeadline))
-        modTime = datetime.datetime.fromtimestamp(0)
+        timeNow = time.time()
+        deltaNSeconds = 60*60*(self.cacheDeadline)
         if os.path.isfile(cacheFile):
-            modTime = datetime.datetime.fromtimestamp(os.path.getmtime(cacheFile))
+            modTime = os.path.getmtime(cacheFile)
             if os.path.getsize(cacheFile) == 0:
                 # cache is empty
                 return True
-            if (timeNow-deltaNhours) > modTime:
+            if (timeNow-deltaNSeconds) > modTime:
                 # cache is not up to date
                 return True
             # fetch data from cache
