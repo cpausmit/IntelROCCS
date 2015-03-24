@@ -6,7 +6,7 @@
     $(document).ready(function(){
         $("button").click(function(){
                 //var scriptPath = "http://t3serv001.mit.edu";
-                var scriptPath = "http://t3serv012.mit.edu/cgi-bin/interactiveMonitor.cgi?startyear=" + $("#startyear").val() + "&startmonth=" + $("#startmonth").val() + "&endyear=" + $("#endyear").val() + "&endmonth=" + $("#endmonth").val();
+                var scriptPath = "http://t3serv012.mit.edu/cgi-bin/interactiveMonitor.cgi?startyear=" + $("#startyear").val() + "&startmonth=" + $("#startmonth").val() + "&endyear=" + $("#endyear").val() + "&endmonth=" + $("#endmonth").val() + "&pattern=" + $("#pattern").val() + "&group=" + $("#group").val() + "&site=" + $("#site").val();
                 $.get(scriptPath, function(data) { $("#body").html(data); } );
         });
     });
@@ -26,10 +26,11 @@ Start date:
 <select id="startyear">
     <option selected value = "2013"> 2013 </option>
     <option value = "2014"> 2014 </option>
+    <option value = "2015"> 2015 </option>
 </select>
 
 <select id="startmonth">
-    <option selected value = "01"> 01 </option>
+    <option value = "01"> 01 </option>
     <option value = "02"> 02 </option>
     <option value = "03"> 03 </option>
     <option value = "04"> 04 </option>
@@ -37,7 +38,7 @@ Start date:
     <option value = "06"> 06 </option>
     <option value = "07"> 07 </option>
     <option value = "08"> 08 </option>
-    <option value = "09"> 09 </option>
+    <option selected value = "09"> 09 </option>
     <option value = "10"> 10 </option>
     <option value = "11"> 11 </option>
     <option value = "12"> 12 </option>
@@ -48,8 +49,9 @@ Start date:
 End date: 
 
 <select id="endyear">
-    <option selected value = "2013"> 2013 </option>
+    <option value = "2013"> 2013 </option>
     <option value = "2014"> 2014 </option>
+    <option selected value = "2015"> 2015 </option>
 </select>
 
 <select id="endmonth">
@@ -68,12 +70,13 @@ End date:
 </select>
 
 <br>
-
+Group:
 <select id="group">
     <option selected value = "AnalysisOps"> AnalysisOps </option>
     <option value = "_" > All </option>
 </select>
-
+<br>
+Dataset Regex:
 <select id="pattern">
     <option selected value = "(?!/_/_/USER_)"> All </option>
     <option value = '/_/_/_AOD_'> *AOD* </option>   
@@ -84,9 +87,15 @@ End date:
 
 <br>
 
-<button> Go! </button>
+Site Pattern (use X as multi-character wildcard): <input type="text" id="site" value="T2X" > 
 
-<p id="body"> Text to be replaced </p>
+
+<br>
+
+<button> Go! </button>
+<hr>
+
+<p id="body"> Plots go here </p>
 
 <hr>
 <!-- hhmts start -->
