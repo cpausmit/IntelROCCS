@@ -28,6 +28,21 @@ fi
 
 sleep $time_to_wait
 
+# generate specific log file
+tag=$(date "+%Y%m%d")
+log_file=$data_path/Logs/data_dealer-$tag.log
+touch "$log_file"
+
+# start by running the weekly dealer once
+{
+    echo " "
+    echo " weekly data dealer started -- $tag "
+    echo " "
+    echo "   --> $today"
+    echo " "
+} >> "$log_file"
+stdbuf -o0 -e0 "$install_path/weeklyDealer.py" >> "$log_file" 2>&1
+
 # run daily script
 #=================
 while [ 1 ]
