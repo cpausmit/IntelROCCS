@@ -11,15 +11,6 @@ class popDbData:
         config.read(os.path.join(os.path.dirname(__file__), 'api.cfg'))
         self.popDbCache = config.get('pop_db', 'cache')
         self.cacheDeadline = config.getint('pop_db', 'expiration_timer')
-        if not os.path.exists(self.popDbCache):
-            os.makedirs(self.popDbCache)
-        cacheFile = "%s/%s.db" % (self.popDbCache, 'popDbCache')
-        timeNow = time.time()
-        deltaNSeconds = 60*60*(self.cacheDeadline)
-        if os.path.isfile(cacheFile):
-            modTime = os.path.getmtime(cacheFile)
-            if (os.path.getsize(cacheFile)) == 0 or ((timeNow-deltaNSeconds) > modTime):
-                os.remove(cacheFile)
         self.popDbApi = popDbApi.popDbApi()
 
 #===================================================================================================
@@ -31,9 +22,24 @@ class popDbData:
         return td.seconds + td.days*86400
 
     def buildDSStatInTimeWindowCache(self, siteNames):
-        cacheFile = "%s/%s.db" % (self.popDbCache, 'popDbCache')
+        if not os.path.exists(self.popDbCache):
+            os.makedirs(self.popDbCache)
+        cacheFile = "%s/%s.db" % (self.popDbCache, 'DSStatInTimeWindow')
+        timeNow = time.time()
+        deltaNSeconds = 60*60*28
         if os.path.isfile(cacheFile):
-            return 0
+            modTime = os.path.getmtime(cacheFile)
+            if (os.path.getsize(cacheFile)) == 0 or ((timeNow-deltaNSeconds) > modTime):
+                os.remove(cacheFile)
+        deltaNSeconds = 60*60*self.cacheDeadline
+        if os.path.isfile(cacheFile):
+            modTime = os.path.getmtime(cacheFile)
+            if (timeNow-deltaNSeconds) > modTime:
+                days = [1]
+            else:
+                return 0
+        else:
+            days = range(1, 15)
         popDbCache = sqlite3.connect(cacheFile)
         utcNow = datetime.datetime.utcnow()
         today = datetime.date(utcNow.year, utcNow.month, utcNow.day)
@@ -41,7 +47,7 @@ class popDbData:
             cur = popDbCache.cursor()
             cur.execute('CREATE TABLE IF NOT EXISTS DSStatInTimeWindow(Date TEXT, SiteName TEXT, DatasetName TEXT, Accesses INTEGER, Cpus INTEGER, Users INTEGER)')
             for siteName in siteNames:
-                for i in range(1, 15):
+                for i in days:
                     date = today - datetime.timedelta(days=i)
                     tstart = date.strftime('%Y-%m-%d')
                     tstop = tstart
@@ -57,7 +63,9 @@ class popDbData:
         return 0
 
     def buildGetSingleDSstatCache(self, datasets):
-        popDbCache = sqlite3.connect("%s/%s.db" % (self.popDbCache, 'popDbCache'))
+        if not os.path.exists(self.popDbCache):
+            os.makedirs(self.popDbCache)
+        popDbCache = sqlite3.connect("%s/%s.db" % (self.popDbCache, 'getSingleDSstat'))
         with popDbCache:
             cur = popDbCache.cursor()
             cur.execute('CREATE TABLE IF NOT EXISTS getSingleDSstat(Timestamp INTEGER, DatasetName TEXT, Accesses TEXT)')

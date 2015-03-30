@@ -117,6 +117,7 @@ class dailyRockerBoard():
 #  M A I N
 #===================================================================================================
     def dailyRba(self, datasets, sites):
+        self.popDbData.buildDSStatInTimeWindowCache(sites)
         jobs = self.getDatasetRankings(datasets)
         newDatasets = self.updateJobsCache(jobs)
         invalidSites = self.updateSitesCache(newDatasets)
