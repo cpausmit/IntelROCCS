@@ -10,7 +10,6 @@ class dailyRockerBoard():
     def __init__(self):
         config = ConfigParser.RawConfigParser()
         config.read(os.path.join(os.path.dirname(__file__), 'data_dealer.cfg'))
-        self.rankingsCachePath = config.get('data_dealer', 'rankings_cache')
         self.crabCachePath = config.get('data_dealer', 'crab_cache')
         self.threshold = config.getfloat('data_dealer', 'daily_threshold')
         self.limit = config.getint('data_dealer', 'daily_limit_gb')
@@ -42,16 +41,6 @@ class dailyRockerBoard():
             cur.execute('SELECT DISTINCT DatasetName FROM Jobs WHERE (JobsLeft/NumJobs)>?', (self.crab_ratio,))
             for row in cur:
                 newDatasets.append(row[0])
-        if not os.path.exists(self.rankingsCachePath):
-            os.makedirs(self.rankingsCachePath)
-        cacheFile = "%s/%s.db" % (self.rankingsCachePath, "rankingsCache")
-        rankingsCache = sqlite3.connect(cacheFile)
-        with rankingsCache:
-            cur = rankingsCache.cursor()
-            cur.execute('CREATE TABLE IF NOT EXISTS Datasets (DatasetName TEXT UNIQUE, Rank REAL)')
-            cur.execute('CREATE TABLE IF NOT EXISTS Sites (SiteName TEXT UNIQUE, Rank REAL)')
-            for datasetName, rank in datasetRankings.items():
-                cur.execute('INSERT OR REPLACE INTO Datasets(DatasetName, Rank) VALUES(?, ?)', (datasetName, rank))
         return newDatasets
 
     def updateSitesCache(self, datasets):
@@ -69,12 +58,6 @@ class dailyRockerBoard():
             cur.execute('SELECT * FROM Sites')
             for row in cur:
                 invalidSites.append(row[0])
-        cacheFile = "%s/%s.db" % (self.rankingsCachePath, "rankingsCache")
-        rankingsCache = sqlite3.connect(cacheFile)
-        with rankingsCache:
-            cur = rankingsCache.cursor()
-            for siteName in invalidSites:
-                cur.execute('INSERT OR REPLACE INTO Sites(SiteName, Rank) VALUES(?, ?)', (siteName, 1))
         return invalidSites
 
     def getDatasetRankings(self, datasets):
