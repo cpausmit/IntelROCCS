@@ -60,6 +60,36 @@ class dailyRockerBoard():
                 invalidSites.append(row[0])
         return invalidSites
 
+    def updateRankingsCache(self, datasets):
+        if not os.path.exists(self.rankingsCachePath):
+            os.makedirs(self.rankingsCachePath)
+        cacheFile = "%s/%s.db" % (self.rankingsCachePath, "rankingsCache")
+        rankingsCache = sqlite3.connect(cacheFile)
+        datasetRankings = dict()
+        for dataset in datasets:
+            rank = self.getPopularity(dataset)
+            datasetRankings[dataset] = rank
+        with rankingsCache:
+            cur = rankingsCache.cursor()
+            cur.execute('CREATE TABLE IF NOT EXISTS Datasets (DatasetName TEXT UNIQUE, Rank REAL)')
+            for datasetName, rank in datasetRankings.items():
+                cur.execute('INSERT OR REPLACE INTO Datasets(DatasetName, Rank) VALUES(?, ?)', (datasetName, rank))
+
+    def getPopularity(self, datasetName):
+        popularity = 0
+        utcNow = datetime.datetime.utcnow()
+        today = datetime.date(utcNow.year, utcNow.month, utcNow.day)
+        accsOld = []
+        for i in range(8, 15):
+            date = today - datetime.timedelta(days=i)
+            accsOld.append(self.popDbData.getDatasetAccesses(date.strftime('%Y-%m-%d'), datasetName))
+        for i in range(1, 8):
+            date = today - datetime.timedelta(days=i)
+            accNew = self.popDbData.getDatasetAccesses(date.strftime('%Y-%m-%d'), datasetName)
+            for accOld in accsOld:
+                popularity += accNew - accOld
+        return popularity
+
     def getDatasetRankings(self, datasets):
         recentSubscriptions = []
         requestTimestamp = datetime.datetime.fromtimestamp(int(time.time()) - 60*60*24*14)
@@ -120,6 +150,7 @@ class dailyRockerBoard():
         self.popDbData.buildDSStatInTimeWindowCache(sites)
         jobs = self.getDatasetRankings(datasets)
         newDatasets = self.updateJobsCache(jobs)
+        self.updateRankingsCache(newDatasets)
         invalidSites = self.updateSitesCache(newDatasets)
         sites = [site for site in sites if site not in invalidSites]
         newSites = self.getSiteRankings(sites)
