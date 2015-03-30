@@ -449,7 +449,8 @@ def chooseMatchingSite(tier2Sites,nSites,sizeGb,debug):
 def submitSubscriptionRequests(sites,datasets=[],debug=0):
     # make sure we have datasets to subscribe
     if len(datasets) < 1:
-        print " ERROR - Trying to submit empty request for " + site
+        print " ERROR - Trying to submit empty request for "
+        print sites
         return
 
     phedex = phedexApi()
