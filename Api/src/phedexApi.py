@@ -65,6 +65,29 @@ class phedexApi:
             self.error(e, msg)
         return jsonData
 
+    def error(self, e, errMsg):
+        title = "FATAL IntelROCCS Error -- PhEDEx"
+        text = "FATAL -- %s --- MSG: %s" % (str(e), str(errMsg))
+        msg = MIMEMultipart()
+        msg['Subject'] = title
+        msg['From'] = formataddr(self.fromEmail)
+        msg['To'] = self._toStr(self.toEmails)
+        msg1 = MIMEMultipart("alternative")
+        msgText1 = MIMEText("<pre>%s</pre>" % text, "html")
+        msgText2 = MIMEText(text)
+        msg1.attach(msgText2)
+        msg1.attach(msgText1)
+        msg.attach(msg1)
+        msg = msg.as_string()
+        p = Popen(["/usr/sbin/sendmail", "-toi"], stdin=PIPE)
+        p.communicate(msg)
+        print "FATAL -- %s --- MSG: %s" % (str(e), str(errMsg))
+        raise Exception("FATAL -- %s --- MSG: %s" % (str(e), str(errMsg)))
+
+    def _toStr(self, toList):
+        names = [formataddr(i) for i in zip(*toList)]
+        return ', '.join(names)
+
     def createXml(self, datasets=[], instance='prod'):
         xml = '<data version="2.0">'
         xml = xml + '<dbs name="https://cmsweb.cern.ch/dbs/%s/global/DBSReader">' % (instance)
@@ -89,29 +112,6 @@ class phedexApi:
         xml = xml + "</dbs>"
         xmlData = xml + "</data>"
         return successDatasets, xmlData
-
-    def error(self, e, errMsg):
-        title = "FATAL IntelROCCS Error -- PhEDEx"
-        text = "FATAL -- %s --- MSG: %s" % (str(e), str(errMsg))
-        msg = MIMEMultipart()
-        msg['Subject'] = title
-        msg['From'] = formataddr(self.fromEmail)
-        msg['To'] = self._toStr(self.toEmails)
-        msg1 = MIMEMultipart("alternative")
-        msgText1 = MIMEText("<pre>%s</pre>" % text, "html")
-        msgText2 = MIMEText(text)
-        msg1.attach(msgText2)
-        msg1.attach(msgText1)
-        msg.attach(msg1)
-        msg = msg.as_string()
-        p = Popen(["/usr/sbin/sendmail", "-toi"], stdin=PIPE)
-        p.communicate(msg)
-        print "FATAL -- %s --- MSG: %s" % (str(e), str(errMsg))
-        raise Exception("FATAL -- %s --- MSG: %s" % (str(e), str(errMsg)))
-
-    def _toStr(self, toList):
-        names = [formataddr(i) for i in zip(*toList)]
-        return ', '.join(names)
 
 #===================================================================================================
 #  A P I   C A L L S
