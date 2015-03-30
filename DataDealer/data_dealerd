@@ -32,7 +32,7 @@ sleep $time_to_wait
 #=================
 while [ 1 ]
 do
-    for index in {0..13}
+    for index in {0..6}
     do
         # get the start time of the script
         secs=$(date +%s --date="now")

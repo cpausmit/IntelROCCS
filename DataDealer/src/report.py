@@ -158,14 +158,13 @@ class report():
         text += "\n\nNew Subscriptions\n\n"
 
         subscriptionTable = makeTable.Table(add_numbers=False)
-        subscriptionTable.setHeaders(['Rank', 'Size GB', 'Replicas', 'CPU Hours', 'Dataset'])
+        subscriptionTable.setHeaders(['Rank', 'Size GB', 'Replicas', 'Dataset'])
         for subscription in subscriptions:
             dataset = subscription[0]
             rank = float(subscription[2])
             size = int(self.phedexData.getDatasetSize(dataset))
             replicas = int(self.phedexData.getNumberReplicas(dataset))
-            cpuH = int(self.popDbData.getDatasetCpus(dataset, (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y-%m-%d')))
-            subscriptionTable.addRow([rank, size, replicas, cpuH, dataset])
+            subscriptionTable.addRow([rank, size, replicas, dataset])
 
         text += subscriptionTable.plainText()
 
@@ -173,14 +172,13 @@ class report():
         text += "\n\nNew Deletions\n\n"
 
         deletionTable = makeTable.Table(add_numbers=False)
-        deletionTable.setHeaders(['Rank', 'Size GB', 'Replicas', 'CPU Hours', 'Dataset'])
+        deletionTable.setHeaders(['Rank', 'Size GB', 'Replicas', 'Dataset'])
         for deletion in deletions:
             dataset = deletion[0]
             rank = float(deletion[2])
             size = int(self.phedexData.getDatasetSize(dataset))
             replicas = int(self.phedexData.getNumberReplicas(dataset))
-            cpuH = int(self.popDbData.getDatasetCpus(dataset, (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y-%m-%d')))
-            deletionTable.addRow([rank, size, replicas, cpuH, dataset])
+            deletionTable.addRow([rank, size, replicas, dataset])
 
         text += deletionTable.plainText()
 
@@ -188,7 +186,7 @@ class report():
         text += "\n\nJobs in CRAB older than 1 day\n\n"
 
         crabTable = makeTable.Table(add_numbers=False)
-        crabTable.setHeaders(['Queue Date', 'Replicas', 'CPU Hours', 'Dataset', 'User', 'Num Jobs', 'Jobs Left'])
+        crabTable.setHeaders(['Queue Date', 'Replicas', 'Dataset', 'User', 'Num Jobs', 'Jobs Left'])
         for job in jobs:
             datasetName = job[0]
             timestamp = job[1]
@@ -196,8 +194,7 @@ class report():
             numJobs = job[3]
             jobsLeft = job[4]
             replicas = int(self.phedexData.getNumberReplicas(datasetName))
-            cpuH = int(self.popDbData.getDatasetCpus(datasetName, (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y-%m-%d')))
-            crabTable.addRow([datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S'), replicas, cpuH, datasetName, userName, numJobs, jobsLeft])
+            crabTable.addRow([datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S'), replicas, datasetName, userName, int(numJobs), int(jobsLeft)])
 
         text += crabTable.plainText()
 
