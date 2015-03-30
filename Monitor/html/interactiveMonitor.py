@@ -12,13 +12,18 @@ endmonth = int(data.getvalue("endmonth"))
 
 sitePattern = data.getvalue("site")
 groupPattern = data.getvalue("group")
-datasetPattern = data.getvalue("pattern")
+rawDatasetPattern = data.getvalue("pattern")
+
+if rawDatasetPattern == "ALL":
+    datasetPattern = '(?!/_/_/USER_)'
+else:
+    datasetPattern = rawDatasetPattern
 
 lastday = [-1, 31,28,31,30,31,30,31,31,30,31,30,31]
 start = int(time.mktime(time.strptime("%i-%.2i-01"%(startyear,startmonth),"%Y-%m-%d")))
 end = int(time.mktime(time.strptime("%i-%.2i-%.2i"%(endyear,endmonth,lastday[endmonth]),"%Y-%m-%d")))
 
-label = "interactive_"+str(start)+"_"+str(end)+"_"+datasetPattern+"_"+sitePattern
+label = "interactive_"+str(start)+"_"+str(end)+"_"+rawDatasetPattern+"_"+sitePattern
 label = label.replace("/","")
 
 monitorDB = '/local/IntelROCCSplots/'
