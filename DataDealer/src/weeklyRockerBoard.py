@@ -104,7 +104,7 @@ class weeklyRockerBoard():
         subscribedGb = 0
         while (datasetRankings):
             if not siteRankings:
-                print " ALERT -- No more datasets to subscribe"
+                print " ALERT -- No more sites available"
                 break
             dataset = max(datasetRankings.iteritems(), key=operator.itemgetter(1))
             datasetName = dataset[0]
