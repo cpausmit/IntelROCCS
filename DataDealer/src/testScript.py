@@ -14,14 +14,14 @@ import phedexData, popDbData
 #===================================================================================================
 #  M A I N
 #===================================================================================================
-# get all datasets
-print " ----  Get Datasets  ---- "
-startTime = datetime.datetime.now()
-phedexData_ = phedexData.phedexData()
-datasets = phedexData_.getAllDatasets()
-totalTime = datetime.datetime.now() - startTime
-print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
-print ""
+# # get all datasets
+# print " ----  Get Datasets  ---- "
+# startTime = datetime.datetime.now()
+# phedexData_ = phedexData.phedexData()
+# datasets = phedexData_.getAllDatasets()
+# totalTime = datetime.datetime.now() - startTime
+# print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
+# print ""
 
 # get all sites
 print " ----  Get Sites  ---- "
@@ -32,15 +32,18 @@ totalTime = datetime.datetime.now() - startTime
 print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
 print ""
 
-# rocker board algorithm
-print " ----  Rocker Board Algorithm  ---- "
-startTime = datetime.datetime.now()
-weeklyRockerBoard_ = weeklyRockerBoard.weeklyRockerBoard()
-subscriptions = weeklyRockerBoard_.weeklyRba(datasets, availableSites)
-print subscriptions
-totalTime = datetime.datetime.now() - startTime
-print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
-print ""
+popDbData_ = popDbData.popDbData()
+popDbData.buildDSStatInTimeWindowCache(sites)
+
+# # rocker board algorithm
+# print " ----  Rocker Board Algorithm  ---- "
+# startTime = datetime.datetime.now()
+# weeklyRockerBoard_ = weeklyRockerBoard.weeklyRockerBoard()
+# subscriptions = weeklyRockerBoard_.weeklyRba(datasets, availableSites)
+# print subscriptions
+# totalTime = datetime.datetime.now() - startTime
+# print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
+# print ""
 
 # # subscribe selected datasets
 # print " ----  Subscribe Datasets  ---- "
