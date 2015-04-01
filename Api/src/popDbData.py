@@ -81,7 +81,7 @@ class popDbData:
 
     def getDatasetAccesses(self, date, datasetName):
         # access cache
-        popDbCache = sqlite3.connect("%s/%s.db" % (self.popDbCache, 'popDbCache'))
+        popDbCache = sqlite3.connect("%s/%s.db" % (self.popDbCache, 'DSStatInTimeWindow'))
         with popDbCache:
             cur = popDbCache.cursor()
             cur.execute('SELECT sum(Accesses) FROM DSStatInTimeWindow WHERE DatasetName=? AND Date=?', (datasetName, date))
@@ -92,7 +92,7 @@ class popDbData:
 
     def getDatasetCpus(self, date, datasetName):
         # access cache
-        popDbCache = sqlite3.connect("%s/%s.db" % (self.popDbCache, 'popDbCache'))
+        popDbCache = sqlite3.connect("%s/%s.db" % (self.popDbCache, 'DSStatInTimeWindow'))
         with popDbCache:
             cur = popDbCache.cursor()
             cur.execute('SELECT sum(Cpus) FROM DSStatInTimeWindow WHERE DatasetName=? AND Date=?', (datasetName, date))
@@ -103,7 +103,7 @@ class popDbData:
 
     def getDatasetUsers(self, date, datasetName):
         # access cache
-        popDbCache = sqlite3.connect("%s/%s.db" % (self.popDbCache, 'popDbCache'))
+        popDbCache = sqlite3.connect("%s/%s.db" % (self.popDbCache, 'DSStatInTimeWindow'))
         with popDbCache:
             cur = popDbCache.cursor()
             cur.execute('SELECT sum(Users) FROM DSStatInTimeWindow WHERE DatasetName=? AND Date=?', (datasetName, date))
@@ -114,7 +114,7 @@ class popDbData:
 
     def getSiteAccesses(self, date, siteName):
         # access cache
-        popDbCache = sqlite3.connect("%s/%s.db" % (self.popDbCache, 'popDbCache'))
+        popDbCache = sqlite3.connect("%s/%s.db" % (self.popDbCache, 'DSStatInTimeWindow'))
         with popDbCache:
             cur = popDbCache.cursor()
             cur.execute('SELECT sum(Accesses) FROM DSStatInTimeWindow WHERE SiteName=? AND Date=?', (siteName, date))
@@ -125,7 +125,7 @@ class popDbData:
 
     def getSiteCpus(self, date, siteName):
         # access cache
-        popDbCache = sqlite3.connect("%s/%s.db" % (self.popDbCache, 'popDbCache'))
+        popDbCache = sqlite3.connect("%s/%s.db" % (self.popDbCache, 'DSStatInTimeWindow'))
         with popDbCache:
             cur = popDbCache.cursor()
             cur.execute('SELECT sum(Cpus) FROM DSStatInTimeWindow WHERE SiteName=? AND Date=?', (siteName, date))
@@ -136,7 +136,7 @@ class popDbData:
 
     def getSiteUsers(self, date, siteName):
         # access cache
-        popDbCache = sqlite3.connect("%s/%s.db" % (self.popDbCache, 'popDbCache'))
+        popDbCache = sqlite3.connect("%s/%s.db" % (self.popDbCache, 'DSStatInTimeWindow'))
         with popDbCache:
             cur = popDbCache.cursor()
             cur.execute('SELECT sum(Users) FROM DSStatInTimeWindow WHERE SiteName=? AND Date=?', (siteName, date))
@@ -146,7 +146,7 @@ class popDbData:
         return users
 
     def getHistoricalData(self, datasetName):
-        popDbCache = sqlite3.connect("%s/%s.db" % (self.popDbCache, 'popDbCache'))
+        popDbCache = sqlite3.connect("%s/%s.db" % (self.popDbCache, 'getSingleDSstat'))
         historicalData = []
         with popDbCache:
             cur = popDbCache.cursor()
