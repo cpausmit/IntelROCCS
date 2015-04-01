@@ -96,6 +96,11 @@ class weeklyRockerBoard():
 
     def getNewReplicas(self, datasetRankings, siteRankings, siteQuotas):
         subscriptions = dict()
+        validSites = siteQuotas.keys()
+        allSites = siteRankings.keys()
+        invalidSites = [site for site in allSites if site not in validSites]
+        for site in invalidSites:
+            del siteRankings[site]
         subscribedGb = 0
         while (datasetRankings):
             if not siteRankings:
