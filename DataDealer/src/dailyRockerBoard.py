@@ -4,7 +4,7 @@
 #---------------------------------------------------------------------------------------------------
 import os, re, sqlite3, ConfigParser, time, operator, datetime
 from operator import itemgetter
-import phedexData, crabApi, dbApi
+import phedexData, crabApi, dbApi, popDbData
 
 class dailyRockerBoard():
     def __init__(self):
@@ -18,6 +18,7 @@ class dailyRockerBoard():
         self.dbApi = dbApi.dbApi()
         self.phedexData = phedexData.phedexData()
         self.crabApi = crabApi.crabApi()
+        self.popDbData = popDbData.popDbData()
 
 #===================================================================================================
 #  H E L P E R S
