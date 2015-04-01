@@ -143,7 +143,6 @@ class weeklyRockerBoard():
         subscriptions = []
         datasetRankings = self.getDatasetRankings(datasets)
         siteQuotas = self.getSiteQuotas(sites)
-        sites = siteQuotas.keys()
         siteRankings = self.getSiteRankings(sites, datasetRankings)
         self.rankingsCache(datasetRankings, siteRankings)
         subscriptions = self.getNewReplicas(datasetRankings, siteRankings, siteQuotas)
