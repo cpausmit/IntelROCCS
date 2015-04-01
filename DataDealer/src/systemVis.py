@@ -33,7 +33,7 @@ class systemVis():
                 date = (today - datetime.timedelta(days=i)).strftime('%Y-%m-%d')
                 accesses += self.popDbData.getSiteAccesses(date, siteName)
             subscribedGb = 0
-            query = "SELECT DatasetProperties.SizeTb, Requests.Progress FROM Requests INNER JOIN DatasetProperties ON DatasetProperties.DatasetId=Requests.DatasetId INNER JOIN Sites ON Sites.SiteId=Requests.SiteId WHERE Sites.SiteName=%s AND Requests.RequestType=%s AND Requests.Progress < %s"
+            query = "SELECT DatasetProperties.Size, Requests.Progress FROM Requests INNER JOIN DatasetProperties ON DatasetProperties.DatasetId=Requests.DatasetId INNER JOIN Sites ON Sites.SiteId=Requests.SiteId WHERE Sites.SiteName=%s AND Requests.RequestType=%s AND Requests.Progress < %s"
             values = [siteName, 0, 100]
             data = self.dbApi.dbQuery(query, values=values)
             for row in data:
