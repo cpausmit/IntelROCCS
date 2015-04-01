@@ -1,4 +1,4 @@
-var margin = {top: 20, right: 150, bottom: 30, left: 150};
+var margin = {top: 20, right: 250, bottom: 30, left: 150};
 var barWidth = 450;
 var barHeight = 20;
 
@@ -92,7 +92,7 @@ d3.csv("system.csv", type, function(error, data) {
             d3.select("#rec" + i).style("fill", function() { return d3.rgb(d3.select("#rec" + i).style("fill")).brighter();});
             d3.select("#bar" + i).style("fill", function() { return d3.rgb(d3.select("#bar" + i).style("fill")).brighter();});
             d3.select("#sub" + i).style("fill", function() { return d3.rgb(d3.select("#sub" + i).style("fill")).brighter();});
-            cputip.style("visibility", "hidden");
+            acctip.style("visibility", "hidden");
             storagetip.style("visibility", "hidden");});
 
     site.append("text")
