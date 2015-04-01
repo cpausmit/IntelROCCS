@@ -12,7 +12,7 @@ var chart = d3.select(".chart")
 
 var allgroup = chart.append("g");
 
-var cputip = chart.append("text")
+var acctip = chart.append("text")
     .style("text-anchor", "start")
     .style("visibility", "hidden");
 
