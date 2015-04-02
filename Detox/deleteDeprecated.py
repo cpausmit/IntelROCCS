@@ -36,9 +36,6 @@ def readDeprecated():
         deprecated[name] = 1
     inputFile.close()    
 
-    if '/METFwd/Run2010B-Nov4ReReco_v1/RECO' in deprecated.keys():
-        print "found it"
-
 def readMatchPhedex():
     filename = os.environ['DETOX_PHEDEX_CACHE']
     inputFile = open(os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS'] + '/'
@@ -47,6 +44,7 @@ def readMatchPhedex():
     for line in inputFile.xreadlines():
         line = line.rstrip()
         items = line.split()
+#        print items
         datasetName = items[0]
         group = items[1]
 
@@ -56,7 +54,9 @@ def readMatchPhedex():
             continue
 
         size = float(items[3])
-        site = items[7]
+        site = items[5]
+
+        print site
 
         if site not in siteSize2Del:
             siteSize2Del[site] = 0
@@ -82,6 +82,7 @@ def requestDeletions(site,dsetNames):
     check,response = phedex.delete(node=site,data=data,comments=message,instance='prod')
     if check:
         print " ERROR - phedexApi.delete failed"
+        print site
         print response
         sys.exit(1)
     respo = response.read()
