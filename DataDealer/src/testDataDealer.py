@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 #---------------------------------------------------------------------------------------------------
-# This is a test script for data dealer
+# This is the main script of the DataDealer. See README.md for more information.
 #---------------------------------------------------------------------------------------------------
 import sys, datetime
-import sites, dailyRockerBoard, subscribe, dataDealerReport, subscriptionProgress
 import phedexData
 
 # initialize
@@ -14,62 +13,18 @@ print ""
 #===================================================================================================
 #  M A I N
 #===================================================================================================
-# # get all datasets
-# print " ----  Get Datasets  ---- "
-# startTime = datetime.datetime.now()
-# phedexData_ = phedexData.phedexData()
-# datasets = phedexData_.getAllDatasets()
-# totalTime = datetime.datetime.now() - startTime
-# print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
-# print ""
-
-# # get all sites
-# print " ----  Get Sites  ---- "
-# startTime = datetime.datetime.now()
-# sites_ = sites.sites()
-# availableSites = sites_.getAvailableSites()
-# totalTime = datetime.datetime.now() - startTime
-# print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
-# print ""
-
-# update and check progress of subscriptions
-print " ----  Update and Check Subscriptions  ---- "
+# get all datasets
+print " ----  Get Datasets  ---- "
 startTime = datetime.datetime.now()
-subscriptionProgress_ = subscriptionProgress.subscriptionProgress()
-subscriptionProgress_.updateProgress()
-subscriptionProgress_.checkProgress()
+phedexData_ = phedexData.phedexData()
+datasets = phedexData_.getAllDatasets()
 totalTime = datetime.datetime.now() - startTime
 print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
 print ""
 
-# # rocker board algorithm
-# print " ----  Rocker Board Algorithm  ---- "
-# startTime = datetime.datetime.now()
-# dailyRockerBoard_ = dailyRockerBoard.dailyRockerBoard()
-# subscriptions = dailyRockerBoard_.dailyRba(datasets, availableSites)
-# totalTime = datetime.datetime.now() - startTime
-# print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
-# print ""
-
-# # subscribe selected datasets
-# print " ----  Subscribe Datasets  ---- "
-# startTime = datetime.datetime.now()
-# subscribe_ = subscribe.subscribe()
-# subscribe_.createSubscriptions(subscriptions)
-# totalTime = datetime.datetime.now() - startTime
-# print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
-# print ""
-
-# send summary report
-print " ----  Daily Summary  ---- "
-startTime = datetime.datetime.now()
-dataDealerReport_ = dataDealerReport.dataDealerReport()
-dataDealerReport_.createReport()
-totalTime = datetime.datetime.now() - startTime
-print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
-print ""
-
-# done
+#===================================================================================================
+#  E X I T
+#===================================================================================================
 print " ----  Done  ---- "
 endingTime = datetime.datetime.now()
 totalTime = endingTime - startingTime

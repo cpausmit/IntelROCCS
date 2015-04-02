@@ -9,15 +9,15 @@
 #
 # In case of an error a '0' will be returned, caller must check to make sure data is returned.
 #---------------------------------------------------------------------------------------------------
-import re, os, sqlite3, datetime, ConfigParser
+import re, os, sqlite3, ConfigParser, time
 import phedexApi
 
 class phedexData:
     def __init__(self):
         config = ConfigParser.RawConfigParser()
-        config.read(os.path.join(os.path.dirname(__file__), 'intelroccs.cfg'))
-        self.phedexCache = config.get('Phedex', 'cache')
-        self.cacheDeadline = config.getint('Phedex', 'expiration_timer')
+        config.read(os.path.join(os.path.dirname(__file__), 'api.cfg'))
+        self.phedexCache = config.get('phedex', 'cache')
+        self.cacheDeadline = config.getint('phedex', 'expiration_timer')
         self.phedexApi = phedexApi.phedexApi()
 
 #===================================================================================================
@@ -25,15 +25,14 @@ class phedexData:
 #===================================================================================================
     def shouldAccessPhedex(self, apiCall):
         cacheFile = "%s/%s.db" % (self.phedexCache, apiCall)
-        timeNow = datetime.datetime.now()
-        deltaNhours = datetime.timedelta(seconds=60*60*(self.cacheDeadline))
-        modTime = datetime.datetime.fromtimestamp(0)
+        timeNow = time.time()
+        deltaNSeconds = 60*60*(self.cacheDeadline)
         if os.path.isfile(cacheFile):
-            modTime = datetime.datetime.fromtimestamp(os.path.getmtime(cacheFile))
+            modTime = os.path.getmtime(cacheFile)
             if os.path.getsize(cacheFile) == 0:
                 # cache is empty
                 return True
-            if (timeNow-deltaNhours) > modTime:
+            if (timeNow-deltaNSeconds) > modTime:
                 # cache is not up to date
                 return True
             # fetch data from cache
@@ -58,11 +57,14 @@ class phedexData:
         return 0
 
     def buildBlockReplicasCache(self, jsonData):
-        blockReplicasCache = sqlite3.connect("%s/blockReplicas.db" % (self.phedexCache))
+        cacheFile = "%s/%s.db" % (self.phedexCache, 'blockReplicas')
+        if os.path.isfile(cacheFile):
+            os.remove(cacheFile)
+        blockReplicasCache = sqlite3.connect(cacheFile)
         with blockReplicasCache:
             cur = blockReplicasCache.cursor()
-            cur.execute('CREATE TABLE IF NOT EXISTS Datasets (DatasetId INTEGER PRIMARY KEY AUTOINCREMENT, DatasetName TEXT UNIQUE, SizeGb INTEGER)')
-            cur.execute('CREATE TABLE IF NOT EXISTS Replicas (SiteName TEXT, DatasetId INTEGER, GroupName TEXT, FOREIGN KEY(DatasetId) REFERENCES Datasets(DatasetId))')
+            cur.execute('CREATE TABLE Datasets (DatasetId INTEGER PRIMARY KEY AUTOINCREMENT, DatasetName TEXT UNIQUE, SizeGb INTEGER)')
+            cur.execute('CREATE TABLE Replicas (SiteName TEXT, DatasetId INTEGER, GroupName TEXT, FOREIGN KEY(DatasetId) REFERENCES Datasets(DatasetId))')
         datasets = jsonData.get('phedex').get('dataset')
         for dataset in datasets:
             datasetName = dataset.get('name')
@@ -74,7 +76,7 @@ class phedexData:
             sizeGb = float(sizeBytes)/10**9
             with blockReplicasCache:
                 cur = blockReplicasCache.cursor()
-                cur.execute('INSERT INTO Datasets(DatasetName, SizeGb) VALUES(?, ?)', (datasetName, sizeGb))
+                cur.execute('INSERT OR REPLACE INTO Datasets(DatasetName, SizeGb) VALUES(?, ?)', (datasetName, sizeGb))
                 datasetId = cur.lastrowid
                 for replica in dataset.get('block')[0].get('replica'):
                     siteName = replica.get('node')

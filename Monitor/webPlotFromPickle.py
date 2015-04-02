@@ -195,6 +195,7 @@ else:
     sys.exit(2)
 
 interval = float(end - start)/float(86400*30) # time interval in months, used for plotting
+sitePattern=re.sub("X",".*",sitePattern) # to deal with stuff like T2X --> T2.*
 sitePattern=re.sub("\*",".*",sitePattern) # to deal with stuff like T2* --> T2.*
 print "\n = = = = S T A R T  A N A L Y S I S = = = =\n"
 print " Dataset pattern:      %s"%(datasetPattern)
@@ -219,8 +220,6 @@ if rc:
 else:
     ROOT.MitRootStyle.Init()
 
-with open("/local/IntelROCCSplots/test2.txt","w") as f:
-    f.write("this worked %i\n"%(rc))
 '''==============================================================================
                                  our usage plots
    =============================================================================='''

@@ -8,8 +8,8 @@ import dbApi, phedexApi
 class subscribe():
     def __init__(self):
         config = ConfigParser.RawConfigParser()
-        config.read(os.path.join(os.path.dirname(__file__), 'intelroccs.cfg'))
-        self.rankingsCachePath = config.get('DataDealer', 'cache')
+        config.read(os.path.join(os.path.dirname(__file__), 'data_dealer.cfg'))
+        self.rankingsCachePath = config.get('data_dealer', 'rankings_cache')
         self.phedexApi = phedexApi.phedexApi()
         self.dbApi = dbApi.dbApi()
 
@@ -19,7 +19,7 @@ class subscribe():
             datasets, subscriptionData = self.phedexApi.createXml(datasets=subscriptions[siteName], instance='prod')
             if not datasets:
                 continue
-            comment = "IntelROCCS DataDealer - For more information about this subscription see http://t3serv001.mit.edu/~cmsprod/IntelROCCS/DataDealer/data_dealer-latest.report"
+            comment = "IntelROCCS DataDealer - For more information about this subscription see http://t3serv001.mit.edu/~cmsprod/IntelROCCS/DataDealer/Reports/data_dealer-%s.report" % (datetime.date.today().strftime('%Y%m%d'))
             jsonData = []
             for attempt in range(3):
                 jsonData = self.phedexApi.subscribe(node=siteName, data=subscriptionData, level='dataset', move='n', custodial='n', group='AnalysisOps', request_only='n', no_mail='n', comments=comment, instance='prod')

@@ -58,9 +58,9 @@ do
     rsync -Cavz --delete /local/cmsprod/IntelROCCS/Monitor \
                          /home/cmsprod/public_html/IntelROCCS >& /dev/null
     # make pickle info available on web
-    rsync -avz --delete /local/cmsprod/IntelROCCS/Monitor/monitorCacheAll.pkl \
+    rsync -Cavz --delete /local/cmsprod/IntelROCCS/Monitor/monitorCacheAll.pkl \
                          /local/IntelROCCSplots/ >& /dev/null
-    rsync -avz --delete /local/cmsprod/IntelROCCS/Monitor/monitorCacheAnalysisOps.pkl \
+    rsync -Cavz --delete /local/cmsprod/IntelROCCS/Monitor/monitorCacheAnalysisOps.pkl \
                          /local/IntelROCCSplots/ >& /dev/null
 
 

@@ -11,17 +11,10 @@ from subprocess import Popen, PIPE
 class crabApi():
     def __init__(self):
         config = ConfigParser.RawConfigParser()
-        config.read(os.path.join(os.path.dirname(__file__), 'intelroccs.cfg'))
-        collectorName = config.get('CRAB', 'collector')
-        fromItems = config.items('from_email')
-        self.fromEmail = fromItems[0]
-        emailItems = config.items('error_emails')
-        toNames = []
-        toEmails = []
-        for name, email in emailItems:
-            toNames.append(name)
-            toEmails.append(email)
-        self.toList = (toNames, toEmails)
+        config.read(os.path.join(os.path.dirname(__file__), 'api.cfg'))
+        collectorName = config.get('crab', 'collector')
+        self.fromEmail = config.items('from_email')[0]
+        self.toEmails = config.items('error_emails')
         # Will try to get schedulers 3 times before reporting an error
         for attempt in range(3):
             try:
@@ -41,7 +34,7 @@ class crabApi():
         msg = MIMEMultipart()
         msg['Subject'] = title
         msg['From'] = formataddr(self.fromEmail)
-        msg['To'] = self._toStr(self.toList)
+        msg['To'] = self._toStr(self.toEmails)
         msg1 = MIMEMultipart("alternative")
         msgText1 = MIMEText("<pre>%s</pre>" % text, "html")
         msgText2 = MIMEText(text)
@@ -53,8 +46,8 @@ class crabApi():
         p.communicate(msg)
         print "FATAL -- %s" % (str(e))
 
-    def _toStr(self, toList):
-        names = [formataddr(i) for i in zip(*toList)]
+    def _toStr(self, toEmails):
+        names = [formataddr(email) for email in toEmails]
         return ', '.join(names)
 
 #===================================================================================================
