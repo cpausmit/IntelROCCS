@@ -5,10 +5,14 @@
 # dataset. It will also make sure that the sample copies on all Tier-1 disk spaces owned by
 # 'DataOps' phedex group will be signed over to the 'AnalysisOps' group.
 #
+# Implementation: by design this should be a standalone script that will work when you copy it into
+# your directory. It is important so that it virtually runs anywhere and anyone can easily use it
+# without having to checkout anything from github.
+#
+# Unit test:
+#   ./assignDatasetToSite.py --nCopies=2 --dataset=/DoubleElectron/Run2012A-22Jan2013-v1/AOD
 #---------------------------------------------------------------------------------------------------
 import os, sys, subprocess, getopt, re, random, urllib, urllib2, httplib, json
-
-## import IntelROCCS.Api.phedex.phedexApi as phedexApi
 
 #===================================================================================================
 #  C L A S S E S
@@ -236,7 +240,7 @@ class HTTPSGridAuthHandler(urllib2.HTTPSHandler):
         #proxy = os.environ['X509_USER_PROXY']
         cmd = 'voms-proxy-info -path'
         for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
-        proxy = line[:-1]
+	    proxy = line[:-1]
         
         return proxy
 
@@ -260,12 +264,12 @@ def testLocalSetup(dataset,debug=0):
         proxy = line[:-1]
     if proxy != "":
         if debug>0:
-        print " User proxy in: " + proxy
+	    print " User proxy in: " + proxy
         cmd = 'voms-proxy-info -timeleft'
         for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
-        timeleft = int(line[:-1])
+	    timeleft = int(line[:-1])
         if timeleft > 3600:
-        validProxy = True
+	    validProxy = True
 
     if not validProxy:
         print ' Error - no X509_USER_PROXY, please check. EXIT!'
