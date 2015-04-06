@@ -70,6 +70,16 @@ do
             echo " "
         } >> "$log_file"
         stdbuf -o0 -e0 "$install_path/dailyDealer.py" >> "$log_file" 2>&1
+
+        {
+            echo " "
+            echo " visualization data collector started -- $tag "
+            echo " "
+            echo "   --> $today"
+            echo " "
+        } >> "$log_file"
+        stdbuf -o0 -e0 "$install_path/visualizationData.py" >> "$log_file" 2>&1
+
         if [ $index -eq 13 ]
         then
             {

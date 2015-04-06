@@ -18,8 +18,7 @@ class crabApi():
         # Will try to get schedulers 3 times before reporting an error
         for attempt in range(3):
             try:
-                collector = htcondor.Collector(collectorName)
-                self.schedulers = collector.locateAll(htcondor.DaemonTypes.Schedd)
+                self.collector = htcondor.Collector(collectorName)
             except IOError, e:
                 continue
             else:
@@ -53,9 +52,20 @@ class crabApi():
 #===================================================================================================
 #  M A I N   F U N C T I O N
 #===================================================================================================
-    def crabCall(self, query, attributes=[]):
+    def locateAll(self, types):
+        returnObjects = self.collector.locateAll(types)
+        return returnObjects
+
+    def query(self, types, query, attributes=[]):
+        returnObjects = self.collector.query(types, query, attributes)
+        return returnObjects
+
+    def getJobs(self, timestamp):
         data = []
-        for scheduler in self.schedulers:
+        query = 'TaskType =?= "ROOT" && JobStatus =?= 2 && QDate < %d' % (timestamp)
+        attributes = ["CRAB_InputData", "QDate", "CRAB_UserHN", "CRAB_JobCount", "DAG_NodesQueued"]
+        schedulers = self.locateAll(htcondor.DaemonTypes.Schedd)
+        for scheduler in schedulers:
             # query all schedulers, if error retry up to 3 times
             for attempt in range(3):
                 try:
@@ -70,3 +80,13 @@ class crabApi():
             else:
                 self.error(e)
         return data
+
+    def getKFlops(self, site):
+        kFlops = 0
+        query = 'GLIDEIN_CMSSite =?= %s && CPUs > 0' % (site)
+        attributes = ["GLIDEIN_CMSSite", "CPUs", "KFlops"]
+        ads = self.query(htcondor.AdTypes.Startd, query, attributes)
+        for ad in ads:
+            cpus = ad.get("CPUs")
+            kFlops += cpus*ad.get("KFlops")
+        return kFlops
