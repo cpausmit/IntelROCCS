@@ -104,9 +104,7 @@ class dailyRockerBoard():
         dataset_re = re.compile('^/GenericTTbar/HC-.*/GEN-SIM-RECO$')
         timestamp = int(time.time()) - self.crab_time_limit
         crabQueue = []
-        query = 'TaskType =?= "ROOT" && JobStatus =?= 2 && QDate < %d' % (timestamp)
-        attributes = ["CRAB_InputData", "QDate", "CRAB_UserHN", "CRAB_JobCount", "DAG_NodesQueued"]
-        data = self.crabApi.schedulerCall(query, attributes)
+        data = self.crabApi.getJobs(timestamp)
         for classAd in data:
             if dataset_re.match(classAd.get("CRAB_InputData")) or user_re.match(classAd.get("CRAB_UserHN")):
                 continue
