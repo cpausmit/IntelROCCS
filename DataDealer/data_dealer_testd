@@ -54,6 +54,14 @@ do
         } >> "$log_file"
         stdbuf -o0 -e0 "$install_path/testDataDealer.py" >> "$log_file" 2>&1
 
+        {
+            echo " "
+            echo " visualization data collector started -- $tag "
+            echo " "
+            echo "   --> $today"
+            echo " "
+        } >> "$log_file"
+
         # ensure that the log and report information is updated
         rsync -Cavz --delete "$data_path" "$html_path" >& /dev/null
 

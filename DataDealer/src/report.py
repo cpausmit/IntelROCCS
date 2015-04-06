@@ -24,6 +24,8 @@ class report():
         self.rankingsCachePath = config.get('data_dealer', 'rankings_cache')
         self.crabCachePath = config.get('data_dealer', 'crab_cache')
         self.reportPath = config.get('data_dealer', 'report_path')
+        self.onlinePath = config.get('data_dealer', 'online_path')
+        self.title = config.get('data_dealer', 'title')
         self.fromEmail = config.items('from_email')[0]
         self.toEmails = config.items('report_emails')
         self.phedexData = phedexData.phedexData()
@@ -131,7 +133,7 @@ class report():
             siteSubscriptions[site] += subscriptionSize
 
         # Create title
-        title = 'Daily AnalysisOps Report %s | %d TB | %d%% | %.3f TB Subscribed' % (date.strftime('%Y-%m-%d'), int(dataOwned/10**3), int(quotaUsed), float(dataSubscribed/10**3))
+        title = '%s AnalysisOps Report %s | %d TB | %d%% | %.3f TB Subscribed' % (self.title, date.strftime('%Y-%m-%d'), int(dataOwned/10**3), int(quotaUsed), float(dataSubscribed/10**3))
         text = '%s\n  %s\n%s\n\n' % ('='*78, title, '='*78)
 
         # Create site table
@@ -202,7 +204,7 @@ class report():
         fs.write(text)
         fs.close()
 
-        text = "Todays Log: http://t3serv001.mit.edu/~cmsprod/IntelROCCS/DataDealer/Logs/data_dealer-%s.log\n\nTodays Report: http://t3serv001.mit.edu/~cmsprod/IntelROCCS/DataDealer/Reports/data_dealer-%s.report\n\nCurrent Subscription Progress: http://t3serv001.mit.edu/~cmsprod/IntelROCCS/DataDealer/Progress/data_dealer-%s.progress" % (today.strftime('%Y%m%d'), today.strftime('%Y%m%d'), today.strftime('%Y%m%d'))
+        text = "Todays Log: %s/Logs/data_dealer-%s.log\n\nTodays Report: %s/Reports/data_dealer-%s.report\n\nCurrent Subscription Progress: %s/Progress/data_dealer-%s.progress\n\nSystem Visualization: %s/Visualizations/system.html" % (self.onlinePath, today.strftime('%Y%m%d'), self.onlinePath, today.strftime('%Y%m%d'), self.onlinePath, today.strftime('%Y%m%d'), self.onlinePath)
 
         self.sendReport(title, text)
 
