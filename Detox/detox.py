@@ -54,7 +54,7 @@ createCacheAreas()
 # Get a list of phedex datasets (goes to cache)
 timeStart = time.time()
 print ' Extracting PhEDEx Information'
-centralManager.extractPhedexData("node=T2*&node=T1_*_Disk")
+centralManager.extractPhedexData("node=T2*&node=T1_*_Disk&node=T1_*_MSS")
 timeNow = time.time()
 print ' - Extracting PhEDEx information took: %d seconds'%(timeNow-timeStart)
 timePre = timeNow

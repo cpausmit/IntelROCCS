@@ -101,8 +101,8 @@ class PhedexDataHandler:
                         group = 'IB-RelVal'
 
                     site = str(siterpl["node"])
-                    if site not in self.allSites:
-                        continue
+                    #if site not in self.allSites:
+                    #    continue
 
                     if datasetName not in phedexDatasets:
                         phedexDatasets[datasetName] = phedexDataset.PhedexDataset(datasetName)
