@@ -21,7 +21,7 @@ class popDbData:
         td = dt - epoch
         return td.seconds + td.days*86400
 
-    def buildDSStatInTimeWindowCache(self, siteNames):
+    def buildDSStatInTimeWindowCache(self, siteNames, validDatasets):
         if not os.path.exists(self.popDbCache):
             os.makedirs(self.popDbCache)
         cacheFile = "%s/%s.db" % (self.popDbCache, 'DSStatInTimeWindow')
@@ -56,6 +56,8 @@ class popDbData:
                     datasets = jsonData.get('DATA')
                     for dataset in datasets:
                         datasetName = dataset.get('COLLNAME')
+                        if datasetName not in validDatasets:
+                            continue
                         accesses = dataset.get('NACC')
                         cpus = dataset.get('TOTCPU')
                         users = dataset.get('NUSERS')

@@ -18,8 +18,7 @@ class crabApi():
         # Will try to get schedulers 3 times before reporting an error
         for attempt in range(3):
             try:
-                collector = htcondor.Collector(collectorName)
-                self.schedulers = collector.locateAll(htcondor.DaemonTypes.Schedd)
+                self.collector = htcondor.Collector(collectorName)
             except IOError, e:
                 continue
             else:
@@ -53,9 +52,10 @@ class crabApi():
 #===================================================================================================
 #  M A I N   F U N C T I O N
 #===================================================================================================
-    def crabCall(self, query, attributes=[]):
+    def schedulerCall(self, query, attributes=[]):
         data = []
-        for scheduler in self.schedulers:
+        schedulers = self.collector.locateAll(htcondor.DaemonTypes.Schedd)
+        for scheduler in schedulers:
             # query all schedulers, if error retry up to 3 times
             for attempt in range(3):
                 try:
