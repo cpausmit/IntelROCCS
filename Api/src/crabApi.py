@@ -81,7 +81,7 @@ class crabApi():
                 self.error(e)
         return data
 
-    def getKFlops(self, site):
+    def getCpus(self, site):
         cpus = 0
         query = 'GLIDEIN_CMSSite =?= %s && CPUs > 0' % (site)
         attributes = ["GLIDEIN_CMSSite", "CPUs"]
