@@ -82,11 +82,10 @@ class crabApi():
         return data
 
     def getKFlops(self, site):
-        kFlops = 0
+        cpus = 0
         query = 'GLIDEIN_CMSSite =?= %s && CPUs > 0' % (site)
-        attributes = ["GLIDEIN_CMSSite", "CPUs", "KFlops"]
+        attributes = ["GLIDEIN_CMSSite", "CPUs"]
         ads = self.query(htcondor.AdTypes.Startd, query, attributes)
         for ad in ads:
-            cpus = ad.get("CPUs")
-            kFlops += cpus*ad.get("KFlops")
-        return kFlops
+            cpus += ad.get("CPUs")
+        return cpus
