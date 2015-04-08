@@ -88,11 +88,9 @@ if [ $testing -eq 1 ]
 then
     cp "$data_dealer_src/../data_dealer-test.cfg" "$install_path/data_dealer.cfg"
     cp "$data_dealer_src/../api-test.cfg" "$install_path/api.cfg"
-    cp "$data_dealer_src/../manual_injection-test.cfg" "$install_path/manual_injection.cfg"
 else
     cp "$data_dealer_src/../data_dealer.cfg" "$install_path/data_dealer.cfg"
     cp "$data_dealer_src/../api.cfg" "$install_path/api.cfg"
-    cp "$data_dealer_src/../manual_injection.cfg" "$install_path/manual_injection.cfg"
 fi
 
 # make sure permissions are correct

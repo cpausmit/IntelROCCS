@@ -137,7 +137,7 @@ class CentralManager:
                     continue
                 if site in self.siteSizeShift:
                     continue
-                if site == 'T1_US_FNAL_Disk':
+                if site.startswith('T1_'):
                     continue
                 if site in worstStuck:
                     continue

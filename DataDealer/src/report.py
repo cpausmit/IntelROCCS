@@ -24,6 +24,8 @@ class report():
         self.rankingsCachePath = config.get('data_dealer', 'rankings_cache')
         self.crabCachePath = config.get('data_dealer', 'crab_cache')
         self.reportPath = config.get('data_dealer', 'report_path')
+        self.onlinePath = config.get('data_dealer', 'online_path')
+        self.title = config.get('data_dealer', 'title')
         self.fromEmail = config.items('from_email')[0]
         self.toEmails = config.items('report_emails')
         self.phedexData = phedexData.phedexData()
@@ -131,7 +133,7 @@ class report():
             siteSubscriptions[site] += subscriptionSize
 
         # Create title
-        title = 'Daily AnalysisOps Report %s | %d TB | %d%% | %.3f TB Subscribed' % (date.strftime('%Y-%m-%d'), int(dataOwned/10**3), int(quotaUsed), float(dataSubscribed/10**3))
+        title = '%s AnalysisOps Report %s | %d TB | %d%% | %.3f TB Subscribed' % (self.title, date.strftime('%Y-%m-%d'), int(dataOwned/10**3), int(quotaUsed), float(dataSubscribed/10**3))
         text = '%s\n  %s\n%s\n\n' % ('='*78, title, '='*78)
 
         # Create site table
@@ -158,14 +160,13 @@ class report():
         text += "\n\nNew Subscriptions\n\n"
 
         subscriptionTable = makeTable.Table(add_numbers=False)
-        subscriptionTable.setHeaders(['Rank', 'Size GB', 'Replicas', 'CPU Hours', 'Dataset'])
+        subscriptionTable.setHeaders(['Rank', 'Size GB', 'Replicas', 'Dataset'])
         for subscription in subscriptions:
             dataset = subscription[0]
             rank = float(subscription[2])
             size = int(self.phedexData.getDatasetSize(dataset))
             replicas = int(self.phedexData.getNumberReplicas(dataset))
-            cpuH = int(self.popDbData.getDatasetCpus(dataset, (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y-%m-%d')))
-            subscriptionTable.addRow([rank, size, replicas, cpuH, dataset])
+            subscriptionTable.addRow([rank, size, replicas, dataset])
 
         text += subscriptionTable.plainText()
 
@@ -173,14 +174,13 @@ class report():
         text += "\n\nNew Deletions\n\n"
 
         deletionTable = makeTable.Table(add_numbers=False)
-        deletionTable.setHeaders(['Rank', 'Size GB', 'Replicas', 'CPU Hours', 'Dataset'])
+        deletionTable.setHeaders(['Rank', 'Size GB', 'Replicas', 'Dataset'])
         for deletion in deletions:
             dataset = deletion[0]
             rank = float(deletion[2])
             size = int(self.phedexData.getDatasetSize(dataset))
             replicas = int(self.phedexData.getNumberReplicas(dataset))
-            cpuH = int(self.popDbData.getDatasetCpus(dataset, (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y-%m-%d')))
-            deletionTable.addRow([rank, size, replicas, cpuH, dataset])
+            deletionTable.addRow([rank, size, replicas, dataset])
 
         text += deletionTable.plainText()
 
@@ -188,7 +188,7 @@ class report():
         text += "\n\nJobs in CRAB older than 1 day\n\n"
 
         crabTable = makeTable.Table(add_numbers=False)
-        crabTable.setHeaders(['Queue Date', 'Replicas', 'CPU Hours', 'Dataset', 'User', 'Num Jobs', 'Jobs Left'])
+        crabTable.setHeaders(['Queue Date', 'Replicas', 'Dataset', 'User', 'Num Jobs', 'Jobs Left'])
         for job in jobs:
             datasetName = job[0]
             timestamp = job[1]
@@ -196,8 +196,7 @@ class report():
             numJobs = job[3]
             jobsLeft = job[4]
             replicas = int(self.phedexData.getNumberReplicas(datasetName))
-            cpuH = int(self.popDbData.getDatasetCpus(datasetName, (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y-%m-%d')))
-            crabTable.addRow([datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S'), replicas, cpuH, datasetName, userName, numJobs, jobsLeft])
+            crabTable.addRow([datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S'), replicas, datasetName, userName, int(numJobs), int(jobsLeft)])
 
         text += crabTable.plainText()
 
@@ -205,7 +204,7 @@ class report():
         fs.write(text)
         fs.close()
 
-        text = "Todays Log: http://t3serv001.mit.edu/~cmsprod/IntelROCCS/DataDealer/Logs/data_dealer-%s.log\n\nTodays Report: http://t3serv001.mit.edu/~cmsprod/IntelROCCS/DataDealer/Reports/data_dealer-%s.report\n\nCurrent Subscription Progress: http://t3serv001.mit.edu/~cmsprod/IntelROCCS/DataDealer/Progress/data_dealer-%s.progress" % (today.strftime('%Y%m%d'), today.strftime('%Y%m%d'), today.strftime('%Y%m%d'))
+        text = "Todays Log: %s/Logs/data_dealer-%s.log\n\nTodays Report: %s/Reports/data_dealer-%s.report\n\nCurrent Subscription Progress: %s/Progress/data_dealer-%s.progress\n\nSystem Visualization: %s/Visualizations/system.html" % (self.onlinePath, today.strftime('%Y%m%d'), self.onlinePath, today.strftime('%Y%m%d'), self.onlinePath, today.strftime('%Y%m%d'), self.onlinePath)
 
         self.sendReport(title, text)
 

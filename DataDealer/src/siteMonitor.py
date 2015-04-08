@@ -1,29 +1,33 @@
 #!/usr/bin/env python
 #---------------------------------------------------------------------------------------------------
-# This is the main script of the DataDealer. See README.md for more information.
+# This is the main script of the SiteMonitor. See README.md for more information.
 #---------------------------------------------------------------------------------------------------
-import sys, datetime
-import sites, dailyRockerBoard, report, subscriptionProgress
-import phedexData
+import sys, os, datetime, ConfigParser, time, sqlite3
+import sites
+import crabApi
 
 # initialize
 startingTime = datetime.datetime.now()
 print " ----  Start time : " + startingTime.strftime('%Hh %Mm %Ss') + "  ---- "
 print ""
 
+config = ConfigParser.RawConfigParser()
+config.read(os.path.join(os.path.dirname(__file__), 'data_dealer.cfg'))
+siteCache = config.get('data_dealer', 'site_cache')
+if not os.path.exists(siteCache):
+    os.makedirs(siteCache)
+cacheFile = "%s/%s.db" % (siteCache, "siteCache")
+timeNow = int(time.time())
+deltaNSeconds = 60*60*1
+if os.path.isfile(cacheFile):
+    modTime = os.path.getmtime(cacheFile)
+    if (os.path.getsize(cacheFile)) == 0 or ((timeNow-deltaNSeconds) > modTime):
+        os.remove(cacheFile)
+
 #===================================================================================================
 #  M A I N
 #===================================================================================================
-# get all datasets
-print " ----  Get Datasets  ---- "
-startTime = datetime.datetime.now()
-phedexData_ = phedexData.phedexData()
-datasets = phedexData_.getAllDatasets()
-totalTime = datetime.datetime.now() - startTime
-print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
-print ""
-
-# get all sites
+# get sites
 print " ----  Get Sites  ---- "
 startTime = datetime.datetime.now()
 sites_ = sites.sites()
@@ -32,30 +36,23 @@ totalTime = datetime.datetime.now() - startTime
 print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
 print ""
 
-# rocker board algorithm
-print " ----  Rocker Board Algorithm  ---- "
+# get cpus for sites
+print " ----  Update CPUs  ---- "
 startTime = datetime.datetime.now()
-dailyRockerBoard_ = dailyRockerBoard.dailyRockerBoard()
-subscriptions = dailyRockerBoard_.dailyRba(datasets, availableSites)
-totalTime = datetime.datetime.now() - startTime
-print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
-print ""
+crabApi_ = crabApi.crabApi()
+siteCache = sqlite3.connect(cacheFile)
+timestamp = timeNow - 60*60*24*60
+with siteCache:
+    cur = siteCache.cursor()
+    cur.execute('CREATE TABLE IF NOT EXISTS SiteCpu(SiteName TEXT, Cpus INTEGER, Timestamp INTEGER)')
+    cur.execute('DELETE FROM SiteCpu WHERE Timestamp<?', (timestamp,))
 
-# update and check progress of subscriptions
-print " ----  Update and Check Subscriptions  ---- "
-startTime = datetime.datetime.now()
-subscriptionProgress_ = subscriptionProgress.subscriptionProgress()
-subscriptionProgress_.updateProgress()
-subscriptionProgress_.checkProgress()
-totalTime = datetime.datetime.now() - startTime
-print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
-print ""
+for site in availableSites:
+    cpus = crabApi_.getCpus(site)
+    with siteCache:
+        cur = siteCache.cursor()
+        cur.execute('INSERT INTO SiteCpu(SiteName, Cpus) VALUES(?, ?)', (site, cpus))
 
-# send summary report
-print " ----  Daily Summary  ---- "
-startTime = datetime.datetime.now()
-report_ = report.report()
-report_.createDailyReport()
 totalTime = datetime.datetime.now() - startTime
 print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
 print ""

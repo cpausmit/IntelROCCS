@@ -4,21 +4,22 @@
 #---------------------------------------------------------------------------------------------------
 import os, re, sqlite3, ConfigParser, time, operator, datetime
 from operator import itemgetter
-import phedexData, crabApi, dbApi
+import phedexData, crabApi, dbApi, popDbData
 
 class dailyRockerBoard():
     def __init__(self):
         config = ConfigParser.RawConfigParser()
         config.read(os.path.join(os.path.dirname(__file__), 'data_dealer.cfg'))
-        self.rankingsCachePath = config.get('data_dealer', 'rankings_cache')
         self.crabCachePath = config.get('data_dealer', 'crab_cache')
+        self.rankingsCachePath = config.get('data_dealer', 'rankings_cache')
         self.threshold = config.getfloat('data_dealer', 'daily_threshold')
-        self.limit = config.getfloat('data_dealer', 'daily_limit_gb')
-        self.crab_time_limit = config.getfloat('data_dealer', 'crab_time_limit_s')
+        self.limit = config.getint('data_dealer', 'daily_limit_gb')
+        self.crab_time_limit = config.getint('data_dealer', 'crab_time_limit_s')
         self.crab_ratio = config.getfloat('data_dealer', 'crab_ratio')
         self.dbApi = dbApi.dbApi()
         self.phedexData = phedexData.phedexData()
         self.crabApi = crabApi.crabApi()
+        self.popDbData = popDbData.popDbData()
 
 #===================================================================================================
 #  H E L P E R S
@@ -42,16 +43,6 @@ class dailyRockerBoard():
             cur.execute('SELECT DISTINCT DatasetName FROM Jobs WHERE (JobsLeft/NumJobs)>?', (self.crab_ratio,))
             for row in cur:
                 newDatasets.append(row[0])
-        if not os.path.exists(self.rankingsCachePath):
-            os.makedirs(self.rankingsCachePath)
-        cacheFile = "%s/%s.db" % (self.rankingsCachePath, "rankingsCache")
-        rankingsCache = sqlite3.connect(cacheFile)
-        with rankingsCache:
-            cur = rankingsCache.cursor()
-            cur.execute('CREATE TABLE IF NOT EXISTS Datasets (DatasetName TEXT UNIQUE, Rank REAL)')
-            cur.execute('CREATE TABLE IF NOT EXISTS Sites (SiteName TEXT UNIQUE, Rank REAL)')
-            for datasetName, rank in datasetRankings.items():
-                cur.execute('INSERT OR REPLACE INTO Datasets(DatasetName, Rank) VALUES(?, ?)', (datasetName, rank))
         return newDatasets
 
     def updateSitesCache(self, datasets):
@@ -69,13 +60,37 @@ class dailyRockerBoard():
             cur.execute('SELECT * FROM Sites')
             for row in cur:
                 invalidSites.append(row[0])
+        return invalidSites
+
+    def updateRankingsCache(self, datasets):
+        if not os.path.exists(self.rankingsCachePath):
+            os.makedirs(self.rankingsCachePath)
         cacheFile = "%s/%s.db" % (self.rankingsCachePath, "rankingsCache")
         rankingsCache = sqlite3.connect(cacheFile)
+        datasetRankings = dict()
+        for dataset in datasets:
+            rank = self.getPopularity(dataset)
+            datasetRankings[dataset] = rank
         with rankingsCache:
             cur = rankingsCache.cursor()
-            for siteName in invalidSites:
-                cur.execute('INSERT OR REPLACE INTO Sites(SiteName, Rank) VALUES(?, ?)', (siteName, 1))
-        return invalidSites
+            cur.execute('CREATE TABLE IF NOT EXISTS Datasets (DatasetName TEXT UNIQUE, Rank REAL)')
+            for datasetName, rank in datasetRankings.items():
+                cur.execute('INSERT OR REPLACE INTO Datasets(DatasetName, Rank) VALUES(?, ?)', (datasetName, rank))
+
+    def getPopularity(self, datasetName):
+        popularity = 0
+        utcNow = datetime.datetime.utcnow()
+        today = datetime.date(utcNow.year, utcNow.month, utcNow.day)
+        accsOld = []
+        for i in range(8, 15):
+            date = today - datetime.timedelta(days=i)
+            accsOld.append(self.popDbData.getDatasetAccesses(date.strftime('%Y-%m-%d'), datasetName))
+        for i in range(1, 8):
+            date = today - datetime.timedelta(days=i)
+            accNew = self.popDbData.getDatasetAccesses(date.strftime('%Y-%m-%d'), datasetName)
+            for accOld in accsOld:
+                popularity += accNew - accOld
+        return popularity
 
     def getDatasetRankings(self, datasets):
         recentSubscriptions = []
@@ -89,9 +104,7 @@ class dailyRockerBoard():
         dataset_re = re.compile('^/GenericTTbar/HC-.*/GEN-SIM-RECO$')
         timestamp = int(time.time()) - self.crab_time_limit
         crabQueue = []
-        query = 'TaskType =?= "ROOT" && JobStatus =?= 2 && QDate < %d' % (timestamp)
-        attributes = ["CRAB_InputData", "QDate", "CRAB_UserHN", "CRAB_JobCount", "DAG_NodesQueued"]
-        data = self.crabApi.crabCall(query, attributes)
+        data = self.crabApi.getJobs(timestamp)
         for classAd in data:
             if dataset_re.match(classAd.get("CRAB_InputData")) or user_re.match(classAd.get("CRAB_UserHN")):
                 continue
@@ -134,8 +147,10 @@ class dailyRockerBoard():
 #  M A I N
 #===================================================================================================
     def dailyRba(self, datasets, sites):
+        self.popDbData.buildDSStatInTimeWindowCache(sites, datasets)
         jobs = self.getDatasetRankings(datasets)
         newDatasets = self.updateJobsCache(jobs)
+        self.updateRankingsCache(newDatasets)
         invalidSites = self.updateSitesCache(newDatasets)
         sites = [site for site in sites if site not in invalidSites]
         newSites = self.getSiteRankings(sites)

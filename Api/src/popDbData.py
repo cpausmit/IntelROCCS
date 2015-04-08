@@ -2,7 +2,7 @@
 #---------------------------------------------------------------------------------------------------
 # getPhedexData.py
 #---------------------------------------------------------------------------------------------------
-import os, sqlite3, ConfigParser
+import os, sqlite3, ConfigParser, datetime, time
 import popDbApi
 
 class popDbData:
@@ -10,151 +10,157 @@ class popDbData:
         config = ConfigParser.RawConfigParser()
         config.read(os.path.join(os.path.dirname(__file__), 'api.cfg'))
         self.popDbCache = config.get('pop_db', 'cache')
+        self.cacheDeadline = config.getint('pop_db', 'expiration_timer')
         self.popDbApi = popDbApi.popDbApi()
 
 #===================================================================================================
 #  H E L P E R S
 #===================================================================================================
-    def shouldAccessPopDb(self, apiCall, date, dataset='', site=''):
-        cacheFile = "%s/%s.db" % (self.popDbCache, apiCall)
-        if (not os.path.isfile(cacheFile)) or (os.path.getsize(cacheFile) == 0):
-            # there is no cache database
-            return True
-        # see if the data for that date is available
-        cacheCon = sqlite3.connect(cacheFile)
-        if site:
-            with cacheCon:
-                cur = cacheCon.cursor()
-                cur.execute('SELECT * FROM SiteData WHERE Day=? AND SiteName=?', (date, site))
-                row = cur.fetchone()
-                if not row:
-                    return True
-        elif dataset:
-            with cacheCon:
-                cur = cacheCon.cursor()
-                cur.execute('SELECT * FROM DatasetData WHERE Day=?', (date,))
-                row = cur.fetchone()
-                if not row:
-                    return True
-        return False
+    def totimestamp(self, year=1970, month=1, day=1, epoch=datetime.datetime(1970,1,1)):
+        dt = datetime.datetime(year, month, day)
+        td = dt - epoch
+        return td.seconds + td.days*86400
 
-    def updateCache(self, apiCall, date, site=''):
+    def buildDSStatInTimeWindowCache(self, siteNames, validDatasets):
         if not os.path.exists(self.popDbCache):
             os.makedirs(self.popDbCache)
-        cacheFile = "%s/%s.db" % (self.popDbCache, apiCall)
-        if os.path.isfile(cacheFile) and (os.path.getsize(cacheFile) == 0):
-            os.remove(cacheFile)
-        tstart = date
-        tstop = tstart
-        jsonData = ""
-        # can easily extend this to support more api calls
-        if apiCall == "DSStatInTimeWindow":
-            if site:
-                jsonData = self.popDbApi.DSStatInTimeWindow(tstart=tstop, tstop=tstop, sitename=site)
-                if not jsonData:
-                    print(" ERROR -- Could not update cache due to pop db error")
-                    return 1
-                self.buildSiteDSStatInTimeWindowCache(jsonData, date)
+        cacheFile = "%s/%s.db" % (self.popDbCache, 'DSStatInTimeWindow')
+        timeNow = time.time()
+        deltaNSeconds = 60*60*28
+        if os.path.isfile(cacheFile):
+            modTime = os.path.getmtime(cacheFile)
+            if (os.path.getsize(cacheFile)) == 0 or ((timeNow-deltaNSeconds) > modTime):
+                os.remove(cacheFile)
+        deltaNSeconds = 60*60*self.cacheDeadline
+        if os.path.isfile(cacheFile):
+            modTime = os.path.getmtime(cacheFile)
+            if (timeNow-deltaNSeconds) > modTime:
+                days = [1]
             else:
-                jsonData = self.popDbApi.DSStatInTimeWindow(tstart=tstop, tstop=tstop)
-                if not jsonData:
-                    print(" ERROR -- Could not update cache due to pop db error")
-                    return 1
-                self.buildDatasetDSStatInTimeWindowCache(jsonData, date)
+                return 0
+        else:
+            days = range(1, 15)
+        popDbCache = sqlite3.connect(cacheFile)
+        utcNow = datetime.datetime.utcnow()
+        today = datetime.date(utcNow.year, utcNow.month, utcNow.day)
+        with popDbCache:
+            cur = popDbCache.cursor()
+            cur.execute('CREATE TABLE IF NOT EXISTS DSStatInTimeWindow(Date TEXT, SiteName TEXT, DatasetName TEXT, Accesses INTEGER, Cpus INTEGER, Users INTEGER)')
+            for siteName in siteNames:
+                for i in days:
+                    date = today - datetime.timedelta(days=i)
+                    tstart = date.strftime('%Y-%m-%d')
+                    tstop = tstart
+                    jsonData = self.popDbApi.DSStatInTimeWindow(tstart=tstop, tstop=tstop, sitename=siteName)
+                    siteName = jsonData.get('SITENAME')
+                    datasets = jsonData.get('DATA')
+                    for dataset in datasets:
+                        datasetName = dataset.get('COLLNAME')
+                        if datasetName not in validDatasets:
+                            continue
+                        accesses = dataset.get('NACC')
+                        cpus = dataset.get('TOTCPU')
+                        users = dataset.get('NUSERS')
+                        cur.execute('INSERT INTO DSStatInTimeWindow(Date, SiteName, DatasetName, Accesses, Cpus, Users) VALUES(?, ?, ?, ?, ?, ?)', (tstart, siteName, datasetName, accesses, cpus, users))
         return 0
 
-    def buildSiteDSStatInTimeWindowCache(self, jsonData, date):
-        DSStatInTimeWindowCache = sqlite3.connect("%s/DSStatInTimeWindow.db" % (self.popDbCache))
-        with DSStatInTimeWindowCache:
-            cur = DSStatInTimeWindowCache.cursor()
-            cur.execute('CREATE TABLE IF NOT EXISTS DatasetData (Day TEXT, DatasetName TEXT, NumberAccesses INTEGER, NumberCpus INTEGER)')
-            cur.execute('CREATE TABLE IF NOT EXISTS SiteData (Day TEXT, SiteName TEXT, NumberAccesses INTEGER, NumberCpus INTEGER)')
-        siteName = jsonData.get('SITENAME')
-        datasets = jsonData.get('DATA')
-        numberAccesses = 0
-        numberCpus = 0
-        for dataset in datasets:
-            numberAccesses += dataset.get('NACC')
-            numberCpus += dataset.get('TOTCPU')
-        with DSStatInTimeWindowCache:
-            cur = DSStatInTimeWindowCache.cursor()
-            cur.execute('INSERT INTO SiteData(Day, SiteName, NumberAccesses, NumberCpus) VALUES(?, ?, ?, ?)', (date, siteName, numberAccesses, numberCpus))
+    def buildGetSingleDSstatCache(self, datasets):
+        if not os.path.exists(self.popDbCache):
+            os.makedirs(self.popDbCache)
+        popDbCache = sqlite3.connect("%s/%s.db" % (self.popDbCache, 'getSingleDSstat'))
+        with popDbCache:
+            cur = popDbCache.cursor()
+            cur.execute('CREATE TABLE IF NOT EXISTS getSingleDSstat(Timestamp INTEGER, DatasetName TEXT, Accesses TEXT)')
+        for datasetName in datasets:
+            jsonData = self.popDbApi.getSingleDSstat(name=datasetName, aggr='day', orderby='naccess')
+            days = jsonData.get('DATA')
+            with popDbCache:
+                cur = popDbCache.cursor()
+                for day in days:
+                    timestamp = int(day[0]/10**3)
+                    accesses = day[1]
+                    cur.execute('INSERT INTO getSingleDSstat(Timestamp, DatasetName, Accesses) VALUES(?, ?, ?)', (timestamp, datasetName, accesses))
 
-    def buildDatasetDSStatInTimeWindowCache(self, jsonData, date):
-        DSStatInTimeWindowCache = sqlite3.connect("%s/DSStatInTimeWindow.db" % (self.popDbCache))
-        with DSStatInTimeWindowCache:
-            cur = DSStatInTimeWindowCache.cursor()
-            cur.execute('CREATE TABLE IF NOT EXISTS DatasetData (Day TEXT, DatasetName TEXT, NumberAccesses INTEGER, NumberCpus INTEGER)')
-            cur.execute('CREATE TABLE IF NOT EXISTS SiteData (Day TEXT, SiteName TEXT, NumberAccesses INTEGER, NumberCpus INTEGER)')
-        datasets = jsonData.get('DATA')
-        for dataset in datasets:
-            datasetName = dataset.get('COLLNAME')
-            numberAccesses = dataset.get('NACC')
-            numberCpus = dataset.get('TOTCPU')
-            with DSStatInTimeWindowCache:
-                cur = DSStatInTimeWindowCache.cursor()
-                cur.execute('INSERT INTO DatasetData(Day, DatasetName, NumberAccesses, NumberCpus) VALUES(?, ?, ?, ?)', (date, datasetName, numberAccesses, numberCpus))
-
-    def getDatasetAccesses(self, datasetName, date):
-        numberAccesses = 0
-        if self.shouldAccessPopDb(apiCall='DSStatInTimeWindow', dataset=datasetName, date=date):
-            error = self.updateCache(apiCall='DSStatInTimeWindow', date=date)
-            if error:
-                return numberAccesses
+    def getDatasetAccesses(self, date, datasetName):
         # access cache
-        DSStatInTimeWindowCache = sqlite3.connect("%s/DSStatInTimeWindow.db" % (self.popDbCache))
-        with DSStatInTimeWindowCache:
-            cur = DSStatInTimeWindowCache.cursor()
-            cur.execute('SELECT NumberAccesses FROM DatasetData WHERE DatasetName=? AND Day=?', (datasetName, date))
-            row = cur.fetchone()
-            if row:
-                numberAccesses = row[0]
-        return numberAccesses
+        popDbCache = sqlite3.connect("%s/%s.db" % (self.popDbCache, 'DSStatInTimeWindow'))
+        with popDbCache:
+            cur = popDbCache.cursor()
+            cur.execute('SELECT sum(Accesses) FROM DSStatInTimeWindow WHERE DatasetName=? AND Date=?', (datasetName, date))
+            accesses = cur.fetchone()[0]
+            if not accesses:
+                accesses = 0
+        return accesses
 
-    def getDatasetCpus(self, datasetName, date):
-        numberCpus = 0
-        if self.shouldAccessPopDb(apiCall='DSStatInTimeWindow', dataset=datasetName, date=date):
-            error = self.updateCache(apiCall='DSStatInTimeWindow', date=date)
-            if error:
-                return numberCpus
+    def getDatasetCpus(self, date, datasetName):
         # access cache
-        DSStatInTimeWindowCache = sqlite3.connect("%s/DSStatInTimeWindow.db" % (self.popDbCache))
-        with DSStatInTimeWindowCache:
-            cur = DSStatInTimeWindowCache.cursor()
-            cur.execute('SELECT NumberCpus FROM DatasetData WHERE DatasetName=? AND Day=?', (datasetName, date))
-            row = cur.fetchone()
-            if row:
-                numberCpus = row[0]
-        return numberCpus
+        popDbCache = sqlite3.connect("%s/%s.db" % (self.popDbCache, 'DSStatInTimeWindow'))
+        with popDbCache:
+            cur = popDbCache.cursor()
+            cur.execute('SELECT sum(Cpus) FROM DSStatInTimeWindow WHERE DatasetName=? AND Date=?', (datasetName, date))
+            cpus = cur.fetchone()[0]
+            if not cpus:
+                cpus = 0
+        return cpus
 
-    def getSiteAccesses(self, siteName, date):
-        numberAccesses = 1
-        if self.shouldAccessPopDb(apiCall='DSStatInTimeWindow', site=siteName, date=date):
-            error = self.updateCache(apiCall='DSStatInTimeWindow', site=siteName, date=date)
-            if error:
-                return numberAccesses
+    def getDatasetUsers(self, date, datasetName):
         # access cache
-        DSStatInTimeWindowCache = sqlite3.connect("%s/DSStatInTimeWindow.db" % (self.popDbCache))
-        with DSStatInTimeWindowCache:
-            cur = DSStatInTimeWindowCache.cursor()
-            cur.execute('SELECT NumberAccesses FROM SiteData WHERE SiteName=? AND Day=?', (siteName, date))
-            row = cur.fetchone()
-            if row:
-                numberAccesses = row[0]
-        return numberAccesses
+        popDbCache = sqlite3.connect("%s/%s.db" % (self.popDbCache, 'DSStatInTimeWindow'))
+        with popDbCache:
+            cur = popDbCache.cursor()
+            cur.execute('SELECT sum(Users) FROM DSStatInTimeWindow WHERE DatasetName=? AND Date=?', (datasetName, date))
+            users = cur.fetchone()[0]
+            if not users:
+                users = 0
+        return users
 
-    def getSiteCpu(self, siteName, date):
-        numberCpus = 1
-        if self.shouldAccessPopDb(apiCall='DSStatInTimeWindow', site=siteName, date=date):
-            error = self.updateCache(apiCall='DSStatInTimeWindow', site=siteName, date=date)
-            if error:
-                return numberCpus
+    def getSiteAccesses(self, date, siteName):
         # access cache
-        DSStatInTimeWindowCache = sqlite3.connect("%s/DSStatInTimeWindow.db" % (self.popDbCache))
-        with DSStatInTimeWindowCache:
-            cur = DSStatInTimeWindowCache.cursor()
-            cur.execute('SELECT NumberCpus FROM SiteData WHERE SiteName=? AND Day=?', (siteName, date))
-            row = cur.fetchone()
-            if row:
-                numberCpus = row[0]
-        return numberCpus
+        popDbCache = sqlite3.connect("%s/%s.db" % (self.popDbCache, 'DSStatInTimeWindow'))
+        with popDbCache:
+            cur = popDbCache.cursor()
+            cur.execute('SELECT sum(Accesses) FROM DSStatInTimeWindow WHERE SiteName=? AND Date=?', (siteName, date))
+            accesses = cur.fetchone()[0]
+            if not accesses:
+                accesses = 0
+        return accesses
+
+    def getSiteCpus(self, date, siteName):
+        # access cache
+        popDbCache = sqlite3.connect("%s/%s.db" % (self.popDbCache, 'DSStatInTimeWindow'))
+        with popDbCache:
+            cur = popDbCache.cursor()
+            cur.execute('SELECT sum(Cpus) FROM DSStatInTimeWindow WHERE SiteName=? AND Date=?', (siteName, date))
+            cpus = cur.fetchone()[0]
+            if not cpus:
+                cpus = 0
+        return cpus
+
+    def getSiteUsers(self, date, siteName):
+        # access cache
+        popDbCache = sqlite3.connect("%s/%s.db" % (self.popDbCache, 'DSStatInTimeWindow'))
+        with popDbCache:
+            cur = popDbCache.cursor()
+            cur.execute('SELECT sum(Users) FROM DSStatInTimeWindow WHERE SiteName=? AND Date=?', (siteName, date))
+            users = cur.fetchone()[0]
+            if not users:
+                users = 0
+        return users
+
+    def getHistoricalData(self, datasetName):
+        popDbCache = sqlite3.connect("%s/%s.db" % (self.popDbCache, 'getSingleDSstat'))
+        historicalData = []
+        with popDbCache:
+            cur = popDbCache.cursor()
+            cur.execute('SELECT Timestamp, max(Accesses) FROM getSingleDSstat WHERE DatasetName=?', (datasetName))
+            maximum = cur.fetchone()[0]
+            for i in range(-7,8):
+                timestamp = maximum + i*86400
+                cur.execute('SELECT Accesses FROM getSingleDSstat WHERE DatasetName=? ANd Timestamp=?', (datasetName, timestamp))
+                # if no data, set to 0
+                row = cur.fetchone()
+                accesses = 0
+                if row:
+                    accesses = row[0]
+                historicalData.append(accesses)
+        return historicalData
