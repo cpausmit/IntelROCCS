@@ -92,6 +92,7 @@ timeNow = time.time()
 print ' - Requesting deletions took: %d seconds'%(timeNow-timePre)
 timePre = timeNow
 
+centralManager.extractCacheRequests()
 centralManager.showCacheRequests()
 
 # Final summary of timing

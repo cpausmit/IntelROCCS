@@ -900,6 +900,9 @@ class CentralManager:
                                "Submitted deletion requests, check log for details.")
 
     def extractCacheRequests(self):
+        self.delRequests.clear()
+        self.siteRequests.clear()
+
         connection = self.getDbConnection()
         cursor = connection.cursor()
         sql = "select RequestId,DatasetName,Size,Rank,Date,SiteName " +\
