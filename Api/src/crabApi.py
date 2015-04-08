@@ -83,7 +83,7 @@ class crabApi():
 
     def getCpus(self, site):
         cpus = 0
-        query = 'GLIDEIN_CMSSite =?= %s && CPUs > 0' % (site)
+        query = 'GLIDEIN_CMSSite =?= "%s" && CPUs > 0' % (site)
         attributes = ["GLIDEIN_CMSSite", "CPUs"]
         ads = self.query(htcondor.AdTypes.Startd, query, attributes)
         for ad in ads:
