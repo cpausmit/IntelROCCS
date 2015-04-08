@@ -51,7 +51,7 @@ do
     do
         # get the start time of the script
         secs=$(date +%s --date="now")
-        run_time=$(date '+%s' --date="@$((secs + loop_interval_h*60*60))")
+        run_time=$(date '+%s' --date="@$((secs + 24*60*60))")
 
         # generate specific log file
         tag=$(date "+%Y%m%d")
@@ -62,6 +62,23 @@ do
         rm -f "$old_log_file"
         today=$(date)
 
+        for index_2 in {0..23}
+        do
+            secs=$(date +%s --date="now")
+            run_time_2=$(date '+%s' --date="@$((secs + 1*60*60))")
+            {
+                echo " "
+                echo " site monitor started -- $tag "
+                echo " "
+                echo "   --> $today"
+                echo " "
+            } >> "$log_file"
+            stdbuf -o0 -e0 "$install_path/siteMonitor.py" >> "$log_file" 2>&1
+            current_time_2=$(date -d "now" +%s)
+            time_to_wait_2=$((run_time_2 - current_time_2))
+            sleep $time_to_wait_2
+        done
+
         {
             echo " "
             echo " daily data dealer started -- $tag "
@@ -70,7 +87,17 @@ do
             echo " "
         } >> "$log_file"
         stdbuf -o0 -e0 "$install_path/dailyDealer.py" >> "$log_file" 2>&1
-        if [ $index -eq 13 ]
+
+        {
+            echo " "
+            echo " visualization data collector started -- $tag "
+            echo " "
+            echo "   --> $today"
+            echo " "
+        } >> "$log_file"
+        stdbuf -o0 -e0 "$install_path/visualizationData.py" >> "$log_file" 2>&1
+
+        if [ $index -eq 6 ]
         then
             {
                 echo " "

@@ -1,4 +1,4 @@
-var margin = {top: 20, right: 150, bottom: 30, left: 150};
+var margin = {top: 20, right: 250, bottom: 30, left: 150};
 var barWidth = 450;
 var barHeight = 20;
 
@@ -12,7 +12,7 @@ var chart = d3.select(".chart")
 
 var allgroup = chart.append("g");
 
-var cputip = chart.append("text")
+var acctip = chart.append("text")
     .style("text-anchor", "start")
     .style("visibility", "hidden");
 
@@ -56,12 +56,12 @@ headerSvg.append("text")
     .attr("dy", 9)
     .style("fill", "gray")
     .style("text-anchor", "start")
-    .text("Ratio CPU per GB");
+    .text("Ratio Accesses per GB");
 
 d3.csv("system.csv", type, function(error, data) {
 
     x.domain([0, 1]);
-    color.domain([d3.max(data, function(d) { return d.cpu/d.used; }), d3.min(data, function(d) { return d.cpu/d.used; })]);
+    color.domain([d3.max(data, function(d) { return d.accesses/d.used; }), d3.min(data, function(d) { return d.accesses/d.used; })]);
 
     chart.attr("height", margin.top + barHeight * data.length);
 
@@ -75,13 +75,13 @@ d3.csv("system.csv", type, function(error, data) {
             d3.select("#sub" + i).style("fill", function() { return d3.rgb(d3.select("#sub" + i).style("fill")).darker();});
             var tipx = d3.select("#rec" + i).attr("width");
             var tipy = margin.top + (barHeight * i) - 7;
-            cputip.attr("x", tipx);
-            cputip.attr("y", tipy);
-            cputip.attr("dx", margin.left + 4);
-            cputip.attr("dy", margin.top);
-            cputip.style("visibility", "visible");
-            cputip.style("fill", "gray");
-            cputip.text(d.cpu + " CPU Hours");
+            acctip.attr("x", tipx);
+            acctip.attr("y", tipy);
+            acctip.attr("dx", margin.left + 4);
+            acctip.attr("dy", margin.top);
+            acctip.style("visibility", "visible");
+            acctip.style("fill", "gray");
+            acctip.text(d.accesses + " Accesses last 7 days");
             storagetip.attr("y", tipy);
             storagetip.attr("dx", margin.left + 4);
             storagetip.attr("dy", margin.top);
@@ -92,7 +92,7 @@ d3.csv("system.csv", type, function(error, data) {
             d3.select("#rec" + i).style("fill", function() { return d3.rgb(d3.select("#rec" + i).style("fill")).brighter();});
             d3.select("#bar" + i).style("fill", function() { return d3.rgb(d3.select("#bar" + i).style("fill")).brighter();});
             d3.select("#sub" + i).style("fill", function() { return d3.rgb(d3.select("#sub" + i).style("fill")).brighter();});
-            cputip.style("visibility", "hidden");
+            acctip.style("visibility", "hidden");
             storagetip.style("visibility", "hidden");});
 
     site.append("text")
@@ -116,7 +116,7 @@ d3.csv("system.csv", type, function(error, data) {
         .attr("x", margin.left)
         .attr("width", function(d) { return x(d.used/d.quota); })
         .attr("height", barHeight-1)
-        .style("fill", function(d) { return color(d.cpu/d.used); });
+        .style("fill", function(d) { return color(d.accesses/d.used); });
 
     site.append("rect")
         .attr("id", function(d, i) { return "sub" + i; })
@@ -138,7 +138,7 @@ function type(d) {
     d.site = d.site;
     d.quota = +d.quota;
     d.used = +d.used;
-    d.cpu = +d.cpu;
+    d.accesses = +d.accesses;
     d.subscribed = +d.subscribed;
     return d;
 }

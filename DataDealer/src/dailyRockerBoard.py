@@ -4,13 +4,14 @@
 #---------------------------------------------------------------------------------------------------
 import os, re, sqlite3, ConfigParser, time, operator, datetime
 from operator import itemgetter
-import phedexData, crabApi, dbApi
+import phedexData, crabApi, dbApi, popDbData
 
 class dailyRockerBoard():
     def __init__(self):
         config = ConfigParser.RawConfigParser()
         config.read(os.path.join(os.path.dirname(__file__), 'data_dealer.cfg'))
         self.crabCachePath = config.get('data_dealer', 'crab_cache')
+        self.rankingsCachePath = config.get('data_dealer', 'rankings_cache')
         self.threshold = config.getfloat('data_dealer', 'daily_threshold')
         self.limit = config.getint('data_dealer', 'daily_limit_gb')
         self.crab_time_limit = config.getint('data_dealer', 'crab_time_limit_s')
@@ -18,6 +19,7 @@ class dailyRockerBoard():
         self.dbApi = dbApi.dbApi()
         self.phedexData = phedexData.phedexData()
         self.crabApi = crabApi.crabApi()
+        self.popDbData = popDbData.popDbData()
 
 #===================================================================================================
 #  H E L P E R S
@@ -102,9 +104,7 @@ class dailyRockerBoard():
         dataset_re = re.compile('^/GenericTTbar/HC-.*/GEN-SIM-RECO$')
         timestamp = int(time.time()) - self.crab_time_limit
         crabQueue = []
-        query = 'TaskType =?= "ROOT" && JobStatus =?= 2 && QDate < %d' % (timestamp)
-        attributes = ["CRAB_InputData", "QDate", "CRAB_UserHN", "CRAB_JobCount", "DAG_NodesQueued"]
-        data = self.crabApi.crabCall(query, attributes)
+        data = self.crabApi.getJobs(timestamp)
         for classAd in data:
             if dataset_re.match(classAd.get("CRAB_InputData")) or user_re.match(classAd.get("CRAB_UserHN")):
                 continue
@@ -147,7 +147,7 @@ class dailyRockerBoard():
 #  M A I N
 #===================================================================================================
     def dailyRba(self, datasets, sites):
-        self.popDbData.buildDSStatInTimeWindowCache(sites)
+        self.popDbData.buildDSStatInTimeWindowCache(sites, datasets)
         jobs = self.getDatasetRankings(datasets)
         newDatasets = self.updateJobsCache(jobs)
         self.updateRankingsCache(newDatasets)

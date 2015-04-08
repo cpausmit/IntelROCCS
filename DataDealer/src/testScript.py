@@ -4,12 +4,12 @@
 #---------------------------------------------------------------------------------------------------
 import sys, datetime
 import sites, weeklyRockerBoard, subscribe, report
-import phedexData, popDbData
+import phedexData
 
-# # initialize
-# startingTime = datetime.datetime.now()
-# print " ----  Start time : " + startingTime.strftime('%Hh %Mm %Ss') + "  ---- "
-# print ""
+# initialize
+startingTime = datetime.datetime.now()
+print " ----  Start time : " + startingTime.strftime('%Hh %Mm %Ss') + "  ---- "
+print ""
 
 #===================================================================================================
 #  M A I N
@@ -37,7 +37,6 @@ print " ----  Rocker Board Algorithm  ---- "
 startTime = datetime.datetime.now()
 weeklyRockerBoard_ = weeklyRockerBoard.weeklyRockerBoard()
 subscriptions = weeklyRockerBoard_.weeklyRba(datasets, availableSites)
-print subscriptions
 totalTime = datetime.datetime.now() - startTime
 print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
 print ""
@@ -51,21 +50,21 @@ print ""
 # print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
 # print ""
 
-# # send summary report
-# print " ----  Summary  ---- "
-# startTime = datetime.datetime.now()
-# report_ = report.report()
-# report_.createWeeklyReport()
-# totalTime = datetime.datetime.now() - startTime
-# print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
-# print ""
+# send summary report
+print " ----  Summary  ---- "
+startTime = datetime.datetime.now()
+report_ = report.report()
+report_.createWeeklyReport()
+totalTime = datetime.datetime.now() - startTime
+print " ----  " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
+print ""
 
-# # done
-# print " ----  Done  ---- "
-# endingTime = datetime.datetime.now()
-# totalTime = endingTime - startingTime
-# print " ----  Complete run took " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
-# print ""
-# print " ----  End time : " + endingTime.strftime('%Hh %Mm %Ss') + "  ---- "
+# done
+print " ----  Done  ---- "
+endingTime = datetime.datetime.now()
+totalTime = endingTime - startingTime
+print " ----  Complete run took " + str(totalTime.seconds) + "s " + str(totalTime.microseconds) + "ms" + "  ---- "
+print ""
+print " ----  End time : " + endingTime.strftime('%Hh %Mm %Ss') + "  ---- "
 
 sys.exit(0)

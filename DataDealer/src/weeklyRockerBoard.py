@@ -19,6 +19,20 @@ class weeklyRockerBoard():
 #===================================================================================================
 #  H E L P E R S
 #===================================================================================================
+    def rankingsCache(self, datasetRankings, siteRankings):
+        if not os.path.exists(self.rankingsCachePath):
+            os.makedirs(self.rankingsCachePath)
+        cacheFile = "%s/%s.db" % (self.rankingsCachePath, "rankingsCache")
+        rankingsCache = sqlite3.connect(cacheFile)
+        with rankingsCache:
+            cur = rankingsCache.cursor()
+            cur.execute('CREATE TABLE IF NOT EXISTS Datasets (DatasetName TEXT UNIQUE, Rank REAL)')
+            cur.execute('CREATE TABLE IF NOT EXISTS Sites (SiteName TEXT UNIQUE, Rank REAL)')
+            for datasetName, rank in datasetRankings.items():
+                cur.execute('INSERT OR REPLACE INTO Datasets(DatasetName, Rank) VALUES(?, ?)', (datasetName, rank))
+            for siteName, rank in siteRankings.items():
+                cur.execute('INSERT OR REPLACE INTO Sites(SiteName, Rank) VALUES(?, ?)', (siteName, rank))
+
     def weightedChoice(self, choices):
         total = sum(w for c, w in choices.items())
         r = random.uniform(0, total)
@@ -42,20 +56,6 @@ class weeklyRockerBoard():
             for accOld in accsOld:
                 popularity += accNew - accOld
         return popularity
-
-    def rankingsCache(self, datasetRankings, siteRankings):
-        if not os.path.exists(self.rankingsCachePath):
-            os.makedirs(self.rankingsCachePath)
-        cacheFile = "%s/%s.db" % (self.rankingsCachePath, "rankingsCache")
-        rankingsCache = sqlite3.connect(cacheFile)
-        with rankingsCache:
-            cur = rankingsCache.cursor()
-            cur.execute('CREATE TABLE IF NOT EXISTS Datasets (DatasetName TEXT UNIQUE, Rank REAL)')
-            cur.execute('CREATE TABLE IF NOT EXISTS Sites (SiteName TEXT UNIQUE, Rank REAL)')
-            for datasetName, rank in datasetRankings.items():
-                cur.execute('INSERT OR REPLACE INTO Datasets(DatasetName, Rank) VALUES(?, ?)', (datasetName, rank))
-            for siteName, rank in siteRankings.items():
-                cur.execute('INSERT OR REPLACE INTO Sites(SiteName, Rank) VALUES(?, ?)', (siteName, rank))
 
     def getDatasetRankings(self, datasets):
         alphaValues = dict()
@@ -96,10 +96,15 @@ class weeklyRockerBoard():
 
     def getNewReplicas(self, datasetRankings, siteRankings, siteQuotas):
         subscriptions = dict()
+        validSites = siteQuotas.keys()
+        allSites = siteRankings.keys()
+        invalidSites = [site for site in allSites if site not in validSites]
+        for site in invalidSites:
+            del siteRankings[site]
         subscribedGb = 0
         while (datasetRankings):
             if not siteRankings:
-                print " ALERT -- No more datasets to subscribe"
+                print " ALERT -- No more sites available"
                 break
             dataset = max(datasetRankings.iteritems(), key=operator.itemgetter(1))
             datasetName = dataset[0]
@@ -139,11 +144,10 @@ class weeklyRockerBoard():
 #  M A I N
 #===================================================================================================
     def weeklyRba(self, datasets, sites):
-        self.popDbData.buildDSStatInTimeWindowCache(sites)
+        self.popDbData.buildDSStatInTimeWindowCache(sites, datasets)
         subscriptions = []
         datasetRankings = self.getDatasetRankings(datasets)
         siteQuotas = self.getSiteQuotas(sites)
-        sites = siteQuotas.keys()
         siteRankings = self.getSiteRankings(sites, datasetRankings)
         self.rankingsCache(datasetRankings, siteRankings)
         subscriptions = self.getNewReplicas(datasetRankings, siteRankings, siteQuotas)
