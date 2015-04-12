@@ -1,11 +1,13 @@
 #!/usr/bin/python
 
 from time import strftime,gmtime
+import time
 
 '''Dataset object definition
     and common functions to 
     manipulate Datasets'''
 
+# genesis=int(time.mktime(time.strptime("2014-09-01","%Y-%m-%d")))
 genesis=1378008000
 
 class Dataset(object):
@@ -20,7 +22,12 @@ class Dataset(object):
         self.cTime = genesis
         self.nSites = -1
         self.currentSites = set([])
+        self.transfersOntoCSites = {}
         self.isDeleted = None
+    def addCurrentSite(self,siteName,timeStart=-1,timeComplete=-1):
+        self.currentSites.add(siteName)
+        if timeStart>0:
+            self.transfersOntoCSites[siteName] = (timeStart,timeComplete)
     def setSiteMovement(self, siteName,movement):
         self.movement[siteName] = movement
     def addTransfer(self,siteName,t):

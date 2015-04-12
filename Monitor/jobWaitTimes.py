@@ -116,8 +116,8 @@ else:
     timeStart = time.gmtime(int(sys.argv[1]))
     timeEnd = time.gmtime(int(sys.argv[2]))
 
-# timeStart = [2014, 10, 13, 00, 00, 00] # testing
-# timeEnd = [2014, 10, 13, 00, 59, 00]
+timeStart = [2014, 10, 13, 00, 00, 00] # testing
+timeEnd = [2014, 10, 13, 00, 59, 00]
 timeStartString = epochTime('%.2i-%.2i-%.2iT%.2i:%.2i:%.2i'%(
   timeStart[0],
   timeStart[1],
