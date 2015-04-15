@@ -12,6 +12,9 @@ if not os.environ.get('MONITOR_DB'):
     print '\n ERROR - MONITOR environment not defined: source setupMonitor.sh\n'
     sys.exit(0)
 
+# genesis=int(time.mktime(time.strptime("2014-09-01","%Y-%m-%d")))
+genesis=1378008000
+
 #===================================================================================================
 #  H E L P E R S
 #===================================================================================================
@@ -51,7 +54,7 @@ def getJsonFile(requestType,start,debug=False):
 
 def getDeletions(start,end,datasetPattern,groupPattern):
     # returns all datasets in the requests which match the pattern and are in relevant group
-    delFileName = os.environ.get('MONITOR_DB') + '/datasets/delRequests_1378008000.json'
+    delFileName = os.environ.get('MONITOR_DB') + '/datasets/delRequests_%i.json'%(genesis)
     print "Parsing ",delFileName
     # isXfer = True if xfer history, False if deletions
     datasetSet={}

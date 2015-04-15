@@ -381,7 +381,8 @@ def getActiveSites(debug=0):
         if debug > 1:
             print ' Trying to add: "' + site + '"  lastCp: %d  Quota: %d  -->  %f'\
                 %(lastCopy,quota,float(lastCopy)/quota) 
-        if float(lastCopy)/quota > 0.7 or valid == 0:
+        # make decision whether or not to use this site
+        if float(lastCopy)/quota > 0.7 or valid != 1:
             if debug > 0:
                 print '  -> skip %s as Last Copy too large or not valid.\n'%(site)
             continue

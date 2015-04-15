@@ -18,8 +18,10 @@ from findDatasetHistoryAll import *
 import findDatasetProperties as fDP
 import cPickle as pickle
 from Dataset import *
+import getAccessInfo
 
 genesis=1378008000
+# genesis=int(time.mktime(time.strptime("2014-09-01","%Y-%m-%d")))
 nowish = time.time()
 
 # get the dataset pattern to consider (careful the pattern will be translated, better implementation
@@ -75,13 +77,17 @@ def processPhedexCacheFile(fileName,debug=0):
 
 def processFile(fileName,debug=0):
     # processing the contents of a simple file into a hash array
-
     nSkipped  = 0
     nAccessed = {} # the result is a hash array
 
     # read the data from the json file
-    with open(fileName) as data_file:
-        data = json.load(data_file)
+    try:
+        with open(fileName) as data_file:
+            data = json.load(data_file)
+    except ValueError:
+        # if the file doesn't exist, then there were no accesses that day
+        print fileName
+        return (0,{})
 
     # generic full print (careful this can take very long)
     if debug>1:
@@ -377,11 +383,15 @@ for year in range(starttmp[0],endtmp[0]+1):
 workDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS']
 files=[]
 siteList = [ x.split("/")[-1] for x in glob.glob(workDirectory + '/'+site)]
-Dataset.siteList = siteList
-for date in dates:
-    files += glob.glob(workDirectory + '/' + site + '/' + os.environ['DETOX_SNAPSHOTS'] + '/' + date)
-phedexFile = open(workDirectory+'/DatasetsInPhedexAtSites.dat','r')
 monitorDB = os.environ['MONITOR_DB']
+Dataset.siteList = siteList
+if os.environ['UPDATE_CACHE']=="True":
+    # should only be set to False for testing purposes
+    getAccessInfo.get()  # update access cache
+for date in dates:
+    files += glob.glob(monitorDB+'/sitesInfo/'+site+'/'+date)
+    # files += glob.glob(workDirectory + '/' + site + '/' + os.environ['DETOX_SNAPSHOTS'] + '/' + date)
+phedexFile = open(workDirectory+'/DatasetsInPhedexAtSites.dat','r')
 creationTimeCache = os.environ['MONITOR_DB'] + '/datasets/creationTimes.txt'
 groupPattern = os.environ['MONITOR_GROUP']
 groupPattern = groupPattern.replace("_",".*")
@@ -415,7 +425,7 @@ for line in phedexFile:
         datasetSet[datasetName] = Dataset(datasetName)
     datasetObject = datasetSet[datasetName]
     datasetObject.isDeleted = False
-    datasetObject.currentSites.add(siteName)
+    datasetObject.addCurrentSite(siteName,l[6],l[7])
     phedexSize+=float(l[2])
     datasetObject = None
 print "Phedex Size: ",phedexSize
@@ -431,7 +441,7 @@ for fileName in sorted(files):
     if debug>0:
         print ' Analyzing: ' + fileName
     g = fileName.split("/")
-    siteName = g[-3]
+    siteName = g[-2]
 
     if siteName in nSiteAccess:
         nSiteAccessEntry = nSiteAccess[siteName]
@@ -494,10 +504,10 @@ if addNotAccessedDatasets:
                 addedSize += sizesPerSitePerDataset[dataset]
 
                 # make an entry in all of the relevant records
-                try:
-                    datasetSet[dataset].addAccesses(site,0)
-                except KeyError:
-                    pass
+                # try:
+                #     datasetSet[dataset].addAccesses(site,0)
+                # except KeyError:
+                #     pass
                 nSiteAccessEntry[dataset] = 0
 
     print " "
