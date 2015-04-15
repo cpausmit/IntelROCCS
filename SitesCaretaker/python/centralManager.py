@@ -145,7 +145,7 @@ class CentralManager:
                 #make sure sets do not go the dead or waiting room site
                 siteInfo = self.siteReadinessHandler.getSiteReadiness(site)
                 dbStatus = self.allSites[site].getStatus() 
-                if  dbStatus == 0 or siteInfo.inWaitingRoom() or siteInfo.isDead():
+                if dbStatus != 1 or siteInfo.inWaitingRoom() or siteInfo.isDead():
                     continue
 
 
