@@ -78,6 +78,12 @@ class PhedexDataset:
             return True
         return False
 
+    def matchesSite(self,pattern):
+        for site in self.siteNames:
+            if pattern in site:
+                return True
+        return False
+
     def setValid(self,site,valid):
         if site in self.validAtSite:
             if self.validAtSite[site] == 1:
@@ -181,7 +187,8 @@ class PhedexDataset:
                 #only valid dataset can be taged as partial
                 if self.isValid(site):
                     if self.trueSize < self.sizeAtSite[site]:
-                        print "  -- WARNING -- need correct size for " + self.dataset 
+                        if self.matchesSite("T2_"):
+                            print "  -- WARNING -- need correct size for " + self.dataset 
                     else:
                         self.partialAtSite[site] = True
 

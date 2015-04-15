@@ -83,8 +83,6 @@ timeNow = time.time()
 print ' - Making deletion lists took: %d seconds'%(timeNow-timePre)
 timePre = timeNow
 
-#centralManager.extractCacheRequests()
-
 if requestDeletions:
     centralManager.requestDeletions()
 
@@ -94,6 +92,15 @@ timePre = timeNow
 
 centralManager.extractCacheRequests()
 centralManager.showCacheRequests()
+timeNow = time.time()
+print ' - Extracting requests from database took: %d seconds'%(timeNow-timePre)
+timePre = timeNow
+
+centralManager.updateSiteStatus()
+centralManager.printResults()
+timeNow = time.time()
+print ' - Printing results took: %d seconds'%(timeNow-timePre)
+timePre = timeNow
 
 # Final summary of timing
 timeNow = time.time()

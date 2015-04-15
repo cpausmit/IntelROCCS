@@ -77,7 +77,7 @@ class CentralManager:
             siteName = row[0]
             siteSizeGb = float(row[1])*1000
             willBeUsed = int(row[2])
-            if willBeUsed == 1 and siteSizeGb <= 0 :
+            if willBeUsed > 0 and siteSizeGb <= 0 :
                 willBeUsed = 0
             siteId = int(row[3])
             self.allSites[siteName] = siteStatus.SiteStatus(siteName)
@@ -288,8 +288,9 @@ class CentralManager:
        for datasetName in phedexSets:
            dsetId = None
            if datasetName not in dataSetIds:
-               print  " -- WARNING -- not in the database " + datasetName
                dataSetIds[datasetName] = None
+               if phedexSets[datasetName].matchesSite("T2_"):
+                   print  " -- WARNING -- not in the database " + datasetName
            phedexSets[datasetName].findIncomplete()
 
        missing = 0
@@ -384,8 +385,6 @@ class CentralManager:
                outputFile.write("%8.1f %9.1f %s\n"%(rank,size,dset))
            outputFile.close()
 
-       self.printResults()
-
     def unifyDeletionLists(self):
         for site in self.sitePropers:
             self.sitePropers[site].makeWishList()
@@ -476,13 +475,6 @@ class CentralManager:
         today = str(datetime.date.today())
         ttime = time.strftime("%H:%M")
 
-        nstuckAtSite = {}
-        for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
-            sitePr = self.sitePropers[site]
-            (speed,volume,stuck) = sitePr.getDownloadStats()
-            nstuckAtSite[site] = int(stuck)
-        stmean,strms = self.getMeanValue(nstuckAtSite,3,0.5)
-
         usedSets = self.popularityHandler.getUsedDatasets()
         totalSpaceTaken = 0
         totalSpaceLcopy = 0
@@ -520,11 +512,6 @@ class CentralManager:
                     totalSpaceTakenT2 += taken
                     totalNotUsedT2 += notUsed
                     t2Sites += 1
-
-            if site in nstuckAtSite and abs(stmean -  nstuckAtSite[site]) > 3*strms:
-                if nstuckAtSite[site] > 4:
-                    print (" -- %-16s has too many stuck sets, disabling in SitesInfo"%(site))
-                    active = 0
             
             # summary of all sites
             #outputFile.write("   %-6d %-9d %-9d %-12d %-11d %-20s \n"\
@@ -826,6 +813,52 @@ class CentralManager:
                                      %(rank,trueSize,size,nsites-ndeletes,dset))
             outputFile.close()
 
+    def updateSiteStatus(self):
+        # find all sites with stuck datasets, calculate mean and rms
+        nstuckAtSite = {}
+        for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
+            theSite = self.allSites[site]
+            active = theSite.getStatus()
+            if active == 0: 
+                continue
+
+            sitePr = self.sitePropers[site]
+            (speed,volume,stuck) = sitePr.getDownloadStats()
+            nstuckAtSite[site] = int(stuck)
+        stmean,strms = self.getMeanValue(nstuckAtSite,3,0.5)
+
+        # set status=2 to all sites that are above 3xrms threshold
+        changingStatus = {}
+        for site in sorted(self.allSites):
+            theSite = self.allSites[site]
+            active = theSite.getStatus()
+            if active == 0: 
+                continue
+
+            shouldBe = 1
+            if site in nstuckAtSite and abs(stmean -  nstuckAtSite[site]) > 3*strms:
+                if nstuckAtSite[site] > 4:
+                    shouldBe = 2
+            if shouldBe != active:
+                 print (" -- %-16s status changing: %1d --> %1d"%(site,active,shouldBe))
+                 changingStatus[site] = shouldBe
+                 
+        connection = self.getDbConnection()
+        for site in changingStatus: 
+            siteId = str(self.allSites[site].getId())
+            newStatus = str(changingStatus[site])
+            sql = 'update Sites set Status=' +  newStatus + ' where SiteId=' + siteId 
+            sql = sql + ' limit 1'
+            cursor = connection.cursor()
+            try:
+                cursor.execute(sql)
+                results = cursor.fetchall()
+            except:
+                print ' Error(%s) -- could not execute sql '%(sql)
+                print sys.exc_info()
+        connection.close()
+
+
     def requestDeletions(self):
         now_tstamp = datetime.datetime.now()
         numberRequests = 0
@@ -1008,7 +1041,8 @@ class CentralManager:
     def submitUpdateRequest(self,site,reqid):
         # here we brute force deletion to be approved
         phedex = phedexApi.phedexApi(logPath='./')
-        check,response = phedex.updateRequest(decision='approve',request=reqid,node=site,instance='prod')
+        check,response = phedex.updateRequest(decision='approve',request=reqid,
+                                              node=site,instance='prod')
         if check:
             print " ERROR - phedexApi.updateRequest failed - reqid="+ str(reqid)
             print response
