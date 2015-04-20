@@ -1,18 +1,19 @@
 #!/bin/bash
 # --------------------------------------------------------------------------------------------------
-# data_dealer_testd  Startup script for the data dealer test package
+# data_dealerd  Startup script for the data dealer package
 #
 # chkconfig: - 70 15
 # description: Data Dealer is a process which decides if a CMS dataset needs to be replicated
 #              It also selects an appropriate destination site
-#              This is a test daemon for the real Data Dealer
 #
-# processname: data_dealer_testd
-# config:      /etc/data_dealer_testd.conf
-# pidfile:     /var/run/data_dealer_testd.pid
+# processname: data_dealerd
+# config:      /etc/data_dealerd.conf
+# pidfile:     /var/run/data_dealerd.pid
 #
 # B.Barrefors
 # --------------------------------------------------------------------------------------------------
+
+# TODO: (10) Set up daemon/run as service
 
 # set up variables
 #=================
@@ -20,39 +21,39 @@
 source /etc/rc.d/init.d/functions
 
 # grab variables from config file
-configfile_secured=/etc/data_dealer_test.conf
+configfile_secured=/etc/data_dealer.conf
 source $configfile_secured
 
 # path to the running script, server binary, and short-form for messages.
-data_dealer_testd=$install_path/data_dealer_testd
-prog=data_dealer_testd
-pidfile="/var/run/data_dealer_testd.pid"
-lockfile="/var/lock/subsys/data_dealer_testd"
+data_dealerd=$install_path/data_dealerd
+prog=data_dealerd
+pidfile="/var/run/data_dealerd.pid"
+lockfile="/var/lock/subsys/data_dealerd"
 
 RETVAL=0
 
 
-# Start data dealer test daemon (data_dealer_testd)
+# Start data dealer daemon (data_dealerd)
 #========================================
 start() {
     echo -n $"Starting $prog:"
-    daemon "--user=$intelroccs_user" "--pidfile=$pidfile" "$data_dealer_testd" \&
+    daemon "--user=$intelroccs_user" "--pidfile=$pidfile" "$data_dealerd" \&
     RETVAL=$?
     echo
     [ $RETVAL = 0 ] && touch "$lockfile"
 
-    pid=$(pgrep -f "/bin/bash $data_dealer_testd")
+    pid=$(pgrep -f "/bin/bash $data_dealerd")
     echo "$pid" > "$pidfile"
 
     return $RETVAL
 }
 
 
-# Stop data dealer test daemon (data_dealer_testd)
+# Stop data dealer daemon (data_dealerd)
 #=======================================
 stop() {
     echo -n $"Stopping $prog: "
-    killproc -p "$pidfile" "$data_dealer_testd"
+    killproc -p "$pidfile" "$data_dealerd"
     RETVAL=$?
     echo
     [ $RETVAL = 0 ] && rm -f "$lockfile" "$pidfile"
@@ -69,7 +70,7 @@ case $1 in
         stop
         ;;
     status)
-        status -p "$pidfile" "$data_dealer_testd"
+        status -p "$pidfile" "$data_dealerd"
         RETVAL=$?
         ;;
     restart)
@@ -77,7 +78,7 @@ case $1 in
         start
         ;;
     condrestart|try-restart)
-        if status -p "$pidfile" "$data_dealer_testd" >&/dev/null
+        if status -p "$pidfile" "$data_dealerd" >&/dev/null
         then
             stop
             start

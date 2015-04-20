@@ -5,6 +5,9 @@
 # B.Barrefors
 # --------------------------------------------------------------------------------------------------
 
+# TODO: (10) Set up install script
+# TODO: (10) Set up daemon/service
+
 # set up variables
 #=================
 # grab variables from config file

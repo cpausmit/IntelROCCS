@@ -1,40 +1,39 @@
 #!/usr/local/bin/python
 """
-File       : generic.py
+File       : pop_db.py
 Author     : Bjorn Barrefors <bjorn dot peter dot barrefors AT cern dot ch>
-Description: Generic service module
+Description: Popularity DB service module
 """
 
-# TODO: (5) Implement cache
-
 # system modules
+import os
 import json
 
 # package modules
-from UADR.utils.url_utils import fetch
+from UADR.services.generic import GenericService
+from UADR.utils.sso_utils import sso_fetch
 
-class GenericService(object):
+class PopDBService(GenericService):
     """
-    Generic UADR service class
-    Shared properties between services:
-        Contact a web service using a base url and some key:value parameters
-        Services require a valid cert and key
-        Want to cache results in a document-oriented database
+    Helper class to access Popularity DB API
+    Subclass of GenericService
     """
     def __init__(self, config=dict(), debug=0):
-        self.config = config
-        self.name = 'generic'
-        self.debug = debug
+        GenericService.__init__(self, config, debug)
+        self.name = 'pop_db'
+        self.cookie_path = os.path.join(os.environ['HOME'], '.globus')
+        self.target_url = config['services'][self.name]
 
     def fetch(self, api, params=dict(), cache=True, cache_only=False):
         """
-        Get data from url using parameters params
+        Fetch data from Popularity DB service
         If param cache is not true just fetch from online service, don't check or update cache
         If param cache_only is true just update the cache, don't return any data.
             Use this parameter to spawn external thread to update cache in background
+        This will be replaced by GenericService fetch function once SSO cookie identification is removed
         """
         if self.debug:
             print "%s: Fetching %s data for %s" % (self.name, api, str(params))
-        data = fetch(self.target_url, api, params, self.name, debug=self.debug)
+        data = sso_fetch(self.cookie_path, self.target_url, api, params, debug=self.debug)
         json_data = json.loads(data)
         return json_data
