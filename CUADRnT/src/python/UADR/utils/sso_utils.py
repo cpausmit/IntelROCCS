@@ -8,6 +8,7 @@ Description: Handle SSO cookie and fetch data for CERN service PopDB
 # system modules
 import os
 import time
+import json
 import urllib
 import urllib2
 import subprocess
@@ -107,6 +108,7 @@ def get_data(cookie_path, full_url, debug=0):
     Data is json data returned as a string
     Use json.loads(data) to generate json structure
     """
+    # FIXME: Better way of checking for error
     data = "{}"
     if debug:
         print "Fetching SSO data for url:\n%s" % (full_url)
@@ -114,8 +116,10 @@ def get_data(cookie_path, full_url, debug=0):
     cookie_jar = '%s/%s' % (cookie_path, 'cern_sso_cookie_jar')
     cmd = subprocess.Popen(['curl', '-k', '-s', '-L', '--cookie', sso_cookie, '--cookie-jar', cookie_jar, full_url], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=False)
     return_data = cmd.communicate()
-    if cmd.returncode != 0:
-        print "Couldn't fetch SSO data for url %s" % (full_url)
-    else:
+    try:
+        json.loads(return_data[0])
         data = return_data[0]
+    except Exception:
+        print "Couldn't fetch SSO data for url %s" % (full_url)
+        print return_data[0]
     return data

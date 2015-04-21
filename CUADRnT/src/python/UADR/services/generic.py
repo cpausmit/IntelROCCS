@@ -29,7 +29,7 @@ class GenericService(object):
     def fetch(self, api, params=dict(), cache=True, cache_only=False):
         """
         Get data from url using parameters params
-        If param cache is not true just fetch from online service, don't check or update cache
+        If param cache is not true update cache on cache miss
         If param cache_only is true just update the cache, don't return any data.
             Use this parameter to spawn external thread to update cache in background
         """

@@ -7,6 +7,40 @@ Description: Useful functions
 
 # system modules
 import os
+import datetime
+
+def pop_db_timestamp_to_timestamp(timestamp):
+    """
+    Popularity DB stores timestamps padded with extra zeros
+    """
+    return int(timestamp/10**3)
+
+def phedex_timestamp_to_timestamp(timestamp):
+    """
+    PhEDEx stores timestamps down to milliseconds
+    """
+    return int(timestamp)
+
+def bytes_to_gb(bytes):
+    """
+    Convert bytes to gb assuming 1000 conversion, not 1024
+    """
+    return int(bytes/10**9)
+
+def timestamp_day(timestamp):
+    """
+    Round timestamp to previous midnight GMT time
+    """
+    days = int(timestamp/86400)
+    day_timestamp = days*86400
+    return day_timestamp
+
+def timestamp_to_date(timestamp):
+    """
+    convert timestamp to date string of format YYYY-MM-DD
+    """
+    date = datetime.datetime.utcfromtimestamp(timestamp).strftime('%Y-%m-%d')
+    return date
 
 def check_tool(tool, debug=0):
     """

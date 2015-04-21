@@ -27,7 +27,7 @@ class PopDBService(GenericService):
     def fetch(self, api, params=dict(), cache=True, cache_only=False):
         """
         Fetch data from Popularity DB service
-        If param cache is not true just fetch from online service, don't check or update cache
+        If param cache is not true update cache on cache miss
         If param cache_only is true just update the cache, don't return any data.
             Use this parameter to spawn external thread to update cache in background
         This will be replaced by GenericService fetch function once SSO cookie identification is removed

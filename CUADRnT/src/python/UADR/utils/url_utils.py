@@ -29,6 +29,7 @@ def get_data(request, name, debug=0):
     Data is json data returned as a string
     Use json.loads(data) to generate json structure
     """
+    # FIXME: Better way of checking for error
     data = "{}"
     if debug:
         full_url = request.get_full_url() + request.get_data()
