@@ -8,6 +8,8 @@ Description: Collect historical data for popularity model
 # system modules
 import os
 import sys
+import getopt
+import re
 import time
 
 # package modules
@@ -36,12 +38,19 @@ class HUA(object):
         """
         # NOTE: We would like to get all datasets and have pattern for non analysis datasets
         dataset_names = set()
-        api = 'blockReplicas'
-        params = {'create_since':0, 'group':'AnalysisOps', 'show_dataset':'y'}
-        json_data = self.phedex.fetch(api, params)
-        datasets = json_data.get('phedex').get('dataset')
-        for dataset in datasets:
-            dataset_names.add(dataset.get('name'))
+        valid_dataset_re = re.compile('/[0-9a-zA-Z\-_]+/[0-9a-zA-Z\-_]+/[0-9a-zA-Z\-_]+$')
+        test_dataset_re = re.compile('^/GenericTTbar/HC-.*/GEN-SIM-RECO$')
+        #user_dataset_re = re.compile('^.*/USER$')
+        yesterday = timestamp_to_date(time.time()-86400)
+        api = 'DSStatInTimeWindow'
+        params = {'sitename':'summary', 'tstart':'1999-01-01', 'tstop':yesterday}
+        json_data = self.pop_db.fetch(api, params)
+        for dataset in json_data.get('DATA'):
+            dataset_name = dataset.get('COLLNAME')
+            if (test_dataset_re.match(dataset_name) or not valid_dataset_re.match(dataset_name)):
+                continue
+            dataset_names.add(dataset_name)
+        print len(dataset_names)
         return dataset_names
 
     def get_accesses(self, dataset_names):
@@ -50,15 +59,15 @@ class HUA(object):
         """
         # NOTE: For now we only use accesses as CPUH was not working for a while in pop db
         dataset_accesses = dict()
-        test_dataset_re = re.compile('^/GenericTTbar/HC-.*/GEN-SIM-RECO$')
-        yesterday = timestamp_to_date(time.time()-86400)
-        api = 'DSStatInTimeWindow'
-        params = {'sitename':'summary', 'tstart':'1999-01-01', 'tstop':yesterday}
-        json_data = self.pop_db.fetch(api, params)
-        for data in json_data.get('data')[0].get('data'):
-            timestamp = pop_db_timestamp_to_timestamp(data[0])
-            accesses = data[1]
-            tmp_accesses[timestamp] = accesses
+        api = 'getSingleDSstat'
+        for dataset_name in dataset_names:
+            tmp_accesses = dict()
+            params = {'sitename':'summary', 'aggr':'day', 'orderby':'naccess', 'name':dataset_name}
+            json_data = self.pop_db.fetch(api, params)
+            for data in json_data.get('data')[0].get('data'):
+                timestamp = pop_db_timestamp_to_timestamp(data[0])
+                accesses = data[1]
+                tmp_accesses[timestamp] = accesses
             dataset_accesses[dataset_name] = dataset_accesses
         return dataset_accesses
 
@@ -135,12 +144,24 @@ class HUA(object):
             fs = open(export_file)
             fs.write(text_row, 'a')
 
-def main():
+def main(argv):
     """
     Main driver for historical analytics
     """
+    debug = 0
+    try:
+        opts, args = getopt.getopt(argv, 'hd', ['help', 'debug'])
+    except getopt.GetoptError:
+        print "historical_analytics.py [--debug]"
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt in ('-h', '--help'):
+            print "historical_analytics.py [--debug]"
+            sys.exit()
+        elif opt in ('-d', '--debug'):
+            debug = 1
     headers = ('dataset_name', 'date', 'accesses', 'size', 'data_tier')
-    hua = HUA(debug=1)
+    hua = HUA(debug=debug)
     dataset_names = hua.get_datasets()
     dataset_accesses = hua.get_accesses(dataset_names)
     dataset_sizes = hua.get_size_gb(dataset_names)
@@ -150,5 +171,6 @@ def main():
     hua.export(data)
 
 if __name__ == "__main__":
-    main()
-    sys.exit(0)
+    # TODO: Add support to pass debug parameter
+    main(sys.argv[1:])
+    sys.exit()
