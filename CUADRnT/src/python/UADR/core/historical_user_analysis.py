@@ -1,6 +1,6 @@
 #!/usr/local/bin/python
 """
-File       : historical_analytics.py
+File       : historical_user_analysis.py
 Author     : Bjorn Barrefors <bjorn dot peter dot barrefors AT cern dot ch>
 Description: Collect historical data for popularity model
 """
@@ -24,7 +24,7 @@ from UADR.services.pop_db import PopDBService
 
 class HUA(object):
     """
-    HUA or Historical User Analytics collects historical data on user behavior
+    HUA or Historical User Analysis collects historical data on user behavior
     """
     def __init__(self, debug=0):
         self.config = get_config()
@@ -68,7 +68,7 @@ class HUA(object):
                 timestamp = pop_db_timestamp_to_timestamp(data[0])
                 accesses = data[1]
                 tmp_accesses[timestamp] = accesses
-            dataset_accesses[dataset_name] = dataset_accesses
+            dataset_accesses[dataset_name] = tmp_accesses
         return dataset_accesses
 
     def get_size_gb(self, dataset_names):
@@ -134,7 +134,8 @@ class HUA(object):
         data format: [(header_1, header_2, ...), (data_1, data_2, ...)]
         """
         # FIXME: Get file path from config file
-        export_file = '%s/historical_analytics.csv' % (self.data_path)
+        # FIXME: Move to utils
+        export_file = '%s/hua.csv' % (self.data_path)
         fs = open(export_file)
         for row in data:
             text_row = ''
@@ -160,15 +161,15 @@ def main(argv):
             sys.exit()
         elif opt in ('-d', '--debug'):
             debug = 1
-    headers = ('dataset_name', 'date', 'accesses', 'size', 'data_tier')
+    headers = ('dataset_name', 'date', 'accesses', 'size_gb', 'data_tier')
     hua = HUA(debug=debug)
     dataset_names = hua.get_datasets()
-    dataset_accesses = hua.get_accesses(dataset_names)
-    dataset_sizes = hua.get_size_gb(dataset_names)
-    dataset_dates = hua.get_creation_date(dataset_names)
-    dataset_tiers = hua.get_data_tier(dataset_names)
-    data = hua.organize_data(headers, dataset_names, dataset_accesses, dataset_sizes, dataset_tiers, dataset_dates)
-    hua.export(data)
+    #dataset_accesses = hua.get_accesses(dataset_names)
+    #dataset_sizes = hua.get_size_gb(dataset_names)
+    #dataset_dates = hua.get_creation_date(dataset_names)
+    #dataset_tiers = hua.get_data_tier(dataset_names)
+    #data = hua.organize_data(headers, dataset_names, dataset_accesses, dataset_sizes, dataset_tiers, dataset_dates)
+    #hua.export(data)
 
 if __name__ == "__main__":
     # TODO: Add support to pass debug parameter

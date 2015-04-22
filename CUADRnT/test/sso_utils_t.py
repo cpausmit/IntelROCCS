@@ -28,7 +28,7 @@ class SSOUtilsTests(unittest.TestCase):
         pass
 
     def test_get_sso_cookie(self):
-        "test check_cookie function"
+        "test get_sso_cookie function"
         print ""
         cookie_path = os.path.join(os.environ['HOME'], '.globus')
         target_url = self.config['services']['pop_db']
@@ -37,7 +37,7 @@ class SSOUtilsTests(unittest.TestCase):
         self.assertTrue(expected)
 
     def test_sso_fetch(self):
-        "test check_cookie function"
+        "test sso_fetch function"
         print ""
         expected = 'T2_US_Nebraska'
         cookie_path = os.path.join(os.environ['HOME'], '.globus')

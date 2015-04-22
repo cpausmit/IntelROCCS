@@ -1,27 +1,17 @@
 var margin = {top: 100, right: 50, bottom: 50, left: 50};
-var graphWidth = screen.width - margin.left - margin.right;
-var graphHeight = screen.height - margin.top - margin.bottom - 150;
+var graph_width = screen.width - margin.left - margin.right;
+var graph_height = screen.height - margin.top - margin.bottom - 150;
 
-var headers = ["CPU Hours", "Accesses", "CPU Threshold", "Acc Threshold"];
-var ids = ["maxcpu", "maxacc", "dcpu", "dacc"]
-
-var x = d3.scale.linear().domain([0, headers.length]).range([0, graphWidth]);
-var yMaxCpu = d3.scale.linear().range([0, graphHeight]);
-var yMaxAcc = d3.scale.linear().range([0, graphHeight]);
-var yDeltaCpu = d3.scale.linear().range([0, graphHeight]);
-var yDeltaAcc = d3.scale.linear().range([0, graphHeight]);
+var x = d3.scale.linear().range([0, graph_width]);
+var y = d3.scale.linear().range([0, graph_height]);
 
 var chart = d3.select(".chart")
-    .attr("width", graphWidth + margin.left + margin.right)
-    .attr("height", graphHeight + margin.top + margin.bottom);
+    .attr("width", graph_width + margin.left + margin.right)
+    .attr("height", graph_height + margin.top + margin.bottom);
 
 var graph = chart.append("g");
-var lines1 = chart.append("g");
-var lines2 = chart.append("g");
-var lines3 = chart.append("g");
-var selections = chart.append("g");
 
-var axises = graph.selectAll("g")
+var x_axis = graph.selectAll("g")
     .data(headers)
     .enter().append("g")
         .attr("id", function(d, i) { return ids[i];});
@@ -44,7 +34,7 @@ axises.append("text")
 
 var axValues = axises.append("g");
 
-d3.csv("datasets.csv", type, function(error, data) {
+d3.csv("../data/hua.csv", type, function(error, data) {
     var maxVals = [d3.max(data, function(d) { return d.maxCPU; }), d3.max(data, function(d) { return d.maxAcc; }), d3.max(data, function(d) { return d.deltaCPU; }), d3.max(data, function(d) { return d.deltaAcc; })];
 
     yMaxCpu.domain([0, d3.max(data, function(d) { return d.maxCPU; })]);
@@ -126,14 +116,10 @@ d3.csv("datasets.csv", type, function(error, data) {
 });
 
 function type(d) {
-    d.dataset = d.dataset;
-    d.maxCPU = +d.maxCPU;
-    d.deltaCPU = +d.deltaCPU;
-    d.maxAcc = +d.maxAcc;
-    d.deltaAcc = +d.deltaAcc;
-    d.popularityTime = +d.popularityTime;
-    d.dataTier = d.dataTier;
-    d.sizeGb = +d.sizeGb;
-    d.age = +d.age;
+    d.dataset_name = d.dataset_name;
+    d.date = d.date;
+    d.accesses = +d.accesses;
+    d.size_gb = +d.size_gb;
+    d.data_tier = d.data_tier;
     return d;
 }
