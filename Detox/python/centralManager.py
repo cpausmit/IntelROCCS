@@ -831,6 +831,8 @@ class CentralManager:
         changingStatus = {}
         for site in sorted(self.allSites):
             theSite = self.allSites[site]
+            if site.startswith("T1_"):
+                continue
             active = theSite.getStatus()
             if active == 0: 
                 continue
