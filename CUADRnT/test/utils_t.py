@@ -16,7 +16,7 @@ from UADR.utils.utils import pop_db_timestamp_to_timestamp
 from UADR.utils.utils import phedex_timestamp_to_timestamp
 from UADR.utils.utils import bytes_to_gb
 from UADR.utils.utils import timestamp_day
-from UADR.utils.utils import timestamp_to_date
+from UADR.utils.utils import timestamp_to_utc_date
 
 class UtilsTests(unittest.TestCase):
     """
@@ -77,7 +77,7 @@ class UtilsTests(unittest.TestCase):
         "Test timestamp_to_date function"
         print ""
         expected = '20131107'
-        result = timestamp_to_date(1383793400)
+        result = timestamp_to_utc_date(1383793400)
         self.assertEqual(result, expected)
 
 if __name__ == '__main__':

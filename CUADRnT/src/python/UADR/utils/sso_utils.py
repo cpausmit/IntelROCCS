@@ -8,6 +8,7 @@ Description: Handle SSO cookie and fetch data for CERN service PopDB
 # system modules
 import os
 import time
+import shutil
 import json
 import urllib
 import urllib2
@@ -49,18 +50,24 @@ def get_sso_cookie(cookie_path, target_url, debug=0):
     cern_tool = 'cern-get-sso-cookie'
     if check_tool(cern_tool):
         sso_cookie = '%s/%s' % (cookie_path, 'cern_sso_cookie')
+        cookie_jar = '%s/%s' % (cookie_path, 'cern_sso_cookie_jar')
         key, cert = get_sso_key_cert(debug)
         if not os.path.exists(cookie_path):
             os.makedirs(cookie_path)
+        fs = open(sso_cookie, 'w')
+        fs.write('')
+        fs.close()
+        fs = open(cookie_jar, 'w')
+        fs.write('')
+        fs.close()
         cmd = subprocess.Popen([cern_tool, "--cert", cert, "--key", key, "-u", target_url, "-o", sso_cookie], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=False)
         ret_str = cmd.communicate()[0]
         if cmd.returncode != 0:
             print ret_str
             print "Could not generate SSO cookie %s" % (sso_cookie)
-            if os.exists(sso_cookie):
-                os.remove(sso_cookie)
         elif debug:
             print "Generated SSO cookie %s" % (sso_cookie)
+        shutil.copyfile(sso_cookie, cookie_jar)
     # else:
     #     logger.WARNING('Command line tool %s not found', cern_tool)
 
@@ -70,26 +77,16 @@ def check_cookie(cookie_path, target_url, debug=0):
     A generated cookie is valid for 24h
     """
     sso_cookie = '%s/%s' % (cookie_path, 'cern_sso_cookie')
-    cookie_jar = '%s/%s' % (cookie_path, 'cern_sso_cookie_jar')
     if os.path.exists(cookie_path):
         time_now = time.time()
         valid_seconds = 60*59*24
         if os.path.isfile(sso_cookie):
             mod_time = os.path.getmtime(sso_cookie)
             if (os.path.getsize(sso_cookie)) == 0 or ((time_now-valid_seconds) > mod_time):
-                os.remove(sso_cookie)
-                if os.path.isfile(cookie_jar):
-                    os.remove(cookie_jar)
-                if debug:
-                    print "Getting a new SSO cookie %s for %s" % (sso_cookie, target_url)
                 get_sso_cookie(cookie_path, target_url, debug)
         else:
-            if debug:
-                print "Getting a new SSO cookie %s for %s" % (sso_cookie, target_url)
             get_sso_cookie(cookie_path, target_url, debug)
     else:
-        if debug:
-            print "Getting a new SSO cookie %s for %s" % (sso_cookie, target_url)
         get_sso_cookie(cookie_path, target_url, debug)
 
 def sso_fetch(cookie_path, target_url, api, params=dict(), debug=0):

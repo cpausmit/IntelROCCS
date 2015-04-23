@@ -33,11 +33,12 @@ class IoUtilsTests(unittest.TestCase):
         data = [('Bjorn', 'Barrefors')]
         export_csv(file_name, headers, data, debug=1)
         data_path = get_data_path()
-        fs = open('%s/%s.csv' % (data_path, file_name), 'r')
+        export_file = '%s/%s.csv' % (data_path, file_name)
+        fs = open(export_file, 'r')
         result = fs.read()
         expected = 'foo,bar\nBjorn,Barrefors\n'
         self.assertEqual(result, expected)
-        os.remove(file_name)
+        os.remove(export_file)
 
 if __name__ == '__main__':
     unittest.main()

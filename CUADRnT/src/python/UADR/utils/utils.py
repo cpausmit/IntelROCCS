@@ -11,7 +11,7 @@ import os
 import datetime
 
 # Set up logger
-logging.basicConfig(filename='%s/log/cuadrnt-%s.log' % (os.environ['CUADRNT_ROOT'], datetime.date.today().strftime('%Y%m%d')), format='[%(levelname)s] %(name)s: %(message)s', level=logging.WARNING)
+logging.basicConfig(filename='%s/log/cuadrnt-%s.log' % (os.environ['CUADRNT_ROOT'], datetime.date.today().strftime('%Y%m%d')), format='[%(asctime)s %(levelname)s] %(name)s: %(message)s', datefmt='%H:%M', level=logging.WARNING)
 logger = logging.getLogger(__name__)
 
 def pop_db_timestamp_to_timestamp(timestamp):
@@ -40,12 +40,6 @@ def timestamp_day(timestamp):
     day_timestamp = days*86400
     return day_timestamp
 
-def timestamp_to_local_date(timestamp):
-    """
-    Convert timestamp to date string of format YYYYMMDD
-    """
-    return datetime.datetime.fromtimestamp(timestamp).strftime('%Y%m%d')
-
 def timestamp_to_utc_date(timestamp):
     """
     Convert timestamp to date string of format YYYYMMDD
@@ -67,7 +61,7 @@ def check_tool(tool):
         if os.path.exists(tool_path):
             return True
     else:
-        logger.WARNING('Command line tool %s not found', tool)
+        logger.warning('Command line tool %s not found', tool)
         return False
 
 def get_key_cert(debug=logging.WARNING):
@@ -110,7 +104,7 @@ def get_key_cert(debug=logging.WARNING):
     if not os.path.exists(cert):
         logger.ERROR('Certificate PEM file %s not found', key)
 
-    logger.debug('Key : %s', key)
-    logger.debug('Certificate : %s', cert)
+    logger.debug('Key file: %s', key)
+    logger.debug('Certificate file: %s', cert)
 
     return key, cert
