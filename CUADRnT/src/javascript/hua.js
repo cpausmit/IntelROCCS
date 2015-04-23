@@ -117,7 +117,7 @@ d3.csv("../data/hua.csv", type, function(error, data) {
 
 function type(d) {
     d.dataset_name = d.dataset_name;
-    d.date = d.date;
+    d.date = +d.date;
     d.accesses = +d.accesses;
     d.size_gb = +d.size_gb;
     d.data_tier = d.data_tier;

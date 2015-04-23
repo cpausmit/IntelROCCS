@@ -20,7 +20,6 @@ class UrlUtilsTests(unittest.TestCase):
     def setUp(self):
         "Set up for test"
         self.config = get_config()
-        pass
 
     def tearDown(self):
         "Clean up"

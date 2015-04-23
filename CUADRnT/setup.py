@@ -157,6 +157,11 @@ def main():
     Main function
     """
     name = 'CUADRnT'
+
+    log_path = '%s/log' % (os.environ['CUADRNT_ROOT'])
+    if not os.path.exists(log_path):
+        os.makedirs(log_path)
+
     if sys.version < required_python_version:
         msg = "I'm sorry, but %s %s requires Python %s or later."
         print msg % (name, version, required_python_version)

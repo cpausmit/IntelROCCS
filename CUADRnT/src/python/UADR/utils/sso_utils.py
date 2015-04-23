@@ -47,7 +47,7 @@ def get_sso_cookie(cookie_path, target_url, debug=0):
     """
     # cookie is valid for 24h
     cern_tool = 'cern-get-sso-cookie'
-    if check_tool(cern_tool, debug):
+    if check_tool(cern_tool):
         sso_cookie = '%s/%s' % (cookie_path, 'cern_sso_cookie')
         key, cert = get_sso_key_cert(debug)
         if not os.path.exists(cookie_path):
@@ -61,6 +61,8 @@ def get_sso_cookie(cookie_path, target_url, debug=0):
                 os.remove(sso_cookie)
         elif debug:
             print "Generated SSO cookie %s" % (sso_cookie)
+    # else:
+    #     logger.WARNING('Command line tool %s not found', cern_tool)
 
 def check_cookie(cookie_path, target_url, debug=0):
     """

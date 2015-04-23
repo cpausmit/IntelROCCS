@@ -7,6 +7,7 @@ Description: Test class for utils functions
 
 # system modules
 import unittest
+import logging
 
 # package modules
 from UADR.utils.utils import check_tool
@@ -32,15 +33,15 @@ class UtilsTests(unittest.TestCase):
     def test_check_tool(self):
         "Test check_tool function"
         print ""
-        result = check_tool('rm', debug=1)
+        result = check_tool('rm')
         self.assertTrue(result)
-        result = check_tool('invalid_tool', debug=1)
+        result = check_tool('invalid_tool')
         self.assertFalse(result)
 
     def test_get_key_cert(self):
         "Test get_key_cert function"
         print ""
-        result_key, result_cert = get_key_cert(debug=1)
+        result_key, result_cert = get_key_cert(debug=logging.DEBUG)
         self.assertIsNotNone(result_key)
         self.assertIsNotNone(result_cert)
 
@@ -75,7 +76,7 @@ class UtilsTests(unittest.TestCase):
     def test_timestamp_to_date(self):
         "Test timestamp_to_date function"
         print ""
-        expected = '2013-11-07'
+        expected = '20131107'
         result = timestamp_to_date(1383793400)
         self.assertEqual(result, expected)
 
