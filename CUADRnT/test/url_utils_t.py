@@ -33,7 +33,7 @@ class UrlUtilsTests(unittest.TestCase):
         target_url = self.config['services'][name]
         api = 'blockReplicas'
         params = {'node':'T2_US_Nebraska', 'show_dataset':'n', 'group':'AnalysisOps'}
-        data = fetch(target_url, api, params, name, debug=1)
+        data = fetch(target_url, api, params, name)
         json_data = json.loads(data)
         blocks = json_data.get('phedex').get('block')
         for block in blocks:

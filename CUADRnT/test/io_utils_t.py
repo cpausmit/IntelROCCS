@@ -31,7 +31,7 @@ class IoUtilsTests(unittest.TestCase):
         file_name = 'test'
         headers = ('foo', 'bar')
         data = [('Bjorn', 'Barrefors')]
-        export_csv(file_name, headers, data, debug=1)
+        export_csv(file_name, headers, data)
         data_path = get_data_path()
         export_file = '%s/%s.csv' % (data_path, file_name)
         fs = open(export_file, 'r')

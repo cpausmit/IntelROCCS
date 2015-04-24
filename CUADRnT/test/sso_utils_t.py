@@ -32,7 +32,7 @@ class SSOUtilsTests(unittest.TestCase):
         print ""
         cookie_path = os.path.join(os.environ['HOME'], '.globus')
         target_url = self.config['services']['pop_db']
-        get_sso_cookie(cookie_path, target_url, debug=1)
+        get_sso_cookie(cookie_path, target_url)
         expected = os.path.exists(os.path.join(cookie_path, 'cern_sso_cookie'))
         self.assertTrue(expected)
 
@@ -44,7 +44,7 @@ class SSOUtilsTests(unittest.TestCase):
         target_url = self.config['services']['pop_db']
         api = 'DSStatInTimeWindow'
         params = {'tstart':'2015-04-18', 'tstop':'2015-04-18', 'sitename':'T2_US_Nebraska'}
-        data = sso_fetch(cookie_path, target_url, api, params, debug=1)
+        data = sso_fetch(cookie_path, target_url, api, params)
         json_data = json.loads(data)
         result = json_data.get('SITENAME')
         self.assertEqual(result, expected)

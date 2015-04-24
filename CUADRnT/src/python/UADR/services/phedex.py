@@ -13,7 +13,7 @@ class PhEDExService(GenericService):
     Helper class to access PhEDEx API
     Subclass of GenericService
     """
-    def __init__(self, config=dict(), debug=0):
-        GenericService.__init__(self, config, debug)
+    def __init__(self, config=dict()):
+        GenericService.__init__(self, config)
         self.name = 'phedex'
         self.target_url = config['services'][self.name]

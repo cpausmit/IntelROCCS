@@ -6,9 +6,9 @@ Description: Handle SSO cookie and fetch data for CERN service PopDB
 """
 
 # system modules
+import logging
 import os
 import time
-import shutil
 import json
 import urllib
 import urllib2
@@ -17,31 +17,33 @@ import subprocess
 # package modules
 from UADR.utils.utils import check_tool
 
-def get_sso_key_cert(debug=0):
+# Get module specific logger
+logger = logging.getLogger(__name__)
+
+def get_sso_key_cert():
     """
     Get user globus key (~/.globus/userkey.pem) and certificate (~/.globus/usercert.pem)
     """
-    key = None
-    cert = None
+    key = ''
+    cert = ''
     globus_key = os.path.join(os.environ['HOME'], '.globus/userkey.pem')
     globus_cert = os.path.join(os.environ['HOME'], '.globus/usercert.pem')
     if os.path.isfile(globus_key):
         key = globus_key
-        if debug:
-            print "Found key in %s" % (key)
     if os.path.isfile(globus_cert):
         cert = globus_cert
-        if debug:
-            print "Found cert in %s" % (cert)
 
-    if not os.path.exists(cert):
-        print "Certificate PEM file %s not found" % (key)
     if not os.path.exists(key):
-        print "Key PEM file %s not found" % (cert)
+        logger.ERROR('Key PEM file %s not found', key)
+    if not os.path.exists(key):
+        logger.ERROR('Certificate PEM file %s not found', key)
+
+    logger.debug('Key file: %s', key)
+    logger.debug('Certificate file: %s', cert)
 
     return key, cert
 
-def get_sso_cookie(cookie_path, target_url, debug=0):
+def get_sso_cookie(cookie_path, target_url):
     """
     Function generates CERN SSO cookie (~/.globus/cern-sso-cookie) using cern-get-sso-cookie command
     Cookie is valid for 24h
@@ -51,7 +53,7 @@ def get_sso_cookie(cookie_path, target_url, debug=0):
     if check_tool(cern_tool):
         sso_cookie = '%s/%s' % (cookie_path, 'cern_sso_cookie')
         cookie_jar = '%s/%s' % (cookie_path, 'cern_sso_cookie_jar')
-        key, cert = get_sso_key_cert(debug)
+        key, cert = get_sso_key_cert()
         if not os.path.exists(cookie_path):
             os.makedirs(cookie_path)
         fs = open(sso_cookie, 'w')
@@ -63,15 +65,10 @@ def get_sso_cookie(cookie_path, target_url, debug=0):
         cmd = subprocess.Popen([cern_tool, "--cert", cert, "--key", key, "-u", target_url, "-o", sso_cookie], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=False)
         ret_str = cmd.communicate()[0]
         if cmd.returncode != 0:
-            print ret_str
-            print "Could not generate SSO cookie %s" % (sso_cookie)
-        elif debug:
-            print "Generated SSO cookie %s" % (sso_cookie)
-        shutil.copyfile(sso_cookie, cookie_jar)
-    # else:
-    #     logger.WARNING('Command line tool %s not found', cern_tool)
+            logger.error('Could not generate SSO cookie %s due to:\n    %s', sso_cookie, ret_str)
+        logger.debug('Generated SSO cookie %s', sso_cookie)
 
-def check_cookie(cookie_path, target_url, debug=0):
+def check_cookie(cookie_path, target_url):
     """
     Check if CERN SSO cookie (~/.globus/cern-sso-cookie) exists and is valid
     A generated cookie is valid for 24h
@@ -83,24 +80,24 @@ def check_cookie(cookie_path, target_url, debug=0):
         if os.path.isfile(sso_cookie):
             mod_time = os.path.getmtime(sso_cookie)
             if (os.path.getsize(sso_cookie)) == 0 or ((time_now-valid_seconds) > mod_time):
-                get_sso_cookie(cookie_path, target_url, debug)
+                get_sso_cookie(cookie_path, target_url)
         else:
-            get_sso_cookie(cookie_path, target_url, debug)
+            get_sso_cookie(cookie_path, target_url)
     else:
-        get_sso_cookie(cookie_path, target_url, debug)
+        get_sso_cookie(cookie_path, target_url)
 
-def sso_fetch(cookie_path, target_url, api, params=dict(), debug=0):
+def sso_fetch(cookie_path, target_url, api, params=dict()):
     """
     Fetch data from PopDB API api with parameters params
     """
-    check_cookie(cookie_path, target_url, debug)
+    check_cookie(cookie_path, target_url)
     url_data = urllib.urlencode(params)
     url = '%s/%s' % (target_url, api)
     request = urllib2.Request(url, url_data)
     full_url = request.get_full_url() + '?' + request.get_data()
-    return get_data(cookie_path, full_url, debug)
+    return get_data(cookie_path, full_url)
 
-def get_data(cookie_path, full_url, debug=0):
+def get_data(cookie_path, full_url):
     """
     Make make using cURL and CERN SSO cookie
     Use different cookie jar to keep mod time of cookie file same as generation time for validity check reasons
@@ -109,8 +106,7 @@ def get_data(cookie_path, full_url, debug=0):
     """
     # FIXME: Better way of checking for error
     data = "{}"
-    if debug:
-        print "Fetching SSO data for url:\n%s" % (full_url)
+    logger.debug('Fetching SSO data for url:\n    %s', full_url)
     sso_cookie = '%s/%s' % (cookie_path, 'cern_sso_cookie')
     cookie_jar = '%s/%s' % (cookie_path, 'cern_sso_cookie_jar')
     cmd = subprocess.Popen(['curl', '-k', '-s', '-L', '--cookie', sso_cookie, '--cookie-jar', cookie_jar, full_url], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=False)
@@ -119,6 +115,5 @@ def get_data(cookie_path, full_url, debug=0):
         json.loads(return_data[0])
         data = return_data[0]
     except Exception:
-        print "Couldn't fetch SSO data for url %s" % (full_url)
-        print return_data[0]
+        logger.error("Couldn't fetch SSO data for url %s\n    Reason:\n    %s", full_url, return_data[0])
     return data

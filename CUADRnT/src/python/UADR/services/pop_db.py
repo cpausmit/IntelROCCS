@@ -6,6 +6,7 @@ Description: Popularity DB service module
 """
 
 # system modules
+import logging
 import os
 import json
 
@@ -18,9 +19,10 @@ class PopDBService(GenericService):
     Helper class to access Popularity DB API
     Subclass of GenericService
     """
-    def __init__(self, config=dict(), debug=0):
-        GenericService.__init__(self, config, debug)
+    def __init__(self, config=dict()):
+        GenericService.__init__(self, config)
         self.name = 'pop_db'
+        self.logger = logging.getLogger(__name__)
         self.cookie_path = os.path.join(os.environ['HOME'], '.globus')
         self.target_url = config['services'][self.name]
 
@@ -32,8 +34,7 @@ class PopDBService(GenericService):
             Use this parameter to spawn external thread to update cache in background
         This will be replaced by GenericService fetch function once SSO cookie identification is removed
         """
-        if self.debug:
-            print "%s: Fetching %s data for %s" % (self.name, api, str(params))
-        data = sso_fetch(self.cookie_path, self.target_url, api, params, debug=self.debug)
+        self.logger.debug('Fetching %s data for %s', api, str(params))
+        data = sso_fetch(self.cookie_path, self.target_url, api, params)
         json_data = json.loads(data)
         return json_data

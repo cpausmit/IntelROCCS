@@ -10,8 +10,7 @@ import logging
 import os
 import datetime
 
-# Set up logger
-logging.basicConfig(filename='%s/log/cuadrnt-%s.log' % (os.environ['CUADRNT_ROOT'], datetime.date.today().strftime('%Y%m%d')), format='[%(asctime)s %(levelname)s] %(name)s: %(message)s', datefmt='%H:%M', level=logging.WARNING)
+# Get module specific logger
 logger = logging.getLogger(__name__)
 
 def pop_db_timestamp_to_timestamp(timestamp):
@@ -64,13 +63,12 @@ def check_tool(tool):
         logger.warning('Command line tool %s not found', tool)
         return False
 
-def get_key_cert(debug=logging.WARNING):
+def get_key_cert():
     """
     Get user key and certificate
     """
-    logger.setLevel(debug)
-    key = None
-    cert = None
+    key = ''
+    cert = ''
     uid = os.getuid()
     globus_key = os.path.join(os.environ['HOME'], '.globus/userkey.pem')
     globus_cert = os.path.join(os.environ['HOME'], '.globus/usercert.pem')

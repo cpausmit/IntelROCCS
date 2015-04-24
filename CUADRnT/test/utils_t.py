@@ -7,7 +7,6 @@ Description: Test class for utils functions
 
 # system modules
 import unittest
-import logging
 
 # package modules
 from UADR.utils.utils import check_tool
@@ -41,7 +40,7 @@ class UtilsTests(unittest.TestCase):
     def test_get_key_cert(self):
         "Test get_key_cert function"
         print ""
-        result_key, result_cert = get_key_cert(debug=logging.DEBUG)
+        result_key, result_cert = get_key_cert()
         self.assertIsNotNone(result_key)
         self.assertIsNotNone(result_cert)
 

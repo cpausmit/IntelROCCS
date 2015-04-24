@@ -29,7 +29,7 @@ class SSOUtilsTests(unittest.TestCase):
         "test pop_db functions"
         print ""
         expected = 'T2_US_Nebraska'
-        pop_db = PopDBService(config=self.config, debug=1)
+        pop_db = PopDBService(config=self.config)
         api = 'DSStatInTimeWindow'
         params = {'tstart':'2015-04-18', 'tstop':'2015-04-18', 'sitename':'T2_US_Nebraska'}
         json_data = pop_db.fetch(api, params, cache=False)
@@ -40,7 +40,7 @@ class SSOUtilsTests(unittest.TestCase):
         "test phedex functions"
         print ""
         expected = 'T2_US_Nebraska'
-        phedex = PhEDExService(config=self.config, debug=1)
+        phedex = PhEDExService(config=self.config)
         api = 'blockReplicas'
         params = {'node':'T2_US_Nebraska', 'show_dataset':'n', 'group':'AnalysisOps'}
         json_data = phedex.fetch(api, params, cache=False)

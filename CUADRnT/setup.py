@@ -12,6 +12,8 @@ To run tests : python setup.py test
 # FIXME: (10) General cleanup of script
 
 # system modules
+import logging
+import datetime
 import os
 import re
 import sys
@@ -22,8 +24,6 @@ from unittest import TextTestRunner, TestLoader
 from distutils.core import setup
 from distutils.cmd import Command
 from distutils.command.install import INSTALL_SCHEMES
-
-# package modules
 
 version = '1.0.0'  # TODO: (10) Set up automatic versioning system
 required_python_version = '2.7'
@@ -36,20 +36,18 @@ class TestCommand(Command):
 
     def initialize_options(self):
         """Init method"""
-        dir_ = os.path.dirname(os.path.realpath(__file__))
-        self.test_dir = dir_ + '/test'
+        logging.basicConfig(filename='%s/log/cuadrnt-test-%s.log' % (os.environ['CUADRNT_ROOT'], datetime.date.today().strftime('%Y%m%d')), format='%(asctime)s [%(levelname)s] %(name)s:%(funcName)s:%(lineno)d: %(message)s', datefmt='%H:%M', level=logging.DEBUG)
+        self.test_dir = '%s/test' % (os.environ['CUADRNT_ROOT'])
 
     def finalize_options(self):
         """Finalize method"""
-        pass
+        self.tests = TestLoader().discover(start_dir=self.test_dir, pattern='*_t.py')
 
     def run(self):
         """
         Finds all the tests modules in test/, and runs them.
         """
-        tests = TestLoader().discover(start_dir=self.test_dir, pattern='*_t.py')
-        TextTestRunner(verbosity=2).run(tests)
-
+        TextTestRunner(verbosity=2).run(self.tests)
         # remove test pyc files
         pyc_re = re.compile('^.*.pyc$')
         for file_ in os.listdir(self.test_dir):
@@ -87,6 +85,7 @@ class CleanCommand(Command):
                     os.unlink(clean_me)
             except:
                 pass
+
 class DocCommand(Command):
     """
     Class which build documentation
@@ -152,19 +151,40 @@ def datafiles(idir):
             files.append(os.path.join(dirname, filename))
     return files
 
-def main():
+def check_environ(name):
     """
-    Main function
+    Check all required and optional environmental variables exist
+    """
+    # TODO: Set these variables and print to init script
+    # TODO: Read these variables in the rest of the program
+    return_value = True
+    required_variables = ['CUADRNT_ROOT']
+    optional_variables = ['CUADRNT_CONFIG', 'CUADRNT_DATA', 'CUADRNT_LOG']
+    for variable in required_variables:
+        if variable not in os.environ:
+            print "I'm sorry, but %s %s requires environmental variable %s set." % (name, version, variable)
+            return_value = False
+
+    for variable in optional_variables:
+        if variable not in os.environ:
+            print "Optional environmental variable %s not set, though not required by %s %s we still recommend setting it." % (variable, name, version)
+
+    return return_value
+
+def main(argv):
+    """
+    Main setup function
     """
     name = 'CUADRnT'
-
     log_path = '%s/log' % (os.environ['CUADRNT_ROOT'])
     if not os.path.exists(log_path):
         os.makedirs(log_path)
 
-    if sys.version < required_python_version:
-        msg = "I'm sorry, but %s %s requires Python %s or later."
-        print msg % (name, version, required_python_version)
+    if not sys.version[:3] == required_python_version:
+        print "I'm sorry, but %s %s requires Python %s." % (name, version, required_python_version)
+        sys.exit(1)
+
+    if not check_environ(name):
         sys.exit(1)
 
     description = "CUADRnT is CMS Usage Analytics and Data Replication Tools"
@@ -212,4 +232,4 @@ def main():
     )
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])

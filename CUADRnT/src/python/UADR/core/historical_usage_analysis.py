@@ -1,11 +1,14 @@
 #!/usr/local/bin/python
 """
-File       : historical_user_analysis.py
+File       : historical_usage_analysis.py
 Author     : Bjorn Barrefors <bjorn dot peter dot barrefors AT cern dot ch>
 Description: Collect historical data for popularity model
 """
 
 # system modules
+import os
+import datetime
+import logging
 import sys
 import getopt
 import re
@@ -25,13 +28,13 @@ from UADR.utils.io_utils import export_csv
 
 class HUA(object):
     """
-    HUA or Historical User Analysis collects historical data on user behavior
+    HUA or Historical Usage Analysis collects historical data on user behavior
     """
-    def __init__(self, debug=0):
-        self.debug = debug
+    def __init__(self):
+        self.logger = logging.getLogger(__name__)
         self.config = get_config()
-        self.phedex = PhEDExService(self.config, debug)
-        self.pop_db = PopDBService(self.config, debug)
+        self.phedex = PhEDExService(self.config)
+        self.pop_db = PopDBService(self.config)
 
     def get_datasets(self):
         """
@@ -39,20 +42,25 @@ class HUA(object):
         """
         # NOTE: We would like to get all datasets and have pattern for non analysis datasets
         dataset_names = set()
-        valid_dataset_re = re.compile('/[0-9a-zA-Z\-_]+/[0-9a-zA-Z\-_]+/[0-9a-zA-Z\-_]+$')
-        test_dataset_re = re.compile('^/GenericTTbar/HC-.*/GEN-SIM-RECO$')
-        user_dataset_re = re.compile('^.*/USER$')
+        valid_datasets = '/[0-9a-zA-Z\-_]+/[0-9a-zA-Z\-_]+/[0-9a-zA-Z\-_]+$'
+        invalid_datasets = ''
+        invalid_file = open('%s/etc/re_invalid_datasets' % (os.environ['CUADRNT_ROOT']), 'r')
+        for pattern in invalid_file:
+            invalid_datasets += pattern + '|'
+        invalid_datasets = invalid_datasets[:-1]
+        valid_dataset_re = re.compile(valid_datasets)
+        invalid_dataset_re = re.compile(invalid_datasets)
         yesterday = timestamp_to_pop_db_utc_date(time.time()-86400)
         api = 'DSStatInTimeWindow'
         params = {'sitename':'summary', 'tstart':'1999-01-01', 'tstop':yesterday}
         json_data = self.pop_db.fetch(api, params)
         for dataset in json_data.get('DATA'):
             dataset_name = dataset.get('COLLNAME')
-            if (test_dataset_re.match(dataset_name) or user_dataset_re.match(dataset_name) or not valid_dataset_re.match(dataset_name)):
+            if (invalid_dataset_re.match(dataset_name) or not valid_dataset_re.match(dataset_name)):
                 continue
             dataset_names.add(dataset_name)
         print len(dataset_names)
-        return dataset_names
+        return list(dataset_names)[:5]
 
     def get_accesses(self, dataset_names):
         """
@@ -80,13 +88,13 @@ class HUA(object):
         dataset_sizes = dict()
         api = 'data'
         for dataset_name in dataset_names:
-            size_gb = 0
-            params = {'dataset':dataset_name, 'level':'block', 'create_since':0}
+            size_b = 0
+            params = {'dataset':dataset_name, 'level':'block', 'create_since':1}
             json_data = self.phedex.fetch(api, params)
-            dataset = json_data.get('phedex').get('dataset')[0]
+            dataset = json_data.get('phedex').get('dbs')[0].get('dataset')[0]
             for block in dataset.get('block'):
-                size_gb += bytes_to_gb(block.get('bytes'))
-            dataset_sizes[dataset_name] = size_gb
+                size_b += block.get('bytes')
+            dataset_sizes[dataset_name] = bytes_to_gb(size_b)
         return dataset_sizes
 
     def get_creation_date(self, dataset_names):
@@ -96,9 +104,9 @@ class HUA(object):
         dataset_dates = dict()
         api = 'data'
         for dataset_name in dataset_names:
-            params = {'dataset':dataset_name, 'level':'block', 'create_since':0}
+            params = {'dataset':dataset_name, 'level':'block', 'create_since':1}
             json_data = self.phedex.fetch(api, params)
-            dataset = json_data.get('phedex').get('dataset')[0]
+            dataset = json_data.get('phedex').get('dbs')[0].get('dataset')[0]
             dataset_dates[dataset_name] = phedex_timestamp_to_timestamp(dataset.get('time_create'))
         return dataset_dates
 
@@ -111,16 +119,17 @@ class HUA(object):
             dataset_tiers[dataset_name] = dataset_name.split('/')[-1]
         return dataset_tiers
 
-    def organize_data(self, dataset_names, dataset_accesses, dataset_sizes, dataset_tiers, dataset_dates):
+    def organize_data(self, dataset_names, dataset_dates, dataset_accesses, dataset_sizes, dataset_tiers):
         """
         Organize data into the structure:
             data format: [(header_1, header_2, ...), (data_1, data_2, ...)]
         """
         data = []
-        date_stop = timestamp_day(int(time.time()))
-        date_step = 86400
+        timestamp_stop = timestamp_day(int(time.time()))
+        step = 86400
         for dataset_name in dataset_names:
-            for timestamp in xrange(dataset_dates[dataset_name], date_stop, date_step):
+            timestamp_start = timestamp_day(dataset_dates[dataset_name])
+            for timestamp in xrange(timestamp_start, timestamp_stop, step):
                 try:
                     accesses = dataset_accesses[dataset_name][timestamp]
                 except Exception:
@@ -131,31 +140,45 @@ class HUA(object):
 
 def main(argv):
     """
-    Main driver for historical analytics
+    Main driver for historical usage analysis
     """
-    debug = 0
+    log_level = logging.WARNING
     try:
-        opts, args = getopt.getopt(argv, 'hd', ['help', 'debug'])
+        opts, args = getopt.getopt(argv, 'h', ['help', 'log='])
     except getopt.GetoptError:
-        print "historical_analytics.py [--debug]"
-        sys.exit(2)
+        print "usage: historical_usage_analysis.py [--log=notset|debug|info|warning|error|critical]"
+        print "   or: historical_usage_analysis.py --help"
+        sys.exit()
     for opt, arg in opts:
         if opt in ('-h', '--help'):
-            print "historical_analytics.py [--debug]"
+            print "usage: historical_usage_analysis.py [--log=notset|debug|info|warning|error|critical]"
+            print "   or: historical_usage_analysis.py --help"
             sys.exit()
-        elif opt in ('-d', '--debug'):
-            debug = 1
+        elif opt in ('--log'):
+            log_level = getattr(logging, arg.upper())
+            if not isinstance(log_level, int):
+                print "%s is not a valid log level" % (str(arg))
+                print "usage: historical_usage_analysis.py [--log=notset|debug|info|warning|error|critical]"
+                print "   or: historical_usage_analysis.py --help"
+                sys.exit()
+        else:
+            print "usage: historical_usage_analysis.py [--log=notset|debug|info|warning|error|critical]"
+            print "   or: historical_usage_analysis.py --help"
+            print "error: option %s not recognized" % (str(opt))
+            sys.exit()
+
+    logging.basicConfig(filename='%s/log/cuadrnt-%s.log' % (os.environ['CUADRNT_ROOT'], datetime.date.today().strftime('%Y%m%d')), format='%(asctime)s [%(levelname)s] %(name)s:%(funcName)s:%(lineno)d: %(message)s', datefmt='%H:%M', level=log_level)
+    file_name = 'hua'
     headers = ('dataset_name', 'date', 'accesses', 'size_gb', 'data_tier')
-    hua = HUA(debug=debug)
+    hua = HUA()
     dataset_names = hua.get_datasets()
     dataset_accesses = hua.get_accesses(dataset_names)
-    #dataset_sizes = hua.get_size_gb(dataset_names)
-    #dataset_dates = hua.get_creation_date(dataset_names)
-    #dataset_tiers = hua.get_data_tier(dataset_names)
-    #data = hua.organize_data(dataset_names, dataset_accesses, dataset_sizes, dataset_tiers, dataset_dates)
-    #hua.export_csv(file_name, headers, data, debug=self.debug)
+    dataset_sizes = hua.get_size_gb(dataset_names)
+    dataset_dates = hua.get_creation_date(dataset_names)
+    dataset_tiers = hua.get_data_tier(dataset_names)
+    data = hua.organize_data(dataset_names, dataset_dates, dataset_accesses, dataset_sizes, dataset_tiers)
+    export_csv(file_name, headers, data)
 
 if __name__ == "__main__":
-    # TODO: Add support to pass debug parameter
     main(sys.argv[1:])
     sys.exit()

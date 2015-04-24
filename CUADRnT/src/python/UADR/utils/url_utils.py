@@ -6,6 +6,7 @@ Description: Useful functions to deal with internet services
 """
 
 # system modules
+import logging
 import os
 import json
 import urllib
@@ -15,25 +16,27 @@ import httplib
 # package modules
 from UADR.utils.utils import get_key_cert
 
-def fetch(target_url, api, params=dict(), name='', format_='json', instance='prod', debug=0):
+# Get module specific logger
+logger = logging.getLogger(__name__)
+
+def fetch(target_url, api, params=dict(), name='', format_='json', instance='prod'):
     """
     Create http request for target_url, api and params of service name
     """
     url_data = urllib.urlencode(params)
     url = '%s/%s/%s/%s?' % (target_url, format_, instance, api)
     request = urllib2.Request(url, url_data)
-    return get_data(request, name, debug)
+    return get_data(request, name)
 
-def get_data(request, name, debug=0):
+def get_data(request, name):
     """
     Data is json data returned as a string
     Use json.loads(data) to generate json structure
     """
     # FIXME: Better way of checking for error
     data = "{}"
-    if debug:
-        full_url = request.get_full_url() + request.get_data()
-        print "Fetching %s data for url:\n%s" % (name, full_url)
+    full_url = request.get_full_url() + request.get_data()
+    logger.debug('Fetching %s data for url:\n    %s', name, full_url)
     opener = urllib2.build_opener(HTTPSGridAuthHandler())
     try:
         return_data = opener.open(request)
@@ -41,8 +44,7 @@ def get_data(request, name, debug=0):
         json.loads(data)
     except Exception as e:
         full_url = request.get_full_url() + request.get_data()
-        print "Couldn't fetch %s data for url %s" % (name, full_url)
-        print str(e)
+        logger.error("Couldn't fetch %s data for url %s\n    Reason:\n    %s", name, full_url, str(e))
         data = "{}"
     return data
 

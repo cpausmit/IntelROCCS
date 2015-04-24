@@ -26,7 +26,7 @@ class ConfigTests(unittest.TestCase):
     def test_get_config(self):
         "Test get_config function"
         print ""
-        result = get_config(debug=1)
+        result = get_config()
         self.assertNotEqual(result, dict())
 
 if __name__ == '__main__':

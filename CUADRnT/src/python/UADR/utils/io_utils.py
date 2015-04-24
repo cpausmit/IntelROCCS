@@ -6,12 +6,16 @@ Description: Useful I/O functions
 """
 
 # system modules
+import logging
 import os
+
+# Get module specific logger
+logger = logging.getLogger(__name__)
 
 def get_data_path():
     return '%s/data' % (os.environ.get('CUADRNT_ROOT'))
 
-def export_csv(file_name, headers=tuple(), data=list(), debug=0):
+def export_csv(file_name, headers=tuple(), data=list()):
     """
     Export data to <file_name>.csv
     Headers format: (header_1, header_2, ...)
@@ -19,8 +23,7 @@ def export_csv(file_name, headers=tuple(), data=list(), debug=0):
     """
     data_path = get_data_path()
     export_file = '%s/%s.csv' % (data_path, file_name)
-    if debug:
-        print "Exporting data to %s" % (export_file)
+    logger.debug('Exporting data to %s', export_file)
     fs = open(export_file, 'w')
     header_str = ''
     for field in headers:

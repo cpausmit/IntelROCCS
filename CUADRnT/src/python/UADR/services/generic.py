@@ -8,6 +8,7 @@ Description: Generic service module
 # TODO: (5) Implement cache
 
 # system modules
+import logging
 import json
 
 # package modules
@@ -21,10 +22,10 @@ class GenericService(object):
         Services require a valid cert and key
         Want to cache results in a document-oriented database
     """
-    def __init__(self, config=dict(), debug=0):
-        self.config = config
+    def __init__(self, config=dict()):
         self.name = 'generic'
-        self.debug = debug
+        self.logger = logging.getLogger(__name__)
+        self.config = config
 
     def fetch(self, api, params=dict(), cache=True, cache_only=False):
         """
@@ -33,8 +34,7 @@ class GenericService(object):
         If param cache_only is true just update the cache, don't return any data.
             Use this parameter to spawn external thread to update cache in background
         """
-        if self.debug:
-            print "%s: Fetching %s data for %s" % (self.name, api, str(params))
-        data = fetch(self.target_url, api, params, self.name, debug=self.debug)
+        self.logger.debug('Fetching %s data for %s', api, str(params))
+        data = fetch(self.target_url, api, params, self.name)
         json_data = json.loads(data)
         return json_data
