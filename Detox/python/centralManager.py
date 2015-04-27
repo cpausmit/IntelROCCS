@@ -1,7 +1,8 @@
 #===================================================================================================
 #  C L A S S
 #===================================================================================================
-import sys, os, subprocess, re, time, datetime, smtplib, MySQLdb, shutil, string, glob, math
+import sys, os, subprocess, re, time, datetime, smtplib, MySQLdb, shutil, string, glob 
+import math,statistics
 import phedexDataHandler, popularityDataHandler, phedexApi, deprecateDataHandler
 import siteProperties, datasetProperties
 import siteStatus, deletionRequest
@@ -385,6 +386,20 @@ class CentralManager:
                outputFile.write("%8.1f %9.1f %s\n"%(rank,size,dset))
            outputFile.close()
 
+       resultDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_RESULT']
+       beDeleted = glob.glob(resultDirectory + "/*")
+       for subd in beDeleted:
+           if(os.path.isdir(subd)):
+               shutil.rmtree(subd)
+           else:
+               os.remove(subd)
+
+       for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
+           sitePr = self.sitePropers[site]
+           sitedir = resultDirectory + "/" + site
+           if not os.path.exists(sitedir):
+               os.mkdir(sitedir)
+
     def unifyDeletionLists(self):
         for site in self.sitePropers:
             self.sitePropers[site].makeWishList()
@@ -464,14 +479,6 @@ class CentralManager:
         return (totSets,totSpace,totSites)
 
     def printResults(self):
-        resultDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_RESULT']
-        beDeleted = glob.glob(resultDirectory + "/*")
-        for subd in beDeleted:
-            if(os.path.isdir(subd)):
-                shutil.rmtree(subd)
-            else:
-                os.remove(subd)
-
         today = str(datetime.date.today())
         ttime = time.strftime("%H:%M")
 
@@ -551,12 +558,36 @@ class CentralManager:
         outputFile.write("# Total Active Quota  = %-9d \n"%(totalDiskT2))
         outputFile.close()
 
+        siteRankAve = []
+        siteRankMdn = []
+	outputFile = open(os.environ['DETOX_DB'] + "/SiteRanks.txt",'w')
+        outputFile.write('#- ' + today + " " + ttime + "\n#\n")
+        outputFile.write("#- S I T E   R A N K S ----\n#\n")
+        outputFile.write("#  <Rank>    Mdn(Rank)  SiteName \n")
+        for site in sorted(self.allSites):
+            theSite = self.allSites[site]
+            active = theSite.getStatus()
+            if active != 0:
+                sitePr = self.sitePropers[site]
+		median = sitePr.medianRank()
+                rank =  sitePr.siteRank()
+                siteRankAve.append(rank)
+                siteRankMdn.append(median)
+		outputFile.write("   %-9.1f %-10.1f %-20s \n"%(rank,median,site))
+        sm1 = statistics.mean(siteRankAve)
+        sm2 = statistics.mean(siteRankMdn)
+        rms1 = statistics.stdev(siteRankAve)
+        rms2 = statistics.stdev(siteRankMdn)
+        outputFile.write("#\n#------------------------------------\n")
+        outputFile.write("#  %-9.1f %-10.1f %-20s \n"%(sm1,sm2,"Mean Value"))
+        outputFile.write("#  %-9.1f %-10.1f %-20s \n"%(rms1,rms2,"RMS"))
+        
+        outputFile.close()
+
         outputFile = open(os.environ['DETOX_DB'] + "/DeletionSummary.txt",'w')
         outputFile.write('#- ' + today + " " + ttime + "\n\n")
         outputFile.write("#- D E L E T I O N  R E Q U E S T S ----\n\n")
         outputFile.write("# Date   ReqId  NSets Size[TB] SiteName \n")
-
-
         #find all requests for site for the last week
         reqTimes = {}
         for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
@@ -680,11 +711,10 @@ class CentralManager:
         outputFile.write("#--------------------------------------------\n")
         outputFile.close()
 
+        resultDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_RESULT']
         for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
             sitePr = self.sitePropers[site]
             sitedir = resultDirectory + "/" + site
-            if not os.path.exists(sitedir):
-                os.mkdir(sitedir)
 
             fileTimest = sitedir + "/Summary.txt"
             fileRemain = sitedir + "/RemainingDatasets.txt"
@@ -891,7 +921,7 @@ class CentralManager:
                 #they can look identical
                 #resubmit in case it was submitted too long ago
                 if thisRequest.looksIdentical(lastRequest):
-                    #if thisRequest.deltaTime(lastRequest)/(60*60) < 72 :
+                    if thisRequest.deltaTime(lastRequest)/(60*60) < 72 :
                         print " -- Skipping submition, looks like a request " + str(lastReqId)
                         continue
             numberRequests = numberRequests + 1

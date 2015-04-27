@@ -3,7 +3,7 @@
 # This class provides support for storing datasets information extracted from Popularity service
 #
 #----------------------------------------------------------------------------------------------------
-import time, datetime
+import time, datetime, math
 
 class TimeSequence:
     def __init__(self):
@@ -24,12 +24,13 @@ class TimeSequence:
 
 class UsedDataset:
 
-    def __init__(self, dataset):
+    def __init__(self, dataset, timenow):
         self.dataset = dataset
         self.siteNames = {}
         self.siteSequence = {}
         self.lastUsedAtSite = {}
         self.timesUsedAtSite = {}
+	self.timeNow = int(time.mktime(timenow.timetuple()))
 
     def updateForSite(self,site,utime,nacc):
         if site.startswith("T1_"):
@@ -46,11 +47,21 @@ class UsedDataset:
             if now > prepoch:
                 self.lastUsedAtSite[site] = utime
 
+	#introduce exponential decay with time
+	#unite is day, reduce by 10 in 180 days
+	secSinceUsed = int(time.mktime(time.strptime(utime, "%Y-%m-%d")))
+        deltaDays = (self.timeNow - secSinceUsed)/(60*60*24)
+        e1 = "%.1f" % (deltaDays/60.0)
+        e2 = float(e1)
+        koeff = 10.0**(e2)
+	nacc = nacc/koeff
+
         if site not in self.timesUsedAtSite:
             self.timesUsedAtSite[site] = nacc
             self.siteSequence[site] = TimeSequence()
         else:
             self.timesUsedAtSite[site] =  self.timesUsedAtSite[site] + nacc
+
         self.siteSequence[site].update(utime,nacc)
 
     def timesUsedSince(self,tstamp,site):

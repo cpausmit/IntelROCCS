@@ -8,7 +8,7 @@ Class:  SiteProperties(siteName='')
 Each site will be fully described for our application in this class.
 """
 #---------------------------------------------------------------------------------------------------
-import time, math
+import time, statistics
 
 class SiteProperties:
     "A SiteProperties defines all needed site properties."
@@ -16,6 +16,7 @@ class SiteProperties:
     def __init__(self, siteName):
         self.name = siteName
         self.datasetRanks = {}
+	self.rankSum = 0
         self.datasetSizes = {}
         self.dsetIsValid = {}
         self.dsetIsCustodial = {}
@@ -48,6 +49,8 @@ class SiteProperties:
         self.dsetIsDone[dset] = isdone
         self.dsetReqTime[dset] = reqtime
         self.dsetUpdTime[dset] = updtime
+
+	self.rankSum = self.rankSum + rank*size
 
         if wasused == 0:
             self.spaceNotUsed = self.spaceNotUsed + size
@@ -238,6 +241,14 @@ class SiteProperties:
 
     def spaceUnused(self):
         return self.spaceNotUsed
+
+    def siteRank(self):
+	if self.spaceTakenV == 0:
+	    return 0
+	return self.rankSum/self.spaceTakenV
+
+    def medianRank(self):
+	return statistics.median(self.datasetRanks.values())
 
     def dsetIsStuck(self,dset):
         if self.dsetIsDone[dset] == 0:

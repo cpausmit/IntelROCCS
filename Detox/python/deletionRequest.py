@@ -61,7 +61,10 @@ class DeletionRequest:
         for dset in self.dsetsizes.keys():
             if otherReq.hasDataset(dset):
                 matched = matched + 1
-        if (self.ndsets-matched)/self.ndsets < 0.05:
+	matchFrac = float(self.ndsets-matched)/float(self.ndsets)
+        if abs(matchFrac) < 0.05:
+	    #print "  - Total datasets to be deleted = " + str(self.ndsets)
+            #print "   - matched to previous " + str(matched)
             return True
         return False
 

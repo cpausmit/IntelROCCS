@@ -19,8 +19,8 @@ class PopularityDataHandler:
 
         #fill in dates object that will determine time intervals
         self.dates = []
-        now = datetime.datetime.now()
-        thisYear,thisWeekNumber,DOW = now.isocalendar()
+        self.timeNow = datetime.datetime.now()
+        thisYear,thisWeekNumber,DOW = self.timeNow.isocalendar()
 
         today = datetime.date.today()
         timeDelta = datetime.timedelta(int(os.environ['DETOX_TIME_WIND'])*30)
@@ -152,7 +152,7 @@ class PopularityDataHandler:
             nAccessed = entry["NACC"]
 
             if dataset not in self.datasets :
-                self.datasets[dataset] = usedDataset.UsedDataset(dataset)
+                self.datasets[dataset] = usedDataset.UsedDataset(dataset,self.timeNow)
 
             self.datasets[dataset].updateForSite(site,date,nAccessed)
 
