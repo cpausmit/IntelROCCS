@@ -34,12 +34,9 @@ def get_sso_key_cert():
         cert = globus_cert
 
     if not os.path.exists(key):
-        logger.ERROR('Key PEM file %s not found', key)
+        logger.error('Key PEM file %s not found', key)
     if not os.path.exists(key):
-        logger.ERROR('Certificate PEM file %s not found', key)
-
-    logger.debug('Key file: %s', key)
-    logger.debug('Certificate file: %s', cert)
+        logger.error('Certificate PEM file %s not found', key)
 
     return key, cert
 
@@ -66,7 +63,6 @@ def get_sso_cookie(cookie_path, target_url):
         ret_str = cmd.communicate()[0]
         if cmd.returncode != 0:
             logger.error('Could not generate SSO cookie %s due to:\n    %s', sso_cookie, ret_str)
-        logger.debug('Generated SSO cookie %s', sso_cookie)
 
 def check_cookie(cookie_path, target_url):
     """
@@ -106,7 +102,6 @@ def get_data(cookie_path, full_url):
     """
     # FIXME: Better way of checking for error
     data = "{}"
-    logger.debug('Fetching SSO data for url:\n    %s', full_url)
     sso_cookie = '%s/%s' % (cookie_path, 'cern_sso_cookie')
     cookie_jar = '%s/%s' % (cookie_path, 'cern_sso_cookie_jar')
     cmd = subprocess.Popen(['curl', '-k', '-s', '-L', '--cookie', sso_cookie, '--cookie-jar', cookie_jar, full_url], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=False)
@@ -115,5 +110,5 @@ def get_data(cookie_path, full_url):
         json.loads(return_data[0])
         data = return_data[0]
     except Exception:
-        logger.error("Couldn't fetch SSO data for url %s\n    Reason:\n    %s", full_url, return_data[0])
+        logger.warning("Couldn't fetch SSO data for url %s\n    Reason:\n    %s", full_url, return_data[0])
     return data

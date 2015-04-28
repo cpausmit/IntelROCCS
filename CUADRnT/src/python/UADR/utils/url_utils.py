@@ -19,7 +19,7 @@ from UADR.utils.utils import get_key_cert
 # Get module specific logger
 logger = logging.getLogger(__name__)
 
-def fetch(target_url, api, params=dict(), name='', format_='json', instance='prod'):
+def fetch(target_url, api, params=dict(), format_='json', instance='prod', name=''):
     """
     Create http request for target_url, api and params of service name
     """
@@ -36,7 +36,6 @@ def get_data(request, name):
     # FIXME: Better way of checking for error
     data = "{}"
     full_url = request.get_full_url() + request.get_data()
-    logger.debug('Fetching %s data for url:\n    %s', name, full_url)
     opener = urllib2.build_opener(HTTPSGridAuthHandler())
     try:
         return_data = opener.open(request)
@@ -44,7 +43,7 @@ def get_data(request, name):
         json.loads(data)
     except Exception as e:
         full_url = request.get_full_url() + request.get_data()
-        logger.error("Couldn't fetch %s data for url %s\n    Reason:\n    %s", name, full_url, str(e))
+        logger.warning("Couldn't fetch %s data for url %s\n    Reason:\n    %s", name, full_url, str(e))
         data = "{}"
     return data
 

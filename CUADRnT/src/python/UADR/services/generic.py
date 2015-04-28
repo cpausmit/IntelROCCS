@@ -34,7 +34,6 @@ class GenericService(object):
         If param cache_only is true just update the cache, don't return any data.
             Use this parameter to spawn external thread to update cache in background
         """
-        self.logger.debug('Fetching %s data for %s', api, str(params))
-        data = fetch(self.target_url, api, params, self.name)
+        data = fetch(target_url=self.target_url, api=api, params=params, name=self.name)
         json_data = json.loads(data)
         return json_data

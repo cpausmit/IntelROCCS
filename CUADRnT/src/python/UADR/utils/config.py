@@ -29,7 +29,7 @@ def get_config_parser():
         return
 
     if not os.path.isfile(config_file):
-        logger.error('No file found in %s', config_file)
+        logger.error('No config file found in %s', config_file)
         return
 
     logger.debug('Config file: %s', config_file)

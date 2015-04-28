@@ -34,7 +34,6 @@ class PopDBService(GenericService):
             Use this parameter to spawn external thread to update cache in background
         This will be replaced by GenericService fetch function once SSO cookie identification is removed
         """
-        self.logger.debug('Fetching %s data for %s', api, str(params))
         data = sso_fetch(self.cookie_path, self.target_url, api, params)
         json_data = json.loads(data)
         return json_data

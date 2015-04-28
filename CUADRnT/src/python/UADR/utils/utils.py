@@ -60,7 +60,7 @@ def check_tool(tool):
         if os.path.exists(tool_path):
             return True
     else:
-        logger.warning('Command line tool %s not found', tool)
+        logger.error('Command line tool %s not found', tool)
         return False
 
 def get_key_cert():
@@ -98,11 +98,8 @@ def get_key_cert():
         key = cert
 
     if not os.path.exists(key):
-        logger.ERROR('Key PEM file %s not found', key)
+        logger.error('Key PEM file %s not found', key)
     if not os.path.exists(cert):
-        logger.ERROR('Certificate PEM file %s not found', key)
-
-    logger.debug('Key file: %s', key)
-    logger.debug('Certificate file: %s', cert)
+        logger.error('Certificate PEM file %s not found', key)
 
     return key, cert
