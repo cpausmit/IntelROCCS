@@ -49,7 +49,7 @@ dateString = str(int(time.time()))
 print '''
 <br>
 API URL: http://t3serv012.mit.edu/cgi-bin/interactiveMonitor.cgi?startyear=%i&startmonth=%i&endyear=%i&endmonth=%i&pattern=%s&group=%s&site=%s
-'''%(startyear,startmonth,endyear,endmonth,rawDatasetPAttern,groupPattern,sitePattern)
+'''%(startyear,startmonth,endyear,endmonth,rawDatasetPattern,groupPattern,sitePattern)
 print '''
 <img src="%sUsage_%s.png?%s" alt="DatasetSummary" width="400">
 <img src="%sCRBUsage_%s.png?%s" alt="DatasetSummary" width="400">

@@ -26,8 +26,8 @@ class Dataset(object):
         self.isDeleted = None
     def addCurrentSite(self,siteName,timeStart=-1,timeComplete=-1):
         self.currentSites.add(siteName)
-        if timeStart>0:
-            self.transfersOntoCSites[siteName] = (timeStart,timeComplete)
+        if int(timeStart)>0:
+            self.transfersOntoCSites[siteName] = (int(timeStart),int(timeComplete))
     def setSiteMovement(self, siteName,movement):
         self.movement[siteName] = movement
     def addTransfer(self,siteName,t):
