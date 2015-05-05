@@ -1,0 +1,6 @@
+#!/bin/sh
+
+tmp_dir=$( cd "$( dirname "$BASH_SOURCE[0]" )" && cd .. && pwd )
+. "$tmp_dir/etc/init.sh"
+
+python2.7 "$cuadrnt_root/src/python/UADR/core/historical_data_collector.py" --log=debug

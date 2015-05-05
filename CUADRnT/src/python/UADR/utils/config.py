@@ -15,15 +15,11 @@ logger = logging.getLogger(__name__)
 
 def get_config_parser():
     """
-    Path to config file should be stored in environment variable CUADRANT_CONFIG
-    If that variable does not exist use relative path from environmental variable CUADRANT_ROOT
-    Set these variables by running setup.sh or they are set in an init script created at installation time
+    Config file is in /etc under the cuadrnt root
     """
     config_file = ''
-    if 'CUADRNT_CONFIG' in os.environ:
-        config_file = os.environ['CUADRNT_CONFIG']
-    elif 'CUADRNT_ROOT' in os.environ:
-        config_file = os.path.join(os.environ['CUADRNT_ROOT'], '/etc/cuadrnt.cfg')
+    if 'CUADRNT_ROOT' in os.environ:
+        config_file = '%s/%s' % (os.environ['CUADRNT_ROOT'], 'etc/cuadrnt.cfg')
     else:
         logger.error('No config file found')
         return

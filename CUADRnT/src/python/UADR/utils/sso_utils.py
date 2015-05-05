@@ -49,14 +49,14 @@ def get_sso_cookie(cookie_path, target_url):
     cern_tool = 'cern-get-sso-cookie'
     if check_tool(cern_tool):
         sso_cookie = '%s/%s' % (cookie_path, 'cern_sso_cookie')
-        cookie_jar = '%s/%s' % (cookie_path, 'cern_sso_cookie_jar')
+        cookie_check = '%s/%s' % (cookie_path, 'cern_sso_cookie_check')
         key, cert = get_sso_key_cert()
         if not os.path.exists(cookie_path):
             os.makedirs(cookie_path)
         fs = open(sso_cookie, 'w')
         fs.write('')
         fs.close()
-        fs = open(cookie_jar, 'w')
+        fs = open(cookie_check, 'w')
         fs.write('')
         fs.close()
         cmd = subprocess.Popen([cern_tool, "--cert", cert, "--key", key, "-u", target_url, "-o", sso_cookie], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=False)
@@ -69,13 +69,13 @@ def check_cookie(cookie_path, target_url):
     Check if CERN SSO cookie (~/.globus/cern-sso-cookie) exists and is valid
     A generated cookie is valid for 24h
     """
-    sso_cookie = '%s/%s' % (cookie_path, 'cern_sso_cookie')
+    cookie_check = '%s/%s' % (cookie_path, 'cern_sso_cookie_check')
     if os.path.exists(cookie_path):
         time_now = time.time()
         valid_seconds = 60*59*24
-        if os.path.isfile(sso_cookie):
-            mod_time = os.path.getmtime(sso_cookie)
-            if (os.path.getsize(sso_cookie)) == 0 or ((time_now-valid_seconds) > mod_time):
+        if os.path.isfile(cookie_check):
+            mod_time = os.path.getmtime(cookie_check)
+            if (os.path.getsize(cookie_check)) == 0 or ((time_now-valid_seconds) > mod_time):
                 get_sso_cookie(cookie_path, target_url)
         else:
             get_sso_cookie(cookie_path, target_url)
@@ -103,8 +103,7 @@ def get_data(cookie_path, full_url):
     # FIXME: Better way of checking for error
     data = "{}"
     sso_cookie = '%s/%s' % (cookie_path, 'cern_sso_cookie')
-    cookie_jar = '%s/%s' % (cookie_path, 'cern_sso_cookie_jar')
-    cmd = subprocess.Popen(['curl', '-k', '-s', '-L', '--cookie', sso_cookie, '--cookie-jar', cookie_jar, full_url], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=False)
+    cmd = subprocess.Popen(['curl', '-k', '-s', '-L', '--cookie', sso_cookie, '--cookie-jar', sso_cookie, full_url], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=False)
     return_data = cmd.communicate()
     try:
         json.loads(return_data[0])

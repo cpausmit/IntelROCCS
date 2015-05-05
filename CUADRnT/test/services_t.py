@@ -13,7 +13,7 @@ from UADR.services.pop_db import PopDBService
 from UADR.services.phedex import PhEDExService
 from UADR.utils.config import get_config
 
-class SSOUtilsTests(unittest.TestCase):
+class ServicesTests(unittest.TestCase):
     """
     A test class for util functions
     """
@@ -30,7 +30,7 @@ class SSOUtilsTests(unittest.TestCase):
         print ""
         expected = 'T2_US_Nebraska'
         pop_db = PopDBService(config=self.config)
-        api = 'DSStatInTimeWindow'
+        api = 'DSStatInTimeWindow/'
         params = {'tstart':'2015-04-18', 'tstop':'2015-04-18', 'sitename':'T2_US_Nebraska'}
         json_data = pop_db.fetch(api, params, cache=False)
         result = json_data.get('SITENAME')

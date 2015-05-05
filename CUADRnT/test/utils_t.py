@@ -10,7 +10,6 @@ import unittest
 
 # package modules
 from UADR.utils.utils import check_tool
-from UADR.utils.utils import get_key_cert
 from UADR.utils.utils import pop_db_timestamp_to_timestamp
 from UADR.utils.utils import phedex_timestamp_to_timestamp
 from UADR.utils.utils import bytes_to_gb
@@ -36,13 +35,6 @@ class UtilsTests(unittest.TestCase):
         self.assertTrue(result)
         result = check_tool('invalid_tool')
         self.assertFalse(result)
-
-    def test_get_key_cert(self):
-        "Test get_key_cert function"
-        print ""
-        result_key, result_cert = get_key_cert()
-        self.assertIsNotNone(result_key)
-        self.assertIsNotNone(result_cert)
 
     def test_pop_db_timestamp_to_timestamp(self):
         "Test pop_db_timestamp_to_timestamp function"

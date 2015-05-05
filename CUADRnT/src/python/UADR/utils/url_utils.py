@@ -13,22 +13,19 @@ import urllib
 import urllib2
 import httplib
 
-# package modules
-from UADR.utils.utils import get_key_cert
-
 # Get module specific logger
 logger = logging.getLogger(__name__)
 
-def fetch(target_url, api, params=dict(), format_='json', instance='prod', name=''):
+def fetch(target_url, api, params=dict()):
     """
-    Create http request for target_url, api and params of service name
+    Create http request for target_url, api and params of service
     """
     url_data = urllib.urlencode(params)
-    url = '%s/%s/%s/%s?' % (target_url, format_, instance, api)
+    url = '%s/%s?' % (target_url, api)
     request = urllib2.Request(url, url_data)
-    return get_data(request, name)
+    return get_data(request)
 
-def get_data(request, name):
+def get_data(request):
     """
     Data is json data returned as a string
     Use json.loads(data) to generate json structure
@@ -43,7 +40,7 @@ def get_data(request, name):
         json.loads(data)
     except Exception as e:
         full_url = request.get_full_url() + request.get_data()
-        logger.warning("Couldn't fetch %s data for url %s\n    Reason:\n    %s", name, full_url, str(e))
+        logger.warning("Couldn't fetch data for url %s\n    Reason:\n    %s", full_url, str(e))
         data = "{}"
     return data
 
@@ -53,7 +50,8 @@ class HTTPSGridAuthHandler(urllib2.HTTPSHandler):
     """
     def __init__(self):
         urllib2.HTTPSHandler.__init__(self)
-        self.key, self.cert = get_key_cert()
+        self.key = self.getProxy()
+        self.cert = self.key
 
     def https_open(self, req):
         return self.do_open(self.getConnection, req)

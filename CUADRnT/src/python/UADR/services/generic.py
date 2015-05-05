@@ -23,9 +23,9 @@ class GenericService(object):
         Want to cache results in a document-oriented database
     """
     def __init__(self, config=dict()):
-        self.name = 'generic'
         self.logger = logging.getLogger(__name__)
         self.config = config
+        self.target_url = ''
 
     def fetch(self, api, params=dict(), cache=True, cache_only=False):
         """
@@ -34,6 +34,6 @@ class GenericService(object):
         If param cache_only is true just update the cache, don't return any data.
             Use this parameter to spawn external thread to update cache in background
         """
-        data = fetch(target_url=self.target_url, api=api, params=params, name=self.name)
+        data = fetch(target_url=self.target_url, api=api, params=params)
         json_data = json.loads(data)
         return json_data

@@ -159,7 +159,7 @@ def check_environ(name):
     # TODO: Read these variables in the rest of the program
     return_value = True
     required_variables = ['CUADRNT_ROOT']
-    optional_variables = ['CUADRNT_CONFIG', 'CUADRNT_DATA', 'CUADRNT_LOG']
+    optional_variables = []
     for variable in required_variables:
         if variable not in os.environ:
             print "I'm sorry, but %s %s requires environmental variable %s set." % (name, version, variable)

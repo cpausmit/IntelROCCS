@@ -15,5 +15,4 @@ class PhEDExService(GenericService):
     """
     def __init__(self, config=dict()):
         GenericService.__init__(self, config)
-        self.name = 'phedex'
-        self.target_url = config['services'][self.name]
+        self.target_url = config['services']['phedex']
