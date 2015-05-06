@@ -1,2 +1,2 @@
-^/GenericTTbar/HC-.*/GEN-SIM-RECO$
+^.*HC-CMSSW.*$
 ^.*/USER$

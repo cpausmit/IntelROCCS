@@ -18,6 +18,8 @@ var chart = d3.select(".chart")
     .attr("width", width)
     .attr("height", height);
 
+var inputs = d3.select(".inputs");
+
 d3.selection.prototype.moveToFront = function() {
     return this.each(function(){
         this.parentNode.appendChild(this);
@@ -25,9 +27,19 @@ d3.selection.prototype.moveToFront = function() {
 };
 
 d3.csv("hd.csv", type, function(error, csv_data) {
+    var maxAge;
+
+    inputs.selectAll("#maxAge")
+        .attr("max", d3.max(csv_data, function(d) {return d.age;}));
+
+    function updateMaxAge(maxAge) {
+        d3.select("#maxAge-value").text(maxAge);
+        d3.select("#maxAge").property("max", maxAge);
+        }
+    
     x_scale.domain([0, d3.max(csv_data, function(d) {return d.age;})]);
     y_scale.domain([0, d3.max(csv_data, function(d) { return d.accesses; })]);
-    
+
     chart.append("g")
     .attr("class", "axis")
     .attr("transform", "translate(0," + (height - margin.bottom) + ")")
@@ -100,11 +112,13 @@ d3.csv("hd.csv", type, function(error, csv_data) {
             d3.select(".chart")
                 .select("#info").remove();});
 
-        chart.append("path")
-            .attr("d", function() {return avgLineFunction(avg_data);})
-            .style("fill", "none")
-            .style("stroke", "red")
-            .style("stroke-width", 2);
+    chart.append("path")
+        .attr("d", function() {return avgLineFunction(avg_data);})
+        .style("fill", "none")
+        .style("stroke", "red")
+        .style("stroke-width", 2);
+
+
 });
 
 function type(d) {

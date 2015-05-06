@@ -12,7 +12,7 @@ import logging
 import json
 
 # package modules
-from UADR.utils.url_utils import fetch
+from UADR.utils.url_utils import get_data
 
 class GenericService(object):
     """
@@ -34,6 +34,9 @@ class GenericService(object):
         If param cache_only is true just update the cache, don't return any data.
             Use this parameter to spawn external thread to update cache in background
         """
-        data = fetch(target_url=self.target_url, api=api, params=params)
-        json_data = json.loads(data)
+        data, full_url = get_data(target_url=self.target_url, api=api, params=params)
+        try:
+            json_data = json.loads(data)
+        except:
+            self.logger.warning("Couldn't fetch data for url %s\n    Reason:\n    %s", full_url, str(data))
         return json_data

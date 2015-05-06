@@ -36,7 +36,7 @@ class HDC(object):
     def __init__(self):
         global MAX_THREADS
         self.logger = logging.getLogger(__name__)
-        self.logger.infor('CUADRnT ROOT variable: %s', os.environ['CUADRNT_ROOT'])
+        self.logger.info('CUADRnT ROOT variable: %s', os.environ['CUADRNT_ROOT'])
         self.config = get_config()
         self.phedex = PhEDExService(self.config)
         self.pop_db = PopDBService(self.config)
