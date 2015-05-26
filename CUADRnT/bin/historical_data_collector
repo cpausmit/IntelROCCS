@@ -1,6 +1,9 @@
 #!/bin/sh
 
-tmp_dir=$( cd "$( dirname "$BASH_SOURCE[0]" )" && cd .. && pwd )
-. "$tmp_dir/etc/init.sh"
+export PYTHONPATH=/usr/local/CUADRnT:$PYTHONPATH
 
-python2.7 "$cuadrnt_root/src/python/UADR/core/historical_data_collector.py" --log=debug
+if [ $# -eq 1 ]; then
+    python2.7 "$cuadrnt_root/src/python/UADR/core/historical_data_collector.py --log=$1"
+else
+    python2.7 "$cuadrnt_root/src/python/UADR/core/historical_data_collector.py"
+fi

@@ -13,19 +13,22 @@ To run tests : python setup.py test
 
 # system modules
 import logging
-import datetime
 import os
 import re
 import sys
+import pwd
+import grp
 import shutil
 import subprocess
+import ConfigParser
 from os.path import join as pjoin
 from unittest import TextTestRunner, TestLoader
 from distutils.core import setup
 from distutils.cmd import Command
-from distutils.command.install import INSTALL_SCHEMES
+from distutils.dir_util import mkpath
+#from distutils.command.install import INSTALL_SCHEMES
 
-version = '1.0.0'  # TODO: (10) Set up automatic versioning system
+version = '1.0'  # TODO: (10) Set up automatic versioning system
 required_python_version = '2.7'
 
 class TestCommand(Command):
@@ -36,8 +39,8 @@ class TestCommand(Command):
 
     def initialize_options(self):
         """Init method"""
-        logging.basicConfig(filename='%s/log/cuadrnt-test-%s.log' % (os.environ['CUADRNT_ROOT'], datetime.date.today().strftime('%Y%m%d')), format='%(asctime)s [%(levelname)s] %(name)s:%(funcName)s:%(lineno)d: %(message)s', datefmt='%H:%M', level=logging.DEBUG)
-        self.test_dir = '%s/test' % (os.environ['CUADRNT_ROOT'])
+        logging.basicConfig(filename='/var/log/CUADRnT/cuadrnt.log', format='%(asctime)s [%(levelname)s] %(name)s:%(funcName)s:%(lineno)d: %(message)s', datefmt='%H:%M', level=logging.DEBUG)
+        self.test_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'test')
 
     def finalize_options(self):
         """Finalize method"""
@@ -128,64 +131,37 @@ def dirwalk(relative_dir):
 def find_packages(relative_dir):
     "Find list of packages in a given dir"
     packages = []
-    for idir in dirwalk(relative_dir):
-        package = idir.replace(os.getcwd() + '/', '')
+    for directory in dirwalk(relative_dir):
+        package = directory.replace(os.getcwd() + '/', '')
         package = package.replace(relative_dir + '/', '')
         package = package.replace('/', '.')
         packages.append(package)
     return packages
 
-def datafiles(idir):
+def find_files(relative_dir):
     """Return list of data files in provided relative dir"""
     files = []
-    for dirname, dirnames, filenames in os.walk(idir):
-        if dirname.find('.svn') != -1:
-            continue
-        for subdirname in dirnames:
-            if subdirname.find('.svn') != -1:
-                continue
-            files.append(os.path.join(dirname, subdirname))
-        for filename in filenames:
-            if filename[-1] == '~':
-                continue
-            files.append(os.path.join(dirname, filename))
+    for dir_name, subdir_names, file_names in os.walk(relative_dir):
+        for file_name in file_names:
+            files.append(os.path.join(dir_name, file_name))
     return files
-
-def check_environ(name):
-    """
-    Check all required and optional environmental variables exist
-    """
-    # TODO: Set these variables and print to init script
-    # TODO: Read these variables in the rest of the program
-    return_value = True
-    required_variables = ['CUADRNT_ROOT']
-    optional_variables = []
-    for variable in required_variables:
-        if variable not in os.environ:
-            print "I'm sorry, but %s %s requires environmental variable %s set." % (name, version, variable)
-            return_value = False
-
-    for variable in optional_variables:
-        if variable not in os.environ:
-            print "Optional environmental variable %s not set, though not required by %s %s we still recommend setting it." % (variable, name, version)
-
-    return return_value
 
 def main(argv):
     """
     Main setup function
     """
     name = 'CUADRnT'
-    log_path = '%s/log' % (os.environ['CUADRNT_ROOT'])
-    if not os.path.exists(log_path):
-        os.makedirs(log_path)
 
     if not sys.version[:3] == required_python_version:
         print "I'm sorry, but %s %s requires Python %s." % (name, version, required_python_version)
         sys.exit(1)
 
-    if not check_environ(name):
-        sys.exit(1)
+    # get setup config file
+    config_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'etc/setup.cfg')
+    config_parser = ConfigParser.SafeConfigParser()
+    config_parser.read(config_file)
+    username = config_parser.get('permissions', 'username')
+    group = config_parser.get('permissions', 'group')
 
     description = "CUADRnT is CMS Usage Analytics and Data Replication Tools"
     url = "https://github.com/cpausmit/IntelROCCS/blob/v2/CUADRnT/"
@@ -193,24 +169,25 @@ def main(argv):
     author = "Bjorn Barrefors",
     author_email = "bjorn [dot] peter [dot] barrefors [AT] cern [dot] ch",
     keywords = ["CUADRnT"]
-    package_dir = {'UADR': 'src/python/UADR'}
+    package_dir = {'': 'src/python'}
     packages = find_packages('src/python')
-    data_files = []  # list of tuples whose entries are (dir, [data_files])
+    data_files = [('/usr/local/bin', find_files('bin')),
+                  ('/var/opt/CUADRnT', find_files('etc'))]
+    scripts = []
     cms_license = "CMS experiment software"
     classifiers = [
         "Development Status :: 3 - Production/Beta",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: CMS/CERN Software License",
         "Operating System :: MacOS :: MacOS X",
-        #"Operating System :: Microsoft :: Windows",
         "Operating System :: POSIX",
         "Programming Language :: Python"
     ]
 
-    # set default location for "data_files" to
-    # platform specific "site-packages" location
-    for scheme in INSTALL_SCHEMES.values():
-        scheme['data'] = scheme['purelib']
+    # # set default location for "data_files" to
+    # # platform specific "site-packages" location
+    # for scheme in INSTALL_SCHEMES.values():
+    #     scheme['data'] = scheme['purelib']
 
     setup(
         name=name,
@@ -221,7 +198,7 @@ def main(argv):
         packages=packages,
         package_dir=package_dir,
         data_files=data_files,
-        scripts=datafiles('bin'),
+        scripts=scripts,
         requires=['python (>=2.7)'],
         classifiers=classifiers,
         cmdclass={'test':TestCommand, 'clean':CleanCommand, 'doc':DocCommand},
@@ -230,6 +207,13 @@ def main(argv):
         url=url,
         license=cms_license,
     )
+
+    mkpath('/var/lib/CUADRnT')
+    mkpath('/var/log/CUADRnT')
+    uid = pwd.getpwnam(username).pw_uid
+    gid = grp.getgrnam(group).gr_gid
+    os.chown('/var/lib/CUADRnT', uid, gid)
+    os.chown('/var/log/CUADRnT', uid, gid)
 
 if __name__ == "__main__":
     main(sys.argv[1:])

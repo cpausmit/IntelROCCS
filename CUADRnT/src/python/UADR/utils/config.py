@@ -15,19 +15,9 @@ logger = logging.getLogger(__name__)
 
 def get_config_parser():
     """
-    Config file is in /etc under the cuadrnt root
+    Config file is in /var/opt/CUADRnT
     """
-    config_file = ''
-    if 'CUADRNT_ROOT' in os.environ:
-        config_file = '%s/%s' % (os.environ['CUADRNT_ROOT'], 'etc/cuadrnt.cfg')
-    else:
-        logger.error('No config file found')
-        return
-
-    if not os.path.isfile(config_file):
-        logger.error('No config file found in %s', config_file)
-        return
-
+    config_file = os.path.join('/var/opt/CUADRnT', 'cuadrnt.cfg')
     logger.debug('Config file: %s', config_file)
     config_parser = ConfigParser.SafeConfigParser()
     config_parser.read(config_file)

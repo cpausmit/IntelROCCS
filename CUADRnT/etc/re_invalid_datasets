@@ -1,2 +1,11 @@
 ^.*HC-CMSSW.*$
 ^.*/USER$
+Test
+Backfill
+Penguins
+PreScaleThingy
+HeavyIonTest-Error
+TestEnables
+T0TEST
+WMAT0Commissioning
+TEST_*_WMA|Bunnies

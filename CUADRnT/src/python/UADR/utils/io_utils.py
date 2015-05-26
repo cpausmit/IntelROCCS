@@ -7,13 +7,15 @@ Description: Useful I/O functions
 
 # system modules
 import logging
-import os
 
 # Get module specific logger
 logger = logging.getLogger(__name__)
 
 def get_data_path():
-    return '%s/data' % (os.environ.get('CUADRNT_ROOT'))
+    """
+    Data stored in /var/lib/CUADRnT
+    """
+    return '/var/lib/CUADRnT'
 
 def export_csv(file_name, headers=tuple(), data=list()):
     """

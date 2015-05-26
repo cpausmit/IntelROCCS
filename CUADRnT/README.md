@@ -62,3 +62,12 @@ In addition to the rocker board algorith which is ran once a week there is a dai
 ### Required packages
 
 * Python 2.7
+
+### INSTALL
+IMPORTANT! - You must update /etc/setup.cfg 'username' and 'group' values to the username and group of that user for the user which will run the scripts. This is needed to correctly set up permissions for log and data paths.
+
+Install package by running as sudo:
+~$ python setup.py install
+
+Run tests as user which will run the code
+~$ python setup.py test

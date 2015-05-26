@@ -6,8 +6,6 @@ Description: Collect historical data for popularity model
 """
 
 # system modules
-import os
-import datetime
 import logging
 import sys
 import getopt
@@ -36,7 +34,6 @@ class HDC(object):
     def __init__(self):
         global MAX_THREADS
         self.logger = logging.getLogger(__name__)
-        self.logger.info('CUADRnT ROOT variable: %s', os.environ['CUADRNT_ROOT'])
         self.config = get_config()
         self.phedex = PhEDExService(self.config)
         self.pop_db = PopDBService(self.config)
@@ -54,7 +51,7 @@ class HDC(object):
         """
         valid_datasets = '/[0-9a-zA-Z\-_]+/[0-9a-zA-Z\-_]+/[0-9a-zA-Z\-_]+$'
         invalid_datasets = ''
-        invalid_file = open('%s/etc/re_invalid_datasets' % (os.environ['CUADRNT_ROOT']), 'r')
+        invalid_file = open('/var/opt/CUADRnT/re_invalid_datasets', 'r')
         for pattern in invalid_file:
             invalid_datasets += pattern + '|'
         invalid_datasets = invalid_datasets[:-1]
@@ -203,7 +200,7 @@ def main(argv):
             print "error: option %s not recognized" % (str(opt))
             sys.exit()
 
-    logging.basicConfig(filename='%s/log/cuadrnt-%s.log' % (os.environ['CUADRNT_ROOT'], datetime.date.today().strftime('%Y%m%d')), format='%(asctime)s [%(levelname)s] %(name)s:%(funcName)s:%(lineno)d: %(message)s', datefmt='%H:%M', level=log_level)
+    logging.basicConfig(filename='/var/log/CUADRnT/cuadrnt.log', format='%(asctime)s [%(levelname)s] %(name)s:%(funcName)s:%(lineno)d: %(message)s', datefmt='%H:%M', level=log_level)
     hdc = HDC()
     hdc.get_dataset_names()
 

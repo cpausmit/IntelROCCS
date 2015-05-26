@@ -26,29 +26,20 @@ d3.selection.prototype.moveToFront = function() {
     });
 };
 
-d3.csv("hd.csv", type, function(error, csv_data) {
-    var maxAge;
+var maxAge = 0;
 
-    inputs.selectAll("#maxAge")
-        .attr("max", d3.max(csv_data, function(d) {return d.age;}));
-
-    function updateMaxAge(maxAge) {
-        d3.select("#maxAge-value").text(maxAge);
-        d3.select("#maxAge").property("max", maxAge);
-        }
-    
-    x_scale.domain([0, d3.max(csv_data, function(d) {return d.age;})]);
-    y_scale.domain([0, d3.max(csv_data, function(d) { return d.accesses; })]);
+d3.csv("hdc.csv", type, function(error, all_csv_data) {
+    maxAge = d3.max(all_csv_data, function(d) {return d.age;});
+    d3.select("#maxAge").attr("max", maxAge).property("value", maxAge);
+    d3.select("#maxAge-value").text(maxAge);
 
     chart.append("g")
-    .attr("class", "axis")
-    .attr("transform", "translate(0," + (height - margin.bottom) + ")")
-    .call(x_axis);
+        .attr("id", "xAxis")
+        .attr("class", "axis");
 
     chart.append("g")
-    .attr("class", "axis")
-    .attr("transform", "translate(" + margin.left + ", 0)")
-    .call(y_axis);
+        .attr("id", "yAxis")
+        .attr("class", "axis");
 
     chart.append("text")
         .attr("transform", "translate(" + margin.left + ", " + margin.top + ") rotate(-90)")
@@ -67,58 +58,92 @@ d3.csv("hd.csv", type, function(error, csv_data) {
         .style("fill", "black")
         .text("age (days)");
 
-    var data = d3.nest()
-        .key(function(d) {return d.dataset_name;})
-        .entries(csv_data);
+    updateData();
 
-    var avg_data = d3.nest()
-        .key(function(d) {return d.age;})
-        .rollup(function(days) {return d3.mean(days, function(d) {return d.accesses;});})
-        .entries(csv_data);
+    d3.select("#maxAge")
+        .on("input", function() {
+            updateMaxAge(+this.value);
+        })
+        .on("mouseup", function() {
+            updateData();
+        });
 
-    var lineFunction = d3.svg.line()
-        .x(function(d) {return x_scale(d.age);})
-        .y(function(d) {return y_scale(d.accesses);})
-        .interpolate("linear");
+    function updateMaxAge(newMaxAge) {
+        d3.select("#maxAge-value").text(newMaxAge);
+        maxAge = newMaxAge;
+    }
+    
+    function updateData() {
+        var csv_data = all_csv_data.filter(function(d) {
+            return d.age <= maxAge;
+        });
 
-    var avgLineFunction = d3.svg.line()
-        .x(function(d) {return x_scale(d.key);})
-        .y(function(d) {return y_scale(d.values);})
-        .interpolate("linear");
+        x_scale.domain([0, d3.max(csv_data, function(d) {return d.age;})]);
+        y_scale.domain([0, d3.max(csv_data, function(d) { return d.accesses; })]);
 
-    chart.selectAll("path")
-        .data(data)
-        .enter().append("path")
-        .attr("d", function(d) {return lineFunction(d.values);})
-        .style("fill", "none")
-        .style("stroke", "steelblue")
-        .style("stroke-width", 1)
-        .on("mouseover", function(d){
-            d3.select(this)
-                .style("stroke", "orange")
-                .moveToFront();
-            var pos = d3.mouse(this);
-            d3.select(".chart")
-                .append("text")
-                    .attr("id", "info")
-                    .attr("x", pos[0])
-                    .attr("y", pos[1])
-                    .attr("dx", 0)
-                    .attr("dy", -15)
-                    .text(d.key);
-            })
-        .on("mouseout", function(){
-            d3.select(this).style("stroke", "steelblue");
-            d3.select(".chart")
-                .select("#info").remove();});
+        
+        chart.select("#xAxis")
+            .attr("transform", "translate(0," + (height - margin.bottom) + ")")
+            .call(x_axis);
 
-    chart.append("path")
-        .attr("d", function() {return avgLineFunction(avg_data);})
-        .style("fill", "none")
-        .style("stroke", "red")
-        .style("stroke-width", 2);
+        chart.select("#yAxis")
+            .attr("transform", "translate(" + margin.left + ", 0)")
+            .call(y_axis);
 
+        var data = d3.nest()
+            .key(function(d) {return d.dataset_name;})
+            .entries(csv_data);
 
+        var avg_data = d3.nest()
+            .key(function(d) {return d.age;})
+            .rollup(function(days) {return d3.mean(days, function(d) {return d.accesses;});})
+            .entries(csv_data);
+
+        var lineFunction = d3.svg.line()
+            .x(function(d) {return x_scale(d.age);})
+            .y(function(d) {return y_scale(d.accesses);})
+            .interpolate("linear");
+
+        var avgLineFunction = d3.svg.line()
+            .x(function(d) {return x_scale(d.key);})
+            .y(function(d) {return y_scale(d.values);})
+            .interpolate("linear");
+
+        chart.selectAll("path")
+            .remove();
+
+        chart.selectAll("path")
+            .data(data)
+            .enter().append("path")
+            .attr("d", function(d) {return lineFunction(d.values);})
+            .style("fill", "none")
+            .style("stroke", "steelblue")
+            .style("stroke-width", 1)
+            .on("mouseover", function(d){
+                d3.select(this)
+                    .style("stroke", "orange")
+                    .moveToFront();
+                var pos = d3.mouse(this);
+                d3.select(".chart")
+                    .append("text")
+                        .attr("id", "info")
+                        .attr("x", pos[0])
+                        .attr("y", pos[1])
+                        .attr("dx", 0)
+                        .attr("dy", -15)
+                        .text(d.key);
+                })
+            .on("mouseout", function(){
+                d3.select(this).style("stroke", "steelblue");
+                d3.select(".chart")
+                    .select("#info").remove();});
+
+        chart.append("path")
+            .attr("d", function() {return avgLineFunction(avg_data);})
+            .style("fill", "none")
+            .style("stroke", "red")
+            .style("stroke-width", 2);
+    }
 });
 
 function type(d) {
