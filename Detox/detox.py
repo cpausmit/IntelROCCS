@@ -97,6 +97,8 @@ print ' - Extracting requests from database took: %d seconds'%(timeNow-timePre)
 timePre = timeNow
 
 centralManager.updateSiteStatus()
+#centralManager.assignToT1s()
+
 centralManager.printResults()
 timeNow = time.time()
 print ' - Printing results took: %d seconds'%(timeNow-timePre)
