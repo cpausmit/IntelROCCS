@@ -3,6 +3,8 @@ import subprocess, os, glob, time
 from sys import exit # debugging
 
 def get(sites=None):
+  certPath = os.environ['USERCERT']
+  keyPath = os.environ['USERKEY']
   startTime = 1378008000
   endTime = int(time.time())
   sPerDay = 86400
@@ -27,7 +29,7 @@ def get(sites=None):
           args += '&tstop=' + time.strftime("%Y-%m-%d",time.gmtime(tStart + sPerDay))
           pop_url = '%s/%s'%(pop_base_url,args)
           fOutName = os.environ['MONITOR_DB']+'/sitesInfo/'+site+'/'+time.strftime("%Y-%m-%d",time.gmtime(tStart))
-          flags = '--ca-directory=/home/snarayan/certs --certificate=/home/snarayan/.globus/usercert.pem --private-key=/home/snarayan/.globus/userkey_nopw.pem'
+          flags = '--ca-directory=/home/snarayan/certs --certificate=%s --private-key=%s'%(certPath,keyPath)
           cmd = "wget -O %s %s '%s'"%(fOutName,flags,pop_url)
           print cmd
           os.system(cmd)
