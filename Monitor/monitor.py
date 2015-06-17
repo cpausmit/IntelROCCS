@@ -3,7 +3,9 @@
 Wrapper script that reads the binaries and makes the standard plots
 '''
 
-import os,sys,time
+import os
+import sys
+import time
 
 genesis=1378008000
 nowish = time.time()
