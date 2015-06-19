@@ -45,5 +45,5 @@ export LD_LIBRARY_PATH="/usr/local/lib:${LD_LIBRARY_PATH}"
 # fi
 export PYTHONPATH="${MONITOR_PYTHONPATH}:$PYTHONPATH"
 export DETOX_DB="/home/cmsprod/public_html/IntelROCCS/Detox"
-export USERKEY="/home/${USER}/.globus/userkey.pem"
+export USERCERT="/home/${USER}/.globus/userkey.pem"
 export USERKEY="/home/${USER}/.globus/usercert.pem"
