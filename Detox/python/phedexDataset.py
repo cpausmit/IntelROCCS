@@ -69,8 +69,8 @@ class PhedexDataset:
             grp =  self.groupAtSite[site]
             if grp not in groups:
                 continue
-            if self.validAtSite[site]:
-                validSites.append(site)
+            #if self.validAtSite[site]:
+            validSites.append(site)
         return validSites
 
     def isOnSite(self,site):

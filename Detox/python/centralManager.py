@@ -6,6 +6,7 @@ import math,statistics
 import phedexDataHandler, popularityDataHandler, phedexApi, deprecateDataHandler
 import siteProperties, datasetProperties
 import siteStatus, deletionRequest
+#import spreadLowRankSets 
 
 class CentralManager:
     def __init__(self):
@@ -32,6 +33,8 @@ class CentralManager:
         self.phedexHandler = phedexDataHandler.PhedexDataHandler(self.allSites)
         self.popularityHandler = popularityDataHandler.PopularityDataHandler(self.allSites)
         self.deprecatedHandler = deprecateDataHandler.DeprecateDataHandler()
+
+        #self.lowRankSpreader = SpreadLowRankSets.SpreadLowRankSets()
 
     def extractPhedexData(self,federation):
         try:
@@ -449,6 +452,11 @@ class CentralManager:
                         sitePr.grantWish(datasetName)
                         dataPr.addDelTarget(site)
 
+    def assignToT1s(self):
+        self.lowRankSpreader.assignSitePropers(self.sitePropers)
+        self.lowRankSpreader.assignPhedexSets(self.phedexHandler.getPhedexDatasets())
+
+        self.lowRankSpreader.assignDatasets()
 
     def getRequestStats(self,pastWeeks):
         reqTimes = {}

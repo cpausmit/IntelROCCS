@@ -1,8 +1,8 @@
 #!/bin/bash
 # --------------------------------------------------------------------------------------------------
-# Process to keep detox alive and well.
+# Process to keep detox process alive and well.
 #
-# v1.0                                                                         C.Paus (Mar 09, 2014)
+# v1.0                                                                         C.Paus (Apr 27, 2015)
 # --------------------------------------------------------------------------------------------------
 # initialize environment variables
 source /usr/local/IntelROCCS/Detox/setupDetox.sh

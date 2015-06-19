@@ -293,19 +293,22 @@ def convertSizeToGb(sizeTxt):
         print ' ERROR - string for sample size (%s) not compliant. EXIT.'%(sizeTxt)
         sys.exit(1)
 
-    # this is the text including the size units, that need to be converted
-    sizeGb  = float(sizeTxt[0:-2])
-    units   = sizeTxt[-2:]
-    # decide what to do for the given unit
-    if   units == 'MB':
-        sizeGb = sizeGb/1024.
-    elif units == 'GB':
-        pass
-    elif units == 'TB':
-        sizeGb = sizeGb*1024.
-    else:
-        print ' ERROR - Could not identify size. EXIT!'
-        sys.exit(0)
+    if line.isdigit(): # DAS decides to give back size in bytes
+        sizeGb = int(line)/1000/1000/1000        
+    else:              # DAS gives human readable size with unit integrated
+        # this is the text including the size units, that need to be converted
+        sizeGb  = float(sizeTxt[0:-2])
+        units   = sizeTxt[-2:]
+        # decide what to do for the given unit
+        if   units == 'MB':
+            sizeGb = sizeGb/1000.
+        elif units == 'GB':
+            pass
+        elif units == 'TB':
+            sizeGb = sizeGb*1000.
+        else:
+            print ' ERROR - Could not identify size. EXIT!'
+            sys.exit(0)
 
     # return the size in GB as a float
     return sizeGb
@@ -347,14 +350,14 @@ def findExistingSubscriptions(dataset,group='AnalysisOps',sitePattern='T2*',debu
 def getActiveSites(debug=0):
     # hardcoded fallback
     tier2Base = [ 'T2_AT_Vienna','T2_BR_SPRACE','T2_CH_CSCS','T2_DE_DESY','T2_DE_RWTH',
-              'T2_ES_CIEMAT','T2_ES_IFCA',
-              'T2_FR_IPHC','T2_FR_GRIF_LLR',
-              'T2_IT_Pisa','T2_IT_Bari','T2_IT_Rome',
-              'T2_RU_JINR',
-              'T2_UK_London_IC',
-              'T2_US_Caltech','T2_US_Florida','T2_US_MIT','T2_US_Nebraska','T2_US_Purdue',
-              'T2_US_Wisconsin'
-              ]
+                  'T2_ES_CIEMAT','T2_ES_IFCA',
+                  'T2_FR_IPHC','T2_FR_GRIF_LLR',
+                  'T2_IT_Pisa','T2_IT_Bari','T2_IT_Rome',
+                  'T2_RU_JINR',
+                  'T2_UK_London_IC',
+                  'T2_US_Caltech','T2_US_Florida','T2_US_MIT','T2_US_Nebraska','T2_US_Purdue',
+                  'T2_US_Wisconsin'
+                  ]
 
     # download list of active sites
     sites = []
@@ -378,17 +381,29 @@ def getActiveSites(debug=0):
         lastCopy = int(f[-3])
         quota = int(f[-5])
         valid = int(f[-6])
+
+        # sanity check
+        if quota == 0:
+            continue
+
+        # debug output
         if debug > 1:
             print ' Trying to add: "' + site + '"  lastCp: %d  Quota: %d  -->  %f'\
-                %(lastCopy,quota,float(lastCopy)/quota) 
-        # make decision whether or not to use this site
-        if float(lastCopy)/quota > 0.7 or valid != 1:
+                %(lastCopy,quota,float(lastCopy)/quota)
+
+        # check whether site is appropriate
+        if valid != 1:
+            continue
+
+        # is the site large enough
+        if float(lastCopy)/quota > 0.7:
             if debug > 0:
                 print '  -> skip %s as Last Copy too large or not valid.\n'%(site)
             continue
-        else:
-            if debug > 0:
-                print '  -> added %s\n'%(site)
+
+
+        if debug > 0:
+            print '  -> adding %s\n'%(site)
                 
         # add this site
         sites.append(site)
@@ -564,8 +579,11 @@ testLocalSetup(dataset,debug)
 # use das client to find the present size of the dataset
 cmd = 'das_client.py --format=plain --limit=0 --query="file dataset=' + \
       dataset + ' | sum(file.size)" |tail -1 | cut -d= -f2'
+if debug>2:
+    print ' DAS: ' + cmd
+    
 for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
-        line    = line[:-1]
+    line    = line[:-1]
 
 # this is the text including the size units, that needs to be converted)
 if line != '':
