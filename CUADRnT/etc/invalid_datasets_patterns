@@ -1,5 +1,5 @@
 ^.*HC-CMSSW.*$
-^.*/USER$
+^.*USER$
 Test
 Backfill
 Penguins
@@ -8,4 +8,5 @@ HeavyIonTest-Error
 TestEnables
 T0TEST
 WMAT0Commissioning
-TEST_*_WMA|Bunnies
+TEST_*_WMA
+Bunnies

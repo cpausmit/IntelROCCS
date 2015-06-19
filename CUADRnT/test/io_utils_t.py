@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!/usr/bin/env python
 """
 File       : io_utils_t.py
 Author     : Bjorn Barrefors <bjorn dot peter dot barrefors AT cern dot ch>
@@ -13,9 +13,10 @@ import unittest
 from UADR.utils.io_utils import get_data_path
 from UADR.utils.io_utils import export_csv
 
+@unittest.skip("Skipping Test")
 class IoUtilsTests(unittest.TestCase):
     """
-    A test class for util functions
+    A test class for I/O util functions
     """
     def setUp(self):
         "Set up for test"

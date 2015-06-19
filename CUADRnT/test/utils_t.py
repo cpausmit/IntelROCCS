@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!/usr/bin/env python
 """
 File       : utils_t.py
 Author     : Bjorn Barrefors <bjorn dot peter dot barrefors AT cern dot ch>
@@ -10,12 +10,9 @@ import unittest
 
 # package modules
 from UADR.utils.utils import check_tool
-from UADR.utils.utils import pop_db_timestamp_to_timestamp
-from UADR.utils.utils import phedex_timestamp_to_timestamp
 from UADR.utils.utils import bytes_to_gb
-from UADR.utils.utils import timestamp_day
-from UADR.utils.utils import timestamp_to_utc_date
 
+@unittest.skip("Skipping Test")
 class UtilsTests(unittest.TestCase):
     """
     A test class for util functions
@@ -36,39 +33,11 @@ class UtilsTests(unittest.TestCase):
         result = check_tool('invalid_tool')
         self.assertFalse(result)
 
-    def test_pop_db_timestamp_to_timestamp(self):
-        "Test pop_db_timestamp_to_timestamp function"
-        print ""
-        expected = 1386892800
-        result = pop_db_timestamp_to_timestamp(1386892800000)
-        self.assertEqual(result, expected)
-
-    def test_phedex_timestamp_to_timestamp(self):
-        "Test phedex_timestamp_to_timestamp function"
-        print ""
-        expected = 1336109098
-        result = phedex_timestamp_to_timestamp(1336109098.46633)
-        self.assertEqual(result, expected)
-
     def test_bytes_to_gb(self):
         "Test bytes_to_gb function"
         print ""
         expected = 146
         result = bytes_to_gb(146640731779)
-        self.assertEqual(result, expected)
-
-    def test_timestamp_day(self):
-        "Test timestamp_day function"
-        print ""
-        expected = 1383782400
-        result = timestamp_day(1383793400)
-        self.assertEqual(result, expected)
-
-    def test_timestamp_to_date(self):
-        "Test timestamp_to_date function"
-        print ""
-        expected = '20131107'
-        result = timestamp_to_utc_date(1383793400)
         self.assertEqual(result, expected)
 
 if __name__ == '__main__':

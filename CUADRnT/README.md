@@ -59,9 +59,15 @@ def getSiteRankings(sites, datasetRankings):
 ### Instant Replication Algorithm
 In addition to the rocker board algorith which is ran once a week there is a daily algorithm which replicates datasets which are in need of instant replication. These are decided based on data from CRAB3. If a job has been in queue for more than 1 day and more than half of the tasks are left the dataset on which the job is analysing will be instantly replicated to a site with available space which does not have a job stuck in othe queue.
 
-### Required packages
+### Required programs
 
 * Python 2.7
+* mongodb >= 3.0
+* MySQL >= 5.7
+
+### Required Python packages
+* pymongo
+* MySQLdb
 
 ### INSTALL
 IMPORTANT! - You must update /etc/setup.cfg 'username' and 'group' values to the username and group of that user for the user which will run the scripts. This is needed to correctly set up permissions for log and data paths.
@@ -71,3 +77,6 @@ Install package by running as sudo:
 
 Run tests as user which will run the code
 ~$ python setup.py test
+
+mongodb server does not have to be started explivitly as this is taken care of in storage module. However if needed a bin file start_mongodb is installed and can be executed from the command line.
+the mongodb server however is not automatically stopped as to not risk issues with other running services. Therefore a bin file stop_mongodb is install which can be executed from the command line to stop server.

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 """
 Standard python setup.py file for CUADRnT package
 To build     : python setup.py build
@@ -26,7 +25,6 @@ from unittest import TextTestRunner, TestLoader
 from distutils.core import setup
 from distutils.cmd import Command
 from distutils.dir_util import mkpath
-#from distutils.command.install import INSTALL_SCHEMES
 
 version = '1.0'  # TODO: (10) Set up automatic versioning system
 required_python_version = '2.7'
@@ -39,7 +37,7 @@ class TestCommand(Command):
 
     def initialize_options(self):
         """Init method"""
-        logging.basicConfig(filename='/var/log/CUADRnT/cuadrnt.log', format='%(asctime)s [%(levelname)s] %(name)s:%(funcName)s:%(lineno)d: %(message)s', datefmt='%H:%M', level=logging.DEBUG)
+        logging.basicConfig(filename='/var/log/CUADRnT/cuadrnt-test.log', format='%(asctime)s [%(levelname)s] %(name)s:%(funcName)s:%(lineno)d: %(message)s', datefmt='%H:%M', level=logging.DEBUG)
         self.test_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'test')
 
     def finalize_options(self):
@@ -183,11 +181,6 @@ def main(argv):
         "Operating System :: POSIX",
         "Programming Language :: Python"
     ]
-
-    # # set default location for "data_files" to
-    # # platform specific "site-packages" location
-    # for scheme in INSTALL_SCHEMES.values():
-    #     scheme['data'] = scheme['purelib']
 
     setup(
         name=name,

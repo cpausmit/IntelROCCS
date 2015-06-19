@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+mongod --config /var/opt/CUADRnT/mongodb.config --fork --logpath /var/log/CUADRnT/mongodb.log

@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!/usr/bin/env python
 """
 File       : io_utils.py
 Author     : Bjorn Barrefors <bjorn dot peter dot barrefors AT cern dot ch>

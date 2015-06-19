@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """
-File       : phedex.py
+File       : intelroccs.py
 Author     : Bjorn Barrefors <bjorn dot peter dot barrefors AT cern dot ch>
-Description: PhEDEx service module
+Description: Helper service to access IntelROCCS files online
 """
 
 # system modules
@@ -10,14 +10,16 @@ import logging
 
 # package modules
 from UADR.services.generic import GenericService
+from UADR.core.storage import StorageManager
 
-class PhEDExService(GenericService):
+class IntelROCCSService(object):
     """
-    Helper class to access PhEDEx API
-    Subclass of GenericService
+    Helper class to access MIT DB
     """
     def __init__(self, config=dict()):
         GenericService.__init__(self, config)
         self.logger = logging.getLogger(__name__)
-        self.service = 'phedex'
+        self.service = 'intelroccs'
+        self.config = config
         self.target_url = str(config['services'][self.service])
+        self.storage_manager = StorageManager(self.config)

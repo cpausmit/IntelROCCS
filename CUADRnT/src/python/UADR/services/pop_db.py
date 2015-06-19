@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!/usr/bin/env python
 """
 File       : pop_db.py
 Author     : Bjorn Barrefors <bjorn dot peter dot barrefors AT cern dot ch>
@@ -18,5 +18,6 @@ class PopDBService(GenericService):
     """
     def __init__(self, config=dict()):
         GenericService.__init__(self, config)
+        self.service = 'pop_db'
         self.logger = logging.getLogger(__name__)
-        self.target_url = config['services']['pop_db']
+        self.target_url = str(config['services'][self.service])

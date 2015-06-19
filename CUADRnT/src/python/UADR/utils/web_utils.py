@@ -1,6 +1,6 @@
-#!/usr/local/bin/python
+#!/usr/bin/env python
 """
-File       : url_utils.py
+File       : web_utils.py
 Author     : Bjorn Barrefors <bjorn dot peter dot barrefors AT cern dot ch>
 Description: Useful functions to deal with internet services
 """
@@ -8,6 +8,7 @@ Description: Useful functions to deal with internet services
 # system modules
 import logging
 import os
+import json
 import urllib
 import httplib
 import urllib2
@@ -40,7 +41,7 @@ class HTTPSClientAuthHandler(urllib2.HTTPSHandler):
             return httplib.HTTPSConnection(host, key_file=self.key, cert_file=self.cert)
         return httplib.HTTPSConnection(host)
 
-def get_data(target_url, api, params=dict()):
+def get_secure_data(target_url, api, params=dict(), method='get'):
     """
     Create http request for target_url, api and params of service
     Data is json data returned as a string
@@ -48,9 +49,13 @@ def get_data(target_url, api, params=dict()):
     Check for ValueError if not valid json
     """
     headers = {'Accept': 'application/json'}
-    url_data = urllib.urlencode(params, doseq=True)
-    full_url = '%s/%s?%s' % (target_url, api, url_data)
-    request = urllib2.Request(full_url)
+    data = urllib.urlencode(params, doseq=True)
+    url = '%s/%s' % (target_url, api)
+    if method == 'post':
+        request = urllib2.Request(url, data)
+    else:
+        full_url = '%s?%s' % (str(url), str(data))
+        request = urllib2.Request(full_url)
     for key, val in headers.items():
         request.add_header(key, val)
     handler = HTTPSClientAuthHandler()
@@ -59,7 +64,22 @@ def get_data(target_url, api, params=dict()):
     try:
         return_data = urllib2.urlopen(request)
         data = return_data.read()
+        json_data = json.loads(data)
     except Exception as e:
-        logger.warning("Couldn't fetch data for url %s\n    Reason:\n    %s", full_url, str(e))
-        data = "{}"
-    return data, full_url
+        logger.warning("Couldn't fetch data for url %s?%s\n    Reason:\n    %s", str(url), str(data), str(e))
+        json_data = dict()
+    return json_data
+
+def get_data(target_url, api, file_):
+    """
+    Extract info from online text file
+    """
+    response = urllib2.urlopen('%s/%s/%s' % (target_url, api, file_))
+    data = response.read()
+    json_data = list()
+    for line in data.split('\n'):
+        if not line or line[0] == '#':
+            continue
+        row = line.split()
+        json_data.append(row)
+    return json_data

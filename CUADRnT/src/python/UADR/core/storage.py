@@ -1,0 +1,132 @@
+#!/usr/bin/env python
+"""
+File       : storage.py
+Author     : Bjorn Barrefors <bjorn dot peter dot barrefors AT cern dot ch>
+Description: Maintain a mongodb instance which is used for caching data, store calculated data and logging
+"""
+
+# system modules
+import logging
+import datetime
+from pymongo import MongoClient, ASCENDING
+from pymongo.errors import ServerSelectionTimeoutError, DocumentTooLarge
+from subprocess import call
+
+# package modules
+from UADR.utils.db_utils import get_object_id
+from UADR.utils.utils import datetime_day
+
+# TODO: Handle returned values
+
+class StorageManager(object):
+    """
+    Helper class to access local mongodb instance
+    """
+    def __init__(self, config=dict()):
+        self.logger = logging.getLogger(__name__)
+        uri = str(config['mongodb']['uri'])
+        db = str(config['mongodb']['db'])
+        client = MongoClient(host=uri)
+        try:
+            client.server_info()
+        except ServerSelectionTimeoutError:
+            # server is not running, start it
+            call("start_mongodb")
+        self.db = client[db]
+        data_coll = self.db['dataset_data']
+        data_coll.create_index([('name', ASCENDING)], background=True, unique=True)
+        log_coll = self.db['log']
+        log_coll.create_index('datetime', expireAfterSeconds=864000)
+        for service in config['services'].keys():
+            cache_coll = self.db[service]
+            if service == 'pop_db':
+                cache_coll.create_index('datetime', expireAfterSeconds=172800)
+            else:
+                cache_coll.create_index('datetime', expireAfterSeconds=86400)
+
+    def insert_cache(self, coll, api, params=dict(), data=dict()):
+        """
+        Insert data into collection
+        Collection should be the service it is caching data for
+        Use update to have the possibility to force cache update
+        """
+        db_coll = self.db[coll]
+        object_id = get_object_id(str(api)+str(params))
+        data['_id'] = object_id
+        data['datetime'] = datetime_day(datetime.datetime.utcnow())
+        try:
+            db_coll.update({'_id':object_id}, data, upsert=True)
+        except DocumentTooLarge:
+            pass
+
+    def get_cache(self, coll, api, params=dict()):
+        """
+        Fetch cached data for a service
+        Collection should be name of service
+        """
+        data = dict()
+        db_coll = self.db[coll]
+        object_id = get_object_id(str(api)+str(params))
+        if coll == 'pop_db':
+            # pop db data doesn't change but is specific to a certain date so if it's being accessed, keep it
+            data = db_coll.find_one_and_update({'_id':object_id}, {'$set':{'datetime':datetime_day(datetime.datetime.utcnow())}}, {'_id':0})
+        else:
+            data = db_coll.find_one({'_id':object_id}, {'_id':0})
+        return data
+
+    def insert_data(self, coll, data=list(), ordered=False):
+        """
+        Insert data into any collection
+        """
+        db_coll = self.db[coll]
+        db_coll.insert_many(data, ordered=ordered)
+
+    def update_data(self, coll, query=dict(), data=dict(), upsert=False):
+        """
+        Update data in any collection
+        """
+        db_coll = self.db[coll]
+        db_coll.update_many(query, data, upsert=upsert)
+
+    def delete_data(self, coll, query=dict()):
+        """
+        Remove data in any collection
+        """
+        db_coll = self.db[coll]
+        db_coll.delete_many(query)
+
+    def get_data(self, coll, pipeline=list()):
+        """
+        Fetch data from any collection
+        Use aggregate function for more powerful queries
+        """
+        data = list()
+        db_coll = self.db[coll]
+        return_data = db_coll.aggregate(pipeline)
+        if return_data:
+            data = list(return_data)
+        return data
+
+    def index_data(self, coll, indexes=list()):
+        """
+        Create indexes on data
+        """
+        db_coll = self.db[coll]
+        db_coll.create_index(indexes)
+
+    def get_last_insert_time(self, coll):
+        """
+        Get the timestamp of last insert
+        """
+        pipeline = list()
+        sort = {'$sort':{'_id':-1}}
+        pipeline.append(sort)
+        limit = {'$limit':1}
+        pipeline.append(limit)
+        project = {'$project':{'_id':1}}
+        pipeline.append(project)
+        data = self.get_data(coll, pipeline=pipeline)
+        timestamp = datetime.datetime(1970, 1, 2)
+        if data:
+            timestamp = data[0]['_id'].generation_time
+        return timestamp
