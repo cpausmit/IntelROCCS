@@ -13,7 +13,7 @@ import MySQLdb
 from UADR.services.generic import GenericService
 from UADR.core.storage import StorageManager
 
-class MITDBService(object):
+class MITDBService(GenericService):
     """
     Helper class to access MIT DB
     """

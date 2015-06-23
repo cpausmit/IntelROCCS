@@ -25,6 +25,7 @@ def export_csv(file_name, headers=tuple(), data=list()):
     """
     data_path = get_data_path()
     export_file = '%s/%s.csv' % (data_path, file_name)
+    logger.debug('Exporting to file: %s', export_file)
     fs = open(export_file, 'w')
     header_str = ''
     for field in headers:

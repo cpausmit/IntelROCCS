@@ -26,7 +26,7 @@ class GenericService(object):
         self.service = 'generic'
         self.config = config
         self.target_url = ''
-        self.storage = StorageManager(self.config)
+        self.storage = StorageManager(config)
 
     def fetch(self, api, params=dict(), method='get', secure=True, cache=True, cache_only=False, force_cache=False):
         """
@@ -53,7 +53,7 @@ class GenericService(object):
             if secure:
                 json_data = get_secure_data(target_url=self.target_url, api=api, params=params, method=method)
             else:
-                get_data(target_url=self.target_url, api=api, file_=params)
+                json_data = get_data(target_url=self.target_url, api=api, file_=params)
             if type(json_data) is not dict:
                 json_data = {'data':json_data}
             return json_data

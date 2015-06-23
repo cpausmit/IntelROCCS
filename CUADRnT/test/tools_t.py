@@ -2,7 +2,7 @@
 """
 File       : dataset_collector_t.py
 Author     : Bjorn Barrefors <bjorn dot peter dot barrefors AT cern dot ch>
-Description: Test class for dataset collector class
+Description: Test class for tool classes
 """
 
 # system modules
@@ -12,10 +12,10 @@ import unittest
 from UADR.tools.dataset_collector import DatasetCollector
 from UADR.utils.config import get_config
 
-# @unittest.skip("Skipping Test")
-class ServicesTests(unittest.TestCase):
+@unittest.skip("Skip Test")
+class ToolsTests(unittest.TestCase):
     """
-    A test class for service classes
+    A test class for tools classes
     """
     def setUp(self):
         "Set up for test"
@@ -25,11 +25,12 @@ class ServicesTests(unittest.TestCase):
         "Clean up"
         pass
 
+    #@unittest.skip("Skip Test")
     def test_dataset_collector(self):
         "test dataset_collector functions"
         print ""
         dataset_collector = DatasetCollector(config=self.config)
-        dataset_collector.get_data()
+        dataset_collector.get_new_datasets()
 
 if __name__ == '__main__':
     unittest.main()

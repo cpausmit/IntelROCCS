@@ -33,21 +33,10 @@ class DatasetCollector(object):
         self.max_threads = int(self.config['threading']['max_threads'])
         self.last_update = 86400
 
-    def get_dataset_names(self):
-        """
-        Get new datasets in local cache
-        """
-        pipeline = list()
-        project = {'$project':{'name':1, '_id':0}}
-        pipeline.append(project)
-        data = self.storage.get_data(coll='dataset_data', pipeline=pipeline)
-        return [d['name'] for d in data]
-
     def get_new_datasets(self):
         """
         Get all analysis datasets in CMS from phedex
         """
-        # TODO: Keep track of replicas/sites
         valid_datasets_patterns = '/[0-9a-zA-Z\-_]+/[0-9a-zA-Z\-_]+/[0-9a-zA-Z\-_]+$'
         invalid_datasets_patterns = ''
         invalid_file = open('/var/opt/CUADRnT/invalid_datasets_patterns', 'r')
@@ -59,6 +48,7 @@ class DatasetCollector(object):
         # Get date of latest update
         timestamp = datetime_to_timestamp(self.storage.get_last_insert_time('dataset_data'))
         self.last_update = timestamp
+        self.logger.debug('dataset_data collection was last updated %s', timestamp_to_datetime(self.last_update).strftime('%Y-%m-%d %H:%M'))
         # Get new replicas
         api = 'blockreplicas'
         params = {'node':'T*', 'create_since':timestamp, 'group':'AnalysisOps', 'show_dataset':'y'}
@@ -76,6 +66,16 @@ class DatasetCollector(object):
             dataset_data.append({'name':dataset_name})
         if dataset_data:
             self.storage.insert_data('dataset_data', dataset_data)
+
+    def get_dataset_names(self):
+        """
+        Get new datasets in local cache
+        """
+        pipeline = list()
+        project = {'$project':{'name':1, '_id':0}}
+        pipeline.append(project)
+        data = self.storage.get_data(coll='dataset_data', pipeline=pipeline)
+        return [d['name'] for d in data]
 
     def get_data(self):
         """

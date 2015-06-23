@@ -12,14 +12,15 @@ To run tests : python setup.py test
 
 # system modules
 import logging
+import logging.handlers
 import os
 import re
 import sys
 import pwd
 import grp
 import shutil
-import subprocess
 import ConfigParser
+from subprocess import call
 from os.path import join as pjoin
 from unittest import TextTestRunner, TestLoader
 from distutils.core import setup
@@ -37,7 +38,7 @@ class TestCommand(Command):
 
     def initialize_options(self):
         """Init method"""
-        logging.basicConfig(filename='/var/log/CUADRnT/cuadrnt-test.log', format='%(asctime)s [%(levelname)s] %(name)s:%(funcName)s:%(lineno)d: %(message)s', datefmt='%H:%M', level=logging.DEBUG)
+        logging.basicConfig(filename='/var/log/CUADRnT/cuadrnt-test.log', filemode='w', format='%(asctime)s [%(levelname)s] %(name)s:%(funcName)s:%(lineno)d: %(message)s', datefmt='%H:%M', level=logging.DEBUG)
         self.test_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'test')
 
     def finalize_options(self):
@@ -106,7 +107,7 @@ class DocCommand(Command):
         cdir = os.getcwd()
         os.chdir(os.path.join(cdir, 'doc'))
         os.environ['PYTHONPATH'] = os.path.join(cdir, 'src/python')
-        subprocess.call('make html', shell=True)
+        call('make html', shell=True)
         os.chdir(cdir)
 
 def dirwalk(relative_dir):

@@ -44,9 +44,7 @@ class HTTPSClientAuthHandler(urllib2.HTTPSHandler):
 def get_secure_data(target_url, api, params=dict(), method='get'):
     """
     Create http request for target_url, api and params of service
-    Data is json data returned as a string
-    Use json.loads(data) to generate json structure
-    Check for ValueError if not valid json
+    Data should be json data returned as a string
     """
     headers = {'Accept': 'application/json'}
     data = urllib.urlencode(params, doseq=True)
@@ -73,6 +71,10 @@ def get_secure_data(target_url, api, params=dict(), method='get'):
 def get_data(target_url, api, file_):
     """
     Extract info from online text file
+    Format of file:
+        tab separated fields
+        comments marked using #
+        headers commented out
     """
     response = urllib2.urlopen('%s/%s/%s' % (target_url, api, file_))
     data = response.read()

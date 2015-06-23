@@ -12,9 +12,10 @@ import logging
 from UADR.services.generic import GenericService
 from UADR.core.storage import StorageManager
 
-class IntelROCCSService(object):
+class IntelROCCSService(GenericService):
     """
-    Helper class to access MIT DB
+    Helper class to access IntelROCCS files online
+    Subclass of GenericService
     """
     def __init__(self, config=dict()):
         GenericService.__init__(self, config)
