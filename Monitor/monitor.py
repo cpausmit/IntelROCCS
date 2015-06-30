@@ -10,6 +10,11 @@ import time
 genesis=1378008000
 nowish = time.time()
 
+# remove old log files
+logPeriod = int((nowish/1000000)%10)
+logBlock = int((nowish/10000000))
+os.system('rm $MONITOR_DB/monitor-%i[^%i%i]*'%(logBlock,logPeriod,logPeriod-1))
+
 def addTime(timeStruct,addTuple):
     '''
         take timeStruct and add (y,m) in addTuple
@@ -42,7 +47,7 @@ currentDay = currentDate.tm_mday
 DDMPattern = '(?!/_/_/USER_)'
 DDMGroup = 'AnalysisOps'
 DDMTimeStamps = [
-                (genesis,nowish), 
+                (genesis,nowish),
                 (time.mktime(time.strptime('%i-01-01'%(currentYear-1),'%Y-%m-%d')), time.mktime(time.strptime('%i-12-31'%(currentYear-1),'%Y-%m-%d'))),
                 (time.mktime(time.strptime('%i-01-01'%(currentYear),'%Y-%m-%d')), time.time()),
                 (time.mktime(addTime(time.gmtime(),(0,-3))), time.time())
@@ -99,9 +104,12 @@ Modified: %s by script
 with open(os.environ['MONITOR_DB']+'/datasetUsage.html','w') as htmlFile:
     htmlFile.write(htmlString)
 
+### done with html nonsense
+
 os.environ['MONITOR_PATTERN'] = DDMPattern
 os.environ['MONITOR_GROUP'] = DDMGroup
 os.system('./readJsonSnapshotPickle.py T2*')
+os.system('rm $MONITOR_DB/*png') # these will replaced in a few lines
 
 for i in range(len(DDMTimeStamps)):
     os.environ['MONITOR_PLOTTEXT'] = DDMLabels[i]

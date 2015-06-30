@@ -24,6 +24,7 @@ try:
 except KeyError:
     sys.stderr.write('\n ERROR - a environment variable is not defined\n\n')
     sys.exit(2)
+os.system('rm %s/*png'%(monitorDB))
 datasetPattern = datasetPattern.replace("_",".*")
 groupPattern = groupPattern.replace("_",".*")
 
@@ -105,7 +106,7 @@ def calculateAverageNumberOfSites(sitePattern,datasetSet,fullStart,end):
 
         if not re.match(datasetPattern,datasetName):
             continue
-            
+
         # don't penalize a dataset for not existing
         cTime = datasetObject.cTime
         start = max(fullStart,cTime)
@@ -139,7 +140,7 @@ def calculateAverageNumberOfSites(sitePattern,datasetSet,fullStart,end):
                 except IndexError:
                     break
                 i = i + 1                   # iterate before all continue statements
-                # four ways to be in interval                 
+                # four ways to be in interval
                 # (though this prevents you from having the same
                 #  start and end date)
                 if tXfer <= start <= end <= tDel:
@@ -239,7 +240,7 @@ hUsage = ROOT.TH1F("dataUsage","Data Usage",len(l)-1,array('f',l))
 # hUsage = ROOT.TH1F("dataUsage","Data Usage",nBins,-delta,maxBin+delta)
 kBlack = 1
 if not rc:
-    ROOT.MitRootStyle.InitHist(hUsage,"","",kBlack) 
+    ROOT.MitRootStyle.InitHist(hUsage,"","",kBlack)
 titles = "; Accesses/month; Fraction of total data volume"
 hUsage.SetTitle(titles)
 meanVal = 0.
@@ -259,7 +260,7 @@ for datasetName,datasetObject in datasetSet.iteritems():
       continue
     nAccess = 0
     for siteName in datasetObject.nAccesses:
-        if not re.match(sitePattern,siteName): 
+        if not re.match(sitePattern,siteName):
             # maybe we should get rid of this functionality to speed things up
             continue
         for utime,n in datasetObject.nAccesses[siteName].iteritems():
@@ -316,14 +317,14 @@ except KeyError:
                                  CRB usage plots
    =============================================================================='''
 
-ROOT.gPad.SetLogy(0) 
+ROOT.gPad.SetLogy(0)
 hCRB = ROOT.TH1F("CRBUsage","Data Usage",17,-1.5,15.5)
 hZeroOne = ROOT.TH1F("CRBZeroOne","Zero and One Bin",100,0,1.);
 hTime = ROOT.TH1F("time","time",100,0,1.);
 if not rc:
-    ROOT.MitRootStyle.InitHist(hCRB,"","",kBlack) 
-    ROOT.MitRootStyle.InitHist(hZeroOne,"","",kBlack) 
-    ROOT.MitRootStyle.InitHist(hTime,"","",kBlack) 
+    ROOT.MitRootStyle.InitHist(hCRB,"","",kBlack)
+    ROOT.MitRootStyle.InitHist(hZeroOne,"","",kBlack)
+    ROOT.MitRootStyle.InitHist(hTime,"","",kBlack)
 titles = "; <n_{accesses}>; Prorated data volume [TB]"
 hCRB.SetTitle(titles)
 hZeroOne.SetTitle(titles)
@@ -340,7 +341,7 @@ for datasetName,datasetObject in datasetSet.iteritems():
         continue
     sizeGB = datasetObject.sizeGB
     for siteName in datasetObject.movement:
-        if not re.match(sitePattern,siteName): 
+        if not re.match(sitePattern,siteName):
             # maybe we should get rid of this functionality to speed things up
             continue
         timeOnSite = timeOnSites[datasetName][siteName]
@@ -409,7 +410,7 @@ try:
     cCRB.SaveAs("/local/IntelROCCSplots/CRBUsage_%s.png"%(os.environ['MONITOR_PLOTTEXT']))
 except KeyError:
     cCRB.SaveAs("/local/IntelROCCSplots/CRBUsage_%s_%i_%i.png"%(groupPattern,start,end))
-    
+
 cZeroOne.cd()
 hZeroOne.Draw("hist")
 ROOT.MitRootStyle.OverlayFrame()
@@ -423,7 +424,7 @@ try:
     cZeroOne.SaveAs("/local/IntelROCCSplots/CRB01_%s.png"%(os.environ['MONITOR_PLOTTEXT']))
 except KeyError:
     cZeroOne.SaveAs("/local/IntelROCCSplots/CRB01_%s_%i_%i.png"%(groupPattern,start,end))
-    
+
 cTime.cd()
 hTime.Draw("hist")
 ROOT.MitRootStyle.OverlayFrame()
