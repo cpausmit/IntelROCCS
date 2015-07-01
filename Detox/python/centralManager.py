@@ -6,8 +6,12 @@ import math,statistics
 import phedexDataHandler, popularityDataHandler, phedexApi, deprecateDataHandler
 import siteProperties, datasetProperties
 import siteStatus, deletionRequest
+<<<<<<< HEAD
 import dbInfoHandler
 import spreadLowRankSets 
+=======
+#import spreadLowRankSets 
+>>>>>>> eae1fd79026d96721f64629894b8e02035b390b3
 
 class CentralManager:
     def __init__(self):
@@ -37,6 +41,7 @@ class CentralManager:
         self.popularityHandler = popularityDataHandler.PopularityDataHandler(self.allSites)
         self.deprecatedHandler = deprecateDataHandler.DeprecateDataHandler()
 
+<<<<<<< HEAD
         self.lowRankSpreader = spreadLowRankSets.SpreadLowRankSets(self.dbInfoHandler)
 
 
@@ -48,6 +53,9 @@ class CentralManager:
                 print ' Site not active, status=%d  - %s'%(self.allSites[site].getStatus(),site)
             else:
                 print ' Site --- active, status=%d  - %s'%(self.allSites[site].getStatus(),site)
+=======
+        #self.lowRankSpreader = SpreadLowRankSets.SpreadLowRankSets()
+>>>>>>> eae1fd79026d96721f64629894b8e02035b390b3
 
     def extractPhedexData(self,federation):
         try:

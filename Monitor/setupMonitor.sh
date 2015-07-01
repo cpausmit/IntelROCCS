@@ -39,8 +39,11 @@ fi
 
 export LD_LIBRARY_PATH="/usr/local/lib:${LD_LIBRARY_PATH}"
 
-if [ -z "$PYTHONPATH" ]
-then
-  export PYTHONPATH="/usr/local/lib/python2.7:/usr/local/lib/python2.7/site-packages"
-fi
+# if [ -z "$PYTHONPATH" ]
+# then
+#   export PYTHONPATH="/usr/local/lib/python2.7:/usr/local/lib/python2.7/site-packages"
+# fi
 export PYTHONPATH="${MONITOR_PYTHONPATH}:$PYTHONPATH"
+export DETOX_DB="/home/cmsprod/public_html/IntelROCCS/Detox"
+export USERKEY="/home/${USER}/.globus/userkey.pem"
+export USERCERT="/home/${USER}/.globus/usercert.pem"

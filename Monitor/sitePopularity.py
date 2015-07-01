@@ -25,11 +25,11 @@ datasetSet = pklDict["datasetSet"] # eat the pickle
 nSiteAccess = pklDict["nSiteAccess"]
 sitePattern = argv[1]
 
-# startTime = 1393632000
-startTime = int(time.mktime(time.strptime("2014-09-01","%Y-%m-%d")))
+startTime = 1393632000
+# startTime = int(time.mktime(time.strptime("2014-09-01","%Y-%m-%d")))
 endTime = int(time.time())
 # startTime = 1420243200
-endTime = 1428292800
+# endTime = 1428292800
 interval = endTime - startTime
 sPerDay = 86400
 # times = [28]
