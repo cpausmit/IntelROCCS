@@ -19,19 +19,26 @@ if not os.environ.get('DETOX_DB'):
 
 # make sure we start in the right directory
 os.chdir(os.environ.get('DETOX_BASE'))
+topWorkArea = os.environ['DETOX_DB']
+
+phedexGroups = (os.environ['DETOX_GROUP']).split(',')
 
 # set this to turn off actual deletions for debugging
 requestDeletions = True
+requestTransfers = False
 
 #===================================================================================================
 #  H E L P E R S
 #===================================================================================================
 def createCacheAreas():
     # create directory structure where to cache our input and analysis output
-    if not os.path.exists(os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS']):
-        os.system('mkdir -p ' + os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS'])
-    if not os.path.exists(os.environ['DETOX_DB'] + '/' + os.environ['DETOX_RESULT']):
-        os.system('mkdir -p ' + os.environ['DETOX_DB'] + '/' + os.environ['DETOX_RESULT'])
+    statusArea = topWorkArea + '/' + os.environ['DETOX_STATUS']
+    if not os.path.exists(statusArea):
+        os.system('mkdir -p ' + statusArea)
+
+    resultArea = topWorkArea + '/' + os.environ['DETOX_RESULT']
+    if not os.path.exists(resultArea):
+        os.system('mkdir -p ' + resultArea)
 
 #====================================================================================================
 #  M A I N
@@ -48,7 +55,6 @@ centralManager.checkProxyValid()
 #centralManager.changeGroup('T2_US_MIT', dataset, 'AnalysisOps')
 
 # Make directories to hold cache data
-
 createCacheAreas()
 
 # Get a list of phedex datasets (goes to cache)
@@ -75,32 +81,53 @@ timePre = timeNow
 
 centralManager.rankDatasetsLocally()
 centralManager.extractCacheRequests()
-centralManager.findExtraUsage()
-centralManager.rankDatasetsGlobally()
-centralManager.makeDeletionLists()
+centralManager.findExtraUsage() 
 
 timeNow = time.time()
-print ' - Making deletion lists took: %d seconds'%(timeNow-timePre)
 timePre = timeNow
 
-if requestDeletions:
-    centralManager.requestDeletions()
+for iii in range(0, len(phedexGroups)):
+    phedGroup = phedexGroups[iii]
+    mode = 'w'
+    if iii > 0:
+        mode = 'a'
 
-timeNow = time.time()
-print ' - Requesting deletions took: %d seconds'%(timeNow-timePre)
-timePre = timeNow
+    print "\n--- Processing group " + phedGroup + " ---\n"
 
-centralManager.extractCacheRequests()
-centralManager.showCacheRequests()
-timeNow = time.time()
-print ' - Extracting requests from database took: %d seconds'%(timeNow-timePre)
-timePre = timeNow
+    centralManager.rankDatasetsGlobally(phedGroup)
+    centralManager.makeDeletionLists(phedGroup)
 
-centralManager.updateSiteStatus()
-centralManager.printResults()
-timeNow = time.time()
-print ' - Printing results took: %d seconds'%(timeNow-timePre)
-timePre = timeNow
+    timeNow = time.time()
+    print ' - Making deletion lists took: %d seconds'%(timeNow-timePre)
+    timePre = timeNow
+    
+    if requestDeletions and phedGroup == 'AnalysisOps':
+        centralManager.requestDeletions()
+
+    timeNow = time.time()
+    print ' - Requesting deletions took: %d seconds'%(timeNow-timePre)
+    timePre = timeNow
+
+    centralManager.extractCacheRequests()
+    centralManager.showCacheRequests()
+    timeNow = time.time()
+    print ' - Extracting requests from database took: %d seconds'%(timeNow-timePre)
+    timePre = timeNow
+
+    if phedGroup == 'AnalysisOps':
+        centralManager.updateSiteStatus()
+
+    centralManager.printResults(phedGroup,mode)
+    timeNow = time.time()
+    print ' - Printing results took: %d seconds'%(timeNow-timePre)
+    timePre = timeNow
+
+    if requestTransfers:
+        print ' Subscribe datasets to T1s'
+        centralManager.assignToT1s()
+        timeNow = time.time()
+        print ' - Subscribing to T1s took: %d seconds'%(timeNow-timePre)
+        timePre = timeNow
 
 # Final summary of timing
 timeNow = time.time()

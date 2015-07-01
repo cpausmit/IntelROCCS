@@ -6,6 +6,8 @@ import math,statistics
 import phedexDataHandler, popularityDataHandler, phedexApi, deprecateDataHandler
 import siteProperties, datasetProperties
 import siteStatus, deletionRequest
+import dbInfoHandler
+import spreadLowRankSets 
 
 class CentralManager:
     def __init__(self):
@@ -16,9 +18,11 @@ class CentralManager:
         self.DETOX_NCOPY_MIN = int(os.environ['DETOX_NCOPY_MIN'])
         self.DETOX_USAGE_MIN = float(os.environ['DETOX_USAGE_MIN'])
         self.DETOX_USAGE_MAX = float(os.environ['DETOX_USAGE_MAX'])
-        self.phedexGroup = os.environ['DETOX_GROUP']
+
+        self.phedexGroups = (os.environ['DETOX_GROUP']).split(',')
 
         self.allSites = {}
+        self.dbInfoHandler = dbInfoHandler.DbInfoHandler()
         self.getAllSites()
 
         self.sitePropers = {}
@@ -32,6 +36,18 @@ class CentralManager:
         self.phedexHandler = phedexDataHandler.PhedexDataHandler(self.allSites)
         self.popularityHandler = popularityDataHandler.PopularityDataHandler(self.allSites)
         self.deprecatedHandler = deprecateDataHandler.DeprecateDataHandler()
+
+        self.lowRankSpreader = spreadLowRankSets.SpreadLowRankSets(self.dbInfoHandler)
+
+
+    def getAllSites(self):
+        self.allSites = self.dbInfoHandler.allSites
+
+        for site in sorted(self.allSites):
+            if self.allSites[site].getStatus() == 0:
+                print ' Site not active, status=%d  - %s'%(self.allSites[site].getStatus(),site)
+            else:
+                print ' Site --- active, status=%d  - %s'%(self.allSites[site].getStatus(),site)
 
     def extractPhedexData(self,federation):
         try:
@@ -52,45 +68,6 @@ class CentralManager:
                                "Execution was terminated, check log to correct problems.")
             raise
 
-    def getAllSites(self):
-        db = os.environ.get('DETOX_SITESTORAGE_DB')
-
-        print ' Access site storage database to find all sites.'
-        connection = self.getDbConnection()
-        cursor = connection.cursor()
-
-        sql = 'select SiteName,SizeTb,Sites.Status,Sites.SiteId from Quotas,Sites,Groups'
-        sql = sql + ' where  Groups.GroupName=\'' + self.phedexGroup + '\''
-        sql = sql + ' and Quotas.SiteId=Sites.SiteId'
-        sql = sql + ' and Quotas.GroupId=Groups.GroupId' 
-        
-        try:
-            cursor.execute(sql)
-            results = cursor.fetchall()
-        except:
-            print ' Error(%s) -- could not retrieve sites'%(sql)
-            print sys.exc_info()
-            connection.close()
-            sys.exit(1)
-        connection.close()
-
-        for row in results:
-            siteName = row[0]
-            siteSizeGb = float(row[1])*1000
-            willBeUsed = int(row[2])
-            if willBeUsed > 0 and siteSizeGb <= 0 :
-                willBeUsed = 0
-            siteId = int(row[3])
-            self.allSites[siteName] = siteStatus.SiteStatus(siteName)
-            self.allSites[siteName].setStatus(willBeUsed)
-            self.allSites[siteName].setSize(siteSizeGb)
-            self.allSites[siteName].setId(siteId)
-
-        for site in sorted(self.allSites):
-            if self.allSites[site].getStatus() == 0:
-                print ' Site not active, status=%d  - %s'%(self.allSites[site].getStatus(),site)
-            else:
-                print ' Site --- active, status=%d  - %s'%(self.allSites[site].getStatus(),site)
 
     def checkProxyValid(self):
         process = subprocess.Popen(["/usr/bin/voms-proxy-info","-file",os.environ['DETOX_X509UP']],
@@ -121,12 +98,21 @@ class CentralManager:
         secsPerDay = 60*60*24
         now = float(time.time())
         phedexSets = self.phedexHandler.getPhedexDatasets()
+        lockedSets = self.phedexHandler.getLockedDatasets()
+
+        for dset in phedexSets:
+            if dset in lockedSets:
+                lsites = lockedSets[dset].getLockedSites()
+                lockin = []
+                for lsite in lsites:
+                    if phedexSets[dset].group(lsite) == 'DataOps':
+                        lockin.append(lsite)
+                for lsite in lockin:
+                    phedexSets[dset].setCustodial(lsite,1)
+
         usedSets = self.popularityHandler.getUsedDatasets()
-
         phedexDsetNames = self.phedexHandler.getDatasetsAtSite(site)
-
         for datasetName in sorted(phedexDsetNames):
-
             phedexDset = phedexSets[datasetName]
             creationDate = phedexDset.creationTime(site)
             size = phedexDset.size(site)
@@ -180,7 +166,7 @@ class CentralManager:
         for dataset in usedSets.keys():
             phedexSites = []
             if dataset in phedexDsets:
-                phedexSites = phedexDsets[dataset].locatedOnSites([self.phedexGroup])
+                phedexSites = phedexDsets[dataset].locatedOnSites(self.phedexGroups)
             popSites = usedSets[dataset].locatedOnSites()
 
             if len(phedexSites) < 1 :
@@ -211,23 +197,23 @@ class CentralManager:
             if nAccessed > 0:
                 self.dataAccCorr[dataset] = nAccessed
 
-    def rankDatasetsGlobally(self):
+    def rankDatasetsGlobally(self, phedexGroup):
         secsPerDay = 60*60*24
         now = float(time.time())
         phedexSets = self.phedexHandler.getPhedexDatasets()
         usedSets = self.popularityHandler.getUsedDatasets()
-
+        phedGroups = phedexGroup.split('+')
+            
         for datasetName in sorted(phedexSets.keys()):
-
             phedexDset = phedexSets[datasetName]
-
-            siteNames = phedexDset.locatedOnSites([self.phedexGroup])
+            siteNames = phedexDset.locatedOnSites(phedGroups)
             globalRank = 0
             nSites = 0
             for site in siteNames:
                 if site not in self.allSites:
                     continue
-                if self.allSites[site].getValid() == 0:
+
+                if self.allSites[site].getValid(phedGroups) == 0:
                     continue
 
                 localRank = phedexDset.getLocalRank(site)
@@ -251,7 +237,11 @@ class CentralManager:
 
             phedexDset.setGlobalRank(globalRank)
 
-    def makeDeletionLists(self):
+    def makeDeletionLists(self,phedexGroup):
+       self.sitePropers.clear()
+       self.dataPropers.clear()
+       phedGroups = phedexGroup.split('+')
+            
        for site in sorted(self.allSites.keys()):
            if self.allSites[site].getStatus() == 0:
                continue
@@ -262,7 +252,7 @@ class CentralManager:
        #here we go into datasets and find out dataset Ids
        # or assign if they do not exist
        dataSetIds = {}
-       connection = self.getDbConnection()
+       connection = self.dbInfoHandler.getDbConnection()
        cursor = connection.cursor()
        sql = "select DatasetName,Datasets.DatasetId,NFiles,Size from Datasets,DatasetProperties"
        sql = sql + " where Datasets.DatasetId=DatasetProperties.DatasetId"
@@ -290,13 +280,13 @@ class CentralManager:
            dsetId = None
            if datasetName not in dataSetIds:
                dataSetIds[datasetName] = None
-               if phedexSets[datasetName].matchesSite("T2_"):
-                   print  " -- WARNING -- not in the database " + datasetName
+               #if phedexSets[datasetName].matchesSite("T2_"):
+                   #print  " -- WARNING -- not in the database " + datasetName
            phedexSets[datasetName].findIncomplete()
 
        missing = 0
        for datasetName in phedexSets:
-           onSites = phedexSets[datasetName].locatedOnSites([self.phedexGroup])
+           onSites = phedexSets[datasetName].locatedOnSites(phedGroups)
            if len(onSites) < 1:
                continue
 
@@ -321,8 +311,8 @@ class CentralManager:
                wasUsed = phedexSets[datasetName].getIfUsed(site)
                #since I cant delete dataset that is not in the datase 
                #I will set it as invalid 
-               if dataSetIds[datasetName] is None:
-                   vali = False
+               #if dataSetIds[datasetName] is None:
+               #    vali = False
 
                self.sitePropers[site].addDataset(datasetName,rank,size,vali,part,
                                                  cust,isDeprecated,reqtime,updtime,wasUsed,isdone)
@@ -330,7 +320,7 @@ class CentralManager:
        for site in sorted(self.allSites.keys()):
            if self.allSites[site].getStatus() == 0:
                continue
-           size = self.allSites[site].getSize()
+           size = self.allSites[site].getSize(phedexGroup)
            sitePr = self.sitePropers[site]
            sitePr.setSiteSize(size)
            taken = sitePr.spaceTaken()
@@ -359,7 +349,7 @@ class CentralManager:
                        oneMoreIteration = True
                        break
            if oneMoreIteration:
-               if totalIters > 20 :
+               if totalIters > 10 :
                    oneMoreIteration = False
                    break
                print " Iterating unifying deletion lists"
@@ -387,12 +377,12 @@ class CentralManager:
            outputFile.close()
 
        resultDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_RESULT']
-       beDeleted = glob.glob(resultDirectory + "/*")
-       for subd in beDeleted:
-           if(os.path.isdir(subd)):
-               shutil.rmtree(subd)
-           else:
-               os.remove(subd)
+       #beDeleted = glob.glob(resultDirectory + "/*")
+       #for subd in beDeleted:
+       #    if(os.path.isdir(subd)):
+       #        shutil.rmtree(subd)
+       #    else:
+       #        os.remove(subd)
 
        for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
            sitePr = self.sitePropers[site]
@@ -449,6 +439,11 @@ class CentralManager:
                         sitePr.grantWish(datasetName)
                         dataPr.addDelTarget(site)
 
+    def assignToT1s(self):
+        self.lowRankSpreader.assignSitePropers(self.sitePropers)
+        self.lowRankSpreader.assignPhedexSets(self.phedexHandler.getPhedexDatasets())
+
+        self.lowRankSpreader.assignDatasets()
 
     def getRequestStats(self,pastWeeks):
         reqTimes = {}
@@ -478,10 +473,10 @@ class CentralManager:
 
         return (totSets,totSpace,totSites)
 
-    def printResults(self):
+    def printResults(self, phedexGroup, mode):
         today = str(datetime.date.today())
         ttime = time.strftime("%H:%M")
-
+        
         usedSets = self.popularityHandler.getUsedDatasets()
         totalSpaceTaken = 0
         totalSpaceLcopy = 0
@@ -493,12 +488,21 @@ class CentralManager:
         totalDiskT2 = 0
         t2Sites = 0
         # file with more infortmation on all sites
-        outputFile = open(os.environ['DETOX_DB'] + "/SitesInfo.txt",'w')
-        outputFile.write('#- ' + today + " " + ttime + "\n#\n")
-        outputFile.write("#- S I T E S  I N F O R M A T I O N ----\n#\n")
+        outputFile = open(os.environ['DETOX_DB'] + "/SitesInfo.txt",mode)
+        if mode == 'w':
+            outputFile.write('#- ' + today + " " + ttime + "\n#\n")
+            outputFile.write("#- S I T E S  I N F O R M A T I O N ----\n#\n")
+        outputFile.write("#\n#- DDM Partition: " + phedexGroup +" -\n#\n")
         outputFile.write("#  Active Quota[TB] Taken[TB] LastCopy[TB] SiteName \n")
-        #outputFile.write("#  Active Quota[TB] Taken[TB] LastCopy[TB] NotUsed[TB] SiteName \n")
+        outputFile.write("#------------------------------------------------------\n")
         for site in sorted(self.allSites):
+            if 'DataOps' in phedexGroup:
+                pass
+            elif 'AnalysisOps' in phedexGroup:
+                pass
+            else:
+                if self.allSites[site].getSize(phedexGroup) == 0:
+                    continue
             theSite = self.allSites[site]
             taken = 0
             lcopy = 0
@@ -508,65 +512,63 @@ class CentralManager:
                 sitePr = self.sitePropers[site]
                 taken = sitePr.spaceTaken()/1000
                 lcopy = sitePr.spaceLastCp()/1000
-                notUsed = sitePr.spaceUnused()/1000
-                totalDisk = totalDisk + theSite.getSize()/1000
+                totalDisk = totalDisk + theSite.getSize(phedexGroup)/1000
                 totalSpaceLcopy = totalSpaceLcopy + lcopy
                 totalSpaceTaken = totalSpaceTaken + taken
-                totalNotUsed = totalNotUsed + notUsed
                 if site.startswith("T2_"):
-                    totalDiskT2 += theSite.getSize()/1000
+                    totalDiskT2 += theSite.getSize(phedexGroup)/1000
                     totalSpaceLcopyT2 += lcopy
                     totalSpaceTakenT2 += taken
-                    totalNotUsedT2 += notUsed
                     t2Sites += 1
             
             # summary of all sites
-            #outputFile.write("   %-6d %-9d %-9d %-12d %-11d %-20s \n"\
-            #                     %(active,theSite.getSize()/1000,taken,lcopy,notUsed,site))
             outputFile.write("   %-6d %-9d %-9d %-12d %-20s \n"\
-                                 %(active,theSite.getSize()/1000,taken,lcopy,site))
+                                 %(active,theSite.getSize(phedexGroup)/1000,taken,lcopy,site))
         outputFile.write("#------------------------------------------------------\n")
-        #outputFile.write("#  %-6d %-9d %-9d %-12d %-11d %-20s \n"\
-        #                     %(len(self.allSites.keys()),totalDisk,
-        #                       totalSpaceTaken,totalSpaceLcopy,totalNotUsed,'Total T2s+T1s'))
         outputFile.write("#  %-6d %-9d %-9d %-12d %-20s \n"\
                              %(len(self.allSites.keys()),totalDisk,
                                totalSpaceTaken,totalSpaceLcopy,'Total T2s+T1s'))
-        percTst = totalSpaceTaken/totalDisk*100
-        percTslc = totalSpaceLcopy/totalDisk*100
-        percUnused = totalNotUsed/totalDisk*100
-        #outputFile.write("#  %-6s %-9s %-4.1f%%     %-4.1f%%        %-4.1f%% %-20s \n"\
-        #                     %(' ',' ',percTst,percTslc,percUnused,' '))
-        outputFile.write("#  %-6s %-9s %-4.1f%%     %-4.1f%% %-20s \n"\
+        percTst = 100; percTslc = 100; percUnused = 100
+        if totalDiskT2 > 0:
+            percTst = totalSpaceTaken/totalDisk*100
+            percTslc = totalSpaceLcopy/totalDisk*100
+        outputFile.write("#  %-6s %-9s %-4.1f%%     %-4.1f%%        %-20s \n"\
                              %(' ',' ',percTst,percTslc,' '))
-
         outputFile.write("# Total Active Quota  = %-9d \n"%(totalDisk))
         
         outputFile.write("#------------------------------------------------------\n")
-        #outputFile.write("#  %-6d %-9d %-9d %-12d %-11d %-20s \n"\
-        #                     %(t2Sites,totalDiskT2,totalSpaceTakenT2,totalSpaceLcopyT2,
-        #                       totalNotUsedT2,'Total T2s'))
         outputFile.write("#  %-6d %-9d %-9d %-12d %-20s \n"\
                              %(t2Sites,totalDiskT2,totalSpaceTakenT2,totalSpaceLcopyT2,'Total T2s'))
-        percTst = totalSpaceTakenT2/totalDiskT2*100
-        percTslc = totalSpaceLcopyT2/totalDiskT2*100
-        percUnused = totalNotUsedT2/totalDiskT2*100
-        #outputFile.write("#  %-6s %-9s %-4.1f%%     %-4.1f%%        %-4.1f%% %-20s \n"\
-        #                     %(' ',' ',percTst,percTslc,percUnused,' '))
-        outputFile.write("#  %-6s %-9s %-4.1f%%     %-4.1f%% %-20s \n"\
+        percTst = 100; percTslc = 100
+        if totalDiskT2 > 0:
+            percTst = totalSpaceTakenT2/totalDiskT2*100
+            percTslc = totalSpaceLcopyT2/totalDiskT2*100
+        outputFile.write("#  %-6s %-9s %-4.1f%%     %-4.1f%%        %-20s \n"\
                              %(' ',' ',percTst,percTslc,' '))
         outputFile.write("# Total Active Quota  = %-9d \n"%(totalDiskT2))
+        outputFile.write("#------------------------------------------------------\n")
         outputFile.close()
 
         siteRankAve = []
         siteRankMdn = []
-	outputFile = open(os.environ['DETOX_DB'] + "/SiteRanks.txt",'w')
-        outputFile.write('#- ' + today + " " + ttime + "\n#\n")
-        outputFile.write("#- S I T E   R A N K S ----\n#\n")
+	outputFile = open(os.environ['DETOX_DB'] + "/SiteRanks.txt",mode)
+        if mode == 'w':
+            outputFile.write('#- ' + today + " " + ttime + "\n#\n")
+            outputFile.write("#- S I T E   R A N K S ----\n#\n")
+        outputFile.write("#\n#- DDM Partition: " + phedexGroup +" -\n#\n")
         outputFile.write("#  <Rank>    Mdn(Rank)  SiteName \n")
+        outputFile.write("#\n#------------------------------------\n")
         for site in sorted(self.allSites):
             theSite = self.allSites[site]
             active = theSite.getStatus()
+            if 'DataOps' in phedexGroup:
+                pass
+            elif 'AnalysisOps' in phedexGroup:
+                pass
+            else:
+                if self.allSites[site].getSize(phedexGroup) == 0:
+                    continue
+
             if active != 0:
                 sitePr = self.sitePropers[site]
 		median = sitePr.medianRank()
@@ -576,18 +578,23 @@ class CentralManager:
 		outputFile.write("   %-9.1f %-10.1f %-20s \n"%(rank,median,site))
         sm1 = statistics.mean(siteRankAve)
         sm2 = statistics.mean(siteRankMdn)
-        rms1 = statistics.stdev(siteRankAve)
-        rms2 = statistics.stdev(siteRankMdn)
+        rms1 = rms2 = 0
+        if len(siteRankAve) > 1:
+            rms1 = statistics.stdev(siteRankAve)
+            rms2 = statistics.stdev(siteRankMdn)
         outputFile.write("#\n#------------------------------------\n")
         outputFile.write("#  %-9.1f %-10.1f %-20s \n"%(sm1,sm2,"Mean Value"))
         outputFile.write("#  %-9.1f %-10.1f %-20s \n"%(rms1,rms2,"RMS"))
         
         outputFile.close()
 
-        outputFile = open(os.environ['DETOX_DB'] + "/DeletionSummary.txt",'w')
-        outputFile.write('#- ' + today + " " + ttime + "\n\n")
-        outputFile.write("#- D E L E T I O N  R E Q U E S T S ----\n\n")
+        outputFile = open(os.environ['DETOX_DB'] + "/DeletionSummary.txt",mode)
+        if mode == 'w':
+            outputFile.write('#- ' + today + " " + ttime + "\n\n")
+            outputFile.write("#- D E L E T I O N  R E Q U E S T S ----\n\n")
+        outputFile.write("#\n#- DDM Partition: " + phedexGroup +" -\n#\n")
         outputFile.write("# Date   ReqId  NSets Size[TB] SiteName \n")
+        outputFile.write("#--------------------------------------------------\n")
         #find all requests for site for the last week
         reqTimes = {}
         for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
@@ -622,10 +629,13 @@ class CentralManager:
 
         deprecatedSpace = 0
         totalSets = 0
-        outputFile = open(os.environ['DETOX_DB'] + "/DeprecatedSummary.txt",'w')
-        outputFile.write('#- ' + today + " " + ttime + "\n\n")
-        outputFile.write("#- D E P R E C A T E D  D A T A S E T S ----\n\n")
+        outputFile = open(os.environ['DETOX_DB'] + "/DeprecatedSummary.txt",mode)
+        if mode == 'w':
+            outputFile.write('#- ' + today + " " + ttime + "\n\n")
+            outputFile.write("#- D E P R E C A T E D  D A T A S E T S ----\n\n")
+        outputFile.write("#\n#- DDM Partition: " + phedexGroup +" -\n#\n")
         outputFile.write("#  NDatasets Size[TB] SiteName \n")
+        outputFile.write("#--------------------------------------------\n")
         for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
             sitePr = self.sitePropers[site]
             nsets = sitePr.nsetsDeprecated()
@@ -638,7 +648,9 @@ class CentralManager:
                                  %(nsets,sitePr.spaceDeprecated()/1000,site))
         outputFile.write("#--------------------------------------------\n")
         outputFile.write("#  %-9d %-8.2f %-20s \n"%(totalSets,deprecatedSpace,'Total'))
-        perc = deprecatedSpace/totalDisk*100
+        perc = 100
+        if totalDisk > 0:
+            perc = deprecatedSpace/totalDisk*100
         outputFile.write("#  %-9s %-3.1f%% %-20s \n"%('',perc,''))
         outputFile.write("# Total Active Quota = %-9d \n"%(totalDisk))
         outputFile.close()
@@ -647,15 +659,25 @@ class CentralManager:
         totalSets = 0
         totalTrueSize = 0
         totalDiskSize = 0
-        outputFile = open(os.environ['DETOX_DB'] + "/IncompleteSummary.txt",'w')
-        outputFile.write('#- ' + today + " " + ttime + "\n\n")
-        outputFile.write("#- I N C O M P L E T E  D A T A S E T S ----\n\n")
+        outputFile = open(os.environ['DETOX_DB'] + "/IncompleteSummary.txt",mode)
+        if mode == 'w':
+            outputFile.write('#- ' + today + " " + ttime + "\n\n")
+            outputFile.write("#- I N C O M P L E T E  D A T A S E T S ----\n\n")
+        outputFile.write("#\n#- DDM Partition: " + phedexGroup +" -\n#\n")
         outputFile.write("#  NDatasets TrueSize[TB] Size[TB] SiteName \n")
+        outputFile.write("#--------------------------------------------\n")
         for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
             sitePr = self.sitePropers[site]
             trueSize = 0
             diskSize = 0
             nsets = 0
+            if 'DataOps' in phedexGroup:
+                pass
+            elif 'AnalysisOps' in phedexGroup:
+                pass
+            else:
+                if self.allSites[site].getSize(phedexGroup) == 0:
+                    continue
             for dset in sitePr.allSets():
                 dataPr = self.dataPropers[dset]
                 if sitePr.isPartial(dset):
@@ -673,18 +695,22 @@ class CentralManager:
         outputFile.write("#--------------------------------------------\n")
         outputFile.write("#  %-9d %-12.2f %-8.2f %-20s \n"\
                                  %(totalSets,totalTrueSize,totalDiskSize,'Total'))
-        percTs = totalTrueSize/totalDisk*100
-        percTd = totalDiskSize/totalDisk*100
-        outputFile.write("#  %-9s %-3.1f%%         %-3.1f%% %-20s \n"%('',percTs,percTd,''))
         delta = totalTrueSize-totalDiskSize
-        perc = delta/totalDisk*100
+        percTs = 100; percTd = 100; perc = 100
+        if totalDisk > 0:
+            percTs = totalTrueSize/totalDisk*100
+            percTd = totalDiskSize/totalDisk*100
+            perc = delta/totalDisk*100
+        outputFile.write("#  %-9s %-3.1f%%         %-3.1f%% %-20s \n"%('',percTs,percTd,''))
         outputFile.write("# Missing Space      = %-4d (%-3.1f%%)\n"%(delta,perc))
         outputFile.write("# Total Active Quota = %-9d \n"%(totalDisk))
         outputFile.close()
 
-        outputFile = open(os.environ['DETOX_DB'] + "/LargeDatasets.txt",'w')
-        outputFile.write('#- ' + today + " " + ttime + "\n\n")
-        outputFile.write("#- L A R G E  D A T A S E T S ----\n\n")
+        outputFile = open(os.environ['DETOX_DB'] + "/LargeDatasets.txt",mode)
+        if mode == 'w':
+            outputFile.write('#- ' + today + " " + ttime + "\n\n")
+            outputFile.write("#- L A R G E  D A T A S E T S ----\n\n")
+        outputFile.write("#\n#- DDM Partition: " + phedexGroup +" -\n#\n")
         for dset in sorted(self.dataPropers):
             dataPr = self.dataPropers[dset]
             trueSize = dataPr.getTrueSize()
@@ -698,11 +724,14 @@ class CentralManager:
                 outputFile.write("   %-12.1f %-8.1f %-20s \n"%(trueSize,diskSize,site))
         outputFile.close()
 
-        outputFile = open(os.environ['DETOX_DB'] + "/TransferStats.txt",'w')
-        outputFile.write('#- ' + today + " " + ttime + "\n\n")
-        outputFile.write("#- D A T A S E T  D O W N L O A D  S P E E D----\n\n")
+        outputFile = open(os.environ['DETOX_DB'] + "/TransferStats.txt",mode)
+        if mode == 'w':
+            outputFile.write('#- ' + today + " " + ttime + "\n\n")
+            outputFile.write("#- D A T A S E T  D O W N L O A D  S P E E D----\n\n")
+        outputFile.write("#\n#- DDM Partition: " + phedexGroup +" -\n#\n")
         outputFile.write("#  NStuck LoadSpeed  Volume  SiteName \n")
         outputFile.write("#         [GB/Day]   [TB]    \n")
+        outputFile.write("#--------------------------------------------\n")
         for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
             sitePr = self.sitePropers[site]
             (speed,volume,stuck) = sitePr.getDownloadStats()
@@ -724,9 +753,11 @@ class CentralManager:
             fileWrGroup= sitedir + "/RunAwayGroupSets.txt"
             fileStuck  = sitedir + "/StuckDatasets.txt" 
 
-            outputFile = open(fileTimest,'w')
-            outputFile.write('#- ' + today + " " + ttime + "\n\n")
-            outputFile.write("#- D E L E T I O N  P A R A M E T E R S ----\n\n")
+            outputFile = open(fileTimest,mode)
+            if mode == 'w':
+                outputFile.write('#- ' + today + " " + ttime + "\n\n")
+                outputFile.write("#- D E L E T I O N  P A R A M E T E R S ----\n\n")
+            outputFile.write("#\n#- DDM Partition: " + phedexGroup +" -\n#\n")
             outputFile.write("Upper Threshold     : %8.2f  ->  %4d [TB]\n" \
                                  %(self.DETOX_USAGE_MAX,
                                    self.DETOX_USAGE_MAX*sitePr.siteSizeGb()/1000))
@@ -745,8 +776,10 @@ class CentralManager:
 
             if len(sitePr.delTargets()) > 0:
                 print " File: " + fileDelete
-            outputFile = open(fileDelete,'w')
-            outputFile.write("# -- " + today + " " + ttime + "\n#\n")
+            outputFile = open(fileDelete,mode)
+            if mode == 'w':
+                outputFile.write("# -- " + today + " " + ttime + "\n#\n")
+            outputFile.write("#\n#- DDM Partition: " + phedexGroup +" -\n#\n")
             outputFile.write("#   Rank      Size nsites nsites  DatasetName \n")
             outputFile.write("#[~days]      [GB] before after               \n")
             outputFile.write("#---------------------------------------------\n")
@@ -758,11 +791,12 @@ class CentralManager:
                 ndeletes = dataPr.nBeDeleted()
                 outputFile.write("%8.1f %9.1f %6d %6d  %s\n"\
                                  %(rank,size,nsites,nsites-ndeletes,dset))
-                print dset
             outputFile.close()
 
-            outputFile = open(fileRemain,'w')
-            outputFile.write("# -- " + today + " " + ttime + "\n\n")
+            outputFile = open(fileRemain,mode)
+            if mode == 'w':
+                outputFile.write("# -- " + today + " " + ttime + "\n\n")
+            outputFile.write("#\n#- DDM Partition: " + phedexGroup +" -\n#\n")
             outputFile.write("#   Rank      Size nsites nsites  DatasetName \n")
             outputFile.write("#[~days]      [GB] before after               \n")
             outputFile.write("#---------------------------------------------\n")
@@ -779,8 +813,10 @@ class CentralManager:
                                  %(rank,size,nsites,nsites-ndeletes,dset))
             outputFile.close()
 
-            outputFile = open(fileDeprec,'w')
-            outputFile.write("# -- " + today + " " + ttime + "\n\n")
+            outputFile = open(fileDeprec,mode)
+            if mode == 'w':
+                outputFile.write("# -- " + today + " " + ttime + "\n\n")
+            outputFile.write("#\n#- DDM Partition: " + phedexGroup +" -\n#\n")
             outputFile.write("#   Rank    Size nsites DatasetName\n")
             outputFile.write("#[~days]    [GB] \n")
             outputFile.write("#------------------------------------\n")
@@ -795,8 +831,10 @@ class CentralManager:
                                          %(rank,size,nsites-ndeletes,dset))
             outputFile.close()
             
-            outputFile = open(fileIncomp,'w')
-            outputFile.write("# -- " + today + " " + ttime + "\n\n")
+            outputFile = open(fileIncomp,mode)
+            if mode == 'w':
+                outputFile.write("# -- " + today + " " + ttime + "\n\n")
+            outputFile.write("#\n#- DDM Partition: " + phedexGroup +" -\n#\n")
             outputFile.write("# Rank     TrueSize  DiskSize  nsites  DatasetName\n")
             outputFile.write("# [days]   [GB]      [GB]                       \n")
             outputFile.write("#------------------------------------\n")
@@ -813,8 +851,10 @@ class CentralManager:
                                      %(rank,trueSize,size,nsites-ndeletes,dset))
             outputFile.close()
 
-            outputFile = open(fileWrGroup,'w')
-            outputFile.write("# -- " + today + " " + ttime + "\n")
+            outputFile = open(fileWrGroup,mode)
+            if mode == 'w':
+                outputFile.write("# -- " + today + " " + ttime + "\n")
+            outputFile.write("#\n#- DDM Partition: " + phedexGroup +" -\n#\n")
             outputFile.write("#------------------------------------\n")
             runAwayGroups =  self.phedexHandler.getRunAwayGroups(site)
             runAwaySets =  self.phedexHandler.getRunAwaySets(site)
@@ -825,8 +865,10 @@ class CentralManager:
                         outputFile.write(dset+"\n")
             outputFile.close()
 
-            outputFile = open(fileStuck,'w')
-            outputFile.write("# -- " + today + " " + ttime + "\n")
+            outputFile = open(fileStuck,mode)
+            if mode == 'w':
+                outputFile.write("# -- " + today + " " + ttime + "\n")
+            outputFile.write("#\n#- DDM Partition: " + phedexGroup +" -\n#\n")
             outputFile.write("#------------------------------------\n")
             outputFile.write("# Rank     TrueSize  DiskSize  nsites  DatasetName \n")
             outputFile.write("# [days]   [GB]      [GB]                           \n")
@@ -856,7 +898,6 @@ class CentralManager:
             (speed,volume,stuck) = sitePr.getDownloadStats()
             nstuckAtSite[site] = int(stuck)
         stmean,strms = self.getMeanValue(nstuckAtSite,3,0.5)
-
         # set status=2 to all sites that are above 3xrms threshold
         changingStatus = {}
         for site in sorted(self.allSites):
@@ -875,20 +916,7 @@ class CentralManager:
                  print (" -- %-16s status changing: %1d --> %1d"%(site,active,shouldBe))
                  changingStatus[site] = shouldBe
                  
-        connection = self.getDbConnection()
-        for site in changingStatus: 
-            siteId = str(self.allSites[site].getId())
-            newStatus = str(changingStatus[site])
-            sql = 'update Sites set Status=' +  newStatus + ' where SiteId=' + siteId 
-            sql = sql + ' limit 1'
-            cursor = connection.cursor()
-            try:
-                cursor.execute(sql)
-                results = cursor.fetchall()
-            except:
-                print ' Error(%s) -- could not execute sql '%(sql)
-                print sys.exc_info()
-        connection.close()
+        self.dbInfoHandler.updateSiteStatus(changingStatus)
 
 
     def requestDeletions(self):
@@ -938,7 +966,7 @@ class CentralManager:
                 self.siteRequests[site] = deletionRequest.SiteDeletions(site)
             self.siteRequests[site].update(reqid,rdate)
 
-            connection = self.getDbConnection()
+            connection = self.dbInfoHandler.getDbConnection()
             for dataset in datasets2del:
                 dataPr = self.dataPropers[dataset]
                 rank =   sitePr.dsetRank(dataset)
@@ -968,23 +996,7 @@ class CentralManager:
         self.delRequests.clear()
         self.siteRequests.clear()
 
-        connection = self.getDbConnection()
-        cursor = connection.cursor()
-        sql = "select RequestId,DatasetName,Size,Rank,Date,SiteName " +\
-            "from Requests,Sites,Datasets,DatasetProperties " +\
-            "where Requests.SiteId=Sites.SiteId " +\
-            "and Requests.DatasetId=Datasets.DatasetId and DatasetProperties.DatasetId=Datasets.DatasetId "+\
-            "and RequestType=1 order by RequestId DESC LIMIT 10000"
-        try:
-            cursor.execute(sql)
-            results = cursor.fetchall()
-        except MySQLdb.Error,e:
-            print e[0],e[1]
-            print " -- FAILED extract mysql info: %s"%(sql)
-            connection.close()
-            sys.exit(1)
-        connection.close()
-
+        results = self.dbInfoHandler.extractCacheRequests()
         for row in results:
             reqid  = row[0]
             tstamp = row[4]
@@ -996,11 +1008,8 @@ class CentralManager:
             dataset = row[1]
             size    = row[2]
             rank    = row[3]
-
             self.delRequests[reqid].update(dataset,rank,size)
             self.siteRequests[site].update(reqid,tstamp)
-
-
 
     def showCacheRequests(self):
         for site in sorted(self.allSites.keys()):
@@ -1026,15 +1035,16 @@ class CentralManager:
             theRequest = self.delRequests[reqid]
             if theRequest.looksIdentical(prevRequest):
                 continue
-            prevRequest = theRequest
+            allSets = theRequest.getDsets()
 
+            prevRequest = theRequest
             outputFile.write("#\n# PhEDEx Request: %s (%10s, %.1f GB)\n"%\
                              (reqid,theRequest.getTimeStamp(),theRequest.getSize()))
 
             outputFile.write("#\n# Rank   DatasetName\n")
             outputFile.write("# ---------------------------------------\n")
 
-            for dataset in theRequest.getDsets():
+            for dataset in allSets:
                 outputFile.write("  %-6d %s\n" %(theRequest.getDsetRank(dataset),dataset))
 
             outputFile.write("\n")
@@ -1089,16 +1099,6 @@ class CentralManager:
             print response
         del phedex
 
-    def getDbConnection(self,db=os.environ.get('DETOX_SITESTORAGE_DB')):
-        # configuration
-        server = os.environ.get('DETOX_SITESTORAGE_SERVER')
-        user = os.environ.get('DETOX_SITESTORAGE_USER')
-        pw = os.environ.get('DETOX_SITESTORAGE_PW')
-        # open database connection
-        connection = MySQLdb.connect(host=server,db=db, user=user,passwd=pw)
-        # prepare a cursor object using cursor() method
-        return connection
-
     def sendEmail(self,subject,body):
         emails = os.environ['DETOX_EMAIL_LIST']
         To = emails.split(",")
@@ -1134,6 +1134,7 @@ class CentralManager:
         meanPr = 999.0
         mean = 0.0
         rms = 999.9
+        loops = 0
         while True:
             mean = 0.0
             meansq = 0.0
@@ -1151,4 +1152,7 @@ class CentralManager:
                 break
             else:
                 meanPr = mean
+            loops = loops + 1
+            if loops > 10:
+                break
         return (mean, rms)

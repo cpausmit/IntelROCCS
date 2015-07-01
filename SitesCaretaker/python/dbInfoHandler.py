@@ -30,6 +30,8 @@ class DbInfoHandler:
             siteName = row[0]
             if "T1_" in siteName:
                 continue
+            if siteName == 'T2_TW_Taiwan':
+                continue
             siteSizeGb = float(row[1])*1000
             willBeUsed = int(row[2])
             siteId = int(row[3])
@@ -45,9 +47,6 @@ class DbInfoHandler:
                 print ' Site --- active, status=%d  - %s'%(self.allSites[site].getStatus(),site)
   
     def enableSite(self,site,targetQuota):
-        if site == 'T2_TW_Taiwan':
-            return
-
         siteId = self.allSites[site].getId()
         
         print "\n !! Activating site " + site + " !!" 

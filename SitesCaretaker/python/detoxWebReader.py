@@ -127,7 +127,7 @@ class DetoxWebReader:
             items = li.split()
             if len(items) < 4:
                 continue
-            reps = float(items[3])
+            reps = float(items[2])
             name = items[3]
             datasets[name] = 1
         return datasets

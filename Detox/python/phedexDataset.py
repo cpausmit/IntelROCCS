@@ -69,13 +69,19 @@ class PhedexDataset:
             grp =  self.groupAtSite[site]
             if grp not in groups:
                 continue
-            if self.validAtSite[site]:
-                validSites.append(site)
+            #if self.validAtSite[site]:
+            validSites.append(site)
         return validSites
 
     def isOnSite(self,site):
         if site in self.siteNames:
             return True
+        return False
+
+    def isOnT1Site(self):
+        for site in self.siteNames:
+            if site.startswith("T1_"):
+                return True
         return False
 
     def matchesSite(self,pattern):
@@ -188,7 +194,8 @@ class PhedexDataset:
                 if self.isValid(site):
                     if self.trueSize < self.sizeAtSite[site]:
                         if self.matchesSite("T2_"):
-                            print "  -- WARNING -- need correct size for " + self.dataset 
+                            pass
+                            #print "  -- WARNING -- need correct size for " + self.dataset 
                     else:
                         self.partialAtSite[site] = True
 

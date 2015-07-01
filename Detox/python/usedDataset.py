@@ -3,7 +3,7 @@
 # This class provides support for storing datasets information extracted from Popularity service
 #
 #----------------------------------------------------------------------------------------------------
-import time, datetime, math
+import time, datetime, math, os
 
 class TimeSequence:
     def __init__(self):
@@ -49,11 +49,13 @@ class UsedDataset:
 
 	#introduce exponential decay with time
 	#unite is day, reduce by 10 in 180 days
-	secSinceUsed = int(time.mktime(time.strptime(utime, "%Y-%m-%d")))
-        deltaDays = (self.timeNow - secSinceUsed)/(60*60*24)
-        e1 = "%.1f" % (deltaDays/60.0)
-        e2 = float(e1)
-        koeff = 10.0**(e2)
+        koeff = 1.0
+        if int(os.environ['DETOX_APP_TDECAY']) == 1:
+            secSinceUsed = int(time.mktime(time.strptime(utime, "%Y-%m-%d")))
+            deltaDays = (self.timeNow - secSinceUsed)/(60*60*24)
+            e1 = "%.1f" % (deltaDays/60.0)
+            e2 = float(e1)
+            koeff = 10.0**(e2)
 	nacc = nacc/koeff
 
         if site not in self.timesUsedAtSite:

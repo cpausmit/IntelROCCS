@@ -28,8 +28,7 @@ export DETOX_DATASETS_TO_DELETE=RankedDatasets.txt
 
 
 # PhEDEx group that is considered 
-
-export DETOX_GROUP='AnalysisOps'
+export DETOX_GROUP='AnalysisOps','DataOps','caf-comm','caf-alca'
 
 # Parameters for cleaning
 
@@ -41,6 +40,7 @@ export DETOX_NCOPY_MIN=1
 # What time window (in months) will be used for counting usage
 
 export DETOX_TIME_WIND=12
+export DETOX_APP_TDECAY=0
 
 # Email list to notify in case of problems
 

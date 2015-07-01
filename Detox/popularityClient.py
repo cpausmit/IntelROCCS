@@ -44,49 +44,18 @@ def parse_form_fields(page):
   return result
 
 def sso_auth(auth_url):
-  """Authenticate to CERN SSO for `url` and retrieve data"""
-
-  # Setup HTTP handlers
-  cookieproc = HTTPCookieProcessor()
-  opener = build_opener(cookieproc)
-  opener.addheaders = [('User-agent', 'Mozilla/5.0')]
-  install_opener(opener)
-
-  # Send the first request which sets the auth cookie and leads to
-  # redirection ending at CERN SSO login page. Grab the cert login
-  # link from that page.
-  login = urlopen(auth_url)
-  login_page = login.read()
-  m = re.search(r'href="(auth/sslclient/[^"]*)"', login_page)
-  assert m, "No cert login link at <%s>" % login.geturl()
-  login_url = urljoin(login.geturl(), m.group(1).replace("&amp;", "&"))
-
-  # Redo opener to include X509 cert auth. Keep cookies.
-  opener = build_opener(cookieproc, X509Auth())
-  opener.addheaders = [('User-agent', 'Mozilla/5.0')]
-  install_opener(opener)
-
-  # Now login with cert. This sets authentication cookie, and yields
-  # a form we are meant to re-submit to complete the authentication.
-  jump_page = urlopen(login_url).read()
-
-  sso_data = parse_form_fields(jump_page)
-  m = re.search(r'<form[^>]* action="([^"]*?)">', jump_page)
-  assert m, "No form to post after sso auth?"
-  master_url = m.group(1)
-
-  # Reset opener to remove the X509 authentication but keep cookies.
-  opener = build_opener(cookieproc)
+  # Build opener to include X509 cert auth.
+  opener = build_opener(X509Auth())
   opener.addheaders = [('User-agent', 'Mozilla/5.0')]
   install_opener(opener)
 
   # Read document.
-  #print '\n MASTER - %s  SSO_DATA: %s  URLENCODE: %s\n'%(master_url,sso_data,urlencode(sso_data))
-  document = urlopen(master_url, urlencode(sso_data))
+  document = urlopen(auth_url)
   pop_data = document.read()
   return pop_data
 
 if __name__ == "__main__":
+
 
   if not ssl_key_file:
     x509_path = os.getenv("X509_USER_KEY", None)
@@ -119,7 +88,8 @@ if __name__ == "__main__":
   # Authenticate to CERN SSO and retrieve document from the actual service
 
 
-  pop_base_url = "https://cms-popularity.cern.ch/popdb/"
+  #pop_base_url = "https://cms-popularity.cern.ch/popdb/"
+  pop_base_url = "https://cmsweb.cern.ch/popdb/"
   pop_url = '%s/%s'%(pop_base_url,argv[1])
 
   data = sso_auth(pop_url)
