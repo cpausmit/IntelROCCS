@@ -42,6 +42,8 @@ class DbInfoHandler:
             siteName = row[0]
             siteId = int(row[1])
             status = int(row[2])
+            if status == -1:
+                continue
             self.allSites[siteName] = siteStatus.SiteStatus(siteName)
             self.allSites[siteName].setId(siteId)
             self.allSites[siteName].setStatus(status)
