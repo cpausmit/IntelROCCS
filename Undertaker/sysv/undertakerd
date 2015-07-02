@@ -1,13 +1,13 @@
 #!/bin/bash
 # --------------------------------------------------------------------------------------------------
-# caretakerd       Startup script for the stes caretaker Server
+# undertakerd       Startup script for the stes undertaker Server
 #
 # chkconfig: - 70 15
-# description: caretaker is a process that enables/disables sites
+# description: undertaker is a process that enables/disables sites
 #
-# processname: caretaked
-# config:      /etc/caretakerd.conf
-# pidfile:     /var/run/caretakerd.pid
+# processname: undertaked
+# config:      /etc/undertakerd.conf
+# pidfile:     /var/run/undertakerd.pid
 # --------------------------------------------------------------------------------------------------
 # Source function library.
 . /etc/rc.d/init.d/functions
@@ -17,33 +17,33 @@
 INITLOG_ARGS=""
 
 # Path to the running script, server binary, and short-form for messages.
-caretakerd=/usr/local/IntelROCCS/SitesCaretaker/caretakerd
-prog=caretakerd
-pidfile=${PIDFILE-/var/run/caretakerd.pid}
-lockfile=${LOCKFILE-/var/lock/subsys/caretakerd}
+undertakerd=/usr/local/IntelROCCS/SitesUndertaker/undertakerd
+prog=undertakerd
+pidfile=${PIDFILE-/var/run/undertakerd.pid}
+lockfile=${LOCKFILE-/var/lock/subsys/undertakerd}
 
 RETVAL=0
 STOP_TIMEOUT=${STOP_TIMEOUT-10}
 
-# Start caretaker daemon (caretakerd)
+# Start undertaker daemon (undertakerd)
 start() {
     echo -n $"Starting $prog:"
-    daemon --user=cmsprod --pidfile=${pidfile} $caretakerd \&
+    daemon --user=cmsprod --pidfile=${pidfile} $undertakerd \&
     RETVAL=$?
     echo
     [ $RETVAL = 0 ] && touch ${lockfile}
 
     # this seems like a hack, but I do not know how to do it differently
-    pid=`ps auxw | grep "/bin/bash $caretakerd" |tr -s ' '|cut -d' ' -f2`
+    pid=`ps auxw | grep "/bin/bash $undertakerd" |tr -s ' '|cut -d' ' -f2`
     echo $pid > $pidfile
 
     return $RETVAL
 }
 
-# Stop caretaker daemon (caretakerd)
+# Stop undertaker daemon (undertakerd)
 stop() {
     echo -n $"Stopping $prog: "
-    killproc -p ${pidfile} -d ${STOP_TIMEOUT} $caretakerd
+    killproc -p ${pidfile} -d ${STOP_TIMEOUT} $undertakerd
     RETVAL=$?
     echo
     [ $RETVAL = 0 ] && rm -f ${lockfile} ${pidfile}
@@ -58,7 +58,7 @@ case "$1" in
     stop
     ;;
   status)
-    status -p ${pidfile} $caretakerd
+    status -p ${pidfile} $undertakerd
     RETVAL=$?
     ;;
   restart)
@@ -66,7 +66,7 @@ case "$1" in
     start
     ;;
   condrestart|try-restart)
-    if status -p ${pidfile} $caretakerd >&/dev/null
+    if status -p ${pidfile} $undertakerd >&/dev/null
     then
       stop
       start
