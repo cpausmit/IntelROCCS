@@ -17,7 +17,7 @@
 INITLOG_ARGS=""
 
 # Path to the running script, server binary, and short-form for messages.
-undertakerd=/usr/local/IntelROCCS/SitesUndertaker/undertakerd
+undertakerd=/usr/local/IntelROCCS/Undertaker/undertakerd
 prog=undertakerd
 pidfile=${PIDFILE-/var/run/undertakerd.pid}
 lockfile=${LOCKFILE-/var/lock/subsys/undertakerd}
