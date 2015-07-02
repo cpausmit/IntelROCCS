@@ -86,7 +86,6 @@ centralManager.findExtraUsage()
 timeNow = time.time()
 timePre = timeNow
 
-<<<<<<< HEAD
 for iii in range(0, len(phedexGroups)):
     phedGroup = phedexGroups[iii]
     mode = 'w'
@@ -129,21 +128,6 @@ for iii in range(0, len(phedexGroups)):
         timeNow = time.time()
         print ' - Subscribing to T1s took: %d seconds'%(timeNow-timePre)
         timePre = timeNow
-=======
-centralManager.extractCacheRequests()
-centralManager.showCacheRequests()
-timeNow = time.time()
-print ' - Extracting requests from database took: %d seconds'%(timeNow-timePre)
-timePre = timeNow
-
-centralManager.updateSiteStatus()
-#centralManager.assignToT1s()
-
-centralManager.printResults()
-timeNow = time.time()
-print ' - Printing results took: %d seconds'%(timeNow-timePre)
-timePre = timeNow
->>>>>>> eae1fd79026d96721f64629894b8e02035b390b3
 
 # Final summary of timing
 timeNow = time.time()
