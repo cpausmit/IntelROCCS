@@ -10,7 +10,7 @@
 export INTELROCCS_USER=cmsprod
 export INTELROCCS_GROUP=zh
 
-source SitesCaretaker/setupUndertaker.sh
+source Undertaker/setupUndertaker.sh
 
 # make sure mysql is setup properly for server and clients otherwise this will not work check out
 # the README
