@@ -48,7 +48,7 @@ then
 fi
 
 # copy Detox daemon
-cp /usr/local/IntelROCCS/SitesCaretaker/sysv/undertakerd /etc/init.d/
+cp /usr/local/IntelROCCS/Undertaker/sysv/undertakerd /etc/init.d/
 
 # start new server
 /etc/init.d/undertakerd status
