@@ -38,7 +38,7 @@ class TestCommand(Command):
 
     def initialize_options(self):
         """Init method"""
-        logging.basicConfig(filename='/var/log/CUADRnT/cuadrnt-test.log', filemode='w', format='%(asctime)s [%(levelname)s] %(name)s:%(funcName)s:%(lineno)d: %(message)s', datefmt='%H:%M', level=logging.DEBUG)
+        logging.basicConfig(filename='/var/log/cuadrnt/cuadrnt-test.log', filemode='w', format='%(asctime)s [%(levelname)s] %(name)s:%(funcName)s:%(lineno)d: %(message)s', datefmt='%H:%M', level=logging.DEBUG)
         self.test_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'test')
 
     def finalize_options(self):
@@ -171,7 +171,7 @@ def main(argv):
     package_dir = {'': 'src/python'}
     packages = find_packages('src/python')
     data_files = [('/usr/local/bin', find_files('bin')),
-                  ('/var/opt/CUADRnT', find_files('etc'))]
+                  ('/var/opt/cuadrnt', find_files('etc'))]
     scripts = []
     cms_license = "CMS experiment software"
     classifiers = [
@@ -182,6 +182,9 @@ def main(argv):
         "Operating System :: POSIX",
         "Programming Language :: Python"
     ]
+
+    mkpath('/var/lib/cuadrnt')
+    mkpath('/var/log/cuadrnt')
 
     setup(
         name=name,
@@ -202,12 +205,10 @@ def main(argv):
         license=cms_license,
     )
 
-    mkpath('/var/lib/CUADRnT')
-    mkpath('/var/log/CUADRnT')
     uid = pwd.getpwnam(username).pw_uid
     gid = grp.getgrnam(group).gr_gid
-    os.chown('/var/lib/CUADRnT', uid, gid)
-    os.chown('/var/log/CUADRnT', uid, gid)
+    os.chown('/var/lib/cuadrnt', uid, gid)
+    os.chown('/var/log/cuadrnt', uid, gid)
 
 if __name__ == "__main__":
     main(sys.argv[1:])

@@ -45,6 +45,9 @@ def get_secure_data(target_url, api, params=dict(), method='get'):
     """
     Create http request for target_url, api and params of service
     Data should be json data returned as a string
+    params can also be a list of tuples where the first value is the param name
+    and the second is the value, this value can be a list of values which will
+    then be split up
     """
     headers = {'Accept': 'application/json'}
     data = urllib.urlencode(params, doseq=True)
@@ -61,8 +64,8 @@ def get_secure_data(target_url, api, params=dict(), method='get'):
     urllib2.install_opener(opener)
     try:
         return_data = urllib2.urlopen(request)
-        data = return_data.read()
-        json_data = json.loads(data)
+        return_data = return_data.read()
+        json_data = json.loads(return_data)
     except Exception as e:
         logger.warning("Couldn't fetch data for url %s?%s\n    Reason:\n    %s", str(url), str(data), str(e))
         json_data = dict()
@@ -76,12 +79,16 @@ def get_data(target_url, api, file_):
         comments marked using #
         headers commented out
     """
-    response = urllib2.urlopen('%s/%s/%s' % (target_url, api, file_))
-    data = response.read()
     json_data = list()
-    for line in data.split('\n'):
-        if not line or line[0] == '#':
-            continue
-        row = line.split()
-        json_data.append(row)
+    try:
+        response = urllib2.urlopen('%s/%s/%s' % (target_url, api, file_))
+    except Exception as e:
+        logger.warning("Couldn't fetch data for url %s/%s/%s\n    Reason:\n    %s", str(target_url), str(api), str(file_), str(e))
+    else:
+        data = response.read()
+        for line in data.split('\n'):
+            if not line or line[0] == '#':
+                continue
+            row = line.split()
+            json_data.append(row)
     return json_data

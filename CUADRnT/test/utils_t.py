@@ -15,16 +15,18 @@ from bson.objectid import ObjectId
 from UADR.utils.config import get_config
 from UADR.utils.db_utils import get_object_id
 from UADR.utils.db_utils import datetime_to_object_id
-from UADR.utils.io_utils import get_data_path
 from UADR.utils.io_utils import export_csv
 from UADR.utils.utils import check_tool
 from UADR.utils.utils import bytes_to_gb
 from UADR.utils.utils import datetime_to_timestamp
 from UADR.utils.utils import timestamp_to_datetime
 from UADR.utils.utils import datetime_day
-from UADR.utils.utils import datetime_to_pop_db_date
+from UADR.utils.utils import datetime_to_string
 from UADR.utils.utils import phedex_timestamp_to_datetime
 from UADR.utils.utils import pop_db_timestamp_to_datetime
+
+# get local config file
+opt_path = os.path.join(os.path.split(os.path.dirname(os.path.realpath(__file__)))[0], 'etc')
 
 @unittest.skip("Skip Test")
 class UtilsTests(unittest.TestCase):
@@ -34,8 +36,7 @@ class UtilsTests(unittest.TestCase):
     """
     def setUp(self):
         "Set up for test"
-        self.config = get_config(config='cuadrnt-test.cfg')
-        self.data_path = get_data_path()
+        self.config = get_config(path=opt_path, file_name='cuadrnt-test.cfg')
 
     def tearDown(self):
         "Clean up"
@@ -75,7 +76,7 @@ class UtilsTests(unittest.TestCase):
         file_name = 'test'
         headers = ('foo', 'bar')
         data = [('Bjorn', 'Barrefors')]
-        export_file = '%s/%s.csv' % (self.data_path, file_name)
+        export_file = '%s/%s.csv' % ('/var/lib/cuadrnt', file_name)
         export_csv(file_name, headers, data)
         expected = 'foo,bar\nBjorn,Barrefors\n'
         fs = open(export_file, 'r')
@@ -99,7 +100,7 @@ class UtilsTests(unittest.TestCase):
         "Test bytes_to_gb function"
         print ""
         bytes_ = 146640731779
-        expected = 146
+        expected = 146.640731779
         result = bytes_to_gb(bytes_)
         self.assertEqual(result, expected)
 
@@ -131,17 +132,17 @@ class UtilsTests(unittest.TestCase):
         self.assertEqual(result, expected)
 
     #@unittest.skip("Skip Test")
-    def test_datetime_to_pop_db_date(self):
+    def test_datetime_to_string(self):
         "Test datetime_to_pop_db_date function"
         print ""
         datetime_ = datetime.datetime(1987, 10, 27)
         expected = '1987-10-27'
-        result = datetime_to_pop_db_date(datetime_)
+        result = datetime_to_string(datetime_)
         self.assertEqual(result, expected)
 
     #@unittest.skip("Skip Test")
     def test_phedex_timestamp_to_datetime(self):
-        "Test datetime_to_pop_db_date function"
+        "Test phedex_timestamp_to_datetime function"
         print ""
         timestamp = 1363976920.60798
         expected = datetime.datetime(2013, 3, 22, 18, 28, 40)
@@ -150,7 +151,7 @@ class UtilsTests(unittest.TestCase):
 
     #@unittest.skip("Skip Test")
     def test_pop_db_timestamp_to_datetime(self):
-        "Test datetime_to_pop_db_date function"
+        "Test pop_db_timestamp_to_datetime function"
         print ""
         timestamp = 1406246400000
         expected = datetime.datetime(2014, 7, 25, 0, 0)

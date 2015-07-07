@@ -20,4 +20,4 @@ class PopDBService(GenericService):
         GenericService.__init__(self, config)
         self.service = 'pop_db'
         self.logger = logging.getLogger(__name__)
-        self.target_url = str(config['services'][self.service])
+        self.target_url = str(self.config['services'][self.service])

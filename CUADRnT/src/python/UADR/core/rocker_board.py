@@ -14,10 +14,12 @@ import threading
 import Queue
 
 # package modules
+from UADR.utils.utils import weighted_choice
 from UADR.utils.config import get_config
-from UADR.services.intelroccs import IntelROCCSService
-from UADR.tools.popularity import Popularity
-from UADR.core.storage import StorageManager
+from UADR.tools.datasets import DatasetManager
+from UADR.tools.sites import SiteManager
+from UADR.tools.popularity import PopularityManager
+from UADR.tools.storage import StorageManager
 
 MAX_THREADS = 1
 
@@ -30,66 +32,25 @@ class RockerBoard(object):
         global MAX_THREADS
         self.logger = logging.getLogger(__name__)
         self.config = get_config(config)
-        self.intelroccs = IntelROCCSService(self.config)
-        self.popularity = Popularity(self.config)
+        self.datasets = DatasetManager(self.config)
+        self.sites = SiteManager(self.config)
+        self.popularity = PopularityManager(self.config)
         self.storage = StorageManager(self.config)
 
     def start(self):
         """
         Begin Rocker Board Algorithm
         """
-        self.popularity.get_data()
+        self.sites.update_sites()
+        self.datasets.update_datasets()
         self.balance()
-
-    def weightedChoice(self, choices):
-        """
-        Do a weighted random selection
-        """
-        total = sum(w for c, w in choices.items())
-        r = random.uniform(0, total)
-        upto = 0
-        for c, w in choices.items():
-            if upto + w > r:
-                return c
-            upto += w
-
-    def get_site_popularity(self):
-        """
-        Generate site popularity based on dataset popularity and replicas
-        """
-        coll = 'site_data'
-        # get sites
-        api = 'SitesInfo.txt'
-        data = self.intelroccs.fetch(api=api, secure=False)
-        for row in data:
-            site_status = site[0]
-            site_name = site[4]
-            site_quota = site[1]
-            site_taken = site[2]
-            # get popularity
-            popularity = 0
-            pipeline = list()
-            project
-            # insert into ml mongodb collection
-            query = {'name':site_name}
-            data = {'name':site_name, 'status':site_status, 'quota':site_quota, 'taken':site_taken, 'popularity':popularity}
-            self.storage.update_data(coll, query=query, data=data, upsert=True)
-        pipeline = list()
-        match = {'$match':{'status':1}}
-        pipeline.append(match)
-        project = {'$project':{'name':1, 'popularity':1, '_id':0}}
-        pipeline.append(project)
-        data = self.storage.get_data(coll, pipeline=pipeline)
-        site_popularity = dict()
-        for site in data:
-            site_popularity[site['name']] = site['popularity']
-        return site_popularity
 
     def balance(self):
         """
         Balance system by creating new replicas based on popularity
         """
-        site_popularity = self.get_site_popularity()
+        site_rankings = self.popularity.get_site_popularity()
+        dataset_rankings = self.popularity.get_dataset_popularity()
 
 def main(argv):
     """
@@ -121,7 +82,7 @@ def main(argv):
             print "error: option %s not recognized" % (str(opt))
             sys.exit()
 
-    logging.basicConfig(filename='/var/log/CUADRnT/cuadrnt.log', format='%(asctime)s [%(levelname)s] %(name)s:%(funcName)s:%(lineno)d: %(message)s', datefmt='%H:%M', level=log_level)
+    logging.basicConfig(filename='/var/log/cuadrnt/cuadrnt.log', format='%(asctime)s [%(levelname)s] %(name)s:%(funcName)s:%(lineno)d: %(message)s', datefmt='%H:%M', level=log_level)
     # self.logger = logging.getLogger()
     # self.logger.setLevel(logging.DEBUG)
     # handler = logging.handlers.RotatingFileHandler('/var/log/CUADRnT/cuadrnt-test.log', mode='w', maxBytes=10*1024*1024, backupCount=2)

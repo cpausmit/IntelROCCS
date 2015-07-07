@@ -80,3 +80,9 @@ Run tests as user which will run the code
 
 mongodb server does not have to be started explivitly as this is taken care of in storage module. However if needed a bin file start_mongodb is installed and can be executed from the command line.
 the mongodb server however is not automatically stopped as to not risk issues with other running services. Therefore a bin file stop_mongodb is install which can be executed from the command line to stop server.
+Can change the bin file to change where database is stored.
+
+Run:
+$ sudo python setup.py build
+$ sudo python setup.py test
+$ sudo python setup.py install

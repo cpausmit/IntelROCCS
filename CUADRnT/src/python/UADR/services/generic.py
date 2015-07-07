@@ -9,7 +9,7 @@ Description: Generic service module
 import logging
 
 # package modules
-from UADR.core.storage import StorageManager
+from UADR.tools.storage import StorageManager
 from UADR.utils.web_utils import get_secure_data
 from UADR.utils.web_utils import get_data
 
@@ -26,7 +26,7 @@ class GenericService(object):
         self.service = 'generic'
         self.config = config
         self.target_url = ''
-        self.storage = StorageManager(config)
+        self.storage = StorageManager(self.config)
 
     def fetch(self, api, params=dict(), method='get', secure=True, cache=True, cache_only=False, force_cache=False):
         """

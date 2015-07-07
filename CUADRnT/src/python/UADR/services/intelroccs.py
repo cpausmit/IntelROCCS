@@ -10,7 +10,6 @@ import logging
 
 # package modules
 from UADR.services.generic import GenericService
-from UADR.core.storage import StorageManager
 
 class IntelROCCSService(GenericService):
     """
@@ -21,6 +20,4 @@ class IntelROCCSService(GenericService):
         GenericService.__init__(self, config)
         self.logger = logging.getLogger(__name__)
         self.service = 'intelroccs'
-        self.config = config
-        self.target_url = str(config['services'][self.service])
-        self.storage_manager = StorageManager(self.config)
+        self.target_url = str(self.config['services'][self.service])

@@ -20,4 +20,4 @@ class DBSService(GenericService):
         GenericService.__init__(self, config)
         self.logger = logging.getLogger(__name__)
         self.service = 'dbs'
-        self.target_url = str(config['services'][self.service])
+        self.target_url = str(self.config['services'][self.service])

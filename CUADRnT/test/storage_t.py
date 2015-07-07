@@ -7,12 +7,16 @@ Description: Test class for storage class
 
 # system modules
 import unittest
+import os
 from datetime import datetime
 
 # package modules
-from UADR.core.storage import StorageManager
-from UADR.services.phedex import PhEDExService
 from UADR.utils.config import get_config
+from UADR.services.phedex import PhEDExService
+from UADR.tools.storage import StorageManager
+
+# get local config file
+opt_path = os.path.join(os.path.split(os.path.dirname(os.path.realpath(__file__)))[0], 'etc')
 
 @unittest.skip("Skip Test")
 class StorageTests(unittest.TestCase):
@@ -21,7 +25,7 @@ class StorageTests(unittest.TestCase):
     """
     def setUp(self):
         "Set up for test"
-        self.config = get_config(config='cuadrnt-test.cfg')
+        self.config = get_config(path=opt_path, file_name='cuadrnt-test.cfg')
         self.storage = StorageManager(config=self.config)
 
     def tearDown(self):

@@ -13,20 +13,13 @@ import ConfigParser
 # Get module specific logger
 logger = logging.getLogger(__name__)
 
-def get_config_path():
-    """
-    Data stored in /var/lib/CUADRnT
-    """
-    return '/var/opt/CUADRnT'
-
-def get_config(config='cuadrnt.cfg'):
+def get_config(path='/var/opt/cuadrnt', file_name='cuadrnt.cfg'):
     """
     Config values are read from a config file and parsed into a dictionary
     Dictionary can have multiple levels
     """
-    config_ = dict()
-    config_path = get_config_path()
-    config_file = os.path.join(config_path, config)
+    config = dict()
+    config_file = os.path.join(path, file_name)
     logger.debug('Using config file %s', config_file)
     config_parser = ConfigParser.SafeConfigParser()
     config_parser.read(config_file)
@@ -34,7 +27,7 @@ def get_config(config='cuadrnt.cfg'):
         section_dict = dict()
         for option, value in config_parser.items(section_name):
             section_dict[option] = value
-        config_[section_name] = section_dict
-    if not config_:
+        config[section_name] = section_dict
+    if not config:
         logger.error('Config file not found (%s)', config_file)
-    return config_
+    return config

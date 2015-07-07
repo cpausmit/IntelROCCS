@@ -18,12 +18,10 @@ def get_object_id(string=''):
     Create a valid object id hash based on api and params
     """
     digest = hashlib.md5(str.encode(string)).hexdigest()
-    object_id = ObjectId(digest[:24])
-    return object_id
+    return ObjectId(digest[:24])
 
 def datetime_to_object_id(datetime_):
     """
     Generate object ID based on a datetime
     """
-    object_id = ObjectId.from_datetime(datetime_)
-    return object_id
+    return ObjectId.from_datetime(datetime_)

@@ -11,20 +11,13 @@ import logging
 # Get module specific logger
 logger = logging.getLogger(__name__)
 
-def get_data_path():
+def export_csv(file_name, path='/var/lib/cuadrnt', headers=tuple(), data=list()):
     """
-    Data stored in /var/lib/CUADRnT
-    """
-    return '/var/lib/CUADRnT'
-
-def export_csv(file_name, headers=tuple(), data=list()):
-    """
-    Export data to <file_name>.csv
+    Export data to <path>/<file_name>.csv
     Headers format: (header_1, header_2, ...)
     data format: [(data_1_1, data_1_2, ...), (data_2_1, data_2_2, ...), ...]
     """
-    data_path = get_data_path()
-    export_file = '%s/%s.csv' % (data_path, file_name)
+    export_file = '%s/%s.csv' % (path, file_name)
     logger.debug('Exporting to file: %s', export_file)
     fs = open(export_file, 'w')
     header_str = ''

@@ -15,8 +15,9 @@ Description: Useful functions
 # system modules
 import logging
 import os
-import datetime
 import calendar
+import random
+from datetime import datetime, timedelta
 
 # Get module specific logger
 logger = logging.getLogger(__name__)
@@ -27,18 +28,37 @@ def check_tool(tool):
     """
     for _dir in os.environ['PATH'].split(':'):
         tool_path = os.path.join(_dir, tool)
-        if os.path.exists(tool_path):
-            return True
+        return os.path.exists(tool_path)
     else:
         logger.error('Command line tool %s not found', tool)
         return False
 
-def bytes_to_gb(bytes):
+def weighted_choice(choices):
+    """
+    Do a weighted random selection
+    """
+    total = sum(w for c, w in choices.items())
+    r = random.uniform(0, total)
+    upto = 0
+    for c, w in choices.items():
+        if upto + w > r:
+            return c
+        upto += w
+
+def daterange(start_date, end_date):
+    """
+    Return datetime range
+    For consistency with range function it does not include end_date
+    """
+    for days in range(int((end_date - start_date).days)):
+        yield start_date + timedelta(days)
+
+def bytes_to_gb(bytes_):
     """
     Convert bytes to GB assuming 1000 conversion, not 1024, since this is what phedex does
-    Rounds down to whole GB
+    Some datasets can be less than 1GB so use float to avoid divide by zero issues
     """
-    return int(bytes/10**9)
+    return float(bytes_)/10**9
 
 def datetime_to_timestamp(datetime_):
     """
@@ -50,7 +70,7 @@ def timestamp_to_datetime(timestamp):
     """
     Convert timestamp to datetime
     """
-    return datetime.datetime.utcfromtimestamp(int(timestamp))
+    return datetime.utcfromtimestamp(int(timestamp))
 
 def datetime_day(datetime_):
     """
@@ -58,9 +78,9 @@ def datetime_day(datetime_):
     """
     return datetime_.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
 
-def datetime_to_pop_db_date(datetime_):
+def datetime_to_string(datetime_):
     """
-    Format datetime string to pop db date string
+    Format datetime string to date string
     YYYY-MM-DD
     """
     return datetime_.strftime('%Y-%m-%d')
