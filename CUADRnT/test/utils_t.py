@@ -28,7 +28,7 @@ from UADR.utils.utils import pop_db_timestamp_to_datetime
 # get local config file
 opt_path = os.path.join(os.path.split(os.path.dirname(os.path.realpath(__file__)))[0], 'etc')
 
-@unittest.skip("Skip Test")
+#@unittest.skip("Skip Test")
 class UtilsTests(unittest.TestCase):
     """
     A test class for util functions
