@@ -293,8 +293,8 @@ def convertSizeToGb(sizeTxt):
         print ' ERROR - string for sample size (%s) not compliant. EXIT.'%(sizeTxt)
         sys.exit(1)
 
-    if line.isdigit(): # DAS decides to give back size in bytes
-        sizeGb = int(line)/1000/1000/1000        
+    if sizeTxt.isdigit(): # DAS decides to give back size in bytes
+        sizeGb = int(sizeTxt)/1000/1000/1000        
     else:              # DAS gives human readable size with unit integrated
         # this is the text including the size units, that need to be converted
         sizeGb  = float(sizeTxt[0:-2])
@@ -420,7 +420,6 @@ def chooseMatchingSite(tier2Sites,nSites,sizeGb,debug):
     # Given a list of Tier-2 centers, a requested number of copies and the size of the sample to
     # assign we choose a list of sites
 
-
     iRan = -1
     quotas = []
     lastCps = []
@@ -433,7 +432,7 @@ def chooseMatchingSite(tier2Sites,nSites,sizeGb,debug):
         site = tier2Sites[iRan]
         # not elegant or reliable (should use database directly)
         cmd  = 'wget http://t3serv001.mit.edu/~cmsprod/IntelROCCS/Detox/result/'+site+'/Summary.txt'
-        cmd += ' -O - 2> /dev/null | grep ^Total'
+        cmd += ' -O - 2> /dev/null | grep ^Total | head -1'
         quota = 0
         for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
             line = line[:-1]
@@ -441,7 +440,7 @@ def chooseMatchingSite(tier2Sites,nSites,sizeGb,debug):
             quota = float(f[-1]) * 1000.   # make sure it is GB
 
         cmd  = 'wget http://t3serv001.mit.edu/~cmsprod/IntelROCCS/Detox/result/'+site+'/Summary.txt'
-        cmd += ' -O - 2> /dev/null | grep ^\"Space last CP\"'
+        cmd += ' -O - 2> /dev/null | grep ^\"Space last CP\"  | head -1'
 
         lastCp = 0
         for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
@@ -531,13 +530,14 @@ def submitUpdateSubscriptionRequest(sites,datasets=[],debug=0):
 #===================================================================================================
 # Define string to explain usage of the script
 usage =  " Usage: assignDatasetToSite.py   --dataset=<name of a CMS dataset>\n"
-usage += "                               [ --nCopies=1 ]   <-- number of desired copies \n"
-usage += "                               [ --debug=0 ]\n"
-usage += "                               [ --exec ]\n"
-usage += "                               [ --help ]\n\n"
+usage += "                 [ --nCopies=1 ]   <-- number of desired copies \n"
+usage += "                 [ --expectedSizeGb=-1 ]   <-- open subscription to avoid small sites \n"
+usage += "                 [ --debug=0 ]\n"
+usage += "                 [ --exec ]\n"
+usage += "                 [ --help ]\n\n"
 
 # Define the valid options which can be specified and check out the command line
-valid = ['dataset=','debug=','nCopies=','exec','help']
+valid = ['dataset=','debug=','nCopies=','expectedSizeGb=','exec','help']
 try:
     opts, args = getopt.getopt(sys.argv[1:], "", valid)
 except getopt.GetoptError, ex:
@@ -553,6 +553,7 @@ debug = 0
 dataset = ''
 nCopies = 1
 exe = False
+expectedSizeGb = -1
 
 # Read new values from the command line
 for opt, arg in opts:
@@ -563,6 +564,8 @@ for opt, arg in opts:
         dataset = arg
     if opt == "--nCopies":
         nCopies = int(arg)
+    if opt == "--expectedSizeGb":
+        expectedSizeGb = int(arg)
     if opt == "--debug":
         debug = int(arg)
     if opt == "--exec":
@@ -591,6 +594,10 @@ if line != '':
 else:
     print ' Error - no reasonable size found with das_client.py.'
     sys.exit(1)
+
+# in case this is an open subscription we need to adjust sizeGb to the expected size
+if expectedSizeGb > 0:
+    sizeGb = expectedSizeGb
 
 if not exe:
     print '\n DAS information:  %.1f GB  %s'%(sizeGb,dataset)
@@ -650,6 +657,7 @@ for siteName in siteNames:
     tier2Sites.remove(siteName)
 
 # choose a site randomly and exclude sites that are too small
+
 sites,quotas,lastCps = chooseMatchingSite(tier2Sites,nAdditionalCopies,sizeGb,debug)
 
 if not exe:
