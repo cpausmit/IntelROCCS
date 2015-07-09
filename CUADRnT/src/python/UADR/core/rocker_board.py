@@ -9,9 +9,6 @@ Description: Collect historical data for popularity model
 import logging
 import sys
 import getopt
-import re
-import threading
-import Queue
 
 # package modules
 from UADR.utils.utils import weighted_choice
@@ -19,6 +16,7 @@ from UADR.utils.config import get_config
 from UADR.tools.datasets import DatasetManager
 from UADR.tools.sites import SiteManager
 from UADR.tools.popularity import PopularityManager
+from UADR.tools.rankings import DeltaRankings
 from UADR.tools.storage import StorageManager
 
 MAX_THREADS = 1
@@ -35,6 +33,7 @@ class RockerBoard(object):
         self.datasets = DatasetManager(self.config)
         self.sites = SiteManager(self.config)
         self.popularity = PopularityManager(self.config)
+        self.rankings = DeltaRankings(self.config)
         self.storage = StorageManager(self.config)
 
     def start(self):
@@ -49,15 +48,15 @@ class RockerBoard(object):
         """
         Balance system by creating new replicas based on popularity
         """
-        site_rankings = self.popularity.get_site_popularity()
-        dataset_rankings = self.popularity.get_dataset_popularity()
+        site_rankings = self.rankings.get_site_rankings()
+        dataset_rankings = self.rankings.get_dataset_rankings()
 
 def main(argv):
     """
     Main driver for Rocker Board Algorithm
     """
     log_level = logging.WARNING
-    config = 'cuadrnt.cfg'
+    config = get_config()
     try:
         opts, args = getopt.getopt(argv, 'h', ['help', 'log='])
     except getopt.GetoptError:
@@ -90,7 +89,7 @@ def main(argv):
     # formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s:%(funcName)s:%(lineno)d: %(message)s', datefmt='%H:%M')
     # handler.setFormatter(formatter)
     # self.logger.addHandler(handler)
-    rb = RockerBoard()
+    rb = RockerBoard(config)
     rb.start()
 
 if __name__ == "__main__":

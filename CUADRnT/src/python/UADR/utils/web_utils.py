@@ -87,6 +87,8 @@ def get_data(target_url, api, file_):
     else:
         data = response.read()
         for line in data.split('\n'):
+            if not (line.find('DataOps') == -1):
+                break
             if not line or line[0] == '#':
                 continue
             row = line.split()
