@@ -74,10 +74,11 @@ class UtilsTests(unittest.TestCase):
         "Test export_csv function"
         print ""
         file_name = 'test'
+        path = '/var/lib/cuadrnt'
         headers = ('foo', 'bar')
         data = [('Bjorn', 'Barrefors')]
-        export_file = '%s/%s.csv' % ('/var/lib/cuadrnt', file_name)
-        export_csv(file_name, headers, data)
+        export_file = '%s/%s.csv' % (path, file_name)
+        export_csv(file_name=file_name, path=path, headers=headers, data=data)
         expected = 'foo,bar\nBjorn,Barrefors\n'
         fs = open(export_file, 'r')
         result = fs.read()

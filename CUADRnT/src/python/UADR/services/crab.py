@@ -12,7 +12,7 @@ import htcondor
 # package modules
 from UADR.services.generic import GenericService
 
-class CRABBService(GenericService):
+class CRABService(GenericService):
     """
     Helper class to access CRAB
     """
