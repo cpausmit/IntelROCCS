@@ -17,6 +17,8 @@ from UADR.utils.db_utils import get_object_id
 from UADR.utils.db_utils import datetime_to_object_id
 from UADR.utils.io_utils import export_csv
 from UADR.utils.utils import check_tool
+from UADR.utils.utils import weighted_choice
+from UADR.utils.utils import daterange
 from UADR.utils.utils import bytes_to_gb
 from UADR.utils.utils import datetime_to_timestamp
 from UADR.utils.utils import timestamp_to_datetime
@@ -24,6 +26,7 @@ from UADR.utils.utils import datetime_day
 from UADR.utils.utils import datetime_to_string
 from UADR.utils.utils import phedex_timestamp_to_datetime
 from UADR.utils.utils import pop_db_timestamp_to_datetime
+from UADR.utils.utils import datetime_remove_timezone
 
 # get local config file
 opt_path = os.path.join(os.path.split(os.path.dirname(os.path.realpath(__file__)))[0], 'etc')
@@ -97,6 +100,25 @@ class UtilsTests(unittest.TestCase):
         self.assertFalse(result)
 
     #@unittest.skip("Skip Test")
+    def test_weighted_choice(self):
+        "Test weighted_choice function"
+        print ""
+        choices = {'foo':1.5, 'bar':5.9}
+        expected = choices.keys()
+        result = weighted_choice(choices)
+        self.assertTrue(result in expected)
+
+    #@unittest.skip("Skip Test")
+    def test_daterange(self):
+        "Test daterange function"
+        print ""
+        start_date = datetime.datetime(1987, 10, 27)
+        end_date = datetime.datetime(1987, 10, 30)
+        expected = [datetime.datetime(1987, 10, 27), datetime.datetime(1987, 10, 28), datetime.datetime(1987, 10, 29)]
+        result = daterange(start_date, end_date)
+        self.assertEqual(result, expected)
+
+    #@unittest.skip("Skip Test")
     def test_bytes_to_gb(self):
         "Test bytes_to_gb function"
         print ""
@@ -134,7 +156,7 @@ class UtilsTests(unittest.TestCase):
 
     #@unittest.skip("Skip Test")
     def test_datetime_to_string(self):
-        "Test datetime_to_pop_db_date function"
+        "Test datetime_to_string function"
         print ""
         datetime_ = datetime.datetime(1987, 10, 27)
         expected = '1987-10-27'
@@ -157,6 +179,14 @@ class UtilsTests(unittest.TestCase):
         timestamp = 1406246400000
         expected = datetime.datetime(2014, 7, 25, 0, 0)
         result = pop_db_timestamp_to_datetime(timestamp)
+        self.assertEqual(result, expected)
+
+    #@unittest.skip("Skip Test")
+    def test_datetime_remove_timezone(self):
+        "Test datetime_remove_timezone function"
+        print ""
+        expected = None
+        result = datetime_remove_timezone(datetime.datetime.utcnow()).tzinfo
         self.assertEqual(result, expected)
 
 if __name__ == '__main__':
