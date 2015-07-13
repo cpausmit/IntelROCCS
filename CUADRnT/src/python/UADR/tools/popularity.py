@@ -42,7 +42,7 @@ class PopularityManager(object):
         pipeline.append(project)
         data = self.storage.get_data(coll=coll, pipeline=pipeline)
         creation_date = data[0]['creation_date']
-        api = 'getSingleDSstat'
+        api = 'getSingleDSStat'
         pop_data = dict()
         for metric in ['totcpu', 'naccess', 'nusers']:
             params = {'name':dataset_name, 'sitename':'summary', 'aggr':'day', 'orderby':metric}

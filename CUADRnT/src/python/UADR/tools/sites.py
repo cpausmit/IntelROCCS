@@ -56,6 +56,7 @@ class SiteManager(object):
         query = 'GLIDEIN_CMSSite =?= "%s" && CPUs > 0' % (site_name)
         attributes = ["CPUs"]
         ads = self.crab.fetch_cluster_ads(query=query, attributes=attributes)
+        print ads
         cpus = 0
         for ad in ads:
             cpus += ad['CPUs']
