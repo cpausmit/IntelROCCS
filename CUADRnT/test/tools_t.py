@@ -17,7 +17,7 @@ from UADR.tools.datasets import DatasetManager
 # get local config file
 opt_path = os.path.join(os.path.split(os.path.dirname(os.path.realpath(__file__)))[0], 'etc')
 
-@unittest.skip("Skip Test")
+#@unittest.skip("Skip Test")
 class ToolsTests(unittest.TestCase):
     """
     A test class for tools classes
