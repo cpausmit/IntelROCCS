@@ -62,7 +62,7 @@ class SiteManager(object):
         # insert new data
         date = datetime.datetime.utcnow()
         query = {'name':site_name}
-        data = {'cpu_data':{'$push':{'date':date, 'cpus':cpus}}}
+        data = {'$push':{'cpu_data':{'date':date, 'cpus':cpus}}}
         self.storage.update_data(coll=coll, query=query, data=data)
 
     def get_active_sites(self):
