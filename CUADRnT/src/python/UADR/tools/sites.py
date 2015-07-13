@@ -50,7 +50,7 @@ class SiteManager(object):
         date = datetime.datetime.utcnow() - datetime.timedelta(days=30)
         coll = 'site_data'
         query = {'name':site_name}
-        data = {'cpu_data':{'$pull':{'date':{'$lt':date}}}}
+        data = {'$pull':{'cpu_data':{'date':{'$lt':date}}}}
         self.storage.update_data(coll=coll, query=query, data=data)
         # get CRAB data about site
         query = 'GLIDEIN_CMSSite =?= "%s" && CPUs > 0' % (site_name)
