@@ -28,7 +28,8 @@ def check_tool(tool):
     """
     for _dir in os.environ['PATH'].split(':'):
         tool_path = os.path.join(_dir, tool)
-        return os.path.exists(tool_path)
+        if os.path.exists(tool_path):
+            return True
     else:
         logger.error('Command line tool %s not found', tool)
         return False
