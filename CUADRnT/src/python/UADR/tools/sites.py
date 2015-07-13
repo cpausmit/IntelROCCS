@@ -54,7 +54,7 @@ class SiteManager(object):
         self.storage.update_data(coll=coll, query=query, data=data)
         # get CRAB data about site
         query = 'GLIDEIN_CMSSite =?= "%s" && CPUs > 0' % (site_name)
-        attributes = ["CPUs"]
+        attributes = ['GLIDEIN_CMSSite', 'CPUs']
         ads = self.crab.fetch_cluster_ads(query=query, attributes=attributes)
         print ads
         cpus = 0

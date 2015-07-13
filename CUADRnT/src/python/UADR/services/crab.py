@@ -30,6 +30,7 @@ class CRABService(GenericService):
         ads = list()
         try:
             returned_ads = self.collector.query(htcondor.AdTypes.Startd, query, attributes)
+            print returned_ads
             for ad in returned_ads:
                 ads.append(ad)
         except:
