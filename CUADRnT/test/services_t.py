@@ -12,6 +12,7 @@ import os
 # package modules
 from UADR.utils.config import get_config
 from UADR.services.dbs import DBSService
+from UADR.services.crab import CRABService
 from UADR.services.intelroccs import IntelROCCSService
 from UADR.services.mit_db import MITDBService
 from UADR.services.phedex import PhEDExService
@@ -20,7 +21,7 @@ from UADR.services.pop_db import PopDBService
 # get local config file
 opt_path = os.path.join(os.path.split(os.path.dirname(os.path.realpath(__file__)))[0], 'etc')
 
-@unittest.skip("Skip Test")
+#@unittest.skip("Skip Test")
 class ServicesTests(unittest.TestCase):
     """
     A test class for service classes
@@ -32,6 +33,18 @@ class ServicesTests(unittest.TestCase):
     def tearDown(self):
         "Clean up"
         pass
+
+    #@unittest.skip("Skip Test")
+    def test_crab(self):
+        "test crab functions"
+        print ""
+        expected = 'T2_US_Nebraska'
+        crab = CRABService(config=self.config)
+        query = 'GLIDEIN_CMSSite =?= "%s"' % ('T2_US_Nebraska')
+        attributes = ["GLIDEIN_CMSSite"]
+        ads = crab.fetch_cluster_ads(query=query, attributes=attributes)
+        for ad in ads:
+            self.assertEqual(ad['GLIDEIN_CMSSite'], expected)
 
     #@unittest.skip("Skip Test")
     def test_dbs(self):
