@@ -115,8 +115,11 @@ class UtilsTests(unittest.TestCase):
         start_date = datetime.datetime(1987, 10, 27)
         end_date = datetime.datetime(1987, 10, 30)
         expected = [datetime.datetime(1987, 10, 27), datetime.datetime(1987, 10, 28), datetime.datetime(1987, 10, 29)]
-        result = daterange(start_date, end_date)
-        self.assertEqual(result, expected)
+        results = daterange(start_date, end_date)
+        i = 0
+        for result in results:
+            self.assertEqual(result, expected[i])
+            i += 1
 
     #@unittest.skip("Skip Test")
     def test_bytes_to_gb(self):
