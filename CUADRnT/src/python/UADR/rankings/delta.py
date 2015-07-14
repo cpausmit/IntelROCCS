@@ -10,6 +10,7 @@ import logging
 import datetime
 
 # package modules
+from UADR.utils.utils import datetime_day
 from UADR.rankings.generic import GenericRanking
 
 class DeltaRanking(GenericRanking):
@@ -45,8 +46,8 @@ class DeltaRanking(GenericRanking):
         """
         old_pop = 0
         coll = 'dataset_data'
-        start_date = datetime.datetime.utcnow() - datetime.timedelta(days=14)
-        end_date = datetime.datetime.utcnow() - datetime.timedelta(days=8)
+        start_date = datetime_day(datetime.datetime.utcnow()) - datetime.timedelta(days=14)
+        end_date = datetime_day(datetime.datetime.utcnow()) - datetime.timedelta(days=8)
         print start_date
         print end_date
         pipeline = list()
