@@ -33,7 +33,7 @@ class DeltaRanking(GenericRanking):
             delta_poppularity = self.get_dataset_popularity(dataset_name)
             # insert into database
             query = {'name':dataset_name}
-            data = {'name':dataset_name, 'delta_poppularity':delta_poppularity}
+            data = {'$set':{'name':dataset_name, 'delta_poppularity':delta_poppularity}}
             self.storage.update_data(coll=coll, query=query, data=data, upsert=True)
             # store into dict
             dataset_rankings['dataset_name'] = delta_poppularity
