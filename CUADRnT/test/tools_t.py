@@ -37,12 +37,12 @@ class ToolsTests(unittest.TestCase):
     def test_managers(self):
         "test dataset_collector functions"
         print ""
-        #sites = SiteManager(config=self.config)
-        #datasets = DatasetManager(config=self.config)
-        #delta = DeltaRanking(config=self.config)
-        #sites.update_sites()
-        #datasets.update_datasets()
-        #delta.dataset_rankings()
+        sites = SiteManager(config=self.config)
+        datasets = DatasetManager(config=self.config)
+        delta = DeltaRanking(config=self.config)
+        sites.update_sites()
+        datasets.update_datasets()
+        delta.dataset_rankings()
 
 if __name__ == '__main__':
     unittest.main()
