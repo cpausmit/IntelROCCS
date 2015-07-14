@@ -27,12 +27,22 @@ class DeltaRanking(GenericRanking):
         Generate dataset rankings
         """
         dataset_rankings = dict()
+        coll = 'popularity'
         dataset_names = self.datasets.get_datasets()
         for dataset_name in dataset_names:
-            popularity = self.get_dataset_popularity(dataset_name)
+            delta_poppularity = self.get_dataset_popularity(dataset_name)
             # insert into database
+            query = {'name':dataset_name}
+            data = {'name':dataset_name, 'delta_poppularity':delta_poppularity}
+            self.storage.update(coll=coll, query=query, data=data, upsert=True)
             # store into dict
+            dataset_rankings['dataset_name'] = delta_poppularity
         # calculate average
+        pipeline = list()
+        group = {'$group':{'_id':None, 'average':{'$avg':'$delta_poppularity'}}}
+        pipeline.append(group)
+        data = self.storage.get_data(coll=coll, pipeline=pipeline)
+        print data
         # apply to dict
 
     # def site_rankings(self):
@@ -44,7 +54,6 @@ class DeltaRanking(GenericRanking):
         """
         Get delta popularity for dataset
         """
-        old_pop = 0
         coll = 'dataset_data'
         start_date = datetime_day(datetime.datetime.utcnow()) - datetime.timedelta(days=14)
         end_date = datetime_day(datetime.datetime.utcnow()) - datetime.timedelta(days=8)
@@ -58,4 +67,19 @@ class DeltaRanking(GenericRanking):
         group = {'$group':{'_id':'$name', 'delta_poppularity':{'$sum':'$popularity_data.popularity'}}}
         pipeline.append(group)
         data = self.storage.get_data(coll=coll, pipeline=pipeline)
-        print data
+        old_pop = data[0]['delta_poppularity']
+        start_date = datetime_day(datetime.datetime.utcnow()) - datetime.timedelta(days=7)
+        end_date = datetime_day(datetime.datetime.utcnow()) - datetime.timedelta(days=1)
+        pipeline = list()
+        match = {'$match':{'name':dataset_name}}
+        pipeline.append(match)
+        unwind = {'$unwind':'$popularity_data'}
+        pipeline.append(unwind)
+        match = {'$match':{'popularity_data.date':{'$gte':start_date, '$lte':end_date}}}
+        pipeline.append(match)
+        group = {'$group':{'_id':'$name', 'delta_poppularity':{'$sum':'$popularity_data.popularity'}}}
+        pipeline.append(group)
+        data = self.storage.get_data(coll=coll, pipeline=pipeline)
+        new_pop = data[0]['delta_poppularity']
+        delta_poppularity = new_pop - old_pop
+        return delta_poppularity
