@@ -47,6 +47,8 @@ class DeltaRanking(GenericRanking):
         coll = 'dataset_data'
         start_date = datetime.datetime.utcnow() - datetime.timedelta(days=14)
         end_date = datetime.datetime.utcnow() - datetime.timedelta(days=8)
+        print start_date
+        print end_date
         pipeline = list()
         match = {'$match':{'name':dataset_name}}
         pipeline.append(match)
