@@ -50,7 +50,7 @@ class DeltaRanking(GenericRanking):
         pipeline = list()
         match = {'$match':{'name':dataset_name}}
         pipeline.append(match)
-        unwind = {'$unwind':'popularity_data'}
+        unwind = {'$unwind':'$popularity_data'}
         pipeline.append(unwind)
         match = {'$match':{'popularity_data':{'date':{'$gte':start_date, '$lte':end_date}}}}
         pipeline.append(match)
