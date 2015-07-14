@@ -28,7 +28,7 @@ class DeltaRanking(GenericRanking):
         dataset_rankings = dict()
         dataset_names = self.datasets.get_datasets()
         for dataset_name in dataset_names:
-            popularity = self.get_dataset_popularity()
+            popularity = self.get_dataset_popularity(dataset_name)
             # insert into database
             # store into dict
         # calculate average
