@@ -26,7 +26,7 @@ class DeltaRanking(GenericRanking):
         Generate dataset rankings
         """
         dataset_rankings = dict()
-        dataset_names = self.datasets.get_dataset_names()
+        dataset_names = self.datasets.get_datasets()
         for dataset_name in dataset_names:
             popularity = self.get_dataset_popularity()
             # insert into database
