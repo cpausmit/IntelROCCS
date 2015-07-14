@@ -42,7 +42,7 @@ class CRABService(GenericService):
         Get CRAB schedulers from HTCondor
         """
         ads = list()
-        schedulers = self.locateAll(htcondor.DaemonTypes.Schedd)
+        schedulers = self.collector.locateAll(htcondor.DaemonTypes.Schedd)
         for scheduler in schedulers:
             try:
                 schedd = htcondor.Schedd(scheduler)
