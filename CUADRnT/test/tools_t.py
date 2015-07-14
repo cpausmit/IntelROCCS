@@ -42,7 +42,8 @@ class ToolsTests(unittest.TestCase):
         delta = DeltaRanking(config=self.config)
         # sites.update_sites()
         # datasets.update_datasets()
-        delta.dataset_rankings()
+        dataset_rankings = delta.dataset_rankings()
+        print dataset_rankings
 
 if __name__ == '__main__':
     unittest.main()

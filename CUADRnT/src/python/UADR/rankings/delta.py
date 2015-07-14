@@ -26,25 +26,32 @@ class DeltaRanking(GenericRanking):
         """
         Generate dataset rankings
         """
+        date = datetime_day(datetime.datetime.utcnow())
         dataset_rankings = dict()
         coll = 'popularity'
         dataset_names = self.datasets.get_datasets()
         for dataset_name in dataset_names:
             delta_popularity = self.get_dataset_popularity(dataset_name)
-            delta_popularity = 4
             # insert into database
-            query = {'name':dataset_name}
-            data = {'$set':{'name':dataset_name, 'delta_popularity':delta_popularity}}
+            query = {'name':dataset_name, 'date':date}
+            data = {'$set':{'name':dataset_name, 'date':date, 'delta_popularity':delta_popularity}}
             self.storage.update_data(coll=coll, query=query, data=data, upsert=True)
             # store into dict
-            dataset_rankings['dataset_name'] = delta_popularity
+            dataset_rankings[dataset_name] = delta_popularity
         # calculate average
         pipeline = list()
         group = {'$group':{'_id':None, 'average':{'$avg':'$delta_popularity'}}}
         pipeline.append(group)
         data = self.storage.get_data(coll=coll, pipeline=pipeline)
-        print data
+        average = data[0]['average']
         # apply to dict
+        for dataset_name in dataset_names:
+            deviance = dataset_rankings[dataset_name] - average
+            dataset_rankings[dataset_name] = deviance
+            query = {'name':dataset_name, 'date':date}
+            data = {'$set':{'deviance':deviance}}
+            self.storage.update_data(coll=coll, query=query, data=data, upsert=True)
+        return dataset_rankings
 
     # def site_rankings(self):
     #     """
