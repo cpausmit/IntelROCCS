@@ -52,8 +52,8 @@ class DeltaRanking(GenericRanking):
         pipeline.append(match)
         unwind = {'$unwind':'$popularity_data'}
         pipeline.append(unwind)
-        # match = {'$match':{'popularity_data.date':{'$gte':start_date, '$lte':end_date}}}
-        # pipeline.append(match)
+        match = {'$match':{'popularity_data.date':{'$gte':start_date, '$lte':end_date}}}
+        pipeline.append(match)
         # group = {'$group':{'_id':'$name', 'delta_poppularity':{'$sum':'$popularity_data.popularity'}}}
         # pipeline.append(group)
         data = self.storage.get_data(coll=coll, pipeline=pipeline)
