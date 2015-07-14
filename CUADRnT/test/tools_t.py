@@ -13,6 +13,7 @@ import os
 from UADR.utils.config import get_config
 from UADR.tools.sites import SiteManager
 from UADR.tools.datasets import DatasetManager
+from UADR.rankings.delta import DeltaRanking
 
 # get local config file
 opt_path = os.path.join(os.path.split(os.path.dirname(os.path.realpath(__file__)))[0], 'etc')
@@ -40,6 +41,8 @@ class ToolsTests(unittest.TestCase):
         datasets = DatasetManager(config=self.config)
         sites.update_sites()
         datasets.update_datasets()
+        delta = DeltaRanking()
+        delta.dataset_rankings()
 
 if __name__ == '__main__':
     unittest.main()
