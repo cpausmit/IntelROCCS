@@ -29,27 +29,27 @@ class DeltaRanking(GenericRanking):
         date = datetime_day(datetime.datetime.utcnow())
         dataset_names = self.datasets.get_datasets()
         dataset_rankings = dict()
-        coll = 'delta_dataset_popularity'
+        coll = 'dataset_popularity'
         for dataset_name in dataset_names:
             popularity = self.get_dataset_popularity(dataset_name)
             # insert into database
             query = {'name':dataset_name, 'date':date}
-            data = {'$set':{'name':dataset_name, 'date':date, 'popularity':popularity}}
-            self.storage.update_data(coll=coll, query=query, data=data, upsert=True)
+            data = {'$set':{'delta_popularity':popularity}}
+            self.storage.update_data(coll=coll, query=query, data=data)
             # store into dict
             dataset_rankings[dataset_name] = popularity
         # calculate average
         pipeline = list()
-        group = {'$group':{'_id':None, 'average':{'$avg':'$popularity'}}}
+        group = {'$group':{'_id':None, 'average':{'$avg':'$delta_popularity'}}}
         pipeline.append(group)
         data = self.storage.get_data(coll=coll, pipeline=pipeline)
         average = data[0]['average']
         # apply to dict
         for dataset_name in dataset_names:
-            deviance = dataset_rankings[dataset_name] - average
-            dataset_rankings[dataset_name] = deviance
+            rank = dataset_rankings[dataset_name] - average
+            dataset_rankings[dataset_name] = rank
             query = {'name':dataset_name, 'date':date}
-            data = {'$set':{'deviance':deviance}}
+            data = {'$set':{'delta_rank':rank}}
             self.storage.update_data(coll=coll, query=query, data=data, upsert=True)
         return dataset_rankings
 
@@ -61,32 +61,37 @@ class DeltaRanking(GenericRanking):
         # get all sites which can be replicated to
         site_names = self.sites.get_available_sites()
         site_rankings = dict()
-        coll = 'delta_site_popularity'
+        coll = 'site_popularity'
         for site_name in site_names:
+            # get popularity
             popularity = self.get_site_popularity(site_name)
+            # get cpu and storage (performance)
+            performance = self.sites.get_performance(site_name)
+            # get available storage
+            available_storage = self.sites.get_available_storage(site_name)
+            #calculate rank
+            rank = performance*available_storage*popularity
             # insert into database
             query = {'name':site_name, 'date':date}
-            data = {'$set':{'name':site_name, 'date':date, 'popularity':popularity}}
+            data = {'$set':{'name':site_name, 'date':date, 'delta_popularity':popularity, 'performance':performance, 'available_storage':available_storage, 'delta_rank':rank}}
             self.storage.update_data(coll=coll, query=query, data=data, upsert=True)
             # store into dict
-            site_rankings[site_name] = popularity
+            site_rankings[site_name] = rank
         return site_rankings
 
     def get_dataset_popularity(self, dataset_name):
         """
         Get delta popularity for dataset
         """
-        coll = 'dataset_data'
+        coll = 'dataset_popularity'
         start_date = datetime_day(datetime.datetime.utcnow()) - datetime.timedelta(days=14)
         end_date = datetime_day(datetime.datetime.utcnow()) - datetime.timedelta(days=8)
         pipeline = list()
         match = {'$match':{'name':dataset_name}}
         pipeline.append(match)
-        unwind = {'$unwind':'$popularity_data'}
-        pipeline.append(unwind)
-        match = {'$match':{'popularity_data.date':{'$gte':start_date, '$lte':end_date}}}
+        match = {'$match':{'date':{'$gte':start_date, '$lte':end_date}}}
         pipeline.append(match)
-        group = {'$group':{'_id':'$name', 'delta_popularity':{'$sum':'$popularity_data.popularity'}}}
+        group = {'$group':{'_id':'$name', 'delta_popularity':{'$sum':'$popularity'}}}
         pipeline.append(group)
         data = self.storage.get_data(coll=coll, pipeline=pipeline)
         old_pop = data[0]['delta_popularity']
@@ -95,11 +100,9 @@ class DeltaRanking(GenericRanking):
         pipeline = list()
         match = {'$match':{'name':dataset_name}}
         pipeline.append(match)
-        unwind = {'$unwind':'$popularity_data'}
-        pipeline.append(unwind)
-        match = {'$match':{'popularity_data.date':{'$gte':start_date, '$lte':end_date}}}
+        match = {'$match':{'date':{'$gte':start_date, '$lte':end_date}}}
         pipeline.append(match)
-        group = {'$group':{'_id':'$name', 'delta_popularity':{'$sum':'$popularity_data.popularity'}}}
+        group = {'$group':{'_id':'$name', 'delta_popularity':{'$sum':'$popularity'}}}
         pipeline.append(group)
         data = self.storage.get_data(coll=coll, pipeline=pipeline)
         new_pop = data[0]['delta_popularity']
@@ -116,20 +119,19 @@ class DeltaRanking(GenericRanking):
         pipeline = list()
         match = {'$match':{'replicas':site_name}}
         pipeline.append(match)
-        project = {'$project':{'name':1, 'n_replicas':{'$size':'$replicas'}, '_id':0}}
+        project = {'$project':{'name':1, '_id':0}}
         pipeline.append(project)
         data = self.storage.get_data(coll=coll, pipeline=pipeline)
         popularity = 0.0
         for dataset in data:
             dataset_name = dataset['name']
-            n_replicas = dataset['n_replicas']
             # get the popularity of the dataset and dicide by number of replicas
-            coll = 'delta_dataset_popularity'
+            coll = 'dataset_popularity'
             pipeline = list()
             match = {'$match':{'name':dataset_name, 'date':date}}
             pipeline.append(match)
-            project = {'$project':{'popularity':1, '_id':0}}
+            project = {'$project':{'delta_popularity':1, '_id':0}}
             pipeline.append(project)
             data = self.storage.get_data(coll=coll, pipeline=pipeline)
-            popularity += data[0]['popularity']/float(n_replicas)
+            popularity += data[0]['delta_popularity']
         return popularity

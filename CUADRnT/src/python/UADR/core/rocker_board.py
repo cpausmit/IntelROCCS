@@ -13,9 +13,6 @@ import getopt
 # package modules
 from UADR.utils.utils import weighted_choice
 from UADR.utils.config import get_config
-from UADR.tools.datasets import DatasetManager
-from UADR.tools.sites import SiteManager
-from UADR.tools.popularity import PopularityManager
 from UADR.tools.rankings import DeltaRankings
 from UADR.tools.storage import StorageManager
 
@@ -30,9 +27,6 @@ class RockerBoard(object):
         global MAX_THREADS
         self.logger = logging.getLogger(__name__)
         self.config = get_config(config)
-        self.datasets = DatasetManager(self.config)
-        self.sites = SiteManager(self.config)
-        self.popularity = PopularityManager(self.config)
         self.rankings = DeltaRankings(self.config)
         self.storage = StorageManager(self.config)
 
@@ -89,8 +83,8 @@ def main(argv):
     # formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s:%(funcName)s:%(lineno)d: %(message)s', datefmt='%H:%M')
     # handler.setFormatter(formatter)
     # self.logger.addHandler(handler)
-    rb = RockerBoard(config)
-    rb.start()
+    rocker_board = RockerBoard(config)
+    rocker_board.start()
 
 if __name__ == "__main__":
     main(sys.argv[1:])

@@ -35,7 +35,7 @@ class ToolsTests(unittest.TestCase):
 
     #@unittest.skip("Skip Test")
     def test_managers(self):
-        "test dataset_collector functions"
+        "test managers"
         print ""
         sites = SiteManager(config=self.config)
         datasets = DatasetManager(config=self.config)

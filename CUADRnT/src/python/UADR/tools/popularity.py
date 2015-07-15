@@ -56,29 +56,25 @@ class PopularityManager(object):
                 for date_data in data:
                     date = datetime_to_string(pop_db_timestamp_to_datetime(date_data[0]))
                     pop_data[metric][date] = date_data[1]
-        popularity_data = list()
         end_date = datetime_day(datetime.datetime.utcnow())
-        age = 0
+        coll = 'dataset_popularity'
         for date in daterange(creation_date, end_date):
-            data = {'date':date, 'age':age}
+            query = {'name':dataset_name, 'date':date}
+            popularity_data = {'name':dataset_name, 'date':date}
             try:
-                data['n_accesses'] = pop_data['naccess'][datetime_to_string(date)]
-                data['n_cpus'] = pop_data['totcpu'][datetime_to_string(date)]
-                data['n_users'] = pop_data['nusers'][datetime_to_string(date)]
+                popularity_data['n_accesses'] = pop_data['naccess'][datetime_to_string(date)]
+                popularity_data['n_cpus'] = pop_data['totcpu'][datetime_to_string(date)]
+                popularity_data['n_users'] = pop_data['nusers'][datetime_to_string(date)]
             except:
-                data['n_accesses'] = 0
-                data['n_cpus'] = 0
-                data['n_users'] = 0
+                popularity_data['n_accesses'] = 0
+                popularity_data['n_cpus'] = 0
+                popularity_data['n_users'] = 0
             try:
-                data['popularity'] = log(data['n_accesses'])*log(data['n_cpus'])*log(data['n_users'])
+                popularity_data['popularity'] = log(popularity_data['n_accesses'])*log(popularity_data['n_cpus'])*log(popularity_data['n_users'])
             except:
-                data['popularity'] = 0
-            popularity_data.append(data)
-            age += 1
-        coll = 'dataset_data'
-        query = {'name':dataset_name}
-        data = {'$push':{'popularity_data':{'$each':popularity_data}}}
-        self.storage.update_data(coll=coll, query=query, data=data)
+                popularity_data['popularity'] = 0
+            data = {'$set':popularity_data}
+            self.storage.update_data(coll=coll, query=query, data=data)
 
     def update_popularity(self, dataset_names):
         """
@@ -100,10 +96,10 @@ class PopularityManager(object):
             n_users = dataset['NUSERS']
             pop_data[dataset_name] = {'n_accesses':n_accesses, 'n_cpus':n_cpus, 'n_users':n_users}
         # loop through all datasets and get data, if no data set to 0
-        coll = 'dataset_data'
         for dataset_name in dataset_names:
+            coll = 'dataset_popularity'
             pipeline = list()
-            match = {'$match':{'name':dataset_name, 'popularity_data.date':date}}
+            match = {'$match':{'name':dataset_name, 'date':date}}
             pipeline.append(match)
             project = {'$project':{'name':1, '_id':0}}
             pipeline.append(project)
@@ -120,6 +116,5 @@ class PopularityManager(object):
             except:
                 popularity_data['popularity'] = 0
             query = {'name':dataset_name}
-            data = {'$push':{'popularity_data':popularity_data}}
+            data = {'$set':popularity_data}
             self.storage.update_data(coll=coll, query=query, data=data)
-        # it doesn't matter if data is already set, will be the same
