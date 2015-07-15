@@ -27,20 +27,20 @@ class DeltaRanking(GenericRanking):
         Generate dataset rankings
         """
         date = datetime_day(datetime.datetime.utcnow())
-        dataset_rankings = dict()
-        coll = 'popularity'
         dataset_names = self.datasets.get_datasets()
+        dataset_rankings = dict()
+        coll = 'delta_dataset_popularity'
         for dataset_name in dataset_names:
-            delta_popularity = self.get_dataset_popularity(dataset_name)
+            popularity = self.get_dataset_popularity(dataset_name)
             # insert into database
             query = {'name':dataset_name, 'date':date}
-            data = {'$set':{'name':dataset_name, 'date':date, 'delta_popularity':delta_popularity}}
+            data = {'$set':{'name':dataset_name, 'date':date, 'popularity':popularity}}
             self.storage.update_data(coll=coll, query=query, data=data, upsert=True)
             # store into dict
-            dataset_rankings[dataset_name] = delta_popularity
+            dataset_rankings[dataset_name] = popularity
         # calculate average
         pipeline = list()
-        group = {'$group':{'_id':None, 'average':{'$avg':'$delta_popularity'}}}
+        group = {'$group':{'_id':None, 'average':{'$avg':'$popularity'}}}
         pipeline.append(group)
         data = self.storage.get_data(coll=coll, pipeline=pipeline)
         average = data[0]['average']
@@ -53,10 +53,24 @@ class DeltaRanking(GenericRanking):
             self.storage.update_data(coll=coll, query=query, data=data, upsert=True)
         return dataset_rankings
 
-    # def site_rankings(self):
-    #     """
-    #     Generate site rankings
-    #     """
+    def site_rankings(self):
+        """
+        Generate site rankings
+        """
+        date = datetime_day(datetime.datetime.utcnow())
+        # get all sites which can be replicated to
+        site_names = self.sites.get_available_sites()
+        site_rankings = dict()
+        coll = 'delta_site_popularity'
+        for site_name in site_names:
+            popularity = self.get_site_popularity(site_name)
+            # insert into database
+            query = {'name':site_name, 'date':date}
+            data = {'$set':{'name':site_name, 'date':date, 'popularity':popularity}}
+            self.storage.update_data(coll=coll, query=query, data=data, upsert=True)
+            # store into dict
+            site_rankings[site_name] = popularity
+        return site_rankings
 
     def get_dataset_popularity(self, dataset_name):
         """
@@ -91,3 +105,30 @@ class DeltaRanking(GenericRanking):
         new_pop = data[0]['delta_popularity']
         delta_popularity = new_pop - old_pop
         return delta_popularity
+
+    def get_site_popularity(self, site_name):
+        """
+        Get delta popularity for site
+        """
+        # get all datasets with a replica at the site and how many replicas it has
+        coll = 'dataset_data'
+        pipeline = list()
+        match = {'$match':{'replicas':site_name}}
+        pipeline.append(match)
+        project = {'$project':{'name':1, 'n_replicas':{'$size':'$replicas'}, '_id':0}}
+        pipeline.append(project)
+        data = self.storage.get_data(coll=coll, pipeline=pipeline)
+        popularity = 0.0
+        for dataset in data:
+            dataset_name = dataset['name']
+            n_replicas = dataset['n_replicas']
+            # get the popularity of the dataset and dicide by number of replicas
+            coll = 'delta_dataset_popularity'
+            pipeline = list()
+            match = {'$match':{'name':dataset_name, 'date':date}}
+            pipeline.append(match)
+            project = {'$project':{'popularity':1, '_id':0}}
+            pipeline.append(project)
+            data = self.storage.get_data(coll=coll, pipeline=pipeline)
+            popularity += data[0]['popularity']
+        return popularity

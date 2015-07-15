@@ -48,8 +48,8 @@ class RockerBoard(object):
         """
         Balance system by creating new replicas based on popularity
         """
-        site_rankings = self.rankings.get_site_rankings()
         dataset_rankings = self.rankings.get_dataset_rankings()
+        site_rankings = self.rankings.get_site_rankings()
 
 def main(argv):
     """
