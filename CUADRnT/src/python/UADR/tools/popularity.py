@@ -103,8 +103,6 @@ class PopularityManager(object):
             pipeline.append(match)
             project = {'$project':{'name':1, '_id':0}}
             pipeline.append(project)
-            if self.storage.get_data(coll=coll, pipeline=pipeline):
-                continue
             try:
                 dataset = pop_data[dataset_name]
             except:
