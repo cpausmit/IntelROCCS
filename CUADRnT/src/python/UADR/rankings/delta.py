@@ -110,6 +110,7 @@ class DeltaRanking(GenericRanking):
         """
         Get delta popularity for site
         """
+        date = datetime_day(datetime.datetime.utcnow())
         # get all datasets with a replica at the site and how many replicas it has
         coll = 'dataset_data'
         pipeline = list()
@@ -130,5 +131,5 @@ class DeltaRanking(GenericRanking):
             project = {'$project':{'popularity':1, '_id':0}}
             pipeline.append(project)
             data = self.storage.get_data(coll=coll, pipeline=pipeline)
-            popularity += data[0]['popularity']
+            popularity += data[0]['popularity']/float(n_replicas)
         return popularity
