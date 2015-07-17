@@ -37,11 +37,11 @@ class ToolsTests(unittest.TestCase):
     def test_managers(self):
         "test managers"
         print ""
-        # sites = SiteManager(config=self.config)
-        # datasets = DatasetManager(config=self.config)
+        sites = SiteManager(config=self.config)
+        datasets = DatasetManager(config=self.config)
         delta = DeltaRanking(config=self.config)
-        # sites.update_sites()
-        # datasets.update_datasets()
+        sites.update_sites()
+        datasets.update_datasets()
         dataset_rankings = delta.dataset_rankings()
         print dataset_rankings
         site_rankings = delta.site_rankings()
