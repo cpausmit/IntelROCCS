@@ -94,7 +94,10 @@ class DeltaRanking(GenericRanking):
         group = {'$group':{'_id':'$name', 'old_popularity':{'$sum':'$popularity'}}}
         pipeline.append(group)
         data = self.storage.get_data(coll=coll, pipeline=pipeline)
-        old_pop = data[0]['old_popularity']
+        try:
+            old_pop = data[0]['old_popularity']
+        except:
+            old_pop = 0
         start_date = datetime_day(datetime.datetime.utcnow()) - datetime.timedelta(days=7)
         end_date = datetime_day(datetime.datetime.utcnow()) - datetime.timedelta(days=1)
         pipeline = list()
@@ -105,7 +108,10 @@ class DeltaRanking(GenericRanking):
         group = {'$group':{'_id':'$name', 'new_popularity':{'$sum':'$popularity'}}}
         pipeline.append(group)
         data = self.storage.get_data(coll=coll, pipeline=pipeline)
-        new_pop = data[0]['new_popularity']
+        try:
+            new_pop = data[0]['new_popularity']
+        except:
+            new_pop = 0
         delta_popularity = new_pop - old_pop
         return delta_popularity
 
