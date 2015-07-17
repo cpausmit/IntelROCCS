@@ -38,7 +38,7 @@ class SiteManager(object):
             site_status = int(site[0])
             site_quota = int(site[1])*10**3
             query = {'name':site_name}
-            data = {'$set':{'name':site_name, 'status':site_status, 'quota':site_quota}}
+            data = {'$set':{'name':site_name, 'status':site_status, 'quota_gb':site_quota}}
             self.storage.update_data(coll=coll, query=query, data=data, upsert=True)
             self.update_cpu(site_name)
 
@@ -100,18 +100,43 @@ class SiteManager(object):
         pipeline = list()
         match = {'$match':{'name':site_name}}
         pipeline.append(match)
-        group = {'$group':{'_id':'$name', 'quota':{'$max':'$quota'}, 'max_cpus':{'$max':'$cpu_data.cpus'}}}
+        group = {'$group':{'_id':'$name', 'quota_gb':{'$max':'$quota_gb'}, 'max_cpus':{'$max':'$cpu_data.cpus'}}}
         pipeline.append(group)
-        project = {'$project':{'quota':1, 'max_cpus':1, '_id':0}}
+        project = {'$project':{'quota_gb':1, 'max_cpus':1, '_id':0}}
         pipeline.append(project)
         data = self.storage.get_data(coll=coll, pipeline=pipeline)
         try:
             max_cpus = data[0]['max_cpus']
         except:
             max_cpus = 0
-        quota = data[0]['quota']
+        quota = data[0]['quota_gb']
         try:
             performance = float(max_cpus)/float(quota)
         except:
             performance = 0
         return performance
+
+    def get_available_storage(self, site_name):
+        """
+        Get total AnalysisOps storage available at the site
+        """
+        coll = 'dataset_data'
+        pipeline = list()
+        match = {'$match':{'replicas':site_name}}
+        pipeline.append(match)
+        group = {'$group':{'_id':None, 'used':{'$sum':'$size_bytes'}}}
+        pipeline.append(group)
+        project = {'$project':{'used':1, '_id':0}}
+        pipeline.append(project)
+        data = self.storage.get_data(coll=coll, pipeline=pipeline)
+        size = data[0]['used']/10**9
+        coll = 'site_data'
+        pipeline = list()
+        match = {'$match':{'name':site_name}}
+        pipeline.append(group)
+        project = {'$project':{'quota_gb':1, '_id':0}}
+        pipeline.append(project)
+        data = self.storage.get_data(coll=coll, pipeline=pipeline)
+        quota = data[0]['quota_gb']
+        available_gb = quota - size
+        return available_gb
