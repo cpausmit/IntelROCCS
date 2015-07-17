@@ -74,7 +74,7 @@ class PopularityManager(object):
             except:
                 popularity_data['popularity'] = 0
             data = {'$set':popularity_data}
-            self.storage.update_data(coll=coll, query=query, data=data)
+            self.storage.update_data(coll=coll, query=query, data=data, upsert=True)
 
     def update_popularity(self, dataset_names):
         """
@@ -115,4 +115,4 @@ class PopularityManager(object):
                 popularity_data['popularity'] = 0
             query = {'name':dataset_name}
             data = {'$set':popularity_data}
-            self.storage.update_data(coll=coll, query=query, data=data)
+            self.storage.update_data(coll=coll, query=query, data=data, upsert=True)
