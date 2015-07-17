@@ -100,7 +100,7 @@ class SiteManager(object):
         pipeline = list()
         match = {'$match':{'name':site_name}}
         pipeline.append(match)
-        group = {'$group':{'_id':'$name', 'quota':'$quota', 'max_cpus':{'$max':'cpu_data.cpus'}}}
+        group = {'$group':{'_id':'$name', 'quota':'quota', 'max_cpus':{'$max':'cpu_data.cpus'}}}
         pipeline.append(group)
         project = {'$project':{'quota':1, 'max_cpus':1, '_id':0}}
         pipeline.append(project)
