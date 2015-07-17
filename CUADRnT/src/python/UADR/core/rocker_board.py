@@ -13,7 +13,7 @@ import getopt
 # package modules
 from UADR.utils.utils import weighted_choice
 from UADR.utils.config import get_config
-from UADR.tools.rankings import DeltaRankings
+from UADR.tools.rankings import DeltaRanking
 from UADR.tools.storage import StorageManager
 
 MAX_THREADS = 1
@@ -27,7 +27,7 @@ class RockerBoard(object):
         global MAX_THREADS
         self.logger = logging.getLogger(__name__)
         self.config = get_config(config)
-        self.rankings = DeltaRankings(self.config)
+        self.rankings = DeltaRanking(self.config)
         self.storage = StorageManager(self.config)
 
     def start(self):
