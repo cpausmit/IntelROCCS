@@ -21,3 +21,24 @@ class PhEDExService(GenericService):
         self.logger = logging.getLogger(__name__)
         self.service = 'phedex'
         self.target_url = str(self.config['services'][self.service])
+
+    def generate_xml(self, dataset_names=list()):
+        """
+        Generate XML data for subscription call to phedex
+        """
+        xml = '<data version="2.0">'
+        xml = xml + '<dbs name="https://cmsweb.cern.ch/dbs/prod/global/DBSReader">'
+        for dataset_name in dataset_names:
+            api = 'data'
+            params = [('dataset', dataset_name), ('level', 'block')]
+            json_data = self.fetch(api=api, params=params)
+            try:
+                data = json_data['phedex']['dbs'][0]['dataset'][0]
+            except IndexError:
+                self.logger.warning("Couldn't generate XML data for dataset %s", dataset_name)
+                continue
+            xml = xml + '<dataset name="%s" is-open="%s">' % (data['name'], data['is_open'])
+            xml = xml + "</dataset>"
+        xml = xml + "</dbs>"
+        xml = xml + "</data>"
+        return xml

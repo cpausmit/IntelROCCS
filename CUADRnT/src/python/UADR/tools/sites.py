@@ -124,16 +124,19 @@ class SiteManager(object):
         pipeline = list()
         match = {'$match':{'replicas':site_name}}
         pipeline.append(match)
-        group = {'$group':{'_id':None, 'used':{'$sum':'$size_bytes'}}}
+        group = {'$group':{'_id':None, 'size_bytes':{'$sum':'$size_bytes'}}}
         pipeline.append(group)
-        project = {'$project':{'used':1, '_id':0}}
+        project = {'$project':{'size_bytes':1, '_id':0}}
         pipeline.append(project)
         data = self.storage.get_data(coll=coll, pipeline=pipeline)
-        size = data[0]['used']/10**9
+        try:
+            size = data[0]['size_bytes']/10**9
+        except:
+            return 0
         coll = 'site_data'
         pipeline = list()
         match = {'$match':{'name':site_name}}
-        pipeline.append(group)
+        pipeline.append(match)
         project = {'$project':{'quota_gb':1, '_id':0}}
         pipeline.append(project)
         data = self.storage.get_data(coll=coll, pipeline=pipeline)

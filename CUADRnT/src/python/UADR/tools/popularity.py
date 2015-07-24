@@ -97,6 +97,7 @@ class PopularityManager(object):
             pop_data[dataset_name] = {'n_accesses':n_accesses, 'n_cpus':n_cpus, 'n_users':n_users}
         # loop through all datasets and get data, if no data set to 0
         for dataset_name in dataset_names:
+            popularity_data = {'name':dataset_name, 'date':date}
             coll = 'dataset_popularity'
             pipeline = list()
             match = {'$match':{'name':dataset_name, 'date':date}}
@@ -106,13 +107,17 @@ class PopularityManager(object):
             try:
                 dataset = pop_data[dataset_name]
             except:
-                popularity_data = {'date':date, 'n_accesses':0, 'n_cpus':0, 'n_users':0}
+                popularity_data['n_accesses'] = 0
+                popularity_data['n_cpus'] = 0
+                popularity_data['n_users'] = 0
             else:
-                popularity_data = {'date':date, 'n_accesses':dataset['n_accesses'], 'n_cpus':dataset['n_cpus'], 'n_users':dataset['n_users']}
+                popularity_data['n_accesses'] = dataset['n_accesses']
+                popularity_data['n_cpus'] = dataset['n_cpus']
+                popularity_data['n_users'] = dataset['n_users']
             try:
                 popularity_data['popularity'] = log(popularity_data['n_accesses'])*log(popularity_data['n_cpus'])*log(popularity_data['n_users'])
             except:
                 popularity_data['popularity'] = 0
-            query = {'name':dataset_name}
+            query = {'name':dataset_name, 'data':date}
             data = {'$set':popularity_data}
             self.storage.update_data(coll=coll, query=query, data=data, upsert=True)

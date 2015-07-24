@@ -35,7 +35,7 @@ class DeltaRanking(GenericRanking):
             # insert into database
             query = {'name':dataset_name, 'date':date}
             data = {'$set':{'delta_popularity':popularity}}
-            self.storage.update_data(coll=coll, query=query, data=data)
+            self.storage.update_data(coll=coll, query=query, data=data, upsert=True)
             # store into dict
             dataset_rankings[dataset_name] = popularity
         # calculate average

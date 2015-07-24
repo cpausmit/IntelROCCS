@@ -45,10 +45,7 @@ class DatasetManager(object):
         params = [('node', active_sites), ('create_since', 0.0), ('complete', 'y'), ('group', 'AnalysisOps'), ('show_dataset', 'y')]
         json_data = self.phedex.fetch(api=api, params=params)
         current_datasets = set()
-        count = 0
         for dataset in json_data['phedex']['dataset']:
-            if count > 10:
-                break
             dataset_name = dataset['name']
             current_datasets.add(dataset_name)
             if dataset_name not in datasets:
@@ -63,7 +60,6 @@ class DatasetManager(object):
             query = {'name':dataset_name}
             data = {'$set':{'replicas':list(replicas)}}
             data = self.storage.update_data(coll=coll, query=query, data=data, upsert=False)
-            count += 1
         deprecated_datasets = datasets - current_datasets
         for dataset_name in deprecated_datasets:
             self.remove_dataset(dataset_name)
@@ -158,3 +154,17 @@ class DatasetManager(object):
         data = self.storage.get_data(coll=coll, pipeline=pipeline)
         site_names = data[0]['replicas']
         return site_names
+
+    def get_size(self, dataset_name):
+        """
+        Get size in GB of dataset
+        """
+        coll = 'dataset_data'
+        pipeline = list()
+        match = {'$match':{'name':dataset_name}}
+        pipeline.append(match)
+        project = {'$project':{'size_bytes':1, '_id':0}}
+        pipeline.append(project)
+        data = self.storage.get_data(coll=coll, pipeline=pipeline)
+        size_gb = float(data[0]['size_bytes'])/10**9
+        return size_gb

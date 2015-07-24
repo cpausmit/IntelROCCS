@@ -13,8 +13,10 @@ import getopt
 # package modules
 from UADR.utils.utils import weighted_choice
 from UADR.utils.config import get_config
-from UADR.tools.rankings import DeltaRanking
+from UADR.services.phedex import PhEDExService
+from UADR.tools.datasets import DatasetManager
 from UADR.tools.storage import StorageManager
+from UADR.rankings.delta import DeltaRanking
 
 MAX_THREADS = 1
 
@@ -27,8 +29,12 @@ class RockerBoard(object):
         global MAX_THREADS
         self.logger = logging.getLogger(__name__)
         self.config = get_config(config)
-        self.rankings = DeltaRanking(self.config)
+        self.phedex = PhEDExService(self.config)
+        self.datasets = DatasetManager(self.config)
         self.storage = StorageManager(self.config)
+        self.rankings = DeltaRanking(self.config)
+        self.max_gb = int(self.config['rocker_board']['max_gb'])
+        self.min_rank = float(self.config['rocker_board']['min_rank'])
 
     def start(self):
         """
@@ -36,14 +42,56 @@ class RockerBoard(object):
         """
         self.sites.update_sites()
         self.datasets.update_datasets()
-        self.balance()
+        subscriptions = self.balance()
+        self.subscribe(subscriptions)
 
     def balance(self):
         """
         Balance system by creating new replicas based on popularity
         """
+        subscriptions = list()
         dataset_rankings = self.rankings.get_dataset_rankings()
         site_rankings = self.rankings.get_site_rankings()
+        subscribed_gb = 0
+        while subscribed_gb < self.max_gb:
+            tmp_site_rankings = site_rankings
+            dataset_name = weighted_choice(dataset_rankings)
+            if dataset_rankings[dataset_name] < self.min_rank:
+                break
+            unavailable_sites = self.datasets.get_sites(dataset_name)
+            for site_name in unavailable_sites:
+                try:
+                    del tmp_site_rankings[site_name]
+                except:
+                    continue
+            site_name = weighted_choice(site_rankings)
+            subscription = (dataset_name, site_name)
+            subscriptions.append(subscription)
+            size_gb = self.datasets.get_size(dataset_name)
+            subscribed_gb += size_gb
+        return subscriptions
+
+    def subscribe(self, subscriptions):
+        """
+        Make subscriptions to phedex
+        subscriptions = [(dataset_name, site_name), ...]
+        """
+        new_subscriptions = dict()
+        for subscription in subscriptions:
+            dataset_name = subscription[0]
+            site_name = subscription[1]
+            try:
+                new_subscriptions[site_name].append(dataset_name)
+            except:
+                new_subscriptions[site_name] = list()
+                new_subscriptions[site_name].append(dataset_name)
+        for site_name, dataset_names in new_subscriptions.items():
+            data = self.phedex.generate_xml(dataset_names)
+            comments = 'This dataset is predicted to become popular and has therefore been automatically replicated by CUADRnT'
+            api = 'subscribe'
+            params = [('node', site_name), ('data', data), ('level','dataset'), ('move', 'n'), ('custodial', 'n'), ('group', 'AnalysisOps'), ('request_only', 'n'), ('no_mail', 'n'), ('comments', comments)]
+            json_data = self.phedex.fetch(api=api, params=params)
+            # insert into db
 
 def main(argv):
     """
