@@ -43,7 +43,9 @@ class RockerBoard(object):
         self.sites.update_sites()
         self.datasets.update_datasets()
         subscriptions = self.balance()
-        self.subscribe(subscriptions)
+        for subscription in subscriptions:
+            self.logger.info('site: %s\tdataset: %s', subscription[1], subscription[0])
+        #self.subscribe(subscriptions)
 
     def balance(self):
         """

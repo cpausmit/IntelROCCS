@@ -38,17 +38,22 @@ class DatasetManager(object):
         Update replicas
         """
         # get all datasets in database
-        datasets = set(self.get_datasets())
+        dataset_names = self.get_datasets()
+        self.popularity.update_popularity(dataset_names)
+        dataset_names = set(dataset_names)
         # get all active sites, only fetch replicas from these
         active_sites = self.sites.get_active_sites()
         api = 'blockreplicas'
         params = [('node', active_sites), ('create_since', 0.0), ('complete', 'y'), ('group', 'AnalysisOps'), ('show_dataset', 'y')]
         json_data = self.phedex.fetch(api=api, params=params)
         current_datasets = set()
+        count = 0
         for dataset in json_data['phedex']['dataset']:
+            if count >= 10:
+                break
             dataset_name = dataset['name']
             current_datasets.add(dataset_name)
-            if dataset_name not in datasets:
+            if dataset_name not in dataset_names:
                 # this is a new dataset which need to be inserted into the database
                 self.insert_dataset(dataset_name)
             # update replicas
@@ -60,11 +65,10 @@ class DatasetManager(object):
             query = {'name':dataset_name}
             data = {'$set':{'replicas':list(replicas)}}
             data = self.storage.update_data(coll=coll, query=query, data=data, upsert=False)
-        deprecated_datasets = datasets - current_datasets
+            count += 1
+        deprecated_datasets = dataset_names - current_datasets
         for dataset_name in deprecated_datasets:
             self.remove_dataset(dataset_name)
-        dataset_names = self.get_datasets()
-        self.popularity.update_popularity(dataset_names)
 
     def insert_dataset(self, dataset_name):
         """

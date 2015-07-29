@@ -78,46 +78,58 @@ class PopularityManager(object):
 
     def update_popularity(self, dataset_names):
         """
-        Add popularity data for yesterday if not existing
+        Fetch lates popularity data not in database
         """
+        # get dates
+        coll = 'dataset_popularity'
+        pipeline = list()
+        sort = {'$sort':{'date':-1}}
+        pipeline.append(sort)
+        limit = {'$limit':1}
+        pipeline.append(limit)
+        project = {'$project':{'date':1, '_id':0}}
+        pipeline.append(project)
+        data = self.storage.get_data(coll=coll, pipeline=pipeline)
+        start_date = data[0]['date']
+        end_date = datetime_day(datetime.datetime.utcnow())
         # fetch popularity data
-        api = 'DSStatInTimeWindow/'
-        date = datetime_day(datetime.datetime.utcnow()) - datetime.timedelta(days=1)
-        tstart = datetime_to_string(date)
-        tstop = tstart
-        params = {'sitename':'summary', 'tstart':tstart, 'tstop':tstop}
-        json_data = self.pop_db.fetch(api=api, params=params)
-        # sort it in dictionary for easy fetching
-        pop_data = dict()
-        for dataset in json_data['DATA']:
-            dataset_name = dataset['COLLNAME']
-            n_accesses = dataset['NACC']
-            n_cpus = dataset['TOTCPU']
-            n_users = dataset['NUSERS']
-            pop_data[dataset_name] = {'n_accesses':n_accesses, 'n_cpus':n_cpus, 'n_users':n_users}
-        # loop through all datasets and get data, if no data set to 0
-        for dataset_name in dataset_names:
-            popularity_data = {'name':dataset_name, 'date':date}
-            coll = 'dataset_popularity'
-            pipeline = list()
-            match = {'$match':{'name':dataset_name, 'date':date}}
-            pipeline.append(match)
-            project = {'$project':{'name':1, '_id':0}}
-            pipeline.append(project)
-            try:
-                dataset = pop_data[dataset_name]
-            except:
-                popularity_data['n_accesses'] = 0
-                popularity_data['n_cpus'] = 0
-                popularity_data['n_users'] = 0
-            else:
-                popularity_data['n_accesses'] = dataset['n_accesses']
-                popularity_data['n_cpus'] = dataset['n_cpus']
-                popularity_data['n_users'] = dataset['n_users']
-            try:
-                popularity_data['popularity'] = log(popularity_data['n_accesses'])*log(popularity_data['n_cpus'])*log(popularity_data['n_users'])
-            except:
-                popularity_data['popularity'] = 0
-            query = {'name':dataset_name, 'data':date}
-            data = {'$set':popularity_data}
-            self.storage.update_data(coll=coll, query=query, data=data, upsert=True)
+        for date in daterange(start_date, end_date):
+            api = 'DSStatInTimeWindow/'
+            tstart = datetime_to_string(date)
+            tstop = tstart
+            params = {'sitename':'summary', 'tstart':tstart, 'tstop':tstop}
+            json_data = self.pop_db.fetch(api=api, params=params)
+            # sort it in dictionary for easy fetching
+            pop_data = dict()
+            for dataset in json_data['DATA']:
+                dataset_name = dataset['COLLNAME']
+                n_accesses = dataset['NACC']
+                n_cpus = dataset['TOTCPU']
+                n_users = dataset['NUSERS']
+                pop_data[dataset_name] = {'n_accesses':n_accesses, 'n_cpus':n_cpus, 'n_users':n_users}
+            # loop through all datasets and get data, if no data set to 0
+            for dataset_name in dataset_names:
+                popularity_data = {'name':dataset_name, 'date':date}
+                coll = 'dataset_popularity'
+                pipeline = list()
+                match = {'$match':{'name':dataset_name, 'date':date}}
+                pipeline.append(match)
+                project = {'$project':{'name':1, '_id':0}}
+                pipeline.append(project)
+                try:
+                    dataset = pop_data[dataset_name]
+                except:
+                    popularity_data['n_accesses'] = 0
+                    popularity_data['n_cpus'] = 0
+                    popularity_data['n_users'] = 0
+                else:
+                    popularity_data['n_accesses'] = dataset['n_accesses']
+                    popularity_data['n_cpus'] = dataset['n_cpus']
+                    popularity_data['n_users'] = dataset['n_users']
+                try:
+                    popularity_data['popularity'] = log(popularity_data['n_accesses'])*log(popularity_data['n_cpus'])*log(popularity_data['n_users'])
+                except:
+                    popularity_data['popularity'] = 0
+                query = {'name':dataset_name, 'data':date}
+                data = {'$set':popularity_data}
+                self.storage.update_data(coll=coll, query=query, data=data, upsert=True)
