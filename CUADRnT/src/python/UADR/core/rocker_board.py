@@ -28,7 +28,7 @@ class RockerBoard(object):
     def __init__(self, config=dict()):
         global MAX_THREADS
         self.logger = logging.getLogger(__name__)
-        self.config = get_config(config)
+        self.config = config
         self.phedex = PhEDExService(self.config)
         self.datasets = DatasetManager(self.config)
         self.storage = StorageManager(self.config)
