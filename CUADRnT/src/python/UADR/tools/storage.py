@@ -62,7 +62,7 @@ class StorageManager(object):
             self.logger.warning('DocumentTooLarge error for %s api %s', coll, api)
         else:
             if (result.modified_count == 0) and (not result.upserted_id):
-                self.logger.warning('Failed to insert %s cache for api %s\n\tData: %s', coll, api, str(data))
+                self.logger.debug('Failed to insert %s cache for api %s\n\tData: %s', coll, api, str(data))
             return result
 
     def get_cache(self, coll, api, params=dict()):
@@ -88,7 +88,7 @@ class StorageManager(object):
         db_coll = self.db[coll]
         result = db_coll.insert_many(data, ordered=ordered)
         if not result.inserted_ids:
-            self.logger.warning('No data inserted in %s\n\tData: %s', coll, str(data))
+            self.logger.debug('No data inserted in %s\n\tData: %s', coll, str(data))
         return result
 
     def get_data(self, coll, pipeline=list()):
@@ -102,7 +102,7 @@ class StorageManager(object):
         if return_data:
             data = list(return_data)
         else:
-            self.logger.warning('No data returned in %s\n\tPipeline: %s', coll, str(pipeline))
+            self.logger.debug('No data returned in %s\n\tPipeline: %s', coll, str(pipeline))
         return data
 
     def update_data(self, coll, query=dict(), data=dict(), upsert=False):
@@ -112,7 +112,7 @@ class StorageManager(object):
         db_coll = self.db[coll]
         result = db_coll.update_many(query, data, upsert=upsert)
         if result.modified_count == 0 and (not result.upserted_id):
-            self.logger.info('No data updated in %s\n\tQuery: %s\n\tData: %s', coll, str(query), str(data))
+            self.logger.debug('No data updated in %s\n\tQuery: %s\n\tData: %s', coll, str(query), str(data))
         return result
 
     def delete_data(self, coll, query=dict()):
@@ -122,7 +122,7 @@ class StorageManager(object):
         db_coll = self.db[coll]
         result = db_coll.delete_many(query)
         if result.deleted_count == 0:
-            self.logger.warning('No data deleted in %s\n\tQuery: %s', coll, str(query))
+            self.logger.debug('No data deleted in %s\n\tQuery: %s', coll, str(query))
         else:
             self.logger.debug('%d documents deleted in %s', result.deleted_count, coll)
         return result
@@ -144,5 +144,5 @@ class StorageManager(object):
             datetime_ = data[0]['_id'].generation_time
             datetime_ = datetime_remove_timezone(datetime_)
         else:
-            self.logger.info('Collection %s is empty, no last insert datetime', coll)
+            self.logger.debug('Collection %s is empty, no last insert datetime', coll)
         return datetime_

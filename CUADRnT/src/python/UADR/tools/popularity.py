@@ -90,7 +90,11 @@ class PopularityManager(object):
         project = {'$project':{'date':1, '_id':0}}
         pipeline.append(project)
         data = self.storage.get_data(coll=coll, pipeline=pipeline)
-        start_date = data[0]['date']
+        try:
+            start_date = data[0]['date']
+        except:
+            self.logger.warning('Did not update popularity, most likely because it needs to be initiated')
+            return
         end_date = datetime_day(datetime.datetime.utcnow())
         # fetch popularity data
         for date in daterange(start_date, end_date):
