@@ -40,9 +40,6 @@ class RockerBoard(object):
         """
         Begin Rocker Board Algorithm
         """
-        self.logger.info('Hello world!')
-        print "Hello world!"
-        return
         self.sites.update_sites()
         self.datasets.update_datasets()
         subscriptions = self.balance()
