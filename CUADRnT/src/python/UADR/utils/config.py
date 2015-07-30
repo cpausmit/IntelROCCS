@@ -7,7 +7,6 @@ Description: Fetch and parse configuration file
 
 # system modules
 import logging
-import os
 import ConfigParser
 
 # Get module specific logger
@@ -19,7 +18,7 @@ def get_config(path='/var/opt/cuadrnt', file_name='cuadrnt.cfg'):
     Dictionary can have multiple levels
     """
     config = dict()
-    config_file = os.path.join(path, file_name)
+    config_file = '%s/%s' % (path, file_name)
     logger.debug('Using config file %s', config_file)
     config_parser = ConfigParser.SafeConfigParser()
     config_parser.read(config_file)
