@@ -1,0 +1,41 @@
+<html>
+<head><title> IntelROCCS Site Info</title>
+<link rel="stylesheet" type="text/css" href="plotstyle.css">
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+<script>
+    $(document).ready(function(){
+        $("button").click(function(){
+                //var scriptPath = "http://t3serv001.mit.edu";
+                var scriptPath = "http://t3serv012.mit.edu/cgi-bin/siteInfo.cgi?startdate=" + $("#startdate").val() + "&enddate=" + $("#enddate").val() +  "&site=" + $("#site").val();
+                $.get(scriptPath, function(data) { $("#body").html(data); } );
+        });
+    });
+</script>
+</head>
+<body>
+<br>
+
+
+Start date (YYYY-MM-DD):
+    <input id="startdate" type="date"> 
+
+End date (YYYY-MM-DD):
+    <input id="enddate" type="date">
+
+Site Pattern (use X as multi-character wildcard): <input type="text" id="site" value="T2X" > 
+
+
+<br>
+
+<button> Go! </button>
+<hr>
+
+<p id="body"> Plots go here </p>
+
+<hr>
+<!-- hhmts start -->
+Modified: Fri Nov 14 2014
+<a href="http://web.mit.edu/physics/people/faculty/paus_christoph.html">Christoph Paus</a>, Sid Narayanan
+<!-- hhmts end -->
+</body>
+</html>
