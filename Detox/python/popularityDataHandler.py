@@ -45,7 +45,7 @@ class PopularityDataHandler:
 
         for site in sorted(self.allSites):
             self.accessPopularityData(site)
-            if self.allSites[site].getValid() == 0:
+            if self.allSites[site].isValidAny() == 0:
                 notValidSites = notValidSites + 1
             if notValidSites > 20:
                 raise Exception(" FATAL - Popularity service seems to be down")
@@ -65,7 +65,7 @@ class PopularityDataHandler:
         items = len(self.dates)
         for i in range(items-1):
             if badsnapshots > 4 :
-                self.allSites[site].setValid(0)
+                self.allSites[site].setValidAll(0)
                 break
 
             outputFile = dirname + '/' + str(self.dates[i])
@@ -81,11 +81,16 @@ class PopularityDataHandler:
 
             tEnd = str(self.dates[i])
             tStart = str(self.dates[i+1])
-            cmd = os.environ['DETOX_BASE'] + '/' + \
-                  'popularityClient.py  /popularity/DSStatInTimeWindow/' + \
-                  '\?\&sitename=' + siteAdjust + '\&tstart=' + tStart + '\&tstop=' + tEnd
-            process = subprocess.Popen(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,shell=True)
+            if site is not 'T2_CH_CERN':
+                cmd = os.environ['DETOX_BASE'] + '/' + \
+                    'popularityClient.py  /popularity/DSStatInTimeWindow/' + \
+                    '\?\&sitename=' + siteAdjust + '\&tstart=' + tStart + '\&tstop=' + tEnd
+            else:
+                cmd = os.environ['DETOX_BASE'] + '/' + \
+                    'popularityClient.py  /xrdpopularity/DSStatInTimeWindow' + \
+                    '\?sitename=' + siteAdjust + '\&tstart=' + tStart + '\&tstop=' + tEnd
 
+            process = subprocess.Popen(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,shell=True)
 
             signal.signal(signal.SIGALRM, alarm_handler)
             signal.alarm(2*60)  # 2 minutes
@@ -117,10 +122,7 @@ class PopularityDataHandler:
             for line in inputFile.xreadlines():
                 if "Traceback" in line:
                     isFileCorrupt = True
-                if "Error" in line:
-                    isFileCorrupt = True
-                if "SITENAME" in line:
-                    rawinp = line
+                rawinp = line
             inputFile.close();
 
             # deal with file corruption
@@ -139,21 +141,13 @@ class PopularityDataHandler:
 
     def processRawInput(self,site,date,rawinp):
 
-        #print ' #### RAWINPUT #### ' + rawinp
-
         dataJason = json.loads(rawinp)
-        thisSite = dataJason["SITENAME"]
-        if thisSite != site:
-            print " !!!!!! Popularity site screw up !!!!!!"
-            print thisSite
-            print site
         for entry in dataJason["DATA"]:
             dataset = entry["COLLNAME"]
             nAccessed = entry["NACC"]
 
             if dataset not in self.datasets :
                 self.datasets[dataset] = usedDataset.UsedDataset(dataset,self.timeNow)
-
             self.datasets[dataset].updateForSite(site,date,nAccessed)
 
     def cleanOutdatedSnapshots(self,dirname):

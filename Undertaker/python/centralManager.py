@@ -8,7 +8,7 @@ import phedexApi
 class CentralManager:
     def __init__(self):
 
-        if not os.environ.get('CARETAKER_DB'):
+        if not os.environ.get('UNDERTAKER_DB'):
             raise Exception(' FATAL -- DETOX environment not defined: source setup.sh\n')
 
         self.sitesToDisable = {}
@@ -21,14 +21,14 @@ class CentralManager:
         self.cleanStateKeeper = cleanStateKeeper.CleanStateKeeper()
 
         self.allSites =  self.dbInfoHandler.getAllSites()
-        self.basedir = os.environ['CARETAKER_DB']
+        self.basedir = os.environ['UNDERTAKER_DB']
         self.currentDate = datetime.datetime.now().date()
 
     def extractReadinessData(self):
         try:
             self.siteReadinessHandler.extractReadinessData()
         except:
-            self.sendEmail("Problems detected while running Sites Caretaker",\
+            self.sendEmail("Problems detected while running Undertaker",\
                                "Execution was terminated, check log to correct problems.")
             raise
 
@@ -87,7 +87,7 @@ class CentralManager:
             return
 
         sitesPending = {}
-        self.deletion = self.basedir + '/' + os.environ['CARETAKER_TRDIR']
+        self.deletion = self.basedir + '/' + os.environ['UNDERTAKER_TRDIR']
         for fileName in glob.glob(self.deletion+'/*'):
             siteName = fileName.split('-')[1]
             sitesPending[siteName] = 1
@@ -116,7 +116,7 @@ class CentralManager:
         #assign them to sites with lowest % of last copies
         #make sure that sites can host them
         #make sure to update sites info
-        basedir = self.basedir + '/' + os.environ['CARETAKER_TRDIR']
+        basedir = self.basedir + '/' + os.environ['UNDERTAKER_TRDIR']
         
         self.siteSpace = self.detoxWebReader.getSiteSpace()
         pendingSets = self.cleanStateKeeper.pendingSets()
@@ -289,7 +289,7 @@ class CentralManager:
 
     def checkProxyValid(self):
         process = subprocess.Popen(["/usr/bin/voms-proxy-info","-file",
-                                    os.environ['CARETAKER_X509UP']],
+                                    os.environ['UNDERTAKER_X509UP']],
                                    shell=True,stdout=subprocess.PIPE, 
                                    stderr=subprocess.STDOUT)
 
@@ -298,7 +298,7 @@ class CentralManager:
         if p_status != 0:
             self.sendEmail("Problems detected while running Sites Caretaker",\
                                "Execution was terminated, check log to correct problems.")
-            raise Exception(" FATAL -- Bad proxy file " + os.environ['CARETAKER_X509UP'])
+            raise Exception(" FATAL -- Bad proxy file " + os.environ['UNDERTAKER_X509UP'])
 
         m = (re.findall(r"timeleft\s+:\s+(\d+):(\d+):(\d+)",output))[0]
         hours = int(m[0])
@@ -308,7 +308,7 @@ class CentralManager:
         elif mins < 10:
             self.sendEmail("Problems detected while running Sites Caretaker",\
                                "Execution was terminated, check log to correct problems.")
-            raise Exception(" FATAL -- Bad proxy file " + os.environ['CARETAKER_X509UP'])
+            raise Exception(" FATAL -- Bad proxy file " + os.environ['UNDERTAKER_X509UP'])
 
     def submitUpdateRequest(self,site,reqid):
         # here we brute force deletion to be approved
@@ -320,7 +320,7 @@ class CentralManager:
         del phedex
 
     def sendEmail(self,subject,body):
-        emails = os.environ['CARETAKER_EMAIL_LIST']
+        emails = os.environ['UNDERTAKER_EMAIL_LIST']
         To = emails.split(",")
         From = "maxi@t3btch039.mit.edu"
         Subj = subject

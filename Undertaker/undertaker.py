@@ -13,18 +13,18 @@ import siteStatus
 import centralManager
 
 # setup definitions
-if not os.environ.get('CARETAKER_BASE'):
+if not os.environ.get('UNDERTAKER_BASE'):
     print '\n ERROR - environment not defined: source setup.sh\n'
     sys.exit(0)
 
 # make sure we start in the right directory
-os.chdir(os.environ.get('CARETAKER_BASE'))
+os.chdir(os.environ.get('UNDERTAKER_BASE'))
 
 #===================================================================================================
 #  H E L P E R S
 #===================================================================================================
 def makeArea():
-    area = os.environ['CARETAKER_DB'] + '/' + os.environ['CARETAKER_TRDIR']
+    area = os.environ['UNDERTAKER_DB'] + '/' + os.environ['UNDERTAKER_TRDIR']
     if not os.path.exists(area):
         os.system('mkdir -p ' + area)
 

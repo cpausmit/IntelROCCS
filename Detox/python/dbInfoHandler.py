@@ -11,7 +11,7 @@ class DbInfoHandler:
         self.datasetIds = {}
         self.datasetSizes = {}
         self.datasetRanks = {}
-        
+        self.phedexGroups = (os.environ['DETOX_GROUP']).split(',')
         self.extractAllSites()
 
     def setDatasetRanks(self,dsetRanks):
@@ -19,58 +19,58 @@ class DbInfoHandler:
             self.datasetRanks[dset] = dsetRanks[dset][0]
 
     def extractAllSites(self):
+        phedGroups = []
+        for group in self.phedexGroups:
+            subgroups = group.split('+')
+            phedGroups.extend(subgroups)
+
         print ' Access site storage database to find all sites.'
-        
-        # AnalysisOps is GroupId=1
-        sql = "select SiteName,SizeTb,Sites.Status,Sites.SiteId from Quotas,Sites "
-        sql = sql + "where GroupId=1 and Quotas.SiteId=Sites.SiteId"
-        
-        results = self.dbExecSql(sql)
+        connection = self.getDbConnection()
+        cursor = connection.cursor()
+
+        sql = 'select SiteName,SiteId,Status from Sites' 
+        try:
+            cursor.execute(sql)
+            results = cursor.fetchall()
+        except:
+            print ' Error(%s) -- could not retrieve sites'%(sql)
+            print sys.exc_info()
+            connection.close()
+            sys.exit(1)
+
         for row in results:
             siteName = row[0]
-            if "T1_" in siteName:
+            siteId = int(row[1])
+            status = int(row[2])
+            if status == -1:
                 continue
-            siteSizeGb = float(row[1])*1000
-            willBeUsed = int(row[2])
-            siteId = int(row[3])
             self.allSites[siteName] = siteStatus.SiteStatus(siteName)
-            self.allSites[siteName].setStatus(willBeUsed)
-            self.allSites[siteName].setSize(siteSizeGb)
             self.allSites[siteName].setId(siteId)
-            
-        for site in sorted(self.allSites):
-            if self.allSites[site].getStatus() == 0:
-                print ' Site not active, status=%d  - %s'%(self.allSites[site].getStatus(),site)
-            else:
-                print ' Site --- active, status=%d  - %s'%(self.allSites[site].getStatus(),site)
-  
-    def enableSite(self,site,targetQuota):
-        if site == 'T2_TW_Taiwan':
-            return
+            self.allSites[siteName].setStatus(status)
 
-        siteId = self.allSites[site].getId()
-        
-        print "\n !! Activating site " + site + " !!" 
-        
-            # Activate site
-        if targetQuota  > self.allSites[site].getSize():
-            print "  - set quota to " + str(targetQuota) + " -" 
-            sql = 'update Quotas set SizeTb=' + str(targetQuota)
-            sql = sql + ' where SiteId=' + str(siteId) + ' limit 1'
-            self.dbExecSql(sql)
+            for group in phedGroups:
+                siteSizeGb = self.getGroupQuota(cursor,group,siteId)
+                self.allSites[siteName].setSize(siteSizeGb,group)
+        connection.close()
 
-        sql = 'update Sites set Status=1 where SiteId=' + str(siteId) 
-        sql = sql + ' limit 1'
-        self.dbExecSql(sql)
+    def getGroupQuota(self,cursor,group,siteId):
 
-    def disableSite(self,site):
-        siteId = self.allSites[site].getId()
-        
-        print "\n !! Disabling site " + site + " !!" 
+        sql = 'select SizeTb from Quotas,Groups'
+        sql = sql + ' where  Groups.GroupName=\'' + group + '\''
+        sql = sql + ' and SiteId=' + str(siteId) + ' and Quotas.GroupId=Groups.GroupId'         
+        try:
+            cursor.execute(sql)
+            results = cursor.fetchall()
+        except:
+            print ' Error(%s) -- could not retrieve quotas'%(sql)
+            print sys.exc_info()
+            connection.close()
+            sys.exit(1)
 
-        sql = 'update Sites set Status=0 where SiteId=' + str(siteId) + ' limit 1'
-        self.dbExecSql(sql)
-     
+        siteSizeGb = 0.0
+        for row in results:
+            siteSizeGb = float(row[0])*1000
+        return siteSizeGb 
 
     def logRequest(self,site,datasets,reqid,rdate,reqtype):
         self.extractDatasetIds(datasets)
@@ -78,6 +78,10 @@ class DbInfoHandler:
         connection = self.getDbConnection()
         for dataset in datasets:
             siteId = self.allSites[site].getId()
+            if dataset not in self.datasetIds:
+                continue
+            if dataset not in self.datasetRanks:
+                continue
             dsetId = self.datasetIds[dataset]
             groupId = 1
             rank = self.datasetRanks[dataset]
@@ -108,13 +112,15 @@ class DbInfoHandler:
                 cursor.execute(sql)
                 results = cursor.fetchall()
             except:
-                print " -- FAILED insert mysql info: %s"%(sql)
+                print " -- FAILED extract mysql info: %s"%(sql)
                 connection.close()
                 sys.exit(1)
 
+            dsetId = None
             for row in results:
-                dsetId = row[0]
-            self.datasetIds[dataset] = dsetId
+                dsetId = int(row[0])
+            if dsetId != None: 
+                self.datasetIds[dataset] = dsetId
         connection.close()
 
     def extractDatasetSizes(self,datasets):
@@ -150,7 +156,6 @@ class DbInfoHandler:
             
 
     def dbExecSql(self,sql):
-        print sql
         connection = self.getDbConnection()
         cursor = connection.cursor()
         try:
@@ -164,12 +169,50 @@ class DbInfoHandler:
         connection.close()
         return results
 
-    def getDbConnection(self,db=os.environ.get('CARETAKER_SITESTORAGE_DB')):
+    def updateSiteStatus(self, changingStatus):
+        connection = self.getDbConnection()
+        for site in changingStatus: 
+            siteId = str(self.allSites[site].getId())
+            newStatus = str(changingStatus[site])
+            sql = 'update Sites set Status=' +  newStatus + ' where SiteId=' + siteId 
+            sql = sql + ' limit 1'
+            cursor = connection.cursor()
+            try:
+                cursor.execute(sql)
+                results = cursor.fetchall()
+            except:
+                print ' Error(%s) -- could not execute sql '%(sql)
+                print sys.exc_info()
+        connection.close()
+
+    def extractCacheRequests(self):
+
+        connection = self.getDbConnection()
+        cursor = connection.cursor()
+        sql = "select RequestId,DatasetName,Size,Rank,Date,SiteName " +\
+            "from Requests,Sites,Datasets,DatasetProperties " +\
+            "where Requests.SiteId=Sites.SiteId " +\
+            "and Requests.DatasetId=Datasets.DatasetId and DatasetProperties.DatasetId=Datasets.DatasetId "+\
+            "and RequestType=1 order by RequestId DESC LIMIT 10000"
+        try:
+            cursor.execute(sql)
+            results = cursor.fetchall()
+        except MySQLdb.Error,e:
+            print e[0],e[1]
+            print " -- FAILED extract mysql info: %s"%(sql)
+            connection.close()
+            sys.exit(1)
+        connection.close()
+        return results
+
+    def getDbConnection(self,db=os.environ.get('DETOX_SITESTORAGE_DB')):
         # configuration
-        server = os.environ.get('CARETAKER_SITESTORAGE_SERVER')
-        user = os.environ.get('CARETAKER_SITESTORAGE_USER')
-        pw = os.environ.get('CARETAKER_SITESTORAGE_PW')
+        server = os.environ.get('DETOX_SITESTORAGE_SERVER')
+        user = os.environ.get('DETOX_SITESTORAGE_USER')
+        pw = os.environ.get('DETOX_SITESTORAGE_PW')
         # open database connection
         connection = MySQLdb.connect(host=server,db=db, user=user,passwd=pw)
         # prepare a cursor object using cursor() method
         return connection
+
+    

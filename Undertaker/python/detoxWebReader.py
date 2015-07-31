@@ -21,7 +21,7 @@ class DetoxWebReader:
         self.getWorstStuck()
     
     def extractDetoxData(self):
-        webServer = os.environ.get('CARETAKER_DETOXWEB') + '/SitesInfo.txt'
+        webServer = os.environ.get('UNDERTAKER_DETOXWEB') + '/SitesInfo.txt'
         url = '"' + webServer + '"'
         cmd = 'curl -k -H "Accept: text" ' + url
         print ' Access Detox Web:\n ' + cmd
@@ -57,7 +57,7 @@ class DetoxWebReader:
             self.siteSpace[siteName] = (quota,filled,lcopy)
 
     def getDatasetsForSite(self,siteName):
-        webServer = os.environ.get('CARETAKER_DETOXWEB') + '/result/'
+        webServer = os.environ.get('UNDERTAKER_DETOXWEB') + '/result/'
         url = '"' + webServer + siteName +'/RemainingDatasets.txt' + '"'
         cmd = 'curl -k -H "Accept: text" ' + url
         #print ' Access Detox Web:\n' + cmd
@@ -97,7 +97,7 @@ class DetoxWebReader:
         return datasets
 
     def getJunkDatasets(self,siteName):
-        webServer = os.environ.get('CARETAKER_DETOXWEB') + '/result/'
+        webServer = os.environ.get('UNDERTAKER_DETOXWEB') + '/result/'
         url = '"' + webServer + siteName +'/DeprecatedSets.txt' + '"'
         cmd = 'curl -k -H "Accept: text" ' + url
         #print ' Access Detox Web:\n' + cmd
@@ -127,14 +127,14 @@ class DetoxWebReader:
             items = li.split()
             if len(items) < 4:
                 continue
-            reps = float(items[3])
+            reps = float(items[2])
             name = items[3]
             datasets[name] = 1
         return datasets
 
     def extractAllSiteSizes(self):
 
-        webServer = os.environ.get('CARETAKER_DETOXWEB') + '/status/'
+        webServer = os.environ.get('UNDERTAKER_DETOXWEB') + '/status/'
         url = '"' + webServer +'/DatasetsInPhedexAtSites.dat' + '"'
         cmd = 'curl -k -H "Accept: text" ' + url
 
@@ -172,7 +172,7 @@ class DetoxWebReader:
 
     def extractStuckDsets(self):
 
-        webServer = os.environ.get('CARETAKER_DETOXWEB')
+        webServer = os.environ.get('UNDERTAKER_DETOXWEB')
         url = '"' + webServer +'/TransferStats.txt' + '"'
         cmd = 'curl -k -H "Accept: text" ' + url
 

@@ -248,7 +248,9 @@ class SiteProperties:
 	return self.rankSum/self.spaceTakenV
 
     def medianRank(self):
-	return statistics.median(self.datasetRanks.values())
+        if len(self.datasetRanks.values()) > 0:
+            return statistics.median(self.datasetRanks.values())
+        return 0
 
     def dsetIsStuck(self,dset):
         if self.dsetIsDone[dset] == 0:

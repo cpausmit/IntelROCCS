@@ -2,7 +2,7 @@
 #  C L A S S
 #===================================================================================================
 import os, subprocess, re, signal, sys, MySQLdb, json
-import datetime, time
+import datetime, time, json
 import phedexDataset
 import phedexApi
 
@@ -12,14 +12,67 @@ class Alarm(Exception):
 def alarm_handler(signum, frame):
     raise Alarm
 
+class LockedDataset:
+    def __init__(self,name):
+        self.datasetName = name
+        self.entries = []
+        self.lockedAtSites = {}
+        self.blocks = {}
+
+    def appendEntry(self,lineHash, fullName):
+        self.entries.append(lineHash)
+        parts = fullName.split('#')
+        if len(parts) > 1:
+            site = lineHash['site']
+            self.blocks[parts[1]] = site
+
+    def processEnrties(self):
+        for item in self.entries:
+            status = item['lock']
+            site = item['site']
+
+            if status == True: 
+                self.lockedAtSites[site] = True
+            else:
+                self.lockedAtSites[site] = False
+
+    def getLockedSites(self):
+        sites = []
+        for site in self.lockedAtSites:
+            if self.lockedAtSites[site] == True:
+                sites.append(site)
+        return sites
+
+    def getLockedBlocks(self):
+        blocks = []
+        for block in self.blocks:
+            site =  self.blocks[block]
+            if self.lockedAtSites[site] == True:
+                blocks.append(block)
+        return blocks
+
+    def getLockedBlocksAtSite(self,siteName):
+        blocks = []
+        for block in self.blocks:
+            site =  self.blocks[block]
+            if site != siteName:
+                continue
+            if self.lockedAtSites[site] == True:
+                blocks.append(block)
+        return blocks
+
 class PhedexDataHandler:
     def __init__(self,allSites):
         self.newAccess = False
-        self.phedexGroup =  os.environ['DETOX_GROUP']
+        self.phedexGroups = (os.environ['DETOX_GROUP']).split(',')
         self.phedexDatasets = {}
         self.otherDatasets = {}
         self.runAwayGroups = {}
         self.allSites = allSites
+
+        self.lockedSets = {}
+        self.getLockInformation()
+
         self.epochTime = int(time.time())
 
     def shouldAccessPhedex(self):
@@ -101,16 +154,11 @@ class PhedexDataHandler:
                         group = 'IB-RelVal'
 
                     site = str(siterpl["node"])
-                    #if site not in self.allSites:
-                    #    continue
 
                     if datasetName not in phedexDatasets:
                         phedexDatasets[datasetName] = phedexDataset.PhedexDataset(datasetName)
                     dataset = phedexDatasets[datasetName]
 
-                    if site == 'T2_US_CALTECH':
-                        if datasetName == '/QCD_Pt-10to20_EMEnriched_Tune4C_13TeV_pythia8/Spring14miniaod-castor_PU20bx25_POSTLS170_V5-v1/MINIAODSIM':
-                            print siterpl
                     size = float(siterpl["bytes"])/1000/1000/1000
                     strdone = siterpl["complete"]
                     isdone = 1
@@ -146,6 +194,11 @@ class PhedexDataHandler:
 	if not os.path.exists(fileName):
 	    return phedexDatasets
 
+        phedGroups = []
+        for group in self.phedexGroups:
+            subgroups = group.split('+')
+            phedGroups.extend(subgroups)
+
 	inputFile = open(fileName,'r')
         for line in inputFile.xreadlines():
             items = line.split()
@@ -162,7 +215,7 @@ class PhedexDataHandler:
                 continue
 
             dataset = None
-            if group != self.phedexGroup:
+            if group not in phedGroups:
                 if datasetName not in self.otherDatasets:
                     self.otherDatasets[datasetName] = phedexDataset.PhedexDataset(datasetName)
                 dataset = self.otherDatasets[datasetName]
@@ -174,11 +227,14 @@ class PhedexDataHandler:
             dataset.setFinalValues()
         inputFile.close()
 
-        if self.phedexGroup == 'AnalysisOps':
-            self.printRunawaySets()
+        #if self.phedexGroup == 'AnalysisOps':
+        #    self.printRunawaySets()
 
     def getPhedexDatasets(self):
         return self.phedexDatasets
+
+    def getLockedDatasets(self):
+        return self.lockedSets
 
     def getPhedexDatasetsAtSite(self,site):
         dsets = []
@@ -274,5 +330,40 @@ class PhedexDataHandler:
         for site in sorted(siteSizes):
             print ' %3d %6.2f TB'%(siteSets[site],siteSizes[site]) + ": " + site
 
+    def getLockInformation(self):
+        url = ' https://cmst2.web.cern.ch/cmst2/unified/datalocks.json'
+        cmd = 'curl -k -H "Accept: text" ' + url
+        
+        process = subprocess.Popen(cmd,stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE,shell=True)
+        signal.signal(signal.SIGALRM, alarm_handler)
+        signal.alarm(10*60)  # 10 minutes
+        try:
+            mystring, error = process.communicate()
+            signal.alarm(0)
+        except Alarm:
+            print " Oops, taking too long!"
+            raise Exception(" FATAL -- Call to Lock File timed out, stopping")
 
+        if process.returncode != 0:
+            print " Received non-zero exit status: " + str(process.returncode)
+            raise Exception(" FATAL -- Call to Lock File failed, stopping")
+        
+        dataJason = json.loads(mystring)
+        for site in dataJason:
+            if site == 'lastupdate':
+                continue
+            datasets = dataJason[site]
+            for dset in datasets:
+                temphash = datasets[dset]
+                temphash['site'] = site
 
+                names = dset.split('#')
+                datasetName = names[0]
+                if datasetName not in self.lockedSets:
+                    self.lockedSets[datasetName] = LockedDataset(datasetName)
+                self.lockedSets[datasetName].appendEntry(temphash,dset)
+    
+        for dset in self.lockedSets:
+            self.lockedSets[dset].processEnrties()
+                

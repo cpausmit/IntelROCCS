@@ -55,7 +55,7 @@ class phedexApi:
 
         Set up class constants
         """
-        statusDirectory = os.environ['CARETAKER_DB']
+        statusDirectory = os.environ['UNDERTAKER_DB']
         self.logger     = cmsDataLogger(statusDirectory+'/')
         self.phedexBase = "https://cmsweb.cern.ch/phedex/datasvc/"
 
@@ -317,7 +317,7 @@ class HTTPSGridAuthHandler(urllib2.HTTPSHandler):
     def https_open(self, req):
         return self.do_open(self.getConnection, req)
     def getProxy(self):
-        proxy = os.environ['CARETAKER_X509UP']
+        proxy = os.environ['UNDERTAKER_X509UP']
         return proxy
     def getConnection(self, host, timeout=300):
         return httplib.HTTPSConnection(host, key_file=self.key, cert_file=self.cert)

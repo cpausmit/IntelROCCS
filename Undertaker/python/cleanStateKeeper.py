@@ -13,10 +13,10 @@ def alarm_handler(signum, frame):
 class CleanStateKeeper:
     def __init__(self):
 
-        if not os.environ.get('CARETAKER_DB'):
-            raise Exception(' FATAL -- CARETAKER environment not defined: source setup.sh\n')
+        if not os.environ.get('UNDERTAKER_DB'):
+            raise Exception(' FATAL -- UNDERTAKER environment not defined: source setup.sh\n')
 
-        self.basedir = os.environ['CARETAKER_DB']+'/'+os.environ['CARETAKER_TRDIR']
+        self.basedir = os.environ['UNDERTAKER_DB']+'/'+os.environ['UNDERTAKER_TRDIR']
 
         self.siteDeletions = {}
         self.siteTransfers = {}
@@ -59,7 +59,7 @@ class CleanStateKeeper:
             fileIn.close()
 
     def extractDetoxDatasets(self):
-        webServer = os.environ.get('CARETAKER_DETOXWEB') + '/status/'
+        webServer = os.environ.get('UNDERTAKER_DETOXWEB') + '/status/'
         url = '"' + webServer + '/DatasetsInPhedexAtSites.dat' + '"'
         cmd = 'curl -k -H "Accept: text" ' + url
         #print ' Access Detox Web:\n' + cmd
