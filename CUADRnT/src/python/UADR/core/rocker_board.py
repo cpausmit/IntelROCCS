@@ -66,7 +66,7 @@ class RockerBoard(object):
             tmp_site_rankings = site_rankings
             dataset_name = weighted_choice(dataset_rankings)
             print dataset_name
-            if dataset_rankings[dataset_name] < self.min_rank:
+            if (not dataset_name) or (dataset_rankings[dataset_name] < self.min_rank):
                 break
             unavailable_sites = self.datasets.get_sites(dataset_name)
             for site_name in unavailable_sites:

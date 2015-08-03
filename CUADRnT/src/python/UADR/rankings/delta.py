@@ -96,9 +96,7 @@ class DeltaRanking(GenericRanking):
         data = self.storage.get_data(coll=coll, pipeline=pipeline)
         try:
             old_pop = data[0]['old_popularity']
-            print 'foo'
         except:
-            print 'bar'
             old_pop = 0.0
         start_date = datetime_day(datetime.datetime.utcnow()) - datetime.timedelta(days=7)
         end_date = datetime_day(datetime.datetime.utcnow()) - datetime.timedelta(days=1)
@@ -112,9 +110,7 @@ class DeltaRanking(GenericRanking):
         data = self.storage.get_data(coll=coll, pipeline=pipeline)
         try:
             new_pop = data[0]['new_popularity']
-            print 'foo1'
         except:
-            print 'bar1'
             new_pop = 0.0
         delta_popularity = new_pop - old_pop
         return delta_popularity

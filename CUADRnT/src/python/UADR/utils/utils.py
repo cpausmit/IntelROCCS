@@ -38,13 +38,13 @@ def weighted_choice(choices):
     """
     Do a weighted random selection
     """
-    total = sum(w for c, w in choices.items())
+    total = sum(weight for item, weight in choices.items())
     r = random.uniform(0, total)
     upto = 0
-    for c, w in choices.items():
-        if upto + w > r:
-            return c
-        upto += w
+    for choice, weight in choices.items():
+        if upto + weight >= r:
+            return choice
+        upto += weight
 
 def daterange(start_date, end_date):
     """
