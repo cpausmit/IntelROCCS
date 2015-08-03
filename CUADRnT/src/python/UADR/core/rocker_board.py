@@ -15,6 +15,7 @@ from UADR.utils.utils import weighted_choice
 from UADR.utils.config import get_config
 from UADR.services.phedex import PhEDExService
 from UADR.tools.datasets import DatasetManager
+from UADR.tools.sites import SiteManager
 from UADR.tools.storage import StorageManager
 from UADR.rankings.delta import DeltaRanking
 
@@ -31,6 +32,7 @@ class RockerBoard(object):
         self.config = config
         self.phedex = PhEDExService(self.config)
         self.datasets = DatasetManager(self.config)
+        self.sites = SiteManager(self.config)
         self.storage = StorageManager(self.config)
         self.rankings = DeltaRanking(self.config)
         self.max_gb = int(self.config['rocker_board']['max_gb'])
