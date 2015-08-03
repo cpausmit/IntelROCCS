@@ -54,8 +54,8 @@ class RockerBoard(object):
         Balance system by creating new replicas based on popularity
         """
         subscriptions = list()
-        dataset_rankings = self.rankings.get_dataset_rankings()
-        site_rankings = self.rankings.get_site_rankings()
+        dataset_rankings = self.rankings.dataset_rankings()
+        site_rankings = self.rankings.site_rankings()
         subscribed_gb = 0
         while subscribed_gb < self.max_gb:
             tmp_site_rankings = site_rankings
@@ -94,8 +94,18 @@ class RockerBoard(object):
             comments = 'This dataset is predicted to become popular and has therefore been automatically replicated by CUADRnT'
             api = 'subscribe'
             params = [('node', site_name), ('data', data), ('level','dataset'), ('move', 'n'), ('custodial', 'n'), ('group', 'AnalysisOps'), ('request_only', 'n'), ('no_mail', 'n'), ('comments', comments)]
-            json_data = self.phedex.fetch(api=api, params=params)
+            json_data = self.phedex.fetch(api=api, params=params, cache=False)
             # insert into db
+            request_id = 0
+            request_type = 0
+            try:
+                request = json_data['phedex']
+                request_id = request['request_created'][0]['id']
+                request_created = request['request_timestamp']
+            except:
+                self.logger.warning('Subscription did not succeed\n\tSite:%s\n\tDatasets: %s', str(site_name), str(dataset_names))
+                continue
+
 
 def main(argv):
     """
