@@ -31,15 +31,14 @@ class DeltaRanking(GenericRanking):
         dataset_rankings = dict()
         coll = 'dataset_popularity'
         for dataset_name in dataset_names:
-            popularity = self.get_dataset_popularity(dataset_name)
+            delta_popularity = self.get_dataset_popularity(dataset_name)
             # insert into database
             query = {'name':dataset_name, 'date':date}
-            data = {'$set':{'delta_popularity':popularity}}
+            data = {'$set':{'delta_popularity':delta_popularity}}
             self.storage.update_data(coll=coll, query=query, data=data, upsert=True)
             # store into dict
-            dataset_rankings[dataset_name] = popularity
+            dataset_rankings[dataset_name] = delta_popularity
         # calculate average
-        print dataset_rankings
         pipeline = list()
         group = {'$group':{'_id':None, 'average':{'$avg':'$delta_popularity'}}}
         pipeline.append(group)
@@ -52,7 +51,6 @@ class DeltaRanking(GenericRanking):
             query = {'name':dataset_name, 'date':date}
             data = {'$set':{'delta_rank':rank}}
             self.storage.update_data(coll=coll, query=query, data=data, upsert=True)
-        print dataset_rankings
         return dataset_rankings
 
     def site_rankings(self):
@@ -98,8 +96,10 @@ class DeltaRanking(GenericRanking):
         data = self.storage.get_data(coll=coll, pipeline=pipeline)
         try:
             old_pop = data[0]['old_popularity']
+            print 'foo'
         except:
-            old_pop = 0
+            print 'bar'
+            old_pop = 0.0
         start_date = datetime_day(datetime.datetime.utcnow()) - datetime.timedelta(days=7)
         end_date = datetime_day(datetime.datetime.utcnow()) - datetime.timedelta(days=1)
         pipeline = list()
@@ -112,8 +112,10 @@ class DeltaRanking(GenericRanking):
         data = self.storage.get_data(coll=coll, pipeline=pipeline)
         try:
             new_pop = data[0]['new_popularity']
+            print 'foo1'
         except:
-            new_pop = 0
+            print 'bar1'
+            new_pop = 0.0
         delta_popularity = new_pop - old_pop
         return delta_popularity
 
