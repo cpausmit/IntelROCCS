@@ -47,10 +47,7 @@ class DatasetManager(object):
         params = [('node', active_sites), ('create_since', 0.0), ('complete', 'y'), ('group', 'AnalysisOps'), ('show_dataset', 'y')]
         json_data = self.phedex.fetch(api=api, params=params)
         current_datasets = set()
-        count = 0
         for dataset in json_data['phedex']['dataset']:
-            if count >= 10:
-                break
             dataset_name = dataset['name']
             current_datasets.add(dataset_name)
             if dataset_name not in dataset_names:
@@ -65,7 +62,6 @@ class DatasetManager(object):
             query = {'name':dataset_name}
             data = {'$set':{'replicas':list(replicas)}}
             data = self.storage.update_data(coll=coll, query=query, data=data, upsert=False)
-            count += 1
         deprecated_datasets = dataset_names - current_datasets
         for dataset_name in deprecated_datasets:
             self.remove_dataset(dataset_name)
