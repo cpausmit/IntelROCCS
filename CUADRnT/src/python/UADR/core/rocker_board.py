@@ -9,11 +9,15 @@ Description: Collect historical data for popularity model
 import logging
 import sys
 import getopt
+import datetime
 
 # package modules
 from UADR.utils.utils import weighted_choice
+from UADR.utils.utils import timestamp_to_datetime
+from UADR.utils.utils import datetime_day
 from UADR.utils.config import get_config
 from UADR.services.phedex import PhEDExService
+from UADR.services.mit_db import MITDBService
 from UADR.tools.datasets import DatasetManager
 from UADR.tools.sites import SiteManager
 from UADR.tools.storage import StorageManager
@@ -31,6 +35,7 @@ class RockerBoard(object):
         self.logger = logging.getLogger(__name__)
         self.config = config
         self.phedex = PhEDExService(self.config)
+        self.mit_db = MITDBService(self.config)
         self.datasets = DatasetManager(self.config)
         self.sites = SiteManager(self.config)
         self.storage = StorageManager(self.config)
@@ -96,16 +101,29 @@ class RockerBoard(object):
             params = [('node', site_name), ('data', data), ('level','dataset'), ('move', 'n'), ('custodial', 'n'), ('group', 'AnalysisOps'), ('request_only', 'n'), ('no_mail', 'n'), ('comments', comments)]
             json_data = self.phedex.fetch(api=api, params=params, cache=False)
             # insert into db
+            group_name = 'AnalysisOps'
             request_id = 0
             request_type = 0
             try:
                 request = json_data['phedex']
                 request_id = request['request_created'][0]['id']
-                request_created = request['request_timestamp']
+                request_created = timestamp_to_datetime(request['request_timestamp'])
             except:
                 self.logger.warning('Subscription did not succeed\n\tSite:%s\n\tDatasets: %s', str(site_name), str(dataset_names))
                 continue
-
+            for dataset_name in dataset_names:
+                coll = 'dataset_popularity'
+                date = datetime_day(datetime.datetime.utcnow())
+                pipeline = list()
+                match = {'$match':{'name':dataset_name, 'date':date}}
+                pipeline.append(match)
+                project = {'$project':{'delta_rank':1, '_id':0}}
+                pipeline.append(project)
+                data = self.storage.get_data(coll=coll, pipeline=pipeline)
+                dataset_rank = data[0]['delta_rank']
+                query = "INSERT INTO Requests(RequestId, RequestType, DatasetId, SiteId, GroupId, Rank, Date) SELECT %s, %s, Datasets.DatasetId, Sites.SiteId, Groups.GroupId, %s, %s FROM Datasets, Sites, Groups WHERE Datasets.DatasetName=%s AND Sites.SiteName=%s AND Groups.GroupName=%s"
+                values = (request_id, request_type, dataset_rank, request_created, dataset_name, site_name, group_name)
+                self.mit_db.fetch(query=query, values=values, cache=False)
 
 def main(argv):
     """

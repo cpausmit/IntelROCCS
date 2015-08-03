@@ -39,6 +39,7 @@ class DeltaRanking(GenericRanking):
             # store into dict
             dataset_rankings[dataset_name] = popularity
         # calculate average
+        print dataset_rankings
         pipeline = list()
         group = {'$group':{'_id':None, 'average':{'$avg':'$delta_popularity'}}}
         pipeline.append(group)
@@ -51,6 +52,7 @@ class DeltaRanking(GenericRanking):
             query = {'name':dataset_name, 'date':date}
             data = {'$set':{'delta_rank':rank}}
             self.storage.update_data(coll=coll, query=query, data=data, upsert=True)
+        print dataset_rankings
         return dataset_rankings
 
     def site_rankings(self):
