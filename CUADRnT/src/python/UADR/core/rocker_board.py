@@ -23,15 +23,12 @@ from UADR.tools.sites import SiteManager
 from UADR.tools.storage import StorageManager
 from UADR.rankings.delta import DeltaRanking
 
-MAX_THREADS = 1
-
 class RockerBoard(object):
     """
     RockerBoard is a system balancing algorithm using popularity metrics to predict popularity
     and make appropriate replications to keep the system balanced
     """
     def __init__(self, config=dict()):
-        global MAX_THREADS
         self.logger = logging.getLogger(__name__)
         self.config = config
         self.phedex = PhEDExService(self.config)
@@ -47,7 +44,6 @@ class RockerBoard(object):
         """
         Begin Rocker Board Algorithm
         """
-        return
         self.sites.update_sites()
         self.datasets.update_datasets()
         subscriptions = self.balance()
@@ -157,7 +153,6 @@ def main(argv):
             sys.exit()
 
     logging.basicConfig(filename='/var/log/cuadrnt/cuadrnt.log', format='%(asctime)s [%(levelname)s] %(name)s:%(funcName)s:%(lineno)d: %(message)s', datefmt='%H:%M', level=log_level)
-    print log_level
     # self.logger = logging.getLogger()
     # self.logger.setLevel(logging.DEBUG)
     # handler = logging.handlers.RotatingFileHandler('/var/log/CUADRnT/cuadrnt-test.log', mode='w', maxBytes=10*1024*1024, backupCount=2)
