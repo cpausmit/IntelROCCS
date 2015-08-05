@@ -156,6 +156,7 @@ def main(argv):
             sys.exit()
 
     logging.basicConfig(filename='/var/log/cuadrnt/cuadrnt.log', format='%(asctime)s [%(levelname)s] %(name)s:%(funcName)s:%(lineno)d: %(message)s', datefmt='%H:%M', level=log_level)
+    print log_level
     # self.logger = logging.getLogger()
     # self.logger.setLevel(logging.DEBUG)
     # handler = logging.handlers.RotatingFileHandler('/var/log/CUADRnT/cuadrnt-test.log', mode='w', maxBytes=10*1024*1024, backupCount=2)
