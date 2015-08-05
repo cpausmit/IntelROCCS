@@ -47,6 +47,7 @@ class RockerBoard(object):
         """
         Begin Rocker Board Algorithm
         """
+        return
         self.sites.update_sites()
         self.datasets.update_datasets()
         subscriptions = self.balance()
