@@ -30,7 +30,7 @@ class PopularityManager(object):
         self.sites = SiteManager(self.config)
         self.storage = StorageManager(self.config)
 
-    def initiate_popularity_data(self, dataset_name):
+    def initiate_popularity_data(self, dataset_name, end_date=datetime_day(datetime.datetime.utcnow())):
         """
         Collect popularity from creation date for dataset
         """
@@ -56,7 +56,6 @@ class PopularityManager(object):
                 for date_data in data:
                     date = datetime_to_string(pop_db_timestamp_to_datetime(date_data[0]))
                     pop_data[metric][date] = date_data[1]
-        end_date = datetime_day(datetime.datetime.utcnow())
         coll = 'dataset_popularity'
         for date in daterange(creation_date, end_date):
             query = {'name':dataset_name, 'date':date}

@@ -8,6 +8,7 @@ Description: Handle dataset data
 # system modules
 import logging
 import threading
+import datetime
 
 # package modules
 from UADR.utils.utils import timestamp_to_datetime
@@ -47,12 +48,13 @@ class DatasetManager(object):
         params = [('node', active_sites), ('create_since', 0.0), ('complete', 'y'), ('group', 'AnalysisOps'), ('show_dataset', 'y')]
         json_data = self.phedex.fetch(api=api, params=params)
         current_datasets = set()
+        date = datetime_day(datetime.datetime.utcnow())
         for dataset in json_data['phedex']['dataset']:
             dataset_name = dataset['name']
             current_datasets.add(dataset_name)
             if dataset_name not in dataset_names:
                 # this is a new dataset which need to be inserted into the database
-                self.insert_dataset(dataset_name)
+                self.insert_dataset(dataset_name, date)
             # update replicas
             replicas = set()
             for block in dataset['block']:
@@ -66,7 +68,7 @@ class DatasetManager(object):
         for dataset_name in deprecated_datasets:
             self.remove_dataset(dataset_name)
 
-    def insert_dataset(self, dataset_name):
+    def insert_dataset(self, dataset_name, date):
         """
         Insert a new dataset into the database
         Set static data
@@ -82,7 +84,7 @@ class DatasetManager(object):
         dbs_worker.start()
         phedex_worker.join()
         dbs_worker.join()
-        self.popularity.initiate_popularity_data(dataset_name)
+        self.popularity.initiate_popularity_data(dataset_name, end_date=date)
 
     def insert_phedex_data(self, dataset_name):
         """

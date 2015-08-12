@@ -17,7 +17,7 @@ from UADR.utils.utils import timestamp_to_datetime
 from UADR.utils.utils import datetime_day
 from UADR.utils.config import get_config
 from UADR.services.phedex import PhEDExService
-from UADR.services.mit_db import MITDBService
+# from UADR.services.mit_db import MITDBService
 from UADR.tools.datasets import DatasetManager
 from UADR.tools.sites import SiteManager
 from UADR.tools.storage import StorageManager
@@ -32,7 +32,7 @@ class RockerBoard(object):
         self.logger = logging.getLogger(__name__)
         self.config = config
         self.phedex = PhEDExService(self.config)
-        self.mit_db = MITDBService(self.config)
+        # self.mit_db = MITDBService(self.config)
         self.datasets = DatasetManager(self.config)
         self.sites = SiteManager(self.config)
         self.storage = StorageManager(self.config)
@@ -120,7 +120,7 @@ class RockerBoard(object):
                 dataset_rank = data[0]['delta_rank']
                 query = "INSERT INTO Requests(RequestId, RequestType, DatasetId, SiteId, GroupId, Rank, Date) SELECT %s, %s, Datasets.DatasetId, Sites.SiteId, Groups.GroupId, %s, %s FROM Datasets, Sites, Groups WHERE Datasets.DatasetName=%s AND Sites.SiteName=%s AND Groups.GroupName=%s"
                 values = (request_id, request_type, dataset_rank, request_created, dataset_name, site_name, group_name)
-                self.mit_db.fetch(query=query, values=values, cache=False)
+                # self.mit_db.fetch(query=query, values=values, cache=False)
 
 def main(argv):
     """
