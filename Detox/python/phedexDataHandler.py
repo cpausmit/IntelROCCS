@@ -154,6 +154,8 @@ class PhedexDataHandler:
             siteName = items[5]
             size = float(items[2])
 
+	    if siteName not in self.allSites:
+                continue
             if self.allSites[siteName].getStatus() == 0:
                 continue
             if group == 'local':
