@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.7
 """
 Standard python setup.py file for CUADRnT package
 To build     : python setup.py build

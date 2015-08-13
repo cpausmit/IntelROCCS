@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.7
 """
 File       : core_t.py
 Author     : Bjorn Barrefors <bjorn dot peter dot barrefors AT cern dot ch>
@@ -36,6 +36,7 @@ class ToolsTests(unittest.TestCase):
         "test rocker_board functions"
         print ""
         rocker_board = RockerBoard(config=self.config)
+        rocker_board.start()
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.7
 """
 File       : storage.py
 Author     : Bjorn Barrefors <bjorn dot peter dot barrefors AT cern dot ch>
@@ -16,8 +16,6 @@ from subprocess import call
 from UADR.utils.db_utils import get_object_id
 from UADR.utils.utils import datetime_day
 from UADR.utils.utils import datetime_remove_timezone
-
-# TODO: Handle returned values
 
 class StorageManager(object):
     """
