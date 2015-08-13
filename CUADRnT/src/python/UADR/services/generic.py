@@ -23,8 +23,8 @@ class GenericService(object):
     """
     def __init__(self, config=dict()):
         self.logger = logging.getLogger(__name__)
-        self.service = 'generic'
         self.config = config
+        self.service = 'generic'
         self.target_url = ''
         self.storage = StorageManager(self.config)
 

@@ -110,7 +110,7 @@ class DocCommand(Command):
         call('make html', shell=True)
         os.chdir(cdir)
 
-def dirwalk(relative_dir):
+def find_modules(relative_dir):
     """
     Walk a directory tree and look-up for __init__.py files.
     If found yield those dirs. Code based on
@@ -120,7 +120,7 @@ def dirwalk(relative_dir):
     for fname in os.listdir(idir):
         full_path = os.path.join(idir, fname)
         if os.path.isdir(full_path) and not os.path.islink(full_path):
-            for subdir in dirwalk(full_path):  # recurse into subdir
+            for subdir in find_modules(full_path):  # recurse into subdir
                 yield subdir
         else:
             initdir, initfile = os.path.split(full_path)
@@ -130,7 +130,7 @@ def dirwalk(relative_dir):
 def find_packages(relative_dir):
     "Find list of packages in a given dir"
     packages = []
-    for directory in dirwalk(relative_dir):
+    for directory in find_modules(relative_dir):
         package = directory.replace(os.getcwd() + '/', '')
         package = package.replace(relative_dir + '/', '')
         package = package.replace('/', '.')

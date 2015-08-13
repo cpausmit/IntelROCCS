@@ -9,7 +9,7 @@ Description: Maintain a mongodb instance which is used for caching data, store c
 import logging
 import datetime
 from pymongo import MongoClient, ASCENDING
-from pymongo.errors import ServerSelectionTimeoutError, DocumentTooLarge
+from pymongo.errors import ServerSelectionTimeoutError, DocumentTooLarge, AutoReconnect
 from subprocess import call
 
 # package modules
@@ -25,22 +25,23 @@ class StorageManager(object):
     """
     def __init__(self, config=dict()):
         self.logger = logging.getLogger(__name__)
-        uri = str(config['mongodb']['uri'])
-        db = str(config['mongodb']['db'])
-        opt_path = str(config['paths']['opt'])
-        client = MongoClient(host=uri, serverSelectionTimeoutMS=5000)
+        self.config = config
+        self.uri = str(self.config['mongodb']['uri'])
+        self.db_name = str(self.config['mongodb']['db'])
+        self.opt_path = str(config['paths']['opt'])
+        client = MongoClient(host=self.uri, serverSelectionTimeoutMS=5000)
         try:
             client.server_info()
         except ServerSelectionTimeoutError:
             # server is not running, start it
-            self.logger.info('Starting mongodb server %s', uri)
-            call(["start_mongodb", opt_path])
-        self.db = client[db]
+            self.logger.info('Starting mongodb server %s', self.uri)
+            call(["start_mongodb", self.opt_path])
+        self.db = client[self.db_name]
         data_coll = self.db['dataset_data']
         try:
             data_coll.create_index([('name', ASCENDING)], background=True, unique=True)
         except ServerSelectionTimeoutError:
-            self.logger.error('Could not connect to mongodb server %s', uri)
+            self.logger.error("Couldn't establish connection to mongodb server %s", self.uri)
         else:
             for service in config['services'].keys():
                 cache_coll = self.db[service]
@@ -52,18 +53,27 @@ class StorageManager(object):
         Collection should be the service it is caching data for
         Use update to have the possibility to force cache update
         """
+        result = list()
         db_coll = self.db[coll]
         object_id = get_object_id(str(api)+str(params))
         data['_id'] = object_id
         data['datetime'] = datetime_day(datetime.datetime.utcnow())
-        try:
-            result = db_coll.replace_one({'_id':object_id}, data, upsert=True)
-        except DocumentTooLarge:
-            self.logger.warning('DocumentTooLarge error for %s api %s', coll, api)
+        for i in range(2):
+            try:
+                result = db_coll.replace_one({'_id':object_id}, data, upsert=True)
+            except DocumentTooLarge:
+                self.logger.warning('DocumentTooLarge error for %s api %s', coll, api)
+                break
+            except AutoReconnect:
+                call(["start_mongodb", self.opt_path])
+                continue
+            else:
+                if (result.modified_count == 0) and (not result.upserted_id):
+                    self.logger.debug('Failed to insert %s cache for api %s\n\tData: %s', coll, api, str(data))
+                break
         else:
-            if (result.modified_count == 0) and (not result.upserted_id):
-                self.logger.debug('Failed to insert %s cache for api %s\n\tData: %s', coll, api, str(data))
-            return result
+            self.logger.error("Couldn't establish connection to mongodb server %s", self.uri)
+        return result
 
     def get_cache(self, coll, api, params=dict()):
         """
@@ -73,22 +83,36 @@ class StorageManager(object):
         data = dict()
         db_coll = self.db[coll]
         object_id = get_object_id(str(api)+str(params))
-        if coll == 'pop_db':
-            # pop db data doesn't change but is specific to a certain date so if it's being accessed, keep it
-            # TODO: Can we gaurantee this?
-            data = db_coll.find_one_and_update({'_id':object_id}, {'$set':{'datetime':datetime_day(datetime.datetime.utcnow())}}, {'_id':0})
+        for i in range(2):
+            try:
+                data = db_coll.find_one({'_id':object_id}, {'_id':0})
+            except AutoReconnect:
+                call(["start_mongodb", self.opt_path])
+                continue
+            else:
+                break
         else:
-            data = db_coll.find_one({'_id':object_id}, {'_id':0})
+            self.logger.error("Couldn't establish connection to mongodb server %s", self.uri)
         return data
 
     def insert_data(self, coll, data=list(), ordered=False):
         """
         Insert data into any collection
         """
+        result = list()
         db_coll = self.db[coll]
-        result = db_coll.insert_many(data, ordered=ordered)
-        if not result.inserted_ids:
-            self.logger.debug('No data inserted in %s\n\tData: %s', coll, str(data))
+        for i in range(2):
+            try:
+                result = db_coll.insert_many(data, ordered=ordered)
+            except AutoReconnect:
+                call(["start_mongodb", self.opt_path])
+                continue
+            else:
+                if not result.inserted_ids:
+                    self.logger.debug('No data inserted in %s\n\tData: %s', coll, str(data))
+                break
+        else:
+            self.logger.error("Couldn't establish connection to mongodb server %s", self.uri)
         return result
 
     def get_data(self, coll, pipeline=list()):
@@ -98,11 +122,20 @@ class StorageManager(object):
         """
         data = list()
         db_coll = self.db[coll]
-        return_data = db_coll.aggregate(pipeline)
-        if return_data:
-            data = list(return_data)
+        for i in range(2):
+            try:
+                return_data = db_coll.aggregate(pipeline)
+            except AutoReconnect:
+                call(["start_mongodb", self.opt_path])
+                continue
+            else:
+                if return_data:
+                    data = list(return_data)
+                else:
+                    self.logger.debug('No data returned in %s\n\tPipeline: %s', coll, str(pipeline))
+                break
         else:
-            self.logger.debug('No data returned in %s\n\tPipeline: %s', coll, str(pipeline))
+            self.logger.error("Couldn't establish connection to mongodb server %s", self.uri)
         return data
 
     def update_data(self, coll, query=dict(), data=dict(), upsert=False):
@@ -110,9 +143,18 @@ class StorageManager(object):
         Update data in any collection
         """
         db_coll = self.db[coll]
-        result = db_coll.update_many(query, data, upsert=upsert)
-        if result.modified_count == 0 and (not result.upserted_id):
-            self.logger.debug('No data updated in %s\n\tQuery: %s\n\tData: %s', coll, str(query), str(data))
+        for i in range(2):
+            try:
+                result = db_coll.update_many(query, data, upsert=upsert)
+            except AutoReconnect:
+                call(["start_mongodb", self.opt_path])
+                continue
+            else:
+                if result.modified_count == 0 and (not result.upserted_id):
+                    self.logger.debug('No data updated in %s\n\tQuery: %s\n\tData: %s', coll, str(query), str(data))
+                break
+        else:
+            self.logger.error("Couldn't establish connection to mongodb server %s", self.uri)
         return result
 
     def delete_data(self, coll, query=dict()):
@@ -120,17 +162,27 @@ class StorageManager(object):
         Delete data in any collection
         """
         db_coll = self.db[coll]
-        result = db_coll.delete_many(query)
-        if result.deleted_count == 0:
-            self.logger.debug('No data deleted in %s\n\tQuery: %s', coll, str(query))
+        for i in range(2):
+            try:
+                result = db_coll.delete_many(query)
+            except AutoReconnect:
+                call(["start_mongodb", self.opt_path])
+                continue
+            else:
+                if result.deleted_count == 0:
+                    self.logger.debug('No data deleted in %s\n\tQuery: %s', coll, str(query))
+                else:
+                    self.logger.debug('%d documents deleted in %s', result.deleted_count, coll)
+                break
         else:
-            self.logger.debug('%d documents deleted in %s', result.deleted_count, coll)
+            self.logger.error("Couldn't establish connection to mongodb server %s", self.uri)
         return result
 
     def get_last_insert_time(self, coll):
         """
         Get datetime object of last insert
         """
+        datetime_ = datetime.datetime(1970, 1, 2, 0, 0, 0)
         pipeline = list()
         sort = {'$sort':{'_id':-1}}
         pipeline.append(sort)
@@ -138,11 +190,19 @@ class StorageManager(object):
         pipeline.append(limit)
         project = {'$project':{'_id':1}}
         pipeline.append(project)
-        data = self.get_data(coll, pipeline=pipeline)
-        datetime_ = datetime.datetime(1970, 1, 2, 0, 0, 0)
-        if data:
-            datetime_ = data[0]['_id'].generation_time
-            datetime_ = datetime_remove_timezone(datetime_)
+        for i in range(2):
+            try:
+                data = self.get_data(coll, pipeline=pipeline)
+            except AutoReconnect:
+                call(["start_mongodb", self.opt_path])
+                continue
+            else:
+                if data:
+                    datetime_ = data[0]['_id'].generation_time
+                    datetime_ = datetime_remove_timezone(datetime_)
+                else:
+                    self.logger.debug('Collection %s is empty, no last insert datetime', coll)
+                break
         else:
-            self.logger.debug('Collection %s is empty, no last insert datetime', coll)
+            self.logger.error("Couldn't establish connection to mongodb server %s", self.uri)
         return datetime_
