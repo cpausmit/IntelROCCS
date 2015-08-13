@@ -2,7 +2,7 @@
 """
 File       : rocker_board.py
 Author     : Bjorn Barrefors <bjorn dot peter dot barrefors AT cern dot ch>
-Description: Collect historical data for popularity model
+Description: Distribute data in system to keep it balanced (like a rocker board)
 """
 
 # system modules
@@ -127,7 +127,7 @@ def main(argv):
     Main driver for Rocker Board Algorithm
     """
     log_level = logging.WARNING
-    config = get_config()
+    config = get_config(path='/var/opt/cuadrnt', file_name='rocker_board.cfg')
     try:
         opts, args = getopt.getopt(argv, 'h', ['help', 'log='])
     except getopt.GetoptError:
@@ -152,7 +152,10 @@ def main(argv):
             print "error: option %s not recognized" % (str(opt))
             sys.exit()
 
-    logging.basicConfig(filename='/var/log/cuadrnt/cuadrnt.log', format='%(asctime)s [%(levelname)s] %(name)s:%(funcName)s:%(lineno)d: %(message)s', datefmt='%H:%M', level=log_level)
+    log_path = config['paths']['log']
+    log_file = 'rocker_board.log'
+    file_name = '%s/%s' % (log_path, log_file)
+    logging.basicConfig(filename=file_name, format='%(asctime)s [%(levelname)s] %(name)s:%(funcName)s:%(lineno)d: %(message)s', datefmt='%H:%M', level=log_level)
     # self.logger = logging.getLogger()
     # self.logger.setLevel(logging.DEBUG)
     # handler = logging.handlers.RotatingFileHandler('/var/log/CUADRnT/cuadrnt-test.log', mode='w', maxBytes=10*1024*1024, backupCount=2)

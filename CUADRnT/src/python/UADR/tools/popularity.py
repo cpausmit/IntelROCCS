@@ -77,7 +77,7 @@ class PopularityManager(object):
 
     def update_popularity(self, dataset_names):
         """
-        Fetch lates popularity data not in database
+        Fetch latest popularity data not in database
         """
         # get dates
         coll = 'dataset_popularity'

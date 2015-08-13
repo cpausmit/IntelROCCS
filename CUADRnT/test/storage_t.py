@@ -25,7 +25,7 @@ class StorageTests(unittest.TestCase):
     """
     def setUp(self):
         "Set up for test"
-        self.config = get_config(path=opt_path, file_name='cuadrnt-test.cfg')
+        self.config = get_config(path=opt_path, file_name='test.cfg')
         self.storage = StorageManager(config=self.config)
 
     def tearDown(self):

@@ -183,8 +183,13 @@ def main(argv):
         "Programming Language :: Python"
     ]
 
+    # Make sure the permissions are correct for folders
+    uid = pwd.getpwnam(username).pw_uid
+    gid = grp.getgrnam(group).gr_gid
     mkpath('/var/lib/cuadrnt')
     mkpath('/var/log/cuadrnt')
+    os.chown('/var/lib/cuadrnt', uid, gid)
+    os.chown('/var/log/cuadrnt', uid, gid)
 
     setup(
         name=name,
@@ -204,11 +209,6 @@ def main(argv):
         url=url,
         license=cms_license,
     )
-
-    uid = pwd.getpwnam(username).pw_uid
-    gid = grp.getgrnam(group).gr_gid
-    os.chown('/var/lib/cuadrnt', uid, gid)
-    os.chown('/var/log/cuadrnt', uid, gid)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
