@@ -10,6 +10,7 @@ import logging
 import sys
 import getopt
 import datetime
+from logging.handlers import TimedRotatingFileHandler
 
 # package modules
 from UADR.utils.utils import weighted_choice
@@ -155,14 +156,12 @@ def main(argv):
     log_path = config['paths']['log']
     log_file = 'rocker_board.log'
     file_name = '%s/%s' % (log_path, log_file)
-    logging.basicConfig(filename=file_name, format='%(asctime)s [%(levelname)s] %(name)s:%(funcName)s:%(lineno)d: %(message)s', datefmt='%H:%M', level=log_level)
-    # self.logger = logging.getLogger()
-    # self.logger.setLevel(logging.DEBUG)
-    # handler = logging.handlers.RotatingFileHandler('/var/log/CUADRnT/cuadrnt-test.log', mode='w', maxBytes=10*1024*1024, backupCount=2)
-    # handler.setLevel(logging.DEBUG)
-    # formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s:%(funcName)s:%(lineno)d: %(message)s', datefmt='%H:%M')
-    # handler.setFormatter(formatter)
-    # self.logger.addHandler(handler)
+    logger = logging.getLogger(__name__)
+    logger.setLevel(log_level)
+    handler = TimedRotatingFileHandler(file_name, when='midnight', interval=1, backupCount=10)
+    formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s:%(funcName)s:%(lineno)d: %(message)s', datefmt='%H:%M')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
     rocker_board = RockerBoard(config)
     rocker_board.start()
 

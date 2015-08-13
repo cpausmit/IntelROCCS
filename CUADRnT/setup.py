@@ -12,7 +12,6 @@ To run tests : python setup.py test
 
 # system modules
 import logging
-import logging.handlers
 import os
 import re
 import sys
@@ -26,6 +25,7 @@ from unittest import TextTestRunner, TestLoader
 from distutils.core import setup
 from distutils.cmd import Command
 from distutils.dir_util import mkpath
+from logging.handlers import TimedRotatingFileHandler
 
 version = '1.0'  # TODO: (10) Set up automatic versioning system
 required_python_version = '2.7'
@@ -38,7 +38,15 @@ class TestCommand(Command):
 
     def initialize_options(self):
         """Init method"""
-        logging.basicConfig(filename='/var/log/cuadrnt/cuadrnt-test.log', filemode='w', format='%(asctime)s [%(levelname)s] %(name)s:%(funcName)s:%(lineno)d: %(message)s', datefmt='%H:%M', level=logging.DEBUG)
+        log_path = '/var/log/cuadrnt'
+        log_file = 'cuadrnt-test.log'
+        file_name = '%s/%s' % (log_path, log_file)
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.DEBUG)
+        handler = TimedRotatingFileHandler(file_name, when='h', interval=1, backupCount=2)
+        formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s:%(funcName)s:%(lineno)d: %(message)s', datefmt='%H:%M')
+        handler.setFormatter(formatter)
+        self.logger.addHandler(handler)
         self.test_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'test')
 
     def finalize_options(self):

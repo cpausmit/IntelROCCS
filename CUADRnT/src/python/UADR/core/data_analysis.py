@@ -15,6 +15,7 @@ from UADR.utils.config import get_config
 from UADR.tools.datasets import DatasetManager
 from UADR.tools.sites import SiteManager
 from UADR.tools.storage import StorageManager
+from logging.handlers import TimedRotatingFileHandler
 
 class DataAnalysis(object):
     """
@@ -64,14 +65,15 @@ def main(argv):
             print "error: option %s not recognized" % (str(opt))
             sys.exit()
 
-    logging.basicConfig(filename='/var/log/cuadrnt/cuadrnt.log', format='%(asctime)s [%(levelname)s] %(name)s:%(funcName)s:%(lineno)d: %(message)s', datefmt='%H:%M', level=log_level)
-    # self.logger = logging.getLogger()
-    # self.logger.setLevel(logging.DEBUG)
-    # handler = logging.handlers.RotatingFileHandler('/var/log/CUADRnT/cuadrnt-test.log', mode='w', maxBytes=10*1024*1024, backupCount=2)
-    # handler.setLevel(logging.DEBUG)
-    # formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s:%(funcName)s:%(lineno)d: %(message)s', datefmt='%H:%M')
-    # handler.setFormatter(formatter)
-    # self.logger.addHandler(handler)
+    log_path = config['paths']['log']
+    log_file = 'rocker_board.log'
+    file_name = '%s/%s' % (log_path, log_file)
+    logger = logging.getLogger(__name__)
+    logger.setLevel(log_level)
+    handler = TimedRotatingFileHandler(file_name, when='midnight', interval=1, backupCount=10)
+    formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s:%(funcName)s:%(lineno)d: %(message)s', datefmt='%H:%M')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
     data_analysis = DataAnalysis(config)
     data_analysis.start()
 
