@@ -93,6 +93,7 @@ class phedexApi:
         values = { 'dataset' : dataset, 'block' : block, 'file' : fileName,
                    'level' : level, 'create_since' : createSince }
         dataURL = urllib.basejoin(self.phedexBase, "%s/%s/data"%(format, instance))
+ 
         check, response = self.phedexCall(dataURL, values)
         if check:
             return 1, " Error - Data call failed"
@@ -148,6 +149,7 @@ class phedexApi:
         """
         if not datasets:
             return 1, " Error - need to pass at least one of dataset."
+
         xml = '<data version="2">'
         xml = '%s<%s name="https://cmsweb.cern.ch/dbs/%s/global/DBSReader">'\
               % (xml, 'dbs', instance)
@@ -371,6 +373,7 @@ def getActiveSites(debug=0):
         f = site.split(' ')
         if debug>2:
             print " Length: %d"%(len(f))
+
         if len(f) != 7:
             continue
 
@@ -480,6 +483,7 @@ def submitSubscriptionRequests(sites,datasets=[],debug=0):
     if check:
         print " ERROR - phedexApi.xmlData failed"
         return
+
     message = 'IntelROCCS -- Automatic Dataset Subscription by Computing Operations.'
 
     # here the request is really sent to each requested site
@@ -576,11 +580,18 @@ for opt, arg in opts:
 
 testLocalSetup(dataset,debug)
 
+# Say what dataset we are looking at
+#-----------------------------------
+
+print '\n DATASET: ' + dataset
+
 # size of provided dataset
 #-------------------------
 
 # use das client to find the present size of the dataset
-cmd = 'das_client.py --format=plain --limit=0 --query="file dataset=' + \
+cert = '--cert ' + os.environ['HOME'] + '/.globus/usercert.pem ' \
+    +  '--key '  + os.environ['HOME'] + '/.globus/userkey.pem '
+cmd = 'das_client.py ' + cert + ' --format=plain --limit=0 --query="file dataset=' + \
       dataset + ' | sum(file.size)" |tail -1 | cut -d= -f2'
 if debug>2:
     print ' DAS: ' + cmd
@@ -599,8 +610,7 @@ else:
 if expectedSizeGb > 0:
     sizeGb = expectedSizeGb
 
-if not exe:
-    print '\n DAS information:  %.1f GB  %s'%(sizeGb,dataset)
+print ' SIZE:    %.1f GB'%(sizeGb)
 
 # prepare subscription list
 datasets = []
@@ -654,7 +664,13 @@ tier2Sites = getActiveSites(debug)
 
 # remove the already used sites
 for siteName in siteNames:
-    tier2Sites.remove(siteName)
+    if debug>0:
+        print ' Removing ' + siteName
+    try:
+        tier2Sites.remove(siteName)
+    except:
+        if debug>0:
+            print ' Site is not in list: ' + siteName
 
 # choose a site randomly and exclude sites that are too small
 
