@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+if [ $# -eq 1 ]; then
+    mongod --port 8230 --config "$1/mongodb.config" --fork --logpath /var/log/cuadrnt/mongodb.log
+else
+    mongod --port 8230 --config /var/opt/cuadrnt/mongodb.config --fork --logpath /var/log/cuadrnt/mongodb.log
+fi

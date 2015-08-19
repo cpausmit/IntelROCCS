@@ -150,7 +150,8 @@ def getWaitTimes(timeStart=-1,timeEnd=-1):
         # print "curl -H 'Accept: application/json' '%s' "%(curlPath)
         os.system("mkdir -p tmp")
         print "curl -H 'Accept: application/json' '%s' > tmp/%i.json 2>/dev/null"%(curlPath,pid)
-        os.system("curl -H 'Accept: application/json' '%s' > tmp/%i.json 2>/dev/null"%(curlPath,pid))
+        sys.exit(-1)
+        # os.system("curl -H 'Accept: application/json' '%s' > tmp/%i.json 2>/dev/null"%(curlPath,pid))
         print "done with curl!"
         # os.system("curl -H 'Accept: application/json' '%s'| python -mjson.tool > tmp/%i.json"%(curlPath,pid))
         waitTimes, compressedList, maxWait = processFileJson("tmp/%i.json"%(pid))
