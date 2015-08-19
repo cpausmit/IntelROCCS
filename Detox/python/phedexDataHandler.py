@@ -172,6 +172,11 @@ class PhedexDataHandler:
                     iscust = 0
                     if len(user) > 0 or cust == 'y':
                         iscust = 1
+                    if 'GenericTTbar' in datasetName:
+                        iscust = 1
+		    if 'MinBias' in datasetName:
+		        iscust = 1
+
                     dataset.updateForSite(site,size,group,files,iscust,reqtime,updtime,isdone)
 
         # Create our local cache files of the status per site
@@ -360,8 +365,10 @@ class PhedexDataHandler:
 
                 names = dset.split('#')
                 datasetName = names[0]
+
                 if datasetName not in self.lockedSets:
                     self.lockedSets[datasetName] = LockedDataset(datasetName)
+                #print temphash
                 self.lockedSets[datasetName].appendEntry(temphash,dset)
     
         for dset in self.lockedSets:
