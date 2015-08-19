@@ -98,17 +98,14 @@ class CentralManager:
         secsPerDay = 60*60*24
         now = float(time.time())
         phedexSets = self.phedexHandler.getPhedexDatasets()
-        lockedSets = self.phedexHandler.getLockedDatasets()
+        lockedSets = self.phedexHandler.getLockedDatasets() 
 
         for dset in phedexSets:
             if dset in lockedSets:
                 lsites = lockedSets[dset].getLockedSites()
-                lockin = []
                 for lsite in lsites:
                     if phedexSets[dset].group(lsite) == 'DataOps':
-                        lockin.append(lsite)
-                for lsite in lockin:
-                    phedexSets[dset].setCustodial(lsite,1)
+                        phedexSets[dset].setCustodial(lsite,1)
 
         usedSets = self.popularityHandler.getUsedDatasets()
         phedexDsetNames = self.phedexHandler.getDatasetsAtSite(site)
@@ -277,9 +274,8 @@ class CentralManager:
 
 
        for datasetName in phedexSets:
-           dsetId = None
            if datasetName not in dataSetIds:
-               dataSetIds[datasetName] = None
+               dataSetIds[datasetName] = -1
                #if phedexSets[datasetName].matchesSite("T2_"):
                    #print  " -- WARNING -- not in the database " + datasetName
            phedexSets[datasetName].findIncomplete()
@@ -328,8 +324,9 @@ class CentralManager:
            size2del = -1
            if taken > size*self.DETOX_USAGE_MAX :
                size2del = sitePr.spaceTaken() - size*self.DETOX_USAGE_MIN
-           if size2del > 100*1000:
-               size2del = 100*1000
+           #size2del = min(100*1000,size2del)
+
+           size2del = min(20*1000,size2del)
            sitePr.setSpaceToFree(size2del)
 
        #determine if we need to call it again
@@ -353,7 +350,7 @@ class CentralManager:
                    oneMoreIteration = False
                    break
                print " Iterating unifying deletion lists"
-               self.unifyDeletionLists()
+               self.unifyDeletionLists(phedexGroup)
                totalIters = totalIters + 1
 
        # now it all done, calculate for each site space taken by last copies
@@ -361,7 +358,10 @@ class CentralManager:
        today = str(datetime.date.today())
        for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
            sitePr = self.sitePropers[site]
-           sitePr.lastCopySpace(self.dataPropers,self.DETOX_NCOPY_MIN)
+           if phedexGroup == 'DataOps':
+               sitePr.lastCopySpace(self.dataPropers,0)
+           else:
+               sitePr.lastCopySpace(self.dataPropers,self.DETOX_NCOPY_MIN)
 
            outputFile = open(statusDirectory+'/'+site+'/'+os.environ['DETOX_DATASETS_TO_DELETE'],'w')
            outputFile.write("# -- " + today + "\n\n")
@@ -390,9 +390,16 @@ class CentralManager:
            if not os.path.exists(sitedir):
                os.mkdir(sitedir)
 
-    def unifyDeletionLists(self):
+    def unifyDeletionLists(self,phedexGroup):
+        if phedexGroup == 'DataOps':
+            ncopyMin = 0
+            banInvalid = False
+        else:
+            ncopyMin = self.DETOX_NCOPY_MIN
+            banInvalid = True
+
         for site in self.sitePropers:
-            self.sitePropers[site].makeWishList()
+            self.sitePropers[site].makeWishList(banInvalid)
 
         for datasetName in self.dataPropers:
             dataPr = self.dataPropers[datasetName]
@@ -402,7 +409,7 @@ class CentralManager:
                 if sitePr.onWishList(datasetName):
                     countWishes = countWishes + 1
 
-            if dataPr.nSites()-dataPr.nBeDeleted() - countWishes > (self.DETOX_NCOPY_MIN-1):
+            if dataPr.nSites()-dataPr.nBeDeleted() - countWishes > (ncopyMin-1):
                 # grant wishes to all sites
                 for site in self.sitePropers.keys():
                     sitePr = self.sitePropers[site]
@@ -420,12 +427,12 @@ class CentralManager:
 
                         if sitePr.pinDataset(datasetName):
                             nprotected = nprotected + 1
-                            if nprotected >= self.DETOX_NCOPY_MIN:
+                            if nprotected >= ncopyMin :
                                 break
 
                     #here could not find last copy site
                     #need to remove this dataset from all sites
-                    if nprotected < self.DETOX_NCOPY_MIN:
+                    if nprotected < ncopyMin:
                         for site in dataPr.mySites():
                             sitePr = self.sitePropers[site]
                             sitePr.revokeWish(datasetName)
@@ -496,9 +503,7 @@ class CentralManager:
         outputFile.write("#  Active Quota[TB] Taken[TB] LastCopy[TB] SiteName \n")
         outputFile.write("#------------------------------------------------------\n")
         for site in sorted(self.allSites):
-            if 'DataOps' in phedexGroup:
-                pass
-            elif 'AnalysisOps' in phedexGroup:
+            if 'DataOps' in phedexGroup or 'AnalysisOps' in phedexGroup:
                 pass
             else:
                 if self.allSites[site].getSize(phedexGroup) == 0:
@@ -512,6 +517,8 @@ class CentralManager:
                 sitePr = self.sitePropers[site]
                 taken = sitePr.spaceTaken()/1000
                 lcopy = sitePr.spaceLastCp()/1000
+                if 'DataOps' in phedexGroup:
+                    lcopy = sitePr.spaceCustodial()/1000
                 totalDisk = totalDisk + theSite.getSize(phedexGroup)/1000
                 totalSpaceLcopy = totalSpaceLcopy + lcopy
                 totalSpaceTaken = totalSpaceTaken + taken
@@ -561,9 +568,7 @@ class CentralManager:
         for site in sorted(self.allSites):
             theSite = self.allSites[site]
             active = theSite.getStatus()
-            if 'DataOps' in phedexGroup:
-                pass
-            elif 'AnalysisOps' in phedexGroup:
+            if 'DataOps' in phedexGroup or 'AnalysisOps' in phedexGroup:
                 pass
             else:
                 if self.allSites[site].getSize(phedexGroup) == 0:
@@ -671,9 +676,7 @@ class CentralManager:
             trueSize = 0
             diskSize = 0
             nsets = 0
-            if 'DataOps' in phedexGroup:
-                pass
-            elif 'AnalysisOps' in phedexGroup:
+            if 'DataOps' in phedexGroup or 'AnalysisOps' in phedexGroup:
                 pass
             else:
                 if self.allSites[site].getSize(phedexGroup) == 0:
@@ -933,6 +936,9 @@ class CentralManager:
             if len(datasets2del) < 1:
                 continue
 
+            if not site.startswith('T2_'):
+                continue
+
             totalSize = 0
             thisRequest = deletionRequest.DeletionRequest(0,site,now_tstamp)
             for dataset in datasets2del:
@@ -1056,7 +1062,7 @@ class CentralManager:
             return
         phedex = phedexApi.phedexApi(logPath='./')
         # compose data for deletion request
-        check,data = phedex.xmlData(datasets=datasets2del,instance='prod')
+        check,data = phedex.xmlData(datasets=datasets2del,instance='prod',level='block')
         if check:
             print " ERROR - phedexApi.xmlData failed"
             sys.exit(1)

@@ -55,28 +55,37 @@ class SiteProperties:
         if wasused == 0:
             self.spaceNotUsed = self.spaceNotUsed + size
 
-    def makeWishList(self):
+    def makeWishList(self,banInvalid=True):
         space = 0
         self.wishList = []
         for datasetName in sorted(self.datasetRanks.keys(), cmp=self.compare):
             if space > (self.space2free-self.deleted):
                 break
+            
             if datasetName in self.datasetsToDelete:
                 continue
+
             if datasetName in self.protectedList:
                 continue
+
             #custodial set can't be on deletion wish list
             if self.dsetIsCustodial[datasetName] :
                 continue
+
             #non-valid dataset can't be on deletion list
-            if not self.dsetIsValid[datasetName]:
-                continue
+            if banInvalid == True:
+                if not self.dsetIsValid[datasetName]:
+                    continue
 
             space = space + self.datasetSizes[datasetName]
             self.wishList.append(datasetName)
+            if len(self.wishList) > 500:
+                break
 
     def hasMoreToDelete(self):
         nsets = 0
+        if len(self.wishList) > 500:
+            return False
         for datasetName in sorted(self.datasetRanks.keys(), cmp=self.compare):
             if datasetName in self.datasetsToDelete:
                 continue
@@ -200,6 +209,13 @@ class SiteProperties:
         size = 0;
         for dset in self.dsetIsPartial:
             if self.dsetIsPartial[dset]:
+                size = size + self.datasetSizes[dset]
+        return size
+
+    def spaceCustodial(self):
+        size = 0;
+        for dset in self.dsetIsCustodial:
+            if self.dsetIsCustodial[dset]:
                 size = size + self.datasetSizes[dset]
         return size
     
