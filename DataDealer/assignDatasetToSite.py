@@ -9,10 +9,17 @@
 # your directory. It is important so that it virtually runs anywhere and anyone can easily use it
 # without having to checkout anything from github.
 #
+# Set up dbs3 client (of course you have to install it first):
+#   VO_CMS_SW_DIR=$HOME/cms/cmssoft
+#   SCRAM_ARCH=slc6_amd64_gcc481
+#   DBS3_CLIENT_VERSION=3.2.11d
+#   source $VO_CMS_SW_DIR/$SCRAM_ARCH/cms/dbs3-client/3.2.11d/etc/profile.d/init.sh
+#
 # Unit test:
 #   ./assignDatasetToSite.py --nCopies=2 --dataset=/DoubleElectron/Run2012A-22Jan2013-v1/AOD
 #---------------------------------------------------------------------------------------------------
 import os, sys, subprocess, getopt, re, random, urllib, urllib2, httplib, json
+from dbs.apis.dbsClient import DbsApi
 
 #===================================================================================================
 #  C L A S S E S
@@ -93,7 +100,6 @@ class phedexApi:
         values = { 'dataset' : dataset, 'block' : block, 'file' : fileName,
                    'level' : level, 'create_since' : createSince }
         dataURL = urllib.basejoin(self.phedexBase, "%s/%s/data"%(format, instance))
- 
         check, response = self.phedexCall(dataURL, values)
         if check:
             return 1, " Error - Data call failed"
@@ -149,7 +155,6 @@ class phedexApi:
         """
         if not datasets:
             return 1, " Error - need to pass at least one of dataset."
-
         xml = '<data version="2">'
         xml = '%s<%s name="https://cmsweb.cern.ch/dbs/%s/global/DBSReader">'\
               % (xml, 'dbs', instance)
@@ -302,7 +307,9 @@ def convertSizeToGb(sizeTxt):
         sizeGb  = float(sizeTxt[0:-2])
         units   = sizeTxt[-2:]
         # decide what to do for the given unit
-        if   units == 'MB':
+        if units == 'UB':
+            sizeGb = sizeGb/(1024.)**3
+        elif   units == 'MB':
             sizeGb = sizeGb/1000.
         elif units == 'GB':
             pass
@@ -373,7 +380,6 @@ def getActiveSites(debug=0):
         f = site.split(' ')
         if debug>2:
             print " Length: %d"%(len(f))
-
         if len(f) != 7:
             continue
 
@@ -483,7 +489,6 @@ def submitSubscriptionRequests(sites,datasets=[],debug=0):
     if check:
         print " ERROR - phedexApi.xmlData failed"
         return
-
     message = 'IntelROCCS -- Automatic Dataset Subscription by Computing Operations.'
 
     # here the request is really sent to each requested site
@@ -588,23 +593,27 @@ print '\n DATASET: ' + dataset
 # size of provided dataset
 #-------------------------
 
-# use das client to find the present size of the dataset
-cert = '--cert ' + os.environ['HOME'] + '/.globus/usercert.pem ' \
-    +  '--key '  + os.environ['HOME'] + '/.globus/userkey.pem '
-cmd = 'das_client.py ' + cert + ' --format=plain --limit=0 --query="file dataset=' + \
-      dataset + ' | sum(file.size)" |tail -1 | cut -d= -f2'
-if debug>2:
-    print ' DAS: ' + cmd
-    
-for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
-    line    = line[:-1]
+dbsapi = DbsApi(url='https://cmsweb.cern.ch/dbs/prod/global/DBSReader')
+size = str(sum([block['file_size'] for block in dbsapi.listBlockSummaries(dataset = dataset)]))+'UB'
+sizeGb = convertSizeToGb(size)
 
-# this is the text including the size units, that needs to be converted)
-if line != '':
-    sizeGb = convertSizeToGb(line)
-else:
-    print ' Error - no reasonable size found with das_client.py.'
-    sys.exit(1)
+## use das client to find the present size of the dataset
+#cert = '--cert ' + os.environ['HOME'] + '/.globus/usercert.pem ' \
+#    +  '--key '  + os.environ['HOME'] + '/.globus/userkey.pem '
+#cmd = 'das_client.py ' + cert + ' --format=plain --limit=0 --query="file dataset=' + \
+#      dataset + ' | sum(file.size)" |tail -1 | cut -d= -f2'
+#if debug>2:
+#    print ' DAS: ' + cmd
+#    
+#for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
+#    line    = line[:-1]
+#
+## this is the text including the size units, that needs to be converted)
+#if line != '':
+#    sizeGb = convertSizeToGb(line)
+#else:
+#    print ' Error - no reasonable size found with das_client.py.'
+#    sys.exit(1)
 
 # in case this is an open subscription we need to adjust sizeGb to the expected size
 if expectedSizeGb > 0:
