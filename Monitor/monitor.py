@@ -109,7 +109,6 @@ with open(os.environ['MONITOR_DB']+'/datasetUsage.html','w') as htmlFile:
 os.environ['MONITOR_PATTERN'] = DDMPattern
 os.environ['MONITOR_GROUP'] = DDMGroup
 # os.system('./readJsonSnapshotPickle.py T2*')
-os.system('rm $MONITOR_DB/*png') # these will replaced in a few lines
 
 for i in range(len(DDMTimeStamps)):
     os.environ['MONITOR_PLOTTEXT'] = DDMLabels[i]
