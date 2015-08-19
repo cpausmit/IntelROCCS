@@ -15,7 +15,7 @@ fi
 
 mkdir -p    $MONITOR_DB
 cd $MONITOR_DB #preventing temp files from being created in weird places
-
+rm -f $MONITOR_DB/*png # clean up old images, will be replaced shortly
 # are we interested in nSites or nSitesAv
 # define relevant environment variables
 export MIT_ROOT_STYLE=/home/cmsprod/MitRootStyle/MitRootStyle.C
@@ -33,13 +33,14 @@ for site in `ls -1 $DETOX_DB/$DETOX_RESULT | grep ^T[0-3]`
 do
 
 #  echo " Analyzing site : $site"
-  quota=`grep 'Total Space' $DETOX_DB/$DETOX_RESULT/$site/Summary.txt|cut -d: -f2|tr -d ' '`
-  used=`grep 'Space Used' $DETOX_DB/$DETOX_RESULT/$site/Summary.txt|cut -d: -f2|tr -d ' '`
-  toDelete=`grep 'Space to delete' $DETOX_DB/$DETOX_RESULT/$site/Summary.txt|cut -d: -f2|tr -d ' '`
-  lastCp=`grep 'Space last CP' $DETOX_DB/$DETOX_RESULT/$site/Summary.txt|cut -d: -f2|tr -d ' '`
+  quota=`grep 'Total Space' $DETOX_DB/$DETOX_RESULT/$site/Summary.txt|cut -d: -f2|tr -d ' ' | head -n 1`
+  used=`grep 'Space Used' $DETOX_DB/$DETOX_RESULT/$site/Summary.txt|cut -d: -f2|tr -d ' ' | head -n 1`
+  toDelete=`grep 'Space to delete' $DETOX_DB/$DETOX_RESULT/$site/Summary.txt|cut -d: -f2|tr -d ' ' | head -n 1`
+  lastCp=`grep 'Space last CP' $DETOX_DB/$DETOX_RESULT/$site/Summary.txt|cut -d: -f2|tr -d ' ' | head -n 1`
   echo "$site $quota $used $toDelete $lastCp" >> $SITE_MONITOR_FILE
 
 done
+
 # make nice histograms
 pwd
  root -q -b -l $MONITOR_BASE/plotSites.C

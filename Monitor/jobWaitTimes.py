@@ -42,7 +42,7 @@ def processFile(fileName,debug=0):
       waitTimes[datasetName]={}
       nJobs[datasetName]={}
     if siteName in waitTimes[datasetName]:
-      wTmp = waitTimes[datasetName][siteName] 
+      wTmp = waitTimes[datasetName][siteName]
       n = nJobs[datasetName][siteName]
       waitTimes[datasetName][siteName] = float(n*wTmp + wait)/(n+1)
       nJobs[datasetName][siteName]+=1
@@ -85,12 +85,12 @@ def processFileJson(fileName,debug=0):
     if maxTuple[0] < wait:
       maxTuple = (wait,datasetName,siteName)
     # if wait > 86400:
-      # print "Warning, job %i waited for %i = %i - %i\n\t%s\n\t%s"%(jID, wait, start, submitted, datasetName, siteName)
+    #   print "Warning, job %i waited for %i = %i - %i\n\t%s\n\t%s"%(jID, wait, start, submitted, datasetName, siteName)
     if not datasetName in waitTimes:
       waitTimes[datasetName]={}
       nJobs[datasetName]={}
     if siteName in waitTimes[datasetName]:
-      wTmp = waitTimes[datasetName][siteName] 
+      wTmp = waitTimes[datasetName][siteName]
       n = nJobs[datasetName][siteName]
       waitTimes[datasetName][siteName] = float(n*wTmp + wait)/(n+1)
       nJobs[datasetName][siteName]+=1
@@ -100,99 +100,94 @@ def processFileJson(fileName,debug=0):
 
   return waitTimes, returnList, maxTuple
 
-'''
-#### MAIN ####
-'''
+def getWaitTimes(timeStart=-1,timeEnd=-1):
+    if timeStart < 0:
+        print "Using default times"
+        print "If desired, enter start end epoch times"
+        timeStart = list(time.gmtime(time.time()-600))[:6]
+        timeEnd = list(time.gmtime())[:6]
+    else:
+        timeStart = time.gmtime(int(timeStart))
+        timeEnd = time.gmtime(int(timeEnd))
 
-timeStart=None
-timeEnd=None
-
-if len(sys.argv) == 1:
-    print "Using default times"
-    print "If desired, enter start end epoch times"
-    timeStart = list(time.gmtime(time.time()-600))[:6] 
-    timeEnd = list(time.gmtime())[:6] 
-else:
-    timeStart = time.gmtime(int(sys.argv[1]))
-    timeEnd = time.gmtime(int(sys.argv[2]))
-
-timeStart = [2014, 10, 13, 00, 00, 00] # testing
-timeEnd = [2014, 10, 13, 00, 59, 00]
-timeStartString = epochTime('%.2i-%.2i-%.2iT%.2i:%.2i:%.2i'%(
-  timeStart[0],
-  timeStart[1],
-  timeStart[2],
-  timeStart[3],
-  timeStart[4],
-  timeStart[5]))
-timeEndString = epochTime('%.2i-%.2i-%.2iT%.2i:%.2i:%.2i'%(
-  timeEnd[0],
-  timeEnd[1],
-  timeEnd[2],
-  timeEnd[3],
-  timeEnd[4],
-  timeEnd[5]))
-
-outFilePath = os.environ.get('MONITOR_DB') + "/waitTimes/%i_%i.txt"%(timeStartString,timeEndString)
-logFilePath = os.environ.get('MONITOR_DB') + "/waitTimes/%i_%i.log"%(timeStartString,timeEndString)
-
-pid = os.getpid()
-jsonExists = os.path.isfile(outFilePath)
-if jsonExists:
-    waitTimes, compressedList, maxWait = processFile(outFilePath)
-else:
-    os.system("mkdir -p %s/waitTimes"%(os.environ.get("MONITOR_DB")))
-    curlPath = 'http://dashb-cms-datapop.cern.ch/dashboard/request.py/cms-wait-time-api?start=%.2i-%.2i-%.2i@20%.2i:%.2i:%.2i&end=%.2i-%.2i-%.2i@20%.2i:%.2i:%.2i'%(timeStart[0],
+    timeStartString = epochTime('%.2i-%.2i-%.2iT%.2i:%.2i:%.2i'%(
+      timeStart[0],
       timeStart[1],
       timeStart[2],
       timeStart[3],
       timeStart[4],
-      timeStart[5],
+      timeStart[5]))
+    timeEndString = epochTime('%.2i-%.2i-%.2iT%.2i:%.2i:%.2i'%(
       timeEnd[0],
       timeEnd[1],
       timeEnd[2],
       timeEnd[3],
       timeEnd[4],
-      timeEnd[5])
-    curlPath = curlPath.replace("@","%")
-    # print "curl -H 'Accept: application/json' '%s' "%(curlPath)
-    os.system("mkdir -p tmp")
-    print "curl -H 'Accept: application/json' '%s' > tmp/%i.json"%(curlPath,pid)
-    os.system("curl -H 'Accept: application/json' '%s' > tmp/%i.json"%(curlPath,pid))
-    # os.system("curl -H 'Accept: application/json' '%s'| python -mjson.tool > tmp/%i.json"%(curlPath,pid))
-    waitTimes, compressedList, maxWait = processFileJson("tmp/%i.json"%(pid))
-    # os.system("rm tmp/%i.json"%(pid))
+      timeEnd[5]))
 
-## waitTimes are available
+    outFilePath = os.environ.get('MONITOR_DB') + "/waitTimes/%i_%i.txt"%(timeStartString,timeEndString)
+    logFilePath = os.environ.get('MONITOR_DB') + "/waitTimes/%i_%i.log"%(timeStartString,timeEndString)
 
-formatString = ["%i ", "%s ", "%s ", "%i ", "%i ", "%i ", "%i "]
+    pid = os.getpid()
+    jsonExists = os.path.isfile(outFilePath)
+    if jsonExists:
+        waitTimes, compressedList, maxWait = processFile(outFilePath)
+    else:
+        os.system("mkdir -p %s/waitTimes"%(os.environ.get("MONITOR_DB")))
+        curlPath = 'http://dashb-cms-datapop.cern.ch/dashboard/request.py/cms-wait-time-api?start=%.2i-%.2i-%.2i@20%.2i:%.2i:%.2i&end=%.2i-%.2i-%.2i@20%.2i:%.2i:%.2i'%(timeStart[0],
+          timeStart[1],
+          timeStart[2],
+          timeStart[3],
+          timeStart[4],
+          timeStart[5],
+          timeEnd[0],
+          timeEnd[1],
+          timeEnd[2],
+          timeEnd[3],
+          timeEnd[4],
+          timeEnd[5])
+        curlPath = curlPath.replace("@","%")
+        # print "curl -H 'Accept: application/json' '%s' "%(curlPath)
+        os.system("mkdir -p tmp")
+        print "curl -H 'Accept: application/json' '%s' > tmp/%i.json 2>/dev/null"%(curlPath,pid)
+        sys.exit(-1)
+        # os.system("curl -H 'Accept: application/json' '%s' > tmp/%i.json 2>/dev/null"%(curlPath,pid))
+        print "done with curl!"
+        # os.system("curl -H 'Accept: application/json' '%s'| python -mjson.tool > tmp/%i.json"%(curlPath,pid))
+        waitTimes, compressedList, maxWait = processFileJson("tmp/%i.json"%(pid))
+        os.system("rm tmp/%i.json"%(pid))
 
-# sys.stdout.write(str(maxWait[0])+"\n")
-# print compressedList
-if not jsonExists:
-  outFile = open(outFilePath,'w')
-  for l in compressedList:
-    # sys.stdout.write("%.3f\n"%(max(l[3]-l[4],0)))
-    for i in xrange(len(formatString)):
-      outFile.write(formatString[i]%(l[i]))
-    outFile.write("\n")
-  outFile.close()
-else:
-  pass
-  # for l in compressedList:
-  #   sys.stdout.write("%.3f\n"%(l))
+    ## waitTimes are available
 
-logFile = open(logFilePath,'w')
-nTotal = 0
-totalWait = 0
-for d in waitTimes:
-  logFile.write(d+"\n")
-  for s in waitTimes[d]:
-    if s=="unknown":
-      continue
-    if waitTimes[d][s]:
-      logFile.write("\t%20s"%(s)+"\t%.3f\n"%(waitTimes[d][s]))
-    totalWait += waitTimes[d][s]
-    nTotal += 1
-sys.stdout.write("%.3f\n"%(float(totalWait)/nTotal))
-logFile.close()
+    formatString = ["%i ", "%s ", "%s ", "%i ", "%i ", "%i ", "%i "]
+
+    # sys.stdout.write(str(maxWait[0])+"\n")
+    # print compressedList
+    if not jsonExists:
+      outFile = open(outFilePath,'w')
+      for l in compressedList:
+        # sys.stdout.write("%.3f\n"%(max(l[3]-l[4],0)))
+        for i in xrange(len(formatString)):
+          outFile.write(formatString[i]%(l[i]))
+        outFile.write("\n")
+      outFile.close()
+    else:
+      pass
+      # for l in compressedList:
+      #   sys.stdout.write("%.3f\n"%(l))
+
+    logFile = open(logFilePath,'w')
+    nTotal = 0
+    totalWait = 0
+    for d in waitTimes:
+      logFile.write(d+"\n")
+      for s in waitTimes[d]:
+        if s=="unknown":
+          continue
+        if waitTimes[d][s]:
+          logFile.write("\t%20s"%(s)+"\t%.3f\n"%(waitTimes[d][s]))
+        totalWait += waitTimes[d][s]
+        nTotal += 1
+    sys.stdout.write("%.3f\n"%(float(totalWait)/nTotal))
+    logFile.close()
+    return float(totalWait)/nTotal

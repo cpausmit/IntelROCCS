@@ -97,7 +97,7 @@ class popDbApi():
 #===================================================================================================
     def DataTierStatInTimeWindow(self, tstart='', tstop='', sitename='summary'):
         values = {'tstart':tstart, 'tstop':tstop, 'sitename':sitename}
-        url = urllib.basejoin(self.popDbBase, "%s/?&" % ("DataTierStatInTimeWindow"))
+        url = urllib.basejoin(self.popDbBase, "%s?&" % ("DataTierStatInTimeWindow/"))
         jsonData = self.call(url, values)
         if not jsonData:
             self.error("ERROR -- DataTierStatInTimeWindow call failed for values: tstart=%s, tstop=%s, sitename=%s\n" % (tstart, tstop, sitename))
@@ -105,7 +105,7 @@ class popDbApi():
 
     def DSNameStatInTimeWindow(self, tstart='', tstop='', sitename='summary'):
         values = {'tstart':tstart, 'tstop':tstop, 'sitename':sitename}
-        url = urllib.basejoin(self.popDbBase, "%s/?&" % ("DSNameStatInTimeWindow"))
+        url = urllib.basejoin(self.popDbBase, "%s?&" % ("DSNameStatInTimeWindow/"))
         jsonData = self.call(url, values)
         if not jsonData:
             self.error("ERROR -- DSNameStatInTimeWindow call failed for values: tstart=%s, tstop=%s, sitename=%s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), tstart, tstop, sitename))
@@ -113,7 +113,7 @@ class popDbApi():
 
     def DSStatInTimeWindow(self, tstart='', tstop='', sitename='summary'):
         values = {'tstart':tstart, 'tstop':tstop, 'sitename':sitename}
-        url = urllib.basejoin(self.popDbBase, "%s/?&" % ("DSStatInTimeWindow"))
+        url = urllib.basejoin(self.popDbBase, "%s?&" % ("DSStatInTimeWindow/"))
         jsonData = self.call(url, values)
         if not jsonData:
             self.error("ERROR -- DSStatInTimeWindow call failed for values: tstart=%s, tstop=%s, sitename=%s\n" % (tstart, tstop, sitename))
@@ -121,7 +121,7 @@ class popDbApi():
 
     def getCorruptedFiles(self, sitename='summary', orderby=''):
         values = {'sitename':sitename, 'orderby':orderby}
-        url = urllib.basejoin(self.popDbBase, "%s/?&" % ("getCorruptedFiles"))
+        url = urllib.basejoin(self.popDbBase, "%s?&" % ("getCorruptedFiles/"))
         jsonData = self.call(url, values)
         if not jsonData:
             self.error("ERROR -- getCorruptedFiles call failed for values: sitename=%s, orderby=%s\n" % (sitename, orderby))
@@ -129,7 +129,7 @@ class popDbApi():
 
     def getDSdata(self, tstart='', tstop='', sitename='summary', aggr='', n='', orderby=''):
         values = {'tstart':tstart, 'tstop':tstop, 'sitename':sitename, 'aggr':aggr, 'n':n, 'orderby':orderby}
-        url = urllib.basejoin(self.popDbBase, "%s/?&" % ("getDSdata"))
+        url = urllib.basejoin(self.popDbBase, "%s?&" % ("getDSdata"))
         jsonData = self.call(url, values)
         if not jsonData:
             self.error("ERROR -- getDSdata call failed for values: tstart=%s, tstop=%s, sitename=%s, aggr=%s, n=%s, orderby=%s\n" % (tstart, tstop, sitename, aggr, n, orderby))
@@ -137,7 +137,7 @@ class popDbApi():
 
     def getDSNdata(self, tstart='', tstop='', sitename='summary', aggr='', n='', orderby=''):
         values = {'tstart':tstart, 'tstop':tstop, 'sitename':sitename, 'aggr':aggr, 'n':n, 'orderby':orderby}
-        url = urllib.basejoin(self.popDbBase, "%s/?&" % ("getDSNdata"))
+        url = urllib.basejoin(self.popDbBase, "%s?&" % ("getDSNdata"))
         jsonData = self.call(url, values)
         if not jsonData:
             self.error("ERROR -- getDSNdata call failed for values: tstart=%s, tstop=%s, sitename=%s, aggr=%s, n=%s, orderby=%s\n" % (tstart, tstop, sitename, aggr, n, orderby))
@@ -145,7 +145,7 @@ class popDbApi():
 
     def getDTdata(self, tstart='', tstop='', sitename='summary', aggr='', n='', orderby=''):
         values = {'tstart':tstart, 'tstop':tstop, 'sitename':sitename, 'aggr':aggr, 'n':n, 'orderby':orderby}
-        url = urllib.basejoin(self.popDbBase, "%s/?&" % ("getDTdata"))
+        url = urllib.basejoin(self.popDbBase, "%s?&" % ("getDTdata"))
         jsonData = self.call(url, values)
         if not jsonData:
             self.error("ERROR: getDTdata call failed for values: tstart=%s, tstop=%s, sitename=%s, aggr=%s, n=%s, orderby=%s\n" % (tstart, tstop, sitename, aggr, n, orderby))
@@ -153,7 +153,7 @@ class popDbApi():
 
     def getSingleDNstat(self, name='', sitename='summary', aggr='', orderby=''):
         values = {'name':name, 'sitename':sitename, 'aggr':aggr, 'orderby':orderby}
-        url = urllib.basejoin(self.popDbBase, "%s/?&" % ("getSingleDNstat"))
+        url = urllib.basejoin(self.popDbBase, "%s?&" % ("getSingleDNstat"))
         jsonData = self.call(url, values)
         if not jsonData:
             self.error("ERROR: getSingleDNstat call failed for values: sitename=%s, aggr=%s, orderby=%s\n" % (sitename, aggr, orderby))
@@ -161,7 +161,7 @@ class popDbApi():
 
     def getSingleDSstat(self, name='', sitename='summary', aggr='', orderby=''):
         values = {'name':name, 'sitename':sitename, 'aggr':aggr, 'orderby':orderby}
-        url = urllib.basejoin(self.popDbBase, "%s/?&" % ("getSingleDSstat"))
+        url = urllib.basejoin(self.popDbBase, "%s?&" % ("getSingleDSstat"))
         jsonData = self.call(url, values)
         if not jsonData:
             self.error("ERROR: getSingleDSstat call failed for values: name=%s, sitename=%s, aggr=%s, orderby=%s\n" % (name, sitename, aggr, orderby))
@@ -169,7 +169,7 @@ class popDbApi():
 
     def getSingleDTstat(self, name='', sitename='summary', aggr='', orderby=''):
         values = {'name':name, 'sitename':sitename, 'aggr':aggr, 'orderby':orderby}
-        url = urllib.basejoin(self.popDbBase, "%s/?&" % ("getSingleDTstat"))
+        url = urllib.basejoin(self.popDbBase, "%s?&" % ("getSingleDTstat"))
         jsonData = self.call(url, values)
         if not jsonData:
             self.error("ERROR: getSingleDTstat call failed for values: name=%s, sitename=%s, aggr=%s, orderby=%s\n" % (name, sitename, aggr, orderby))
@@ -177,7 +177,7 @@ class popDbApi():
 
     def getUserStat(self, tstart='', tstop='', collname='', orderby=''):
         values = {'tstart':tstart, 'tstop':tstop, 'collname':collname, 'orderby':orderby}
-        url = urllib.basejoin(self.popDbBase, "%s/?&" % ("getUserStat"))
+        url = urllib.basejoin(self.popDbBase, "%s?&" % ("getUserStat/"))
         jsonData = self.call(url, values)
         if not jsonData:
             self.error("ERROR: getUserStat call failed for values: tstart=%s, tstop=%s, collname=%s, orderby=%s\n" % (tstart, tstop, collname, orderby))

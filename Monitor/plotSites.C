@@ -35,7 +35,8 @@ void plotSites()
 void plotSiteStatus()
 {
   TString fileName = gSystem->Getenv("SITE_MONITOR_FILE");
-
+  TString monitorDB = gSystem->Getenv("MONITOR_DB");
+  
   TDatime date;
   TString dateTime = date.AsSQLString();
   TString pngFileName = fileName + TString(".png");
@@ -137,33 +138,33 @@ void plotSiteStatus()
   hTotal->Draw("hist");
   MitRootStyle::OverlayFrame();
   MitRootStyle::AddText(TString("Date: ") + dateTime);
-  cv->SaveAs("Total.png");
+  cv->SaveAs(monitorDB+"/Total.png");
 
   cv = new TCanvas();
   cv->Draw();
   hUsed->Draw("hist");
   MitRootStyle::OverlayFrame();
   MitRootStyle::AddText(TString("Date: ") + dateTime);
-  cv->SaveAs("Used.png");
+  cv->SaveAs(monitorDB+"/Used.png");
 
   cv = new TCanvas();
   cv->Draw();
   hToDelete->Draw("hist");
   MitRootStyle::OverlayFrame();
   MitRootStyle::AddText(TString("Date: ") + dateTime);
-  cv->SaveAs("ToDelete.png");
+  cv->SaveAs(monitorDB+"/ToDelete.png");
 
   cv = new TCanvas();
   cv->Draw();
   hLastCp->Draw("hist");
   MitRootStyle::OverlayFrame();
   MitRootStyle::AddText(TString("Date: ") + dateTime);
-  cv->SaveAs("LastCp.png");
+  cv->SaveAs(monitorDB+"/LastCp.png");
 
   cv = new TCanvas();
   cv->Draw();
   hLastCpFr->Draw("hist");
   MitRootStyle::OverlayFrame();
   MitRootStyle::AddText(TString("Date: ") + dateTime);
-  cv->SaveAs("LastCpFraction.png");
+  cv->SaveAs(monitorDB+"/LastCpFraction.png");
 }
