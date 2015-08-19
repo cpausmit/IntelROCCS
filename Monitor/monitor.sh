@@ -15,7 +15,7 @@ fi
 
 mkdir -p    $MONITOR_DB
 cd $MONITOR_DB #preventing temp files from being created in weird places
-
+rm -f $MONITOR_DB/*png # clean up old images, will be replaced shortly
 # are we interested in nSites or nSitesAv
 # define relevant environment variables
 export MIT_ROOT_STYLE=/home/cmsprod/MitRootStyle/MitRootStyle.C
