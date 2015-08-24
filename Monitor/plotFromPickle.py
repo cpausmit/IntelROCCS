@@ -406,6 +406,7 @@ for i in range(2):
 if groupPattern == ".*":
     groupPattern = "All"
 try:
+    hCRB.SaveAs(monitorDB+"/CRBUsage_%s_%s.C"%(groupPattern,os.environ['MONITOR_PLOTTEXT']))
     cCRB.SaveAs(monitorDB+"/CRBUsage_%s_%s.png"%(groupPattern,os.environ['MONITOR_PLOTTEXT']))
 except KeyError:
     cCRB.SaveAs(monitorDB+"/CRBUsage_%s_%i_%i.png"%(groupPattern,start,end))
