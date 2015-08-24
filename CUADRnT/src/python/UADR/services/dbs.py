@@ -19,5 +19,5 @@ class DBSService(GenericService):
     def __init__(self, config=dict()):
         GenericService.__init__(self, config)
         self.logger = logging.getLogger(__name__)
-        self.service = 'dbs'
-        self.target_url = str(self.config['services'][self.service])
+        self.SERVICE = 'dbs'
+        self.TARGET_URL = str(self.config['services'][self.SERVICE])

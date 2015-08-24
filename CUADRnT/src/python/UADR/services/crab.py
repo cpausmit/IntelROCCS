@@ -19,8 +19,8 @@ class CRABService(GenericService):
     def __init__(self, config=dict()):
         GenericService.__init__(self, config)
         self.logger = logging.getLogger(__name__)
-        self.service = 'crab'
-        collector_uri = str(self.config['services'][self.service])
+        self.SERVICE = 'crab'
+        collector_uri = str(self.config['services'][self.SERVICE])
         self.collector = htcondor.Collector(collector_uri)
 
     def fetch_cluster_ads(self, query, attributes=list()):

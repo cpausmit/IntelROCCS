@@ -18,7 +18,7 @@ from UADR.utils.utils import timestamp_to_datetime
 from UADR.utils.utils import datetime_day
 from UADR.utils.config import get_config
 from UADR.services.phedex import PhEDExService
-# from UADR.services.mit_db import MITDBService
+from UADR.services.mit_db import MITDBService
 from UADR.tools.datasets import DatasetManager
 from UADR.tools.sites import SiteManager
 from UADR.tools.storage import StorageManager
@@ -33,7 +33,7 @@ class RockerBoard(object):
         self.logger = logging.getLogger(__name__)
         self.config = config
         self.phedex = PhEDExService(self.config)
-        # self.mit_db = MITDBService(self.config)
+        self.mit_db = MITDBService(self.config)
         self.datasets = DatasetManager(self.config)
         self.sites = SiteManager(self.config)
         self.storage = StorageManager(self.config)
@@ -45,12 +45,10 @@ class RockerBoard(object):
         """
         Begin Rocker Board Algorithm
         """
-        self.sites.update_sites()
-        self.datasets.update_datasets()
         subscriptions = self.balance()
         for subscription in subscriptions:
             self.logger.info('site: %s\tdataset: %s', subscription[1], subscription[0])
-        #self.subscribe(subscriptions)
+        # self.subscribe(subscriptions)
 
     def balance(self):
         """
@@ -156,7 +154,7 @@ def main(argv):
     log_path = config['paths']['log']
     log_file = 'rocker_board.log'
     file_name = '%s/%s' % (log_path, log_file)
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger()
     logger.setLevel(log_level)
     handler = TimedRotatingFileHandler(file_name, when='midnight', interval=1, backupCount=10)
     formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s:%(funcName)s:%(lineno)d: %(message)s', datefmt='%H:%M')

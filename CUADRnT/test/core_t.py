@@ -16,7 +16,7 @@ from UADR.core.rocker_board import RockerBoard
 # get local config file
 opt_path = os.path.join(os.path.split(os.path.dirname(os.path.realpath(__file__)))[0], 'etc')
 
-#@unittest.skip("Skip Test")
+@unittest.skip("Skip Test")
 class ToolsTests(unittest.TestCase):
     """
     A test class for core classes
@@ -33,7 +33,7 @@ class ToolsTests(unittest.TestCase):
 
     #@unittest.skip("Skip Test")
     def test_rocker_board(self):
-        "test rocker_board functions"
+        "Test rocker_board functions"
         print ""
         rocker_board = RockerBoard(config=self.config)
         rocker_board.start()
