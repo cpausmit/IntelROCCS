@@ -8,8 +8,6 @@ To build doc : python setup.py doc
 To run tests : python setup.py test
 """
 
-# FIXME: (10) General cleanup of script
-
 # system modules
 import logging
 import os
@@ -22,12 +20,12 @@ import ConfigParser
 from subprocess import call
 from os.path import join as pjoin
 from unittest import TextTestRunner, TestLoader
-from distutils.core import setup
+from setuptools import setup
 from distutils.cmd import Command
 from distutils.dir_util import mkpath
 from logging.handlers import TimedRotatingFileHandler
 
-version = '1.0'  # TODO: (10) Set up automatic versioning system
+version = '0.9'  # TODO: (10) Set up automatic versioning system
 required_python_version = '2.7'
 
 class TestCommand(Command):
@@ -41,7 +39,7 @@ class TestCommand(Command):
         log_path = '/var/log/cuadrnt'
         log_file = 'cuadrnt-test.log'
         file_name = '%s/%s' % (log_path, log_file)
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger()
         self.logger.setLevel(logging.DEBUG)
         handler = TimedRotatingFileHandler(file_name, when='h', interval=1, backupCount=2)
         formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s:%(funcName)s:%(lineno)d: %(message)s', datefmt='%H:%M')
@@ -177,18 +175,25 @@ def main(argv):
     author_email = "bjorn [dot] peter [dot] barrefors [AT] cern [dot] ch",
     keywords = ["CUADRnT"]
     package_dir = {'': 'src/python'}
+    install_requires = [
+        'setuptools',
+        'pymongo',
+        'MySQL-python'
+    ]
     packages = find_packages('src/python')
     data_files = [('/usr/local/bin', find_files('bin')),
                   ('/var/opt/cuadrnt', find_files('etc'))]
     scripts = []
-    cms_license = "CMS experiment software"
+    cms_license = 'CMS experiment software'
     classifiers = [
-        "Development Status :: 3 - Production/Beta",
-        "Intended Audience :: Developers",
-        "License :: OSI Approved :: CMS/CERN Software License",
-        "Operating System :: MacOS :: MacOS X",
-        "Operating System :: POSIX",
-        "Programming Language :: Python"
+        'Development Status :: 4 - Beta/Development',
+        'Intended Audience :: System Administrators',
+        'License :: OSI Approved :: CMS/CERN Software License',
+        'Environment :: Console',
+        'Operating System :: MacOS :: MacOS X'
+        'Operating System :: POSIX',
+        'Programming Language :: Python :: 2.7',
+        'Topic :: System :: Distributed Computing'
     ]
 
     # Make sure the permissions are correct for folders
@@ -198,6 +203,8 @@ def main(argv):
     mkpath('/var/log/cuadrnt')
     os.chown('/var/lib/cuadrnt', uid, gid)
     os.chown('/var/log/cuadrnt', uid, gid)
+
+    # TODO: Install requirements
 
     setup(
         name=name,
@@ -210,6 +217,7 @@ def main(argv):
         data_files=data_files,
         scripts=scripts,
         requires=['python (>=2.7)'],
+        install_requires=install_requires,
         classifiers=classifiers,
         cmdclass={'test':TestCommand, 'clean':CleanCommand, 'doc':DocCommand},
         author=author,
