@@ -282,16 +282,16 @@ def testLocalSetup(dataset,debug=0):
         print ' Error - no X509_USER_PROXY, please check. EXIT!'
         sys.exit(0)
 
-    # check das_client.py tool
-    cmd = 'which das_client.py'
-    for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
-        line    = line[:-1]
-    if line != "":
-        if debug > 0:
-            print ' Using das_client.py from: ' + line
-    else:
-        print ' Error - das_client.py in your path, find it and add it to PATH. EXIT!'
-        sys.exit(1)
+    ## check das_client.py tool
+    #cmd = 'which das_client.py'
+    #for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
+    #    line    = line[:-1]
+    #if line != "":
+    #    if debug > 0:
+    #        print ' Using das_client.py from: ' + line
+    #else:
+    #    print ' Error - das_client.py in your path, find it and add it to PATH. EXIT!'
+    #    sys.exit(1)
 
 def convertSizeToGb(sizeTxt):
 
@@ -593,27 +593,20 @@ print '\n DATASET: ' + dataset
 # size of provided dataset
 #-------------------------
 
+# instantiate an API
 dbsapi = DbsApi(url='https://cmsweb.cern.ch/dbs/prod/global/DBSReader')
+
+# first test whether dataset is valid
+dbsList = dbsapi.listDatasets(dataset = dataset, dataset_access_type = 'VALID')
+datasetInvalid = False
+if dbsList == []:
+    datasetInvalid = True
+    print ' Dataset does not exist or is invalid. Exit now!\n'
+    sys.exit(1)
+
+# determine size and number of files
 size = str(sum([block['file_size'] for block in dbsapi.listBlockSummaries(dataset = dataset)]))+'UB'
 sizeGb = convertSizeToGb(size)
-
-## use das client to find the present size of the dataset
-#cert = '--cert ' + os.environ['HOME'] + '/.globus/usercert.pem ' \
-#    +  '--key '  + os.environ['HOME'] + '/.globus/userkey.pem '
-#cmd = 'das_client.py ' + cert + ' --format=plain --limit=0 --query="file dataset=' + \
-#      dataset + ' | sum(file.size)" |tail -1 | cut -d= -f2'
-#if debug>2:
-#    print ' DAS: ' + cmd
-#    
-#for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
-#    line    = line[:-1]
-#
-## this is the text including the size units, that needs to be converted)
-#if line != '':
-#    sizeGb = convertSizeToGb(line)
-#else:
-#    print ' Error - no reasonable size found with das_client.py.'
-#    sys.exit(1)
 
 # in case this is an open subscription we need to adjust sizeGb to the expected size
 if expectedSizeGb > 0:
