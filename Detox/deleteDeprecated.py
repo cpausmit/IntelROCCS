@@ -53,6 +53,9 @@ def readMatchPhedex():
         if group != 'AnalysisOps' and group != 'DataOps':
             continue
 
+        #if group != 'caf-comm':
+        #    continue
+
         size = float(items[3])
         site = items[5]
 
@@ -122,6 +125,10 @@ line = line.rstrip()
 if line == 'Y':
     for site in sorted(siteDsets):
         if 'T2_' not in site: continue
+        if site.startswith('T2_DE'):
+            continue
+        if site.startswith('T2_CH'):
+            continue
         setsToDelete = siteDsets[site]
         print site
         print siteSize2Del[site]

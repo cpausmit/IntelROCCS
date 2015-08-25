@@ -71,7 +71,10 @@ class PhedexDataHandler:
         self.allSites = allSites
 
         self.lockedSets = {}
-        self.getLockInformation()
+        lockFiles =  (os.environ['DETOX_LOCKFILES']).split(',')
+
+        for lockF in lockFiles:
+            self.getLockInformation(lockF)
 
         self.epochTime = int(time.time())
 
@@ -335,7 +338,7 @@ class PhedexDataHandler:
         for site in sorted(siteSizes):
             print ' %3d %6.2f TB'%(siteSets[site],siteSizes[site]) + ": " + site
 
-    def getLockInformation(self):
+    def getLockInformation(self, url):
         url = ' https://cmst2.web.cern.ch/cmst2/unified/datalocks.json'
         cmd = 'curl -k -H "Accept: text" ' + url
         
@@ -368,6 +371,7 @@ class PhedexDataHandler:
 
                 if datasetName not in self.lockedSets:
                     self.lockedSets[datasetName] = LockedDataset(datasetName)
+                    #print 'locking ' + datasetName
                 #print temphash
                 self.lockedSets[datasetName].appendEntry(temphash,dset)
     
