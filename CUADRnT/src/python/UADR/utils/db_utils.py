@@ -13,7 +13,7 @@ from bson.objectid import ObjectId
 # Get module specific logger
 logger = logging.getLogger(__name__)
 
-def get_object_id(string=''):
+def get_object_id(string):
     """
     Create a valid object id hash based on api and params
     """

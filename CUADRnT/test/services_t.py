@@ -21,7 +21,7 @@ from UADR.services.pop_db import PopDBService
 # get local config file
 opt_path = os.path.join(os.path.split(os.path.dirname(os.path.realpath(__file__)))[0], 'etc')
 
-#@unittest.skip("Skip Test")
+@unittest.skip("Skip Test")
 class ServicesTests(unittest.TestCase):
     """
     A test class for service classes
@@ -36,7 +36,7 @@ class ServicesTests(unittest.TestCase):
 
     #@unittest.skip("Skip Test")
     def test_crab(self):
-        "test crab functions"
+        "Test crab functions"
         print ""
         expected = 'T2_US_Nebraska'
         crab = CRABService(config=self.config)
@@ -48,7 +48,7 @@ class ServicesTests(unittest.TestCase):
 
     #@unittest.skip("Skip Test")
     def test_dbs(self):
-        "test dbs functions"
+        "Test dbs functions"
         print ""
         dbs = DBSService(config=self.config)
         api = 'datasets'
@@ -60,7 +60,7 @@ class ServicesTests(unittest.TestCase):
 
     #@unittest.skip("Skip Test")
     def test_intelroccs(self):
-        "test intelroccs functions"
+        "Test intelroccs functions"
         print ""
         intelroccs = IntelROCCSService(config=self.config)
         # CURRENT
@@ -73,7 +73,7 @@ class ServicesTests(unittest.TestCase):
     # only run this test if machine have access to db
     @unittest.skip("Skip Test")
     def test_mit_db(self):
-        "test mit_db functions"
+        "Test mit_db functions"
         print ""
         mit_db = MITDBService(config=self.config)
         query = "SELECT SiteName FROM Sites WHERE SiteName=%s"
@@ -85,7 +85,7 @@ class ServicesTests(unittest.TestCase):
 
     #@unittest.skip("Skip Test")
     def test_phedex(self):
-        "test phedex functions"
+        "Test phedex functions"
         print ""
         phedex = PhEDExService(config=self.config)
         api = 'data'
@@ -97,7 +97,7 @@ class ServicesTests(unittest.TestCase):
 
     #@unittest.skip("Skip Test")
     def test_pop_db(self):
-        "test pop_db functions"
+        "Test pop_db functions"
         print ""
         pop_db = PopDBService(config=self.config)
         api = 'DSStatInTimeWindow/'

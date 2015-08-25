@@ -24,9 +24,9 @@ class GenericService(object):
     def __init__(self, config=dict()):
         self.logger = logging.getLogger(__name__)
         self.config = config
-        self.service = 'generic'
-        self.target_url = ''
         self.storage = StorageManager(self.config)
+        self.SERVICE = 'generic'
+        self.TARGET_URL = ''
 
     def fetch(self, api, params=dict(), method='get', secure=True, cache=True, cache_only=False, force_cache=False):
         """
@@ -38,22 +38,22 @@ class GenericService(object):
         if cache:
             json_data = dict()
             if not force_cache:
-                json_data = self.storage.get_cache(self.service, api, params)
+                json_data = self.storage.get_cache(self.SERVICE, api, params)
             if not json_data:
                 if secure:
-                    json_data = get_secure_data(target_url=self.target_url, api=api, params=params, method=method)
+                    json_data = get_secure_data(target_url=self.TARGET_URL, api=api, params=params, method=method)
                 else:
-                    json_data = get_data(target_url=self.target_url, api=api, file_=params)
+                    json_data = get_data(target_url=self.TARGET_URL, api=api, file_=params)
                 if type(json_data) is not dict:
                     json_data = {'data':json_data}
-                self.storage.insert_cache(self.service, api, params, json_data)
+                self.storage.insert_cache(self.SERVICE, api, params, json_data)
             if not cache_only:
                 return json_data
         else:
             if secure:
-                json_data = get_secure_data(target_url=self.target_url, api=api, params=params, method=method)
+                json_data = get_secure_data(target_url=self.TARGET_URL, api=api, params=params, method=method)
             else:
-                json_data = get_data(target_url=self.target_url, api=api, file_=params)
+                json_data = get_data(target_url=self.TARGET_URL, api=api, file_=params)
             if type(json_data) is not dict:
                 json_data = {'data':json_data}
             return json_data

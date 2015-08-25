@@ -18,6 +18,6 @@ class PopDBService(GenericService):
     """
     def __init__(self, config=dict()):
         GenericService.__init__(self, config)
-        self.service = 'pop_db'
         self.logger = logging.getLogger(__name__)
-        self.target_url = str(self.config['services'][self.service])
+        self.SERVICE = 'pop_db'
+        self.target_url = str(self.config['services'][self.SERVICE])

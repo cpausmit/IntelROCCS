@@ -18,7 +18,7 @@ from UADR.tools.storage import StorageManager
 # get local config file
 opt_path = os.path.join(os.path.split(os.path.dirname(os.path.realpath(__file__)))[0], 'etc')
 
-#@unittest.skip("Skip Test")
+@unittest.skip("Skip Test")
 class StorageTests(unittest.TestCase):
     """
     A test class for service classes
@@ -42,7 +42,7 @@ class StorageTests(unittest.TestCase):
 
     #@unittest.skip("Skip Test")
     def test_cache(self):
-        "test storage cache"
+        "Test storage cache"
         print ""
         coll = 'test'
         phedex = PhEDExService(config=self.config)
@@ -61,7 +61,7 @@ class StorageTests(unittest.TestCase):
 
     #@unittest.skip("Skip Test")
     def test_data(self):
-        "test general collection manipulation functions"
+        "Test general collection manipulation functions"
         coll = 'test'
         # insert
         data = [{'foo':'bar_1'}, {'foo':'bar_2'}]
