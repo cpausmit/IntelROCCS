@@ -935,9 +935,8 @@ class CentralManager:
             datasets2del = sitePr.delTargets()
             if len(datasets2del) < 1:
                 continue
-
-            if not site.startswith('T2_'):
-                continue
+            #if not site.startswith('T2_'):
+            #    continue
 
             totalSize = 0
             thisRequest = deletionRequest.DeletionRequest(0,site,now_tstamp)
@@ -961,8 +960,8 @@ class CentralManager:
             numberRequests = numberRequests + 1
 
             (reqid,rdate) = self.submitDeletionRequest(site,datasets2del)
-            if site.startswith('T2'):
-                self.submitUpdateRequest(site,reqid)
+            #if site.startswith('T2'):
+            self.submitUpdateRequest(site,reqid)
             print " -- Request Id =  " + str(reqid)
 
             thisRequest.reqId = reqid
