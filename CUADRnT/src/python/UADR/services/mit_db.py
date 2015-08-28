@@ -11,7 +11,6 @@ import MySQLdb
 
 # package modules
 from UADR.services.generic import GenericService
-from UADR.tools.storage import StorageManager
 
 class MITDBService(GenericService):
     """
@@ -20,13 +19,12 @@ class MITDBService(GenericService):
     def __init__(self, config=dict()):
         GenericService.__init__(self, config)
         self.logger = logging.getLogger(__name__)
-        self.service = 'mit_db'
-        host = str(self.config[self.service]['host'])
-        user = str(self.config[self.service]['user'])
-        passwd = str(self.config[self.service]['passwd'])
-        db = str(self.config[self.service]['db'])
+        self.SERVICE = 'mit_db'
+        host = str(self.config[self.SERVICE]['host'])
+        user = str(self.config[self.SERVICE]['user'])
+        passwd = str(self.config[self.SERVICE]['passwd'])
+        db = str(self.config[self.SERVICE]['db'])
         self.conn = MySQLdb.connect(host=host, user=user, passwd=passwd, db=db)
-        self.storage = StorageManager(self.config)
 
     def fetch(self, query, values=tuple(), cache=True, cache_only=False, force_cache=False):
         """
@@ -35,10 +33,10 @@ class MITDBService(GenericService):
         if cache:
             json_data = list()
             if not force_cache:
-                json_data = self.storage.get_cache(self.service, query, values)
+                json_data = self.storage.get_cache(self.SERVICE, query, values)
             if not json_data:
                 json_data = self.get_data(query=query, values=values)
-                self.storage.insert_cache(self.service, query, values, json_data)
+                self.storage.insert_cache(self.SERVICE, query, values, json_data)
             if not cache_only:
                 return json_data
         else:

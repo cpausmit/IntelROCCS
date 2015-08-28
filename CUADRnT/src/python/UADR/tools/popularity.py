@@ -15,6 +15,7 @@ from UADR.utils.utils import pop_db_timestamp_to_datetime
 from UADR.utils.utils import datetime_to_string
 from UADR.utils.utils import datetime_day
 from UADR.utils.utils import daterange
+from UADR.utils.utils import get_json
 from UADR.services.pop_db import PopDBService
 from UADR.tools.sites import SiteManager
 from UADR.tools.storage import StorageManager
@@ -30,7 +31,7 @@ class PopularityManager(object):
         self.sites = SiteManager(self.config)
         self.storage = StorageManager(self.config)
 
-    def initiate_popularity_data(self, dataset_name, end_date=datetime_day(datetime.datetime.utcnow())):
+    def initiate_db(self, dataset_name, end_date=datetime_day(datetime.datetime.utcnow())):
         """
         Collect popularity from creation date for dataset
         """
@@ -41,7 +42,7 @@ class PopularityManager(object):
         project = {'$project':{'creation_date':1, '_id':0}}
         pipeline.append(project)
         data = self.storage.get_data(coll=coll, pipeline=pipeline)
-        creation_date = data[0]['creation_date']
+        creation_date = get_json(get_json(data, 0), 'creation_date')
         api = 'getSingleDSstat'
         pop_data = dict()
         for metric in ['totcpu', 'naccess', 'nusers']:
@@ -75,7 +76,7 @@ class PopularityManager(object):
             data = {'$set':popularity_data}
             self.storage.update_data(coll=coll, query=query, data=data, upsert=True)
 
-    def update_popularity(self, dataset_names):
+    def update_db(self, dataset_names):
         """
         Fetch latest popularity data not in database
         """

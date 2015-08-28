@@ -48,6 +48,7 @@ else:        # check failed so need to go to the source
     cmd = 'wget --no-check-certificate -O ' + fileName + \
           ' https://cmsweb.cern.ch/phedex/datasvc/xml/prod/requestlist?dataset=' + dataset
     print ' CMD: ' + cmd
+
     for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
         print line
 

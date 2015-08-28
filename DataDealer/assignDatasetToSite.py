@@ -9,10 +9,17 @@
 # your directory. It is important so that it virtually runs anywhere and anyone can easily use it
 # without having to checkout anything from github.
 #
+# Set up dbs3 client (of course you have to install it first):
+#   VO_CMS_SW_DIR=$HOME/cms/cmssoft
+#   SCRAM_ARCH=slc6_amd64_gcc481
+#   DBS3_CLIENT_VERSION=3.2.11d
+#   source $VO_CMS_SW_DIR/$SCRAM_ARCH/cms/dbs3-client/3.2.11d/etc/profile.d/init.sh
+#
 # Unit test:
 #   ./assignDatasetToSite.py --nCopies=2 --dataset=/DoubleElectron/Run2012A-22Jan2013-v1/AOD
 #---------------------------------------------------------------------------------------------------
 import os, sys, subprocess, getopt, re, random, urllib, urllib2, httplib, json
+from dbs.apis.dbsClient import DbsApi
 
 #===================================================================================================
 #  C L A S S E S
@@ -275,16 +282,16 @@ def testLocalSetup(dataset,debug=0):
         print ' Error - no X509_USER_PROXY, please check. EXIT!'
         sys.exit(0)
 
-    # check das_client.py tool
-    cmd = 'which das_client.py'
-    for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
-        line    = line[:-1]
-    if line != "":
-        if debug > 0:
-            print ' Using das_client.py from: ' + line
-    else:
-        print ' Error - das_client.py in your path, find it and add it to PATH. EXIT!'
-        sys.exit(1)
+    ## check das_client.py tool
+    #cmd = 'which das_client.py'
+    #for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
+    #    line    = line[:-1]
+    #if line != "":
+    #    if debug > 0:
+    #        print ' Using das_client.py from: ' + line
+    #else:
+    #    print ' Error - das_client.py in your path, find it and add it to PATH. EXIT!'
+    #    sys.exit(1)
 
 def convertSizeToGb(sizeTxt):
 
@@ -300,7 +307,9 @@ def convertSizeToGb(sizeTxt):
         sizeGb  = float(sizeTxt[0:-2])
         units   = sizeTxt[-2:]
         # decide what to do for the given unit
-        if   units == 'MB':
+        if units == 'UB':
+            sizeGb = sizeGb/(1024.)**3
+        elif   units == 'MB':
             sizeGb = sizeGb/1000.
         elif units == 'GB':
             pass
@@ -576,31 +585,34 @@ for opt, arg in opts:
 
 testLocalSetup(dataset,debug)
 
+# Say what dataset we are looking at
+#-----------------------------------
+
+print '\n DATASET: ' + dataset
+
 # size of provided dataset
 #-------------------------
 
-# use das client to find the present size of the dataset
-cmd = 'das_client.py --format=plain --limit=0 --query="file dataset=' + \
-      dataset + ' | sum(file.size)" |tail -1 | cut -d= -f2'
-if debug>2:
-    print ' DAS: ' + cmd
-    
-for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
-    line    = line[:-1]
+# instantiate an API
+dbsapi = DbsApi(url='https://cmsweb.cern.ch/dbs/prod/global/DBSReader')
 
-# this is the text including the size units, that needs to be converted)
-if line != '':
-    sizeGb = convertSizeToGb(line)
-else:
-    print ' Error - no reasonable size found with das_client.py.'
+# first test whether dataset is valid
+dbsList = dbsapi.listDatasets(dataset = dataset, dataset_access_type = 'VALID')
+datasetInvalid = False
+if dbsList == []:
+    datasetInvalid = True
+    print ' Dataset does not exist or is invalid. Exit now!\n'
     sys.exit(1)
+
+# determine size and number of files
+size = str(sum([block['file_size'] for block in dbsapi.listBlockSummaries(dataset = dataset)]))+'UB'
+sizeGb = convertSizeToGb(size)
 
 # in case this is an open subscription we need to adjust sizeGb to the expected size
 if expectedSizeGb > 0:
     sizeGb = expectedSizeGb
 
-if not exe:
-    print '\n DAS information:  %.1f GB  %s'%(sizeGb,dataset)
+print ' SIZE:    %.1f GB'%(sizeGb)
 
 # prepare subscription list
 datasets = []
@@ -654,7 +666,13 @@ tier2Sites = getActiveSites(debug)
 
 # remove the already used sites
 for siteName in siteNames:
-    tier2Sites.remove(siteName)
+    if debug>0:
+        print ' Removing ' + siteName
+    try:
+        tier2Sites.remove(siteName)
+    except:
+        if debug>0:
+            print ' Site is not in list: ' + siteName
 
 # choose a site randomly and exclude sites that are too small
 

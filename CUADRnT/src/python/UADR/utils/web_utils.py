@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 class HTTPSClientAuthHandler(urllib2.HTTPSHandler):
     """
     Simple HTTPS client authentication class
+    Require that a valid proxy exists
     """
     def __init__(self):
         urllib2.HTTPSHandler.__init__(self)
@@ -43,13 +44,13 @@ class HTTPSClientAuthHandler(urllib2.HTTPSHandler):
 
 def get_secure_data(target_url, api, params=dict(), method='get'):
     """
-    Create http request for target_url, api and params of service
+    Create https request for target_url, api and params of service
     Data should be json data returned as a string
     params can also be a list of tuples where the first value is the param name
     and the second is the value, this value can be a list of values which will
     then be split up
+    Make sure host certificate for secure site is installed in SSL library
     """
-    headers = {'Accept': 'application/json'}
     data = urllib.urlencode(params, doseq=True)
     url = '%s/%s' % (target_url, api)
     if method == 'post':
@@ -57,18 +58,17 @@ def get_secure_data(target_url, api, params=dict(), method='get'):
     else:
         full_url = '%s?%s' % (str(url), str(data))
         request = urllib2.Request(full_url)
-    for key, val in headers.items():
-        request.add_header(key, val)
     handler = HTTPSClientAuthHandler()
     opener = urllib2.build_opener(handler)
     urllib2.install_opener(opener)
     try:
-        return_data = urllib2.urlopen(request)
-        return_data = return_data.read()
+        response = urllib2.urlopen(request)
+        return_data = response.read()
         json_data = json.loads(return_data)
     except Exception as e:
         logger.warning("Couldn't fetch data for url %s?%s\n    Reason:\n    %s", str(url), str(data), str(e))
         json_data = dict()
+    response.close()
     return json_data
 
 def get_data(target_url, api, file_):
@@ -78,6 +78,7 @@ def get_data(target_url, api, file_):
         tab separated fields
         comments marked using #
         headers commented out
+    Is used mainly for intelroccs web data, only interested in AnalysisOps group
     """
     json_data = list()
     try:
@@ -86,6 +87,7 @@ def get_data(target_url, api, file_):
         logger.warning("Couldn't fetch data for url %s/%s/%s\n    Reason:\n    %s", str(target_url), str(api), str(file_), str(e))
     else:
         data = response.read()
+        response.close()
         for line in data.split('\n'):
             if not (line.find('DataOps') == -1):
                 break

@@ -19,8 +19,8 @@ class PhEDExService(GenericService):
     def __init__(self, config=dict()):
         GenericService.__init__(self, config)
         self.logger = logging.getLogger(__name__)
-        self.service = 'phedex'
-        self.target_url = str(self.config['services'][self.service])
+        self.SERVICE = 'phedex'
+        self.TARGET_URL = str(self.config['services'][self.SERVICE])
 
     def generate_xml(self, dataset_names=list()):
         """

@@ -85,17 +85,20 @@ class phedexApi:
         data = urllib.urlencode(values)
         opener = urllib2.build_opener(HTTPSGridAuthHandler())
         request = urllib2.Request(url, data)
+
         try:
             response = opener.open(request)
         except urllib2.HTTPError, e:
             self.logger.error(name, e.read())
             self.logger.error(name, "URL: %s" % (str(url),))
             self.logger.error(name, "VALUES: %s" % (str(values),))
+            #print (name, "VALUES: %s" % (str(values),))
             return 1, " ERROR - urllib2.HTTPError"
         except urllib2.URLError, e:
             self.logger.error(name, e.args)
             self.logger.error(name, "URL: %s" % (str(url),))
             self.logger.error(name, "VALUES: %s" % (str(values),))
+            #print (name, "VALUES: %s" % (str(values)))
             return 1, " ERROR - urllib2.URLError"
         return 0, response
     ############################################################################
@@ -194,7 +197,7 @@ class phedexApi:
     #                             X M L   D A T A                              #
     #                                                                          #
     ############################################################################
-    def xmlData(self, datasets=[], instance='prod'):
+    def xmlData(self, datasets=[], instance='prod', level='file'):
         """
         _xmlData_
 
@@ -218,10 +221,16 @@ class phedexApi:
         xml = '%s<%s name="https://cmsweb.cern.ch/dbs/%s/global/DBSReader">'\
               % (xml, 'dbs', instance)
         for dataset in datasets:
-            check, response = self.data(dataset=dataset, level='file', instance=instance)
+            if '#' in dataset:
+                parts = dataset.split('#')
+                check, response = self.data(block=dataset, level=level, instance=instance)
+            else:
+                check, response = self.data(dataset=dataset, level=level, instance=instance)
+
             if check:
                 return 1, "Error"
             data = response.get('phedex').get('dbs')
+
             if not data:
                 return 1, "Error"
             xml = "%s<%s" % (xml, 'dataset')
@@ -230,6 +239,8 @@ class phedexApi:
             xml = "%s</%s>" % (xml, 'dataset')
         xml = "%s</%s>" % (xml, 'dbs')
         xml_data = "%s</data>" % (xml,)
+
+        #print xml_data
         return 0, xml_data
     ############################################################################
     #                                                                          #
@@ -307,7 +318,19 @@ class phedexApi:
             print check
             return 1, "ERROR - self.phedexCall with response: " + response
         return 0, response
-    
+
+    def getDelRequests(self,node, request_since=1428200998, complete='y',format='json',
+                  instance = 'prod'):
+        name = 'deletions'
+        values = {'node':node, 'request_since':request_since, 'complete':complete}
+        url = urllib.basejoin(self.phedexBase, "%s/%s/deletions" % (format, instance))
+        check, response = self.phedexCall(url, values)
+        if check:
+            self.logger.error(name, "Get deletions for site")
+            print response
+            print check
+            return 1, "ERROR - self.phedexCall with response: " + response
+        return 0, response
 
 ####################################################################################################
 #

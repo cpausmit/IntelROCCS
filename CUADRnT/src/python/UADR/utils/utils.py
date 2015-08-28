@@ -39,10 +39,10 @@ def weighted_choice(choices):
     Do a weighted random selection
     """
     total = sum(weight for item, weight in choices.items())
-    r = random.uniform(0, total)
+    rand = random.uniform(0, total)
     upto = 0
     for choice, weight in choices.items():
-        if upto + weight >= r:
+        if upto + weight >= rand:
             return choice
         upto += weight
 
@@ -103,3 +103,12 @@ def datetime_remove_timezone(datetime_):
     Popularity DB stores timestamps padded with 3 extra zeros
     """
     return datetime_.replace(tzinfo=None)
+
+def get_json(json_data, field):
+    """
+    Safely get json field, return empty list if doesn't exist
+    """
+    try:
+        return json_data[field]
+    except (KeyError, TypeError, IndexError):
+        return list()

@@ -50,8 +50,11 @@ def readMatchPhedex():
 
         if datasetName not in deprecated:
             continue
-        if group != 'AnalysisOps':
+        if group != 'AnalysisOps' and group != 'DataOps':
             continue
+
+        #if group != 'caf-comm':
+        #    continue
 
         size = float(items[3])
         site = items[5]
@@ -72,7 +75,7 @@ def readMatchPhedex():
 def requestDeletions(site,dsetNames):
     phedex = phedexApi.phedexApi(logPath='./')
     # compose data for deletion request
-    check,data = phedex.xmlData(datasets=dsetNames,instance='prod')
+    check,data = phedex.xmlData(datasets=dsetNames,instance='prod',level='block')
     if check:
         print " ERROR - phedexApi.xmlData failed"
         sys.exit(1)
@@ -121,7 +124,11 @@ line  = sys.stdin.readline()
 line = line.rstrip()
 if line == 'Y':
     for site in sorted(siteDsets):
-        #if not site == 'T2_US_MIT': continue
+        if 'T2_' not in site: continue
+        if site.startswith('T2_DE'):
+            continue
+        if site.startswith('T2_CH'):
+            continue
         setsToDelete = siteDsets[site]
         print site
         print siteSize2Del[site]
