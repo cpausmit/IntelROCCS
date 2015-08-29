@@ -563,6 +563,7 @@ dataset = ''
 nCopies = 1
 exe = False
 expectedSizeGb = -1
+isMiniAod = False
 
 # Read new values from the command line
 for opt, arg in opts:
@@ -589,6 +590,12 @@ testLocalSetup(dataset,debug)
 #-----------------------------------
 
 print '\n DATASET: ' + dataset
+f = dataset.split("/")
+if len(f) > 3:
+    tier = f[3]
+    if 'MINIAOD' in tier:
+        print ' MINIAOD* identified, consider extra T2_CH_CERN copy.'
+        isMiniAod = True
 
 # size of provided dataset
 #-------------------------
@@ -651,8 +658,10 @@ if len(siteNames) >= nCopies:
     print '\n Already subscribed on Tier-2:'
     for siteName in siteNames:
         print ' --> ' + siteName
-    print '\n The job is done already: EXIT!\n'
-    sys.exit(0)
+
+    if not isMiniAod:
+        print '\n The job is done already: EXIT!\n'
+        sys.exit(0)
 else:
     print ' Requested %d copies at Tier-2, but only %d copies found.'%(nCopies,len(siteNames))
     print ' --> will find %d more sites for subscription.\n'%(nAdditionalCopies)
@@ -692,5 +701,13 @@ if not exe:
 if exe:
     # make subscriptions to Tier-2 site(s)
     submitSubscriptionRequests(sites,datasets)
+
+    # make special subscription for /MINIAOD* to T2_CH_CERN
+    if isMiniAod:
+        cern = [ 'T2_CH_CERN' ]
+        submitSubscriptionRequests(cern,datasets)    
+
 else:
     print '\n -> WARNING: not doing anything .... please use  --exec  option.\n'
+    if isMiniAod:
+        print ' INFO: extra copy to T2_CH_CERN activated.'
