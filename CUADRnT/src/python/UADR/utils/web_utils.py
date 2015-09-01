@@ -63,12 +63,13 @@ def get_secure_data(target_url, api, params=dict(), method='get'):
     urllib2.install_opener(opener)
     try:
         response = urllib2.urlopen(request)
-        return_data = response.read()
-        json_data = json.loads(return_data)
     except Exception as e:
         logger.warning("Couldn't fetch data for url %s?%s\n    Reason:\n    %s", str(url), str(data), str(e))
         json_data = dict()
-    response.close()
+    else:
+        return_data = response.read()
+        response.close()
+        json_data = json.loads(return_data)
     return json_data
 
 def get_data(target_url, api, file_):

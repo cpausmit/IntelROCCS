@@ -9,6 +9,7 @@ Description: Keep maximum CPU for sites updated, run every hour
 import logging
 import sys
 import getopt
+import datetime
 from logging.handlers import TimedRotatingFileHandler
 
 # package modules
@@ -29,7 +30,11 @@ class UpdateCPU(object):
         """
         Begin Update CPU
         """
+        t_start = datetime.datetime.utcnow()
         self.sites.update_cpu()
+        t_stop = datetime.datetime.utcnow()
+        tot_time = t_stop - t_start
+        print tot_time
 
 def main(argv):
     """

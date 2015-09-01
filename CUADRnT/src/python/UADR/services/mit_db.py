@@ -26,7 +26,7 @@ class MITDBService(GenericService):
         db = str(self.config[self.SERVICE]['db'])
         self.conn = MySQLdb.connect(host=host, user=user, passwd=passwd, db=db)
 
-    def fetch(self, query, values=tuple(), cache=True, cache_only=False, force_cache=False):
+    def query(self, query, values=tuple(), cache=True, cache_only=False, force_cache=False):
         """
         Get MIT DB data
         """
@@ -35,15 +35,15 @@ class MITDBService(GenericService):
             if not force_cache:
                 json_data = self.storage.get_cache(self.SERVICE, query, values)
             if not json_data:
-                json_data = self.get_data(query=query, values=values)
+                json_data = self.call(query=query, values=values)
                 self.storage.insert_cache(self.SERVICE, query, values, json_data)
             if not cache_only:
                 return json_data
         else:
-            json_data = self.get_data(query=query, values=values)
+            json_data = self.call(query=query, values=values)
             return json_data
 
-    def get_data(self, query, values=tuple()):
+    def call(self, query, values=tuple()):
         """
         Submit query to MIT DB
         """

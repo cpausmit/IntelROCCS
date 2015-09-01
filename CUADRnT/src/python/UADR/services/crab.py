@@ -27,19 +27,21 @@ class CRABService(GenericService):
         """
         Get CRAB ads from HTCondor
         """
+        query = str(query)
         ads = list()
         try:
             returned_ads = self.collector.query(htcondor.AdTypes.Startd, query, attributes)
             for ad in returned_ads:
                 ads.append(ad)
-        except:
-            self.logger.warning('CRAB query failed for\nquery: %s\nattributes: %s', str(query), str(attributes))
+        except Exception as e:
+            self.logger.warning('CRAB query failed for\nquery: %s\nattributes: %s\n    Reason:\n    %s', str(query), str(attributes), str(e))
         return ads
 
     def fetch_job_ads(self, query, attributes=list()):
         """
         Get CRAB schedulers from HTCondor
         """
+        query = str(query)
         ads = list()
         schedulers = self.collector.locateAll(htcondor.DaemonTypes.Schedd)
         for scheduler in schedulers:
@@ -48,6 +50,6 @@ class CRABService(GenericService):
                 returned_ads = schedd.query(query, attributes)
                 for ad in returned_ads:
                     ads.append(ad)
-            except:
-                self.logger.warning('CRAB query failed for\nquery: %s\nattributes: %s', str(query), str(attributes))
+            except Exception as e:
+                self.logger.warning('CRAB query failed for\nquery: %s\nattributes: %s\n    Reason:\n    %s', str(query), str(attributes), str(e))
         return ads

@@ -33,7 +33,7 @@ class ToolsTests(unittest.TestCase):
         "Clean up"
         pass
 
-    #@unittest.skip("Skip Test")
+    @unittest.skip("Skip Test")
     def test_managers(self):
         "Test managers"
         print ""

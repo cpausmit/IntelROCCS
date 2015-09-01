@@ -27,7 +27,7 @@ class DeltaRanking(GenericRanking):
         Generate dataset rankings
         """
         date = datetime_day(datetime.datetime.utcnow())
-        dataset_names = self.datasets.get_datasets()
+        dataset_names = self.datasets.get_db_datasets()
         dataset_rankings = dict()
         coll = 'dataset_popularity'
         for dataset_name in dataset_names:
@@ -45,11 +45,12 @@ class DeltaRanking(GenericRanking):
         data = self.storage.get_data(coll=coll, pipeline=pipeline)
         average = data[0]['average']
         # apply to dict
+        coll = 'dataset_rankings'
         for dataset_name in dataset_names:
             rank = dataset_rankings[dataset_name] - average
             dataset_rankings[dataset_name] = rank
             query = {'name':dataset_name, 'date':date}
-            data = {'$set':{'delta_rank':rank}}
+            data = {'$set':{'name':dataset_name, 'date':date, 'delta_rank':rank}}
             self.storage.update_data(coll=coll, query=query, data=data, upsert=True)
         return dataset_rankings
 
@@ -61,7 +62,6 @@ class DeltaRanking(GenericRanking):
         # get all sites which can be replicated to
         site_names = self.sites.get_available_sites()
         site_rankings = dict()
-        coll = 'site_popularity'
         for site_name in site_names:
             # get popularity
             popularity = self.get_site_popularity(site_name)
@@ -69,14 +69,20 @@ class DeltaRanking(GenericRanking):
             performance = self.sites.get_performance(site_name)
             # get available storage
             available_storage = self.sites.get_available_storage(site_name)
+            # insert into database
+            coll = 'site_popularity'
+            query = {'name':site_name, 'date':date}
+            data = {'$set':{'name':site_name, 'date':date, 'delta_popularity':popularity, 'performance':performance, 'available_storage':available_storage}}
+            self.storage.update_data(coll=coll, query=query, data=data, upsert=True)
             #calculate rank
             rank = performance*available_storage*popularity
-            # insert into database
-            query = {'name':site_name, 'date':date}
-            data = {'$set':{'name':site_name, 'date':date, 'delta_popularity':popularity, 'performance':performance, 'available_storage':available_storage, 'delta_rank':rank}}
-            self.storage.update_data(coll=coll, query=query, data=data, upsert=True)
             # store into dict
             site_rankings[site_name] = rank
+            # insert into database
+            coll = 'site_rankings'
+            query = {'name':site_name, 'date':date}
+            data = {'$set':{'name':site_name, 'date':date, 'delta_rank':rank}}
+            self.storage.update_data(coll=coll, query=query, data=data, upsert=True)
         return site_rankings
 
     def get_dataset_popularity(self, dataset_name):
@@ -91,7 +97,7 @@ class DeltaRanking(GenericRanking):
         pipeline.append(match)
         match = {'$match':{'date':{'$gte':start_date, '$lte':end_date}}}
         pipeline.append(match)
-        group = {'$group':{'_id':'$name', 'old_popularity':{'$sum':'$popularity'}}}
+        group = {'$group':{'_id':'$name', 'old_popularity':{'$sum':{'$multiply':['$n_accesses', '$n_cpus', '$n_users']}}}}
         pipeline.append(group)
         data = self.storage.get_data(coll=coll, pipeline=pipeline)
         try:
@@ -105,7 +111,7 @@ class DeltaRanking(GenericRanking):
         pipeline.append(match)
         match = {'$match':{'date':{'$gte':start_date, '$lte':end_date}}}
         pipeline.append(match)
-        group = {'$group':{'_id':'$name', 'new_popularity':{'$sum':'$popularity'}}}
+        group = {'$group':{'_id':'$name', 'new_popularity':{'$sum': {'$multiply':['$n_accesses', '$n_cpus', '$n_users']}}}}
         pipeline.append(group)
         data = self.storage.get_data(coll=coll, pipeline=pipeline)
         try:

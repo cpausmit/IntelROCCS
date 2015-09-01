@@ -21,7 +21,7 @@ from UADR.services.pop_db import PopDBService
 # get local config file
 opt_path = os.path.join(os.path.split(os.path.dirname(os.path.realpath(__file__)))[0], 'etc')
 
-@unittest.skip("Skip Test")
+#@unittest.skip("Skip Test")
 class ServicesTests(unittest.TestCase):
     """
     A test class for service classes

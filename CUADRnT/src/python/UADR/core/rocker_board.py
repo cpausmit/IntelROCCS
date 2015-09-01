@@ -45,10 +45,14 @@ class RockerBoard(object):
         """
         Begin Rocker Board Algorithm
         """
+        t_start = datetime.datetime.utcnow()
         subscriptions = self.balance()
         for subscription in subscriptions:
             self.logger.info('site: %s\tdataset: %s', subscription[1], subscription[0])
         # self.subscribe(subscriptions)
+        t_stop = datetime.datetime.utcnow()
+        tot_time = t_stop - t_start
+        print tot_time
 
     def balance(self):
         """
@@ -119,7 +123,7 @@ class RockerBoard(object):
                 dataset_rank = data[0]['delta_rank']
                 query = "INSERT INTO Requests(RequestId, RequestType, DatasetId, SiteId, GroupId, Rank, Date) SELECT %s, %s, Datasets.DatasetId, Sites.SiteId, Groups.GroupId, %s, %s FROM Datasets, Sites, Groups WHERE Datasets.DatasetName=%s AND Sites.SiteName=%s AND Groups.GroupName=%s"
                 values = (request_id, request_type, dataset_rank, request_created, dataset_name, site_name, group_name)
-                # self.mit_db.fetch(query=query, values=values, cache=False)
+                self.mit_db.query(query=query, values=values, cache=False)
 
 def main(argv):
     """

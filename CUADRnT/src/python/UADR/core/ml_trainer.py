@@ -9,12 +9,14 @@ Description: Initiate database and train algorithms
 import logging
 import sys
 import getopt
+import datetime
 from logging.handlers import TimedRotatingFileHandler
 
 # package modules
 from UADR.utils.config import get_config
 from UADR.tools.datasets import DatasetManager
 from UADR.tools.sites import SiteManager
+from UADR.tools.popularity import PopularityManager
 
 class MLTrainer(object):
     """
@@ -25,13 +27,19 @@ class MLTrainer(object):
         self.config = config
         self.sites = SiteManager(self.config)
         self.datasets = DatasetManager(self.config)
+        self.popularity = PopularityManager(self.config)
 
     def start(self):
         """
         Begin Machine Learning Trainer
         """
+        t_start = datetime.datetime.utcnow()
         self.sites.initiate_db()
         self.datasets.initiate_db()
+        self.popularity.initiate_db()
+        t_stop = datetime.datetime.utcnow()
+        tot_time = t_stop - t_start
+        print tot_time
 
 def main(argv):
     """

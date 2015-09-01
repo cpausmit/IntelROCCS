@@ -20,4 +20,4 @@ class IntelROCCSService(GenericService):
         GenericService.__init__(self, config)
         self.logger = logging.getLogger(__name__)
         self.SERVICE = 'intelroccs'
-        self.target_url = str(self.config['services'][self.SERVICE])
+        self.TARGET_URL = str(self.config['services'][self.SERVICE])

@@ -77,7 +77,7 @@ class SiteManager(object):
             # get CRAB data about site
             query = 'GLIDEIN_CMSSite =?= "%s" && CPUs > 0' % (site_name)
             attributes = ['GLIDEIN_CMSSite', 'CPUs']
-            ads = self.crab.fetch_cluster_ads(query=query, attributes=attributes)
+            ads = self.crab.fetch_cluster_ads(query, attributes=attributes)
             cpus = 0
             for ad in ads:
                 cpus += ad['CPUs']
@@ -103,43 +103,43 @@ class SiteManager(object):
             data = {'$set':{'name':site_name, 'status':site_status, 'quota_gb':site_quota}}
             self.storage.update_data(coll=coll, query=query, data=data, upsert=True)
 
-    # def get_available_sites(self):
-    #     """
-    #     Get all sites which are available for replication
-    #     """
-    #     coll = 'site_data'
-    #     pipeline = list()
-    #     match = {'$match':{'status':1}}
-    #     pipeline.append(match)
-    #     project = {'$project':{'name':1, '_id':0}}
-    #     pipeline.append(project)
-    #     data = self.storage.get_data(coll=coll, pipeline=pipeline)
-    #     return [site['name'] for site in data]
+    def get_available_sites(self):
+        """
+        Get all sites which are available for replication
+        """
+        coll = 'site_data'
+        pipeline = list()
+        match = {'$match':{'status':1}}
+        pipeline.append(match)
+        project = {'$project':{'name':1, '_id':0}}
+        pipeline.append(project)
+        data = self.storage.get_data(coll=coll, pipeline=pipeline)
+        return [site['name'] for site in data]
 
-    # def get_performance(self, site_name):
-    #     """
-    #     Get the maximum number of CPU's for site in last 30 days
-    #     """
-    #     # get maximum numver of CPU's and quota
-    #     coll = 'site_data'
-    #     pipeline = list()
-    #     match = {'$match':{'name':site_name}}
-    #     pipeline.append(match)
-    #     group = {'$group':{'_id':'$name', 'quota_gb':{'$max':'$quota_gb'}, 'max_cpus':{'$max':'$cpu_data.cpus'}}}
-    #     pipeline.append(group)
-    #     project = {'$project':{'quota_gb':1, 'max_cpus':1, '_id':0}}
-    #     pipeline.append(project)
-    #     data = self.storage.get_data(coll=coll, pipeline=pipeline)
-    #     try:
-    #         max_cpus = data[0]['max_cpus']
-    #     except:
-    #         max_cpus = 0
-    #     quota = data[0]['quota_gb']
-    #     try:
-    #         performance = float(max_cpus)/float(quota)
-    #     except:
-    #         performance = 0
-    #     return performance
+    def get_performance(self, site_name):
+        """
+        Get the maximum number of CPU's for site in last 30 days
+        """
+        # get maximum numver of CPU's and quota
+        coll = 'site_data'
+        pipeline = list()
+        match = {'$match':{'name':site_name}}
+        pipeline.append(match)
+        group = {'$group':{'_id':'$name', 'quota_gb':{'$max':'$quota_gb'}, 'max_cpus':{'$max':'$cpu_data.cpus'}}}
+        pipeline.append(group)
+        project = {'$project':{'quota_gb':1, 'max_cpus':1, '_id':0}}
+        pipeline.append(project)
+        data = self.storage.get_data(coll=coll, pipeline=pipeline)
+        try:
+            max_cpus = data[0]['max_cpus']
+        except:
+            max_cpus = 0
+        quota = data[0]['quota_gb']
+        try:
+            performance = float(max_cpus)/float(quota)
+        except:
+            performance = 0
+        return performance
 
     # def get_available_storage(self, site_name):
     #     """

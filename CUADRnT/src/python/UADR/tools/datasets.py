@@ -9,7 +9,6 @@ Description: Handle dataset data
 import logging
 import threading
 import Queue
-import datetime
 
 # package modules
 from UADR.utils.utils import timestamp_to_datetime
@@ -18,7 +17,6 @@ from UADR.utils.utils import get_json
 from UADR.services.phedex import PhEDExService
 from UADR.services.dbs import DBSService
 from UADR.tools.sites import SiteManager
-from UADR.tools.popularity import PopularityManager
 from UADR.tools.storage import StorageManager
 
 class DatasetManager(object):
@@ -32,9 +30,7 @@ class DatasetManager(object):
         self.dbs = DBSService(self.config)
         self.storage = StorageManager(self.config)
         self.sites = SiteManager(self.config)
-        self.popularity = PopularityManager(self.config)
         self.MAX_THREADS = int(config['threading']['max_threads'])
-        self.start_date = datetime_day(datetime.datetime.utcnow())
 
     def initiate_db(self):
         """
@@ -50,8 +46,10 @@ class DatasetManager(object):
         api = 'blockreplicas'
         params = [('node', active_sites), ('create_since', 0.0), ('complete', 'y'), ('group', 'AnalysisOps'), ('show_dataset', 'y')]
         phedex_data = self.phedex.fetch(api=api, params=params)
+        count = 1
         for dataset_data in self.generate_dataset_data(phedex_data):
-            q.put(get_json(dataset_data, 'name'))
+            q.put((get_json(dataset_data, 'name'), count))
+            count += 1
         self.logger.info('Done inserting datasets into DB')
         q.join()
 
@@ -66,18 +64,16 @@ class DatasetManager(object):
         """
         Insert a new dataset into the database and initiate all data
         """
-        count = 1
         while True:
-            dataset_name = q.get()
+            data = q.get()
+            dataset_name = data[0]
+            count = data[1]
             self.logger.info('Inserting dataset number %d', count)
-            date = self.start_date
             coll = 'dataset_data'
             data = [{'name':dataset_name}]
             self.storage.insert_data(coll=coll, data=data)
             self.insert_phedex_data(dataset_name)
             self.insert_dbs_data(dataset_name)
-            self.popularity.initiate_db(dataset_name, end_date=date)
-            count += 1
             q.task_done()
 
     def insert_phedex_data(self, dataset_name):
@@ -131,19 +127,26 @@ class DatasetManager(object):
         params = [('node', active_sites), ('create_since', 0.0), ('complete', 'y'), ('group', 'AnalysisOps'), ('show_dataset', 'y')]
         phedex_data = self.phedex.fetch(api=api, params=params)
         current_datasets = set()
-        date = datetime_day(datetime.datetime.utcnow())
+        q = Queue.Queue()
+        for i in range(self.MAX_THREADS):
+            worker = threading.Thread(target=self.insert_dataset_data, args=(i, q))
+            worker.daemon = True
+            worker.start()
+        count = 1
         for dataset_data in self.generate_datasets(phedex_data):
             dataset_name = get_json(dataset_data, 'name')
             current_datasets.add(dataset_name)
             if dataset_name not in dataset_names:
                 # this is a new dataset which need to be inserted into the database
-                self.insert_dataset_data(dataset_name, date)
+                q.put((get_json(dataset_data, 'name'), count))
+                count += 1
             # update replicas
             replicas = self.generate_replicas(dataset_data)
             coll = 'dataset_data'
             query = {'name':dataset_name}
             data = {'$set':{'replicas':list(replicas)}}
             data = self.storage.update_data(coll=coll, query=query, data=data, upsert=False)
+        q.join()
         deprecated_datasets = dataset_names - current_datasets
         for dataset_name in deprecated_datasets:
             self.remove_dataset(dataset_name)
@@ -178,30 +181,30 @@ class DatasetManager(object):
         query = {'name':dataset_name}
         self.storage.delete_data(coll=coll, query=query)
 
-    # def get_sites(self, dataset_name):
-    #     """
-    #     Get all sites with a replica of the dataset
-    #     """
-    #     coll = 'dataset_data'
-    #     pipeline = list()
-    #     match = {'$match':{'name':dataset_name}}
-    #     pipeline.append(match)
-    #     project = {'$project':{'replicas':1, '_id':0}}
-    #     pipeline.append(project)
-    #     data = self.storage.get_data(coll=coll, pipeline=pipeline)
-    #     site_names = data[0]['replicas']
-    #     return site_names
+    def get_sites(self, dataset_name):
+        """
+        Get all sites with a replica of the dataset
+        """
+        coll = 'dataset_data'
+        pipeline = list()
+        match = {'$match':{'name':dataset_name}}
+        pipeline.append(match)
+        project = {'$project':{'replicas':1, '_id':0}}
+        pipeline.append(project)
+        data = self.storage.get_data(coll=coll, pipeline=pipeline)
+        site_names = data[0]['replicas']
+        return site_names
 
-    # def get_size(self, dataset_name):
-    #     """
-    #     Get size in GB of dataset
-    #     """
-    #     coll = 'dataset_data'
-    #     pipeline = list()
-    #     match = {'$match':{'name':dataset_name}}
-    #     pipeline.append(match)
-    #     project = {'$project':{'size_bytes':1, '_id':0}}
-    #     pipeline.append(project)
-    #     data = self.storage.get_data(coll=coll, pipeline=pipeline)
-    #     size_gb = float(data[0]['size_bytes'])/10**9
-    #     return size_gb
+    def get_size(self, dataset_name):
+        """
+        Get size in GB of dataset
+        """
+        coll = 'dataset_data'
+        pipeline = list()
+        match = {'$match':{'name':dataset_name}}
+        pipeline.append(match)
+        project = {'$project':{'size_bytes':1, '_id':0}}
+        pipeline.append(project)
+        data = self.storage.get_data(coll=coll, pipeline=pipeline)
+        size_gb = float(data[0]['size_bytes'])/10**9
+        return size_gb

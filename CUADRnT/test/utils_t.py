@@ -46,14 +46,14 @@ class UtilsTests(unittest.TestCase):
         "Clean up"
         pass
 
-    @unittest.skip("Skip Test")
+    #@unittest.skip("Skip Test")
     def test_get_config(self):
         "Test get_config function"
         expected = 'bar'
         result = str(self.config['test']['foo'])
         self.assertEqual(result, expected)
 
-    @unittest.skip("Skip Test")
+    #@unittest.skip("Skip Test")
     def test_get_object_id(self):
         "Test get_object_id function"
         api = 'test'
@@ -62,7 +62,7 @@ class UtilsTests(unittest.TestCase):
         result = get_object_id(str(api)+str(params))
         self.assertEqual(result, expected)
 
-    @unittest.skip("Skip Test")
+    #@unittest.skip("Skip Test")
     def test_datetime_to_object_id(self):
         "Test get_object_id function"
         datetime_ = datetime.datetime(1987, 10, 27)
@@ -70,7 +70,7 @@ class UtilsTests(unittest.TestCase):
         result = datetime_to_object_id(datetime_)
         self.assertEqual(result, expected)
 
-    @unittest.skip("Skip Test")
+    #@unittest.skip("Skip Test")
     def test_export_csv(self):
         "Test export_csv function"
         file_name = 'test'
@@ -95,7 +95,7 @@ class UtilsTests(unittest.TestCase):
         result = check_tool(tool)
         self.assertFalse(result)
 
-    @unittest.skip("Skip Test")
+    #@unittest.skip("Skip Test")
     def test_weighted_choice(self):
         "Test weighted_choice function"
         choices = {'foo':1.5, 'bar':5.9}
@@ -103,7 +103,7 @@ class UtilsTests(unittest.TestCase):
         result = weighted_choice(choices)
         self.assertTrue(result in expected)
 
-    @unittest.skip("Skip Test")
+    #@unittest.skip("Skip Test")
     def test_daterange(self):
         "Test daterange function"
         start_date = datetime.datetime(1987, 10, 27)
@@ -115,7 +115,7 @@ class UtilsTests(unittest.TestCase):
             self.assertEqual(result, expected[i])
             i += 1
 
-    @unittest.skip("Skip Test")
+    #@unittest.skip("Skip Test")
     def test_bytes_to_gb(self):
         "Test bytes_to_gb function"
         bytes_ = 146640731779
@@ -123,7 +123,7 @@ class UtilsTests(unittest.TestCase):
         result = bytes_to_gb(bytes_)
         self.assertEqual(result, expected)
 
-    @unittest.skip("Skip Test")
+    #@unittest.skip("Skip Test")
     def test_datetime_to_timestamp(self):
         "Test datetime_to_timestamp function"
         datetime_ = datetime.datetime(1987, 10, 27)
@@ -131,7 +131,7 @@ class UtilsTests(unittest.TestCase):
         result = datetime_to_timestamp(datetime_)
         self.assertEqual(result, expected)
 
-    @unittest.skip("Skip Test")
+    #@unittest.skip("Skip Test")
     def test_timestamp_to_datetime(self):
         "Test timestamp_to_datetime function"
         timestamp = 1434989041.102534
@@ -139,7 +139,7 @@ class UtilsTests(unittest.TestCase):
         result = timestamp_to_datetime(timestamp)
         self.assertEqual(result, expected)
 
-    @unittest.skip("Skip Test")
+    #@unittest.skip("Skip Test")
     def test_datetime_day(self):
         "Test datetime_day function"
         datetime_ = datetime.datetime(1987, 10, 27, 3, 6, 9)
@@ -147,7 +147,7 @@ class UtilsTests(unittest.TestCase):
         result = datetime_day(datetime_)
         self.assertEqual(result, expected)
 
-    @unittest.skip("Skip Test")
+    #@unittest.skip("Skip Test")
     def test_datetime_to_string(self):
         "Test datetime_to_string function"
         datetime_ = datetime.datetime(1987, 10, 27)
@@ -155,7 +155,7 @@ class UtilsTests(unittest.TestCase):
         result = datetime_to_string(datetime_)
         self.assertEqual(result, expected)
 
-    @unittest.skip("Skip Test")
+    #@unittest.skip("Skip Test")
     def test_phedex_timestamp_to_datetime(self):
         "Test phedex_timestamp_to_datetime function"
         timestamp = 1363976920.60798
@@ -163,7 +163,7 @@ class UtilsTests(unittest.TestCase):
         result = phedex_timestamp_to_datetime(timestamp)
         self.assertEqual(result, expected)
 
-    @unittest.skip("Skip Test")
+    #@unittest.skip("Skip Test")
     def test_pop_db_timestamp_to_datetime(self):
         "Test pop_db_timestamp_to_datetime function"
         timestamp = 1406246400000
@@ -171,14 +171,14 @@ class UtilsTests(unittest.TestCase):
         result = pop_db_timestamp_to_datetime(timestamp)
         self.assertEqual(result, expected)
 
-    @unittest.skip("Skip Test")
+    #@unittest.skip("Skip Test")
     def test_datetime_remove_timezone(self):
         "Test datetime_remove_timezone function"
         expected = None
         result = datetime_remove_timezone(datetime.datetime.utcnow()).tzinfo
         self.assertEqual(result, expected)
 
-    @unittest.skip("Skip Test")
+    #@unittest.skip("Skip Test")
     def test_get_json(self):
         "Test get_json function"
         json_data = {'foo':[{'bar':1}, {'bar':2}]}
