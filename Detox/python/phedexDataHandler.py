@@ -65,7 +65,8 @@ class PhedexDataHandler:
     def __init__(self,allSites):
         self.newAccess = False
         self.phedexGroups = (os.environ['DETOX_GROUP']).split(',')
-        self.lockfile = "result/DetoxLockfile.json"
+        self.lockfile = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS'] + \
+            "/DetoxLockfile.json"
         self.phedexDatasets = {}
         self.otherDatasets = {}
         self.runAwayGroups = {}
