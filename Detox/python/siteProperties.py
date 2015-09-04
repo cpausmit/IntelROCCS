@@ -55,11 +55,12 @@ class SiteProperties:
         if wasused == 0:
             self.spaceNotUsed = self.spaceNotUsed + size
 
-    def makeWishList(self,banInvalid=True):
+    def makeWishList(self, dataPropers, ncopyMin, banInvalid=True):
         space = 0
         self.wishList = []
+        space2free = self.space2free
         for datasetName in sorted(self.datasetRanks.keys(), cmp=self.compare):
-            if space > (self.space2free-self.deleted):
+            if space > (space2free-self.deleted):
                 break
             
             if datasetName in self.datasetsToDelete:
@@ -77,15 +78,12 @@ class SiteProperties:
                 if not self.dsetIsValid[datasetName]:
                     continue
 
-            space = space + self.datasetSizes[datasetName]
-            self.wishList.append(datasetName)
-            if len(self.wishList) > 500:
-                break
+            dataPr = dataPropers[datasetName]
+            if dataPr.nSites() > ncopyMin:
+                space = space + self.datasetSizes[datasetName]
+                self.wishList.append(datasetName)
 
-    def hasMoreToDelete(self):
-        nsets = 0
-        if len(self.wishList) > 500:
-            return False
+    def hasMoreToDelete(self, dataPropers, ncopyMin, banInvalid=True):
         for datasetName in sorted(self.datasetRanks.keys(), cmp=self.compare):
             if datasetName in self.datasetsToDelete:
                 continue
@@ -95,12 +93,16 @@ class SiteProperties:
             if self.dsetIsCustodial[datasetName] :
                 continue
             #non-valid dataset can't be on deletion list
-            if not self.dsetIsValid[datasetName]:
-                continue
+            if banInvalid == True:
+                if not self.dsetIsValid[datasetName]:
+                    continue
             if datasetName in self.wishList:
                 continue
-            nsets = nsets + 1
-        if nsets > 0:
+
+            dataPr = dataPropers[datasetName]
+            if dataPr.nSites() <= ncopyMin:
+                continue
+
             return True
         return False
 
@@ -122,11 +124,16 @@ class SiteProperties:
 
     def grantWish(self,dset):
         if dset in self.protectedList:
-            return
+            return False
         if dset in self.datasetsToDelete:
-            return
+            return False
+        
+        #if self.deleted > self.space2free:
+        #    return False
+
         self.datasetsToDelete.append(dset)
         self.deleted = self.deleted + self.datasetSizes[dset]
+        return True
 
     def revokeWish(self,dset):
         if dset in self.datasetsToDelete:

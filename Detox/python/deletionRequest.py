@@ -15,9 +15,10 @@ class SiteDeletions:
         self.maxReqId = 0
         self.reqIds = {}
     def update(self, reqId, timeStamp):
-        self.reqIds[reqId] = timeStamp
         if self.maxReqId < reqId:
             self.maxReqId = reqId
+        self.reqIds[reqId] = timeStamp
+
     def getLastReqId(self):
         return self.maxReqId
     def getReqIds(self):
@@ -25,7 +26,6 @@ class SiteDeletions:
 
 class DeletionRequest:
     #"A DeletionRequest aggregates information about submitted deletion requests."
-
     def __init__(self, reqId, siteName, timeStamp, orig=None):
         self.size   = 0
         self.ndsets = 0
@@ -38,19 +38,17 @@ class DeletionRequest:
             self.copyConstructor(orig)
 
     def copyConstructor(self,orig):
-        self.reqId  = orig.reqId
-        self.site   = orig.site
-        self.tstamp = orig.tstamp
-        for dset in orig.dsetsizes:
-            self.update(dset,orig.dsetranks[dset],orig.dsetsizes[dset])
+        for dsetId in orig.dsetsizes:
+            self.update(dsetId,orig.dsetranks[dsetId],orig.dsetsizes[dsetId])
 
-    def update(self,dset,rank,size):
-        if dset in self.dsetsizes:
-            print dset
-            raise Exception("Duplicate dataset in DeletionRequest!!!")
+    def update(self,dsetId,rank,size):
+        if dsetId > 0:
+            if dsetId in self.dsetsizes:
+                print dsetId
+                raise Exception("Duplicate dataset in DeletionRequest!!!")
 
-        self.dsetsizes[dset] = size
-        self.dsetranks[dset] = rank
+        self.dsetsizes[dsetId] = size
+        self.dsetranks[dsetId] = rank
         self.size = self.size + size
         self.ndsets = self.ndsets + 1
 
@@ -63,8 +61,6 @@ class DeletionRequest:
                 matched = matched + 1
 	matchFrac = float(self.ndsets-matched)/float(self.ndsets)
         if abs(matchFrac) < 0.05:
-	    #print "  - Total datasets to be deleted = " + str(self.ndsets)
-            #print "   - matched to previous " + str(matched)
             return True
         return False
 

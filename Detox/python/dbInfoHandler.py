@@ -8,11 +8,15 @@ import siteStatus
 class DbInfoHandler:
     def __init__(self):
         self.allSites = {}
+        self.idToSite = {}
+        self.datasetNames = {}
         self.datasetIds = {}
         self.datasetSizes = {}
-        self.datasetRanks = {}
+        self.datasetFiles = {}
         self.phedexGroups = (os.environ['DETOX_GROUP']).split(',')
         self.extractAllSites()
+        self.extractDatasetIds()
+        self.extractDatasetSizes()
 
     def setDatasetRanks(self,dsetRanks):
         for dset in dsetRanks:
@@ -47,6 +51,7 @@ class DbInfoHandler:
             self.allSites[siteName] = siteStatus.SiteStatus(siteName)
             self.allSites[siteName].setId(siteId)
             self.allSites[siteName].setStatus(status)
+            self.idToSite[siteId] = siteName
 
             for group in phedGroups:
                 siteSizeGb = self.getGroupQuota(cursor,group,siteId)
@@ -99,61 +104,74 @@ class DbInfoHandler:
                 sys.exit(1)
         connection.close()
    
-    def extractDatasetIds(self,datasets):
+    def extractDatasetIds(self):
         connection = self.getDbConnection()
-        for dataset in datasets:
-            if dataset in self.datasetIds:
-                continue
-            
-            cursor = connection.cursor()
-            sql = "select DatasetId from Datasets where "
-            sql = sql + "DatasetName='" + dataset + "'"
-            try:
-                cursor.execute(sql)
-                results = cursor.fetchall()
-            except:
-                print " -- FAILED extract mysql info: %s"%(sql)
-                connection.close()
-                sys.exit(1)
-
-            dsetId = None
-            for row in results:
-                dsetId = int(row[0])
-            if dsetId != None: 
-                self.datasetIds[dataset] = dsetId
+        cursor = connection.cursor()
+        sql = "select * from Datasets"
+        try:
+            cursor.execute(sql)
+            results = cursor.fetchall()
+        except:
+            print " -- FAILED extract mysql info: %s"%(sql)
+            connection.close()
+            sys.exit(1)
         connection.close()
 
-    def extractDatasetSizes(self,datasets):
-        self.extractDatasetIds(datasets)
-        dsetSizes = {}
+        for row in results:
+            dsetId = int(row[0])
+            dsetName = row[1]
+            self.datasetNames[dsetId] = dsetName
+            self.datasetIds[dsetName] = dsetId
 
+    def extractDatasetSizes(self):
         connection = self.getDbConnection()
-        for dataset in datasets:
-            cursor = connection.cursor()
-            if dataset in self.datasetSizes:
-                dsetSizes[dataset] = self.datasetSizes[dataset]
-                continue
-
-            sql = "select Size from DatasetProperties where "
-            sql = sql + "DatasetId=" + str(self.datasetIds[dataset])
-            try:
-                cursor.execute(sql)
-                results = cursor.fetchall()
-            except:
-                print " -- FAILED insert mysql info: %s"%(sql)
-                connection.close()
-                sys.exit(1)
-
-            for row in results:
-                dsetSize = row[0]
-            self.datasetSizes[dataset] = dsetSize
-            dsetSizes[dataset] = dsetSize
+        cursor = connection.cursor()
+        sql = "select * from DatasetProperties"
+        try:
+            cursor.execute(sql)
+            results = cursor.fetchall()
+        except:
+            print " -- FAILED insert mysql info: %s"%(sql)
+            connection.close()
+            sys.exit(1)
         connection.close()
-        return dsetSizes
+
+        for row in results:
+            dsetId = int(row[0])
+            self.datasetFiles[dsetId] = int(row[1])
+            self.datasetSizes[dsetId] = int(row[2])
      
     def getAllSites(self):
         return self.allSites
-            
+
+    def siteExists(self,siteId):
+        if siteId in self.idToSite:
+            return True
+        else:
+            return False
+
+    def getSiteName(self,siteId):
+        if siteId in self.idToSite:
+            return self.idToSite[siteId]
+        
+    def datasetExists(self,dsetId):
+        if dsetId in self.datasetSizes:
+            return True
+        else:
+            return False
+
+    def getDatasetName(self,dsetId):
+        return self.datasetName[dsetId]
+    def getDatasetSize(self,dsetId):
+        return self.datasetSizes[dsetId]
+    def getDatasetFiles(self,dsetId):
+        return self.datasetFiles[dsetId]
+
+    def getDatasetId(self,dsetName):
+        if dsetName in self.datasetIds:
+            return self.datasetIds[dsetName]
+        else:
+            return -1
 
     def dbExecSql(self,sql):
         connection = self.getDbConnection()
@@ -186,14 +204,9 @@ class DbInfoHandler:
         connection.close()
 
     def extractCacheRequests(self):
-
         connection = self.getDbConnection()
         cursor = connection.cursor()
-        sql = "select RequestId,DatasetName,Size,Rank,Date,SiteName " +\
-            "from Requests,Sites,Datasets,DatasetProperties " +\
-            "where Requests.SiteId=Sites.SiteId " +\
-            "and Requests.DatasetId=Datasets.DatasetId and DatasetProperties.DatasetId=Datasets.DatasetId "+\
-            "and RequestType=1 order by RequestId DESC LIMIT 10000"
+        sql = "select * from Requests where RequestType=1"
         try:
             cursor.execute(sql)
             results = cursor.fetchall()
