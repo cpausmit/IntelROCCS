@@ -28,7 +28,7 @@ export DETOX_DATASETS_TO_DELETE=RankedDatasets.txt
 
 
 # PhEDEx group that is considered 
-export DETOX_GROUP='AnalysisOps','DataOps','caf-comm','caf-alca'
+export DETOX_GROUP='AnalysisOps','DataOps','caf-comm','caf-alca','local'
 
 #Lock file locations for DataOps group
 

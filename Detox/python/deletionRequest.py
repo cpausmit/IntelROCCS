@@ -19,8 +19,16 @@ class SiteDeletions:
             self.maxReqId = reqId
         self.reqIds[reqId] = timeStamp
 
-    def getLastReqId(self):
-        return self.maxReqId
+    def getLastReqId(self, nitems):
+        lastIds = []
+        i = 0
+        for reqid in sorted(self.reqIds, reverse=True):
+            lastIds.append(reqid)
+            if i >= nitems:
+                break
+            i = i + 1
+        return lastIds
+
     def getReqIds(self):
         return sorted(self.reqIds.keys(),reverse=True)
 
@@ -44,6 +52,7 @@ class DeletionRequest:
     def update(self,dsetId,rank,size):
         if dsetId > 0:
             if dsetId in self.dsetsizes:
+		print self.reqId
                 print dsetId
                 raise Exception("Duplicate dataset in DeletionRequest!!!")
 

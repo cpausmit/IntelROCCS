@@ -281,7 +281,11 @@ class CentralManager:
        for site in sorted(self.allSites.keys()):
            if self.allSites[site].getStatus() == 0:
                continue
+           if not self.allSites[site].getValid([phedexGroup]):
+               continue
+               
            size = self.allSites[site].getSize(phedexGroup)
+
            sitePr = self.sitePropers[site]
            sitePr.setSiteSize(size)
            taken = sitePr.spaceTaken()
@@ -545,10 +549,11 @@ class CentralManager:
                 siteRankAve.append(rank)
                 siteRankMdn.append(median)
 		outputFile.write("   %-9.1f %-10.1f %-20s \n"%(rank,median,site))
-        sm1 = statistics.mean(siteRankAve)
-        sm2 = statistics.mean(siteRankMdn)
-        rms1 = rms2 = 0
-        if len(siteRankAve) > 1:
+        sm1 = sm2 = rms1 = rms2 = 0
+        if len(siteRankAve) > 0:
+            sm1 = statistics.mean(siteRankAve)
+            sm2 = statistics.mean(siteRankMdn)
+        if len(siteRankAve) > 1:   
             rms1 = statistics.stdev(siteRankAve)
             rms2 = statistics.stdev(siteRankMdn)
         outputFile.write("#\n#------------------------------------\n")
@@ -915,15 +920,20 @@ class CentralManager:
             print " -- Number of datasets       = " + str(len(datasets2del))
             print "%s %0.2f %s" %(" -- Total size to be deleted =",totalSize/1000,"TB")
 
+            proceed = True
             if site in self.siteRequests:
-                lastReqId = self.siteRequests[site].getLastReqId()
-                lastRequest = self.delRequests[lastReqId]
+                lastReqIds = self.siteRequests[site].getLastReqId(2)
                 #they can look identical
                 #resubmit in case it was submitted too long ago
-                if thisRequest.looksIdentical(lastRequest):
-                    if thisRequest.deltaTime(lastRequest)/(60*60) < 72 :
-                        print " -- Skipping submition, looks like request " + str(lastReqId)
-                        continue
+                for lreqid in lastReqIds:
+                    lastRequest = self.delRequests[lreqid]
+                    if thisRequest.looksIdentical(lastRequest):
+                        if thisRequest.deltaTime(lastRequest)/(60*60) < 72 :
+                            print " -- Skipping submition, looks like request " + str(lreqid)
+                            proceed = False
+                            break
+            if not proceed:
+                continue
             numberRequests = numberRequests + 1
 
             

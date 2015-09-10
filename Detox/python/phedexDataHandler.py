@@ -224,8 +224,8 @@ class PhedexDataHandler:
                 continue
             if self.allSites[siteName].getStatus() == 0:
                 continue
-            if group == 'local':
-                continue
+            #if group == 'local':
+            #    continue
 
             dataset = None
             if group not in phedGroups:
@@ -400,8 +400,9 @@ class PhedexDataHandler:
 
         proxy = os.environ['DETOX_X509UP']
 
-        #it fails connection from time to time, try 3 times 
-        for itry in range(0,5):
+        #it fails connection from time to time, try 3 times
+        sleepTime= 5
+        for itry in range(0,10):
             connection = httplib.HTTPSConnection(reqman_server,cert_file = proxy,key_file = proxy)
             # connection.set_debuglevel(1)
             headers = {"Content-type": "application/x-www-form-urlencoded",
@@ -412,8 +413,9 @@ class PhedexDataHandler:
             response = connection.getresponse()
             if response.status == 200:
                 break
-            print '  - bad responce, retrying local lock file'
-            time.sleep(5)
+            print '  - bad responce, retrying making local lock file'
+            time.sleep(sleepTime)
+            sleepTime = sleepTime + 5
 
         info = json.loads(response.read())
         data = info['result'][0]
