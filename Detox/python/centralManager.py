@@ -906,8 +906,8 @@ class CentralManager:
             if len(datasets2del) < 1:
                 continue
             datasets2del = datasets2del[0:500]
-            #if not site.startswith('T2_'):
-            #    continue
+            if not site.startswith('T2_'):
+                continue
 
             totalSize = 0
             thisRequest = deletionRequest.DeletionRequest(0,site,now_tstamp)
