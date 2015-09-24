@@ -62,6 +62,8 @@ do
                          /local/IntelROCCSplots/ >& /dev/null
     rsync -Cavz --delete /local/cmsprod/IntelROCCS/Monitor/monitorCacheAnalysisOps.pkl \
                          /local/IntelROCCSplots/ >& /dev/null
+    rsync -Cavz --delete /local/cmsprod/IntelROCCS/Monitor/monitorCacheDataOps.pkl \
+                         /local/IntelROCCSplots/ >& /dev/null
 
 
     sleep $wait

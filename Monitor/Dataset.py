@@ -71,7 +71,7 @@ class Dataset(object):
             return r
         else:
             r=0
-            for siteName in self.nAccesses:
+            for siteName,accessesByTime in self.nAccesses.iteritems():
                 for utime in accessesByTime:
                     if utime < end and utime > start:
                         r += accessesByTime[utime]
