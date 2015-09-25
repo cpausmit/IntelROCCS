@@ -1,6 +1,6 @@
 SHELL=/bin/bash
 PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin
-0 0 * * * grid-proxy-init -rfc -bits 2048 -valid 24:30
+0 0 * * * voms-proxy-init -voms cms:/cms -valid 24:30
 0 * * * * update_cpu >> /var/log/cuadrnt/errors.log 2>&1
 0 1 * * * update_db >> /var/log/cuadrnt/errors.log 2>&1
 0 8 * * * rocker_board >> /var/log/cuadrnt/errors.log 2>&1

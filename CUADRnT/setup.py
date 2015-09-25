@@ -1,6 +1,6 @@
 #!/usr/bin/env python2.7
 """
-Standard python setup.py file for CUADRnT package
+Standard python setup.py file for cuadrnt package
 To build     : python setup.py build
 To install   : python setup.py install --prefix=<some dir>
 To clean     : python setup.py clean
@@ -25,7 +25,7 @@ from distutils.cmd import Command
 from distutils.dir_util import mkpath
 from logging.handlers import TimedRotatingFileHandler
 
-version = '0.9'  # TODO: (10) Set up automatic versioning system
+version = '1.0'  # TODO: (10) Set up automatic versioning system
 required_python_version = '2.7'
 
 class TestCommand(Command):
@@ -155,7 +155,7 @@ def main(argv):
     """
     Main setup function
     """
-    name = 'CUADRnT'
+    name = 'cuadrnt'
 
     if not sys.version[:3] == required_python_version:
         print "I'm sorry, but %s %s requires Python %s." % (name, version, required_python_version)
@@ -168,12 +168,12 @@ def main(argv):
     username = config_parser.get('permissions', 'username')
     group = config_parser.get('permissions', 'group')
 
-    description = "CUADRnT is CMS Usage Analytics and Data Replication Tools"
-    url = "https://github.com/cpausmit/IntelROCCS/blob/v2/CUADRnT/"
-    readme = "https://github.com/cpausmit/IntelROCCS/blob/v2/CUADRnT/README.md"
+    description = "cuadrnt is CMS Usage Analytics and Data Replication Tools"
+    url = "https://github.com/cpausmit/IntelROCCS/blob/v2/cuadrnt/"
+    readme = "https://github.com/cpausmit/IntelROCCS/blob/v2/cuadrnt/README.md"
     author = "Bjorn Barrefors",
     author_email = "bjorn [dot] peter [dot] barrefors [AT] cern [dot] ch",
-    keywords = ["CUADRnT"]
+    keywords = ["cuadrnt"]
     package_dir = {'': 'src/python'}
     install_requires = [
         'setuptools',

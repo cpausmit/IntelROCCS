@@ -1,0 +1,1 @@
+{"options":{},"indexes":[{"v":1,"key":{"_id":1},"name":"_id_","ns":"cuadrnt.crab"},{"v":1,"key":{"datetime":1},"name":"datetime_1","ns":"cuadrnt.crab","expireAfterSeconds":86400}]}

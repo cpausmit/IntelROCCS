@@ -12,22 +12,22 @@ import datetime
 from bson.objectid import ObjectId
 
 # package modules
-from UADR.utils.config import get_config
-from UADR.utils.db_utils import get_object_id
-from UADR.utils.db_utils import datetime_to_object_id
-from UADR.utils.io_utils import export_csv
-from UADR.utils.utils import check_tool
-from UADR.utils.utils import weighted_choice
-from UADR.utils.utils import daterange
-from UADR.utils.utils import bytes_to_gb
-from UADR.utils.utils import datetime_to_timestamp
-from UADR.utils.utils import timestamp_to_datetime
-from UADR.utils.utils import datetime_day
-from UADR.utils.utils import datetime_to_string
-from UADR.utils.utils import phedex_timestamp_to_datetime
-from UADR.utils.utils import pop_db_timestamp_to_datetime
-from UADR.utils.utils import datetime_remove_timezone
-from UADR.utils.utils import get_json
+from cuadrnt.utils.config import get_config
+from cuadrnt.utils.db_utils import get_object_id
+from cuadrnt.utils.db_utils import datetime_to_object_id
+from cuadrnt.utils.io_utils import export_csv
+from cuadrnt.utils.utils import check_tool
+from cuadrnt.utils.utils import weighted_choice
+from cuadrnt.utils.utils import daterange
+from cuadrnt.utils.utils import bytes_to_gb
+from cuadrnt.utils.utils import datetime_to_timestamp
+from cuadrnt.utils.utils import timestamp_to_datetime
+from cuadrnt.utils.utils import datetime_day
+from cuadrnt.utils.utils import datetime_to_string
+from cuadrnt.utils.utils import phedex_timestamp_to_datetime
+from cuadrnt.utils.utils import pop_db_timestamp_to_datetime
+from cuadrnt.utils.utils import datetime_remove_timezone
+from cuadrnt.utils.utils import get_json
 
 # get local config file
 opt_path = os.path.join(os.path.split(os.path.dirname(os.path.realpath(__file__)))[0], 'etc')

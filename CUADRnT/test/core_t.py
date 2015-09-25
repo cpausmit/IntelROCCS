@@ -10,14 +10,14 @@ import unittest
 import os
 
 # package modules
-from UADR.utils.config import get_config
-from UADR.core.rocker_board import RockerBoard
+from cuadrnt.utils.config import get_config
+from cuadrnt.core.rocker_board import RockerBoard
 
 # get local config file
 opt_path = os.path.join(os.path.split(os.path.dirname(os.path.realpath(__file__)))[0], 'etc')
 
 @unittest.skip("Skip Test")
-class ToolsTests(unittest.TestCase):
+class CoreTests(unittest.TestCase):
     """
     A test class for core classes
     Not strictly used as unittests as results are not checked here
