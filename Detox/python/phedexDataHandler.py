@@ -2,7 +2,7 @@
 #  C L A S S
 #===================================================================================================
 import os, subprocess, re, signal, sys, MySQLdb, json
-import datetime, time, json
+import datetime, time, json, httplib
 import phedexDataset
 import phedexApi
 
@@ -65,13 +65,20 @@ class PhedexDataHandler:
     def __init__(self,allSites):
         self.newAccess = False
         self.phedexGroups = (os.environ['DETOX_GROUP']).split(',')
+        self.lockfile = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS'] + \
+            "/DetoxLockfile.json"
         self.phedexDatasets = {}
         self.otherDatasets = {}
         self.runAwayGroups = {}
         self.allSites = allSites
+        self.localyLocked = {}
+        self.makeLockFile()
 
         self.lockedSets = {}
-        self.getLockInformation()
+        lockFiles =  (os.environ['DETOX_LOCKFILES']).split(',')
+
+        for lockF in lockFiles:
+            self.getLockInformation(lockF)
 
         self.epochTime = int(time.time())
 
@@ -174,11 +181,12 @@ class PhedexDataHandler:
                         iscust = 1
                     if 'GenericTTbar' in datasetName:
                         iscust = 1
-		    if 'MinBias' in datasetName:
-		        iscust = 1
+		    #if 'MinBias' in datasetName:
+		    #    iscust = 1
 
                     dataset.updateForSite(site,size,group,files,iscust,reqtime,updtime,isdone)
 
+        del dataJson
         # Create our local cache files of the status per site
         filename = os.environ['DETOX_PHEDEX_CACHE']
         outputFile = open(os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS'] + '/'
@@ -216,8 +224,8 @@ class PhedexDataHandler:
                 continue
             if self.allSites[siteName].getStatus() == 0:
                 continue
-            if group == 'local':
-                continue
+            #if group == 'local':
+            #    continue
 
             dataset = None
             if group not in phedGroups:
@@ -240,6 +248,12 @@ class PhedexDataHandler:
 
     def getLockedDatasets(self):
         return self.lockedSets
+
+    def isLocalyLocked(self,site,dset):
+        if site in self.localyLocked:
+            if dset in self.localyLocked[site]:
+                return True
+        return False
 
     def getPhedexDatasetsAtSite(self,site):
         dsets = []
@@ -335,8 +349,7 @@ class PhedexDataHandler:
         for site in sorted(siteSizes):
             print ' %3d %6.2f TB'%(siteSets[site],siteSizes[site]) + ": " + site
 
-    def getLockInformation(self):
-        url = ' https://cmst2.web.cern.ch/cmst2/unified/datalocks.json'
+    def getLockInformation(self, url):
         cmd = 'curl -k -H "Accept: text" ' + url
         
         process = subprocess.Popen(cmd,stdout=subprocess.PIPE,
@@ -368,9 +381,74 @@ class PhedexDataHandler:
 
                 if datasetName not in self.lockedSets:
                     self.lockedSets[datasetName] = LockedDataset(datasetName)
+                    #print 'locking ' + datasetName
                 #print temphash
                 self.lockedSets[datasetName].appendEntry(temphash,dset)
     
         for dset in self.lockedSets:
             self.lockedSets[dset].processEnrties()
+        del dataJason
                 
+
+    def makeLockFile(self):        
+        lockfile = "result/DetoxLockfile.json"
+        reqman_server = "cmsweb.cern.ch"
+        reqman_url = "/reqmgr2/data/request"
+
+        active_states = ['assigned','acquired','running-open','running-closed','completed',
+                         "force-complete","closed-out"]
+
+        proxy = os.environ['DETOX_X509UP']
+
+        #it fails connection from time to time, try 3 times
+        sleepTime= 5
+        for itry in range(0,10):
+            connection = httplib.HTTPSConnection(reqman_server,cert_file = proxy,key_file = proxy)
+            # connection.set_debuglevel(1)
+            headers = {"Content-type": "application/x-www-form-urlencoded",
+                       "Accept": "application/json"}
+            params = "&".join("status="+x for x in active_states)
+            url = "%s?%s"%(reqman_url,params)
+            connection.request('GET',url,"",headers)
+            response = connection.getresponse()
+            if response.status == 200:
+                break
+            print '  - bad responce, retrying making local lock file'
+            time.sleep(sleepTime)
+            sleepTime = sleepTime + 5
+
+        info = json.loads(response.read())
+        data = info['result'][0]
+    
+        site_locks = dict()
+        for workflow,workflow_info in data.iteritems():
+            # skip workflows with missing information
+            if not 'SiteWhitelist' in workflow_info: continue
+
+            # extract active dataset names
+            datasets = dict()
+            for param in ['InputDataset','InputDatasets','OutputDatasets','MCPileup','DataPileup']:
+                if param in workflow_info:
+                    entry = workflow_info[param]
+                    if isinstance(entry, basestring):
+                        datasets[entry] = 1
+                    else:
+                        for ds in entry:
+                            datasets[ds] = 1
+        
+            # update site lock list
+            site_whitelist = workflow_info['SiteWhitelist']
+            for site in site_whitelist:
+                self.localyLocked [site] = []
+                for ds in datasets:
+                    if not site in site_locks:
+                        self.localyLocked[site].append(ds)
+                        site_locks[site] = dict()
+                    site_locks[site][ds] = {"lock":True}
+                
+        # store results
+        with open(self.lockfile,"w") as f:
+            json.dump(site_locks,f,indent=2)
+        del info
+        print " Lock file has been succcesfully created: %s" % self.lockfile
+        print "  Number of active workflows: %d" % len(data)

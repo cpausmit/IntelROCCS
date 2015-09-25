@@ -51,6 +51,11 @@ class SiteStatus:
             if self.valid[group] == 1:
                 return 1
         return 0
+    def hasDefinedGroup(self,group):
+         phedGroups = group.split('+')
+         if group in phedGroups:
+             return True
+         return False
     def getSize(self,group):
         phedGroups = group.split('+')
         size = 0.0

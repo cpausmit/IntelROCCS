@@ -1,9 +1,14 @@
 #!/usr/bin/env python
 #---------------------------------------------------------------------------------------------------
 #
-# This script will find a Tier-2 appropriate to serve as the initial location for the specifified
-# dataset. It will also make sure that the sample copies on all Tier-1 disk spaces owned by
-# 'DataOps' phedex group will be signed over to the 'AnalysisOps' group.
+# This script will find a requested number of Tier-2 sites appropriate to serve as the initial
+# location(s) for the specifified dataset. It will also make sure that the sample copies on all
+# Tier-1 disk spaces owned by 'DataOps' phedex group will be signed over to the 'AnalysisOps' group.
+#
+# Injection of so called open datasets (datasets that are not yet completed and will be growing) is
+# problematic as the size of the dataset is not correct in the database. To solve this problem an
+# expected dataset size can be specified to overwrite this information. 
+# 
 #
 # Implementation: by design this should be a standalone script that will work when you copy it into
 # your directory. It is important so that it virtually runs anywhere and anyone can easily use it
@@ -282,16 +287,16 @@ def testLocalSetup(dataset,debug=0):
         print ' Error - no X509_USER_PROXY, please check. EXIT!'
         sys.exit(0)
 
-    # check das_client.py tool
-    cmd = 'which das_client.py'
-    for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
-        line    = line[:-1]
-    if line != "":
-        if debug > 0:
-            print ' Using das_client.py from: ' + line
-    else:
-        print ' Error - das_client.py in your path, find it and add it to PATH. EXIT!'
-        sys.exit(1)
+    ## check das_client.py tool
+    #cmd = 'which das_client.py'
+    #for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
+    #    line    = line[:-1]
+    #if line != "":
+    #    if debug > 0:
+    #        print ' Using das_client.py from: ' + line
+    #else:
+    #    print ' Error - das_client.py in your path, find it and add it to PATH. EXIT!'
+    #    sys.exit(1)
 
 def convertSizeToGb(sizeTxt):
 
@@ -539,10 +544,10 @@ def submitUpdateSubscriptionRequest(sites,datasets=[],debug=0):
 #===================================================================================================
 # Define string to explain usage of the script
 usage =  " Usage: assignDatasetToSite.py   --dataset=<name of a CMS dataset>\n"
-usage += "                 [ --nCopies=1 ]   <-- number of desired copies \n"
+usage += "                 [ --nCopies=1 ]           <-- number of desired copies \n"
 usage += "                 [ --expectedSizeGb=-1 ]   <-- open subscription to avoid small sites \n"
-usage += "                 [ --debug=0 ]\n"
-usage += "                 [ --exec ]\n"
+usage += "                 [ --debug=0 ]             <-- see various levels of debug output\n"
+usage += "                 [ --exec ]                <-- add this to execute all actions\n"
 usage += "                 [ --help ]\n\n"
 
 # Define the valid options which can be specified and check out the command line
@@ -563,6 +568,7 @@ dataset = ''
 nCopies = 1
 exe = False
 expectedSizeGb = -1
+isMiniAod = False
 
 # Read new values from the command line
 for opt, arg in opts:
@@ -589,31 +595,30 @@ testLocalSetup(dataset,debug)
 #-----------------------------------
 
 print '\n DATASET: ' + dataset
+f = dataset.split("/")
+if len(f) > 3:
+    tier = f[3]
+    if 'MINIAOD' in tier:
+        print ' MINIAOD* identified, consider extra T2_CH_CERN copy.'
+        isMiniAod = True
 
 # size of provided dataset
 #-------------------------
 
+# instantiate an API
 dbsapi = DbsApi(url='https://cmsweb.cern.ch/dbs/prod/global/DBSReader')
+
+# first test whether dataset is valid
+dbsList = dbsapi.listDatasets(dataset = dataset, dataset_access_type = 'VALID')
+datasetInvalid = False
+if dbsList == []:
+    datasetInvalid = True
+    print ' Dataset does not exist or is invalid. Exit now!\n'
+    sys.exit(1)
+
+# determine size and number of files
 size = str(sum([block['file_size'] for block in dbsapi.listBlockSummaries(dataset = dataset)]))+'UB'
 sizeGb = convertSizeToGb(size)
-
-## use das client to find the present size of the dataset
-#cert = '--cert ' + os.environ['HOME'] + '/.globus/usercert.pem ' \
-#    +  '--key '  + os.environ['HOME'] + '/.globus/userkey.pem '
-#cmd = 'das_client.py ' + cert + ' --format=plain --limit=0 --query="file dataset=' + \
-#      dataset + ' | sum(file.size)" |tail -1 | cut -d= -f2'
-#if debug>2:
-#    print ' DAS: ' + cmd
-#    
-#for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
-#    line    = line[:-1]
-#
-## this is the text including the size units, that needs to be converted)
-#if line != '':
-#    sizeGb = convertSizeToGb(line)
-#else:
-#    print ' Error - no reasonable size found with das_client.py.'
-#    sys.exit(1)
 
 # in case this is an open subscription we need to adjust sizeGb to the expected size
 if expectedSizeGb > 0:
@@ -630,6 +635,8 @@ datasets.append(dataset)
 #-----------------------------------------------------------------------------------------
 
 tier1Sites = findExistingSubscriptions(dataset,'DataOps','T1_*_Disk',debug)
+if debug>0:
+    print ' Re-assign all Tier-1 copies from DataOps to AnalysisOps space.'
 if len(tier1Sites) > 0:
     print '\n Resident under DataOps group on the following Tier-1 disks:'
     for tier1Site in tier1Sites:
@@ -642,6 +649,8 @@ if len(tier1Sites) > 0:
         submitUpdateSubscriptionRequest(tier1Sites,datasets,debug)
     else:
         print '\n -> WARNING: not doing anything .... please use  --exec  option.\n'
+else:
+    print '\n No Tier-1 copies of this dataset in DataOps space.'
 
 
 # has the dataset already been subscribed?
@@ -658,8 +667,10 @@ if len(siteNames) >= nCopies:
     print '\n Already subscribed on Tier-2:'
     for siteName in siteNames:
         print ' --> ' + siteName
-    print '\n The job is done already: EXIT!\n'
-    sys.exit(0)
+
+    if not isMiniAod:
+        print '\n The job is done already: EXIT!\n'
+        sys.exit(0)
 else:
     print ' Requested %d copies at Tier-2, but only %d copies found.'%(nCopies,len(siteNames))
     print ' --> will find %d more sites for subscription.\n'%(nAdditionalCopies)
@@ -699,5 +710,13 @@ if not exe:
 if exe:
     # make subscriptions to Tier-2 site(s)
     submitSubscriptionRequests(sites,datasets)
+
+    # make special subscription for /MINIAOD* to T2_CH_CERN
+    if isMiniAod:
+        cern = [ 'T2_CH_CERN' ]
+        submitSubscriptionRequests(cern,datasets)    
+
 else:
     print '\n -> WARNING: not doing anything .... please use  --exec  option.\n'
+    if isMiniAod:
+        print ' INFO: extra copy to T2_CH_CERN activated.'

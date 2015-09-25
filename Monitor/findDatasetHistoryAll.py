@@ -72,7 +72,10 @@ def getDeletions(start,end,datasetPattern,groupPattern):
                 if datasetName in datasetSet:
                     # we have already accounted for it
                     continue
-                if not(groupPattern=="AnalysisOps"):
+                if re.match(".*BUNNIES.*",datasetName):
+                    # ignore T0 datasets
+                    continue
+                if not(groupPattern=="AnalysisOps" or groupPattern=="DataOps"):
                     if re.match(datasetPattern,datasetName):
                         datasetSet[datasetName] = Dataset(datasetName)
                         datasetObject = datasetSet[datasetName]

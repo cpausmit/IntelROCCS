@@ -419,6 +419,10 @@ for line in phedexFile:
     siteName=l[5]
     if not re.match(datasetPattern,datasetName):
         continue
+    if re.match(".*BUNNIES.*",datasetName):  
+        # get rid of T0 testing datasets
+        # why are these even in DDM?
+        continue
     if not re.match(siterx,siteName):
         continue
     if datasetName not in datasetSet:

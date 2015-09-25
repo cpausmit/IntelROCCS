@@ -81,6 +81,7 @@ timePre = timeNow
 
 centralManager.rankDatasetsLocally()
 centralManager.extractCacheRequests()
+centralManager.extractDataStats()
 centralManager.findExtraUsage() 
 
 timeNow = time.time()
@@ -108,11 +109,11 @@ for iii in range(0, len(phedexGroups)):
     print ' - Requesting deletions took: %d seconds'%(timeNow-timePre)
     timePre = timeNow
 
-    centralManager.extractCacheRequests()
+    #centralManager.extractCacheRequests()
     centralManager.showCacheRequests()
-    timeNow = time.time()
-    print ' - Extracting requests from database took: %d seconds'%(timeNow-timePre)
-    timePre = timeNow
+    #timeNow = time.time()
+    #print ' - Extracting requests from database took: %d seconds'%(timeNow-timePre)
+    #timePre = timeNow
 
     if phedGroup == 'AnalysisOps':
         centralManager.updateSiteStatus()
@@ -122,12 +123,12 @@ for iii in range(0, len(phedexGroups)):
     print ' - Printing results took: %d seconds'%(timeNow-timePre)
     timePre = timeNow
 
-    if requestTransfers:
-        print ' Subscribe datasets to T1s'
-        centralManager.assignToT1s()
-        timeNow = time.time()
-        print ' - Subscribing to T1s took: %d seconds'%(timeNow-timePre)
-        timePre = timeNow
+if requestTransfers:
+    print ' Subscribe datasets to T1s'
+    centralManager.assignToT1s()
+    timeNow = time.time()
+    print ' - Subscribing to T1s took: %d seconds'%(timeNow-timePre)
+    timePre = timeNow
 
 # Final summary of timing
 timeNow = time.time()

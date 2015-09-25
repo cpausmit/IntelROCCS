@@ -106,6 +106,9 @@ class CentralManager:
                 for lsite in lsites:
                     if phedexSets[dset].group(lsite) == 'DataOps':
                         phedexSets[dset].setCustodial(lsite,1)
+            for lsite in sorted(self.allSites):
+                if self.phedexHandler.isLocalyLocked(lsite,dset):
+                    phedexSets[dset].setCustodial(lsite,1)
 
         usedSets = self.popularityHandler.getUsedDatasets()
         phedexDsetNames = self.phedexHandler.getDatasetsAtSite(site)
@@ -245,39 +248,7 @@ class CentralManager:
            self.sitePropers[site] = siteProperties.SiteProperties(site)
 
        phedexSets = self.phedexHandler.getPhedexDatasets()
-
-       #here we go into datasets and find out dataset Ids
-       # or assign if they do not exist
-       dataSetIds = {}
-       connection = self.dbInfoHandler.getDbConnection()
-       cursor = connection.cursor()
-       sql = "select DatasetName,Datasets.DatasetId,NFiles,Size from Datasets,DatasetProperties"
-       sql = sql + " where Datasets.DatasetId=DatasetProperties.DatasetId"
-       try:
-           cursor.execute(sql)
-           results = cursor.fetchall()
-       except MySQLdb.Error,e:
-           print e[0],e[1]
-           print " -- FAILED extract mysql info: %s"%(sql)
-           connection.close()
-           sys.exit(1)
-       connection.close()
-       for row in results:
-           dsetName = row[0]
-           dsetId   =   int(row[1])
-           trueNfiles = int(row[2])
-           trueSize =   float(row[3])
-           if dsetName in phedexSets:
-               dataSetIds[dsetName] = dsetId
-               phedexSets[dsetName].setTrueSize(trueSize)
-               phedexSets[dsetName].setTrueNfiles(trueNfiles)
-
-
        for datasetName in phedexSets:
-           if datasetName not in dataSetIds:
-               dataSetIds[datasetName] = -1
-               #if phedexSets[datasetName].matchesSite("T2_"):
-                   #print  " -- WARNING -- not in the database " + datasetName
            phedexSets[datasetName].findIncomplete()
 
        missing = 0
@@ -291,8 +262,7 @@ class CentralManager:
            trueNfiles = phedexSets[datasetName].getTrueNfiles()
            self.dataPropers[datasetName] = datasetProperties.DatasetProperties(datasetName)
            self.dataPropers[datasetName].append(onSites)
-           self.dataPropers[datasetName].setId(dataSetIds[datasetName])
-           #self.dataPropers[datasetName].setDeprecated(isDeprecated)
+           self.dataPropers[datasetName].setId(self.dbInfoHandler.getDatasetId(datasetName))
            self.dataPropers[datasetName].setTrueSize(trueSize)
            self.dataPropers[datasetName].setTrueNfiles(trueNfiles)
            for site in onSites:
@@ -305,18 +275,17 @@ class CentralManager:
                updtime = phedexSets[datasetName].updTime(site)
                isdone = phedexSets[datasetName].isDone(site)
                wasUsed = phedexSets[datasetName].getIfUsed(site)
-               #since I cant delete dataset that is not in the datase 
-               #I will set it as invalid 
-               #if dataSetIds[datasetName] is None:
-               #    vali = False
-
                self.sitePropers[site].addDataset(datasetName,rank,size,vali,part,
                                                  cust,isDeprecated,reqtime,updtime,wasUsed,isdone)
 
        for site in sorted(self.allSites.keys()):
            if self.allSites[site].getStatus() == 0:
                continue
+           if not self.allSites[site].getValid([phedexGroup]):
+               continue
+               
            size = self.allSites[site].getSize(phedexGroup)
+
            sitePr = self.sitePropers[site]
            sitePr.setSiteSize(size)
            taken = sitePr.spaceTaken()
@@ -324,14 +293,18 @@ class CentralManager:
            size2del = -1
            if taken > size*self.DETOX_USAGE_MAX :
                size2del = sitePr.spaceTaken() - size*self.DETOX_USAGE_MIN
-           #size2del = min(100*1000,size2del)
-
-           size2del = min(20*1000,size2del)
+           size2del = min(100*1000,size2del)
            sitePr.setSpaceToFree(size2del)
 
        #determine if we need to call it again
        #call it if there are sites that should delete more 
        #and have datasets to add to wish list
+       if phedexGroup == 'DataOps':
+           ncopyMin = 0
+           banInvalid = False
+       else:
+           ncopyMin = self.DETOX_NCOPY_MIN
+           banInvalid = True
        oneMoreIteration = True
        totalIters = 0
        while oneMoreIteration:
@@ -341,7 +314,7 @@ class CentralManager:
                    continue
                sitePr = self.sitePropers[site]
                if sitePr.space2free > sitePr.deleted:
-                   if sitePr.hasMoreToDelete():
+                   if sitePr.hasMoreToDelete(self.dataPropers,ncopyMin,banInvalid):
                        print " --- Site "+site+" has more to delete"
                        oneMoreIteration = True
                        break
@@ -377,13 +350,6 @@ class CentralManager:
            outputFile.close()
 
        resultDirectory = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_RESULT']
-       #beDeleted = glob.glob(resultDirectory + "/*")
-       #for subd in beDeleted:
-       #    if(os.path.isdir(subd)):
-       #        shutil.rmtree(subd)
-       #    else:
-       #        os.remove(subd)
-
        for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
            sitePr = self.sitePropers[site]
            sitedir = resultDirectory + "/" + site
@@ -399,7 +365,7 @@ class CentralManager:
             banInvalid = True
 
         for site in self.sitePropers:
-            self.sitePropers[site].makeWishList(banInvalid)
+            self.sitePropers[site].makeWishList(self.dataPropers,ncopyMin,banInvalid)
 
         for datasetName in self.dataPropers:
             dataPr = self.dataPropers[datasetName]
@@ -414,8 +380,9 @@ class CentralManager:
                 for site in self.sitePropers.keys():
                     sitePr = self.sitePropers[site]
                     if sitePr.onWishList(datasetName):
-                        sitePr.grantWish(datasetName)
-                        dataPr.addDelTarget(site)
+                        added = sitePr.grantWish(datasetName)
+                        if added:
+                            dataPr.addDelTarget(site)
             else:
                 # here all sites want to delete this set need to pick one to host this set
                 # and grant wishes to others pick one with the least space of protected
@@ -443,8 +410,9 @@ class CentralManager:
                 for site in self.sitePropers.keys() :
                     sitePr = self.sitePropers[site]
                     if(sitePr.onWishList(datasetName)):
-                        sitePr.grantWish(datasetName)
-                        dataPr.addDelTarget(site)
+                        added = sitePr.grantWish(datasetName)
+                        if added:
+                            dataPr.addDelTarget(site)
 
     def assignToT1s(self):
         self.lowRankSpreader.assignSitePropers(self.sitePropers)
@@ -581,10 +549,11 @@ class CentralManager:
                 siteRankAve.append(rank)
                 siteRankMdn.append(median)
 		outputFile.write("   %-9.1f %-10.1f %-20s \n"%(rank,median,site))
-        sm1 = statistics.mean(siteRankAve)
-        sm2 = statistics.mean(siteRankMdn)
-        rms1 = rms2 = 0
-        if len(siteRankAve) > 1:
+        sm1 = sm2 = rms1 = rms2 = 0
+        if len(siteRankAve) > 0:
+            sm1 = statistics.mean(siteRankAve)
+            sm2 = statistics.mean(siteRankMdn)
+        if len(siteRankAve) > 1:   
             rms1 = statistics.stdev(siteRankAve)
             rms2 = statistics.stdev(siteRankMdn)
         outputFile.write("#\n#------------------------------------\n")
@@ -927,6 +896,7 @@ class CentralManager:
         numberRequests = 0
         thisRequest = None
         for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
+
             if self.allSites[site].getId() <  1:
                 continue
             
@@ -935,42 +905,48 @@ class CentralManager:
             datasets2del = sitePr.delTargets()
             if len(datasets2del) < 1:
                 continue
-
+            datasets2del = datasets2del[0:500]
             if not site.startswith('T2_'):
                 continue
 
             totalSize = 0
             thisRequest = deletionRequest.DeletionRequest(0,site,now_tstamp)
             for dataset in datasets2del:
+                dsetId = self.dbInfoHandler.getDatasetId(dataset)
                 totalSize =  totalSize + sitePr.dsetSize(dataset)
-                thisRequest.update(dataset,sitePr.dsetRank(dataset),sitePr.dsetSize(dataset))
+                thisRequest.update(dsetId,sitePr.dsetRank(dataset),sitePr.dsetSize(dataset))
             print "Deletion request for site " + site
             
             print " -- Number of datasets       = " + str(len(datasets2del))
             print "%s %0.2f %s" %(" -- Total size to be deleted =",totalSize/1000,"TB")
 
+            proceed = True
             if site in self.siteRequests:
-                lastReqId = self.siteRequests[site].getLastReqId()
-                lastRequest = self.delRequests[lastReqId]
+                lastReqIds = self.siteRequests[site].getLastReqId(2)
                 #they can look identical
                 #resubmit in case it was submitted too long ago
-                if thisRequest.looksIdentical(lastRequest):
-                    if thisRequest.deltaTime(lastRequest)/(60*60) < 72 :
-                        print " -- Skipping submition, looks like a request " + str(lastReqId)
-                        continue
+                for lreqid in lastReqIds:
+                    lastRequest = self.delRequests[lreqid]
+                    if thisRequest.looksIdentical(lastRequest):
+                        if thisRequest.deltaTime(lastRequest)/(60*60) < 72 :
+                            print " -- Skipping submition, looks like request " + str(lreqid)
+                            proceed = False
+                            break
+            if not proceed:
+                continue
             numberRequests = numberRequests + 1
 
+            
             (reqid,rdate) = self.submitDeletionRequest(site,datasets2del)
-            if site.startswith('T2'):
-                self.submitUpdateRequest(site,reqid)
+            #if site.startswith('T2'):
+            self.submitUpdateRequest(site,reqid)
             print " -- Request Id =  " + str(reqid)
-
-            thisRequest.reqId = reqid
-            thisRequest.tstamp = rdate
-            self.delRequests[reqid] = deletionRequest.DeletionRequest(reqid,site,rdate,thisRequest)
+            
+            newdate = datetime.datetime.strptime(rdate[:19],"%Y-%m-%d %H:%M:%S")
+            self.delRequests[reqid] = deletionRequest.DeletionRequest(reqid,site,newdate,thisRequest)
             if site not in self.siteRequests:
                 self.siteRequests[site] = deletionRequest.SiteDeletions(site)
-            self.siteRequests[site].update(reqid,rdate)
+            self.siteRequests[site].update(reqid,newdate)
 
             connection = self.dbInfoHandler.getDbConnection()
             for dataset in datasets2del:
@@ -998,23 +974,42 @@ class CentralManager:
             self.sendEmail("report from CacheRelease",\
                                "Submitted deletion requests, check log for details.")
 
+    def extractDataStats(self):
+        phedexSets = self.phedexHandler.getPhedexDatasets()
+
+        for dsetName in phedexSets:
+            dsetId = self.dbInfoHandler.getDatasetId(dsetName)
+            if  self.dbInfoHandler.datasetExists(dsetId):
+                phedexSets[dsetName].setTrueSize(self.dbInfoHandler.getDatasetSize(dsetId))
+                phedexSets[dsetName].setTrueNfiles(self.dbInfoHandler.getDatasetFiles(dsetId))
+
     def extractCacheRequests(self):
         self.delRequests.clear()
         self.siteRequests.clear()
 
         results = self.dbInfoHandler.extractCacheRequests()
         for row in results:
-            reqid  = row[0]
-            tstamp = row[4]
-            site   = row[5]
+            reqid  = int(row[0])
+            dsetId = int(row[2])
+            if not self.dbInfoHandler.datasetExists(dsetId):
+                continue
+
+            siteId = int(row[3])
+            groupId = int(row[4])
+            rank = int(row[5])
+            tstamp = row[6]
+
+            if self.dbInfoHandler.siteExists(siteId):
+                site = self.dbInfoHandler.getSiteName(siteId)
+            else:
+                continue
+
+            size = self.dbInfoHandler.getDatasetSize(dsetId)
             if reqid not in self.delRequests:
                 self.delRequests[reqid] = deletionRequest.DeletionRequest(reqid,site,tstamp)
             if site not in self.siteRequests:
                 self.siteRequests[site] = deletionRequest.SiteDeletions(site)
-            dataset = row[1]
-            size    = row[2]
-            rank    = row[3]
-            self.delRequests[reqid].update(dataset,rank,size)
+            self.delRequests[reqid].update(dsetId,rank,size)
             self.siteRequests[site].update(reqid,tstamp)
 
     def showCacheRequests(self):
