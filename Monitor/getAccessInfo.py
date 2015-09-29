@@ -2,10 +2,9 @@
 import subprocess, os, glob, time
 from sys import exit # debugging
 
-def get(sites=None):
+def get(sites=None,startTime=1378008000):
   certPath = os.environ['USERCERT']
   keyPath = os.environ['USERKEY']
-  startTime = 1378008000
   endTime = int(time.time())
   sPerDay = 86400
   if not sites:
@@ -17,6 +16,7 @@ def get(sites=None):
     			'T2_DE_DESY','T2_HU_Budapest','T2_RU_IHEP','T2_UK_London_Brunel','T2_DE_RWTH','T2_IN_TIFR','T2_RU_INR','T2_UK_London_IC',
     			'T2_EE_Estonia','T2_IT_Bari','T2_RU_ITEP','T2_UK_SGrid_Bristol','T2_AT_Vienna','T2_ES_CIEMAT','T2_IT_Legnaro',
     			'T2_RU_JINR','T2_UK_SGrid_RALPP']
+    sites += ["T1_UK_RAL_Disk", "T1_US_FNAL_Disk", "T1_IT_CNAF_Disk", "T1_DE_KIT_Disk", "T1_RU_JINR_Disk", "T1_FR_CCIN2P3_Disk", "T1_ES_PIC_Disk"]
   for site in sites:
       for tStart in range(startTime,endTime,sPerDay):
           if (endTime - tStart > 3*sPerDay) and (os.path.exists(os.environ['MONITOR_DB']+'/sitesInfo/'+site+'/'+time.strftime("%Y-%m-%d",time.gmtime(tStart)))):
@@ -24,7 +24,7 @@ def get(sites=None):
             continue
           pop_base_url = "https://cmsweb.cern.ch/popdb/"
           args  = '/popularity/DSStatInTimeWindow/' 
-          args += '?&sitename=' + site 
+          args += '?&sitename=' + site.replace('_Disk','')
           args += '&tstart=' + time.strftime("%Y-%m-%d",time.gmtime(tStart)) 
           args += '&tstop=' + time.strftime("%Y-%m-%d",time.gmtime(tStart + sPerDay))
           pop_url = '%s/%s'%(pop_base_url,args)

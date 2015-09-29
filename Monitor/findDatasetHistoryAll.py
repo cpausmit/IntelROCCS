@@ -6,6 +6,7 @@
 #---------------------------------------------------------------------------------------------------
 import os, sys, re, subprocess, MySQLdb, time, json
 from Dataset import *
+import glob
 
 # setup definitions
 if not os.environ.get('MONITOR_DB'):
@@ -52,119 +53,135 @@ def getJsonFile(requestType,start,debug=False):
             print line
         return
 
+def getFileTime(s):
+  return int(s.split('/')[-1].split('_')[1].split('.')[0])
+
 def getDeletions(start,end,datasetPattern,groupPattern):
-    # returns all datasets in the requests which match the pattern and are in relevant group
-    delFileName = os.environ.get('MONITOR_DB') + '/datasets/delRequests_%i.json'%(genesis)
-    print "Parsing ",delFileName
-    # isXfer = True if xfer history, False if deletions
+    # returns all deleted datasets in the requests which match the pattern and are in relevant group
+    allJsons = glob.glob(os.environ.get('MONITOR_DB')+'/datasets/delRequests_*.json')
+    goodJsons = []
+    for fileName in allJsons:
+      timestamp = getFileTime(fileName)
+      if timestamp<end and timestamp>start:
+        goodJsons.append(fileName)
     datasetSet={}
-    with open(delFileName) as dataFile:
-        try:
-            data = json.load(dataFile)
-        except ValueError:
-            sys.exit(-1)
-    requests = data["phedex"]["request"]
-    for request in requests:
-        for dataset in request["data"]["dbs"]["dataset"]:
-            datasetName = dataset["name"]
-            requestedBy = request["requested_by"]["name"]
-            try:
-                if datasetName in datasetSet:
-                    # we have already accounted for it
-                    continue
-                if re.match(".*BUNNIES.*",datasetName):
-                    # ignore T0 datasets
-                    continue
-                if not(groupPattern=="AnalysisOps" or groupPattern=="DataOps"):
-                    if re.match(datasetPattern,datasetName):
-                        datasetSet[datasetName] = Dataset(datasetName)
-                        datasetObject = datasetSet[datasetName]
-                        datasetObject.isDeleted = True
-                        datasetObject = None
-                elif re.match(datasetPattern,datasetName) and (requestedBy=="Maxim Goncharov" or requestedBy=="Christoph Paus"):
-                    datasetSet[datasetName] = Dataset(datasetName)
-                    datasetObject = datasetSet[datasetName]
-                    datasetObject.isDeleted = True
-                    datasetObject = None
-            except TypeError:
-                print "weird"
-                pass
+    for delFileName in goodJsons:
+      print "Parsing ",delFileName
+      with open(delFileName) as dataFile:
+        data = json.load(dataFile)
+      requests = data["phedex"]["request"]
+      for request in requests:
+          for dataset in request["data"]["dbs"]["dataset"]:
+              datasetName = dataset["name"]
+              requestedBy = request["requested_by"]["name"]
+              try:
+                  if datasetName in datasetSet:
+                      # we have already accounted for it
+                      continue
+                  if re.match(".*BUNNIES.*",datasetName):
+                      # ignore T0 datasets
+                      continue
+                  if not(groupPattern=="AnalysisOps" or groupPattern=="DataOps"):
+                      if re.match(datasetPattern,datasetName):
+                          datasetSet[datasetName] = Dataset(datasetName)
+                          datasetObject = datasetSet[datasetName]
+                          datasetObject.isDeleted = True
+                          datasetObject = None
+                  elif re.match(datasetPattern,datasetName) and (requestedBy=="Maxim Goncharov" or requestedBy=="Christoph Paus"):
+                      datasetSet[datasetName] = Dataset(datasetName)
+                      datasetObject = datasetSet[datasetName]
+                      datasetObject.isDeleted = True
+                      datasetObject = None
+              except TypeError:
+                  print "weird"
+                  pass
     return datasetSet
 
 
-def parseRequestJson(fileName,start,end,isXfer,datasetPattern,datasetSet):
-    print "Parsing ",fileName
-    # isXfer = True if xfer history, False if deletions
-    with open(fileName) as dataFile:
-        try:
-            data = json.load(dataFile)
-        except ValueError:
-            # json is not loadable
+def parseRequestJson(start,end,isXfer,datasetPattern,datasetSet):
+  if isXfer:
+    allJsons = glob.glob(os.environ.get('MONITOR_DB')+'/datasets/xferRequests_*.json')
+  else:
+    allJsons = glob.glob(os.environ.get('MONITOR_DB')+'/datasets/delRequests_*.json')
+    goodJsons = []
+    for fileName in allJsons:
+      timestamp = getFileTime(fileName)
+      if timestamp<end and timestamp>start:
+        goodJsons.append(fileName)
+  for fileName in goodJsons:
+      print "Parsing ",fileName
+      # isXfer = True if xfer history, False if deletions
+      with open(fileName) as dataFile:
+          try:
+              data = json.load(dataFile)
+          except ValueError:
+            print "Warning, JSON was corrupted - reloading"
+              # json is not loadable
             if isXfer:
-                getJsonFile("xfer",start)
+               getJsonFile("xfer",start)
             else:
-                getJsonFile("del",start)
-    requests = data["phedex"]["request"]
-    if isXfer:
-        for request in requests:
-            for node in request["destinations"]["node"]:
-                for dataset in request["data"]["dbs"]["dataset"]: 
-                    datasetName = dataset["name"]
-                    try:
-                        datasetObject = datasetSet[datasetName]
-                    except KeyError:
-                        # not one of the datasets we're considering
-                        continue
-                    siteName = node["name"]
-                    if not re.search(r'T2.*',siteName):
-                        #not a tier 2
-                        continue
-                    try:
-                        if node["decided_by"]["decision"]=="n":
-                            # transfer was not approved
-                            continue
-                    except KeyError:
-                        # missing decision info?
-                        # continue
-                        pass
-                    try:
-                        xferTime = node["decided_by"]["time_decided"]
-                    except KeyError:
-                        xferTime = request["time_create"]
-                    if xferTime > end:
-                        # too late
-                        continue
-                    datasetObject.addTransfer(siteName,xferTime)
-    else:
-        for request in requests:
-            for node in request["nodes"]["node"]:
-                for dataset in request["data"]["dbs"]["dataset"]:
-                    datasetName = dataset["name"]
-                    try:
-                        datasetObject = datasetSet[datasetName]
-                    except KeyError:
-                        # not one of the datasets we're considering
-                        continue
-                    siteName = node["name"]
-                    if not re.search(r'T2.*',siteName):
-                        #not a tier 2
-                        continue
-                    try:
-                        if node["decided_by"]["decision"]=="n":
-                            # transfer was not approved
-                            continue
-                    except KeyError:
-                        # missing decision info?
-                        # continue
-                        pass
-                    try:
-                        delTime = node["decided_by"]["time_decided"]
-                    except KeyError:
-                        delTime = request["time_create"]
-                    if delTime > end:
-                        # too late
-                        continue
-                    datasetObject.addDeletion(siteName,delTime)
+               getJsonFile("del",start)
+      requests = data["phedex"]["request"]
+      if isXfer:
+          for request in requests:
+              for node in request["destinations"]["node"]:
+                  for dataset in request["data"]["dbs"]["dataset"]: 
+                      datasetName = dataset["name"]
+                      try:
+                          datasetObject = datasetSet[datasetName]
+                      except KeyError:
+                          # not one of the datasets we're considering
+                          continue
+                      siteName = node["name"]
+                      if not re.search(r'T2.*',siteName):
+                          #not a tier 2
+                          continue
+                      try:
+                          if node["decided_by"]["decision"]=="n":
+                              # transfer was not approved
+                              continue
+                      except KeyError:
+                          # missing decision info?
+                          # continue
+                          pass
+                      try:
+                          xferTime = node["decided_by"]["time_decided"]
+                      except KeyError:
+                          xferTime = request["time_create"]
+                      if xferTime > end:
+                          # too late
+                          continue
+                      datasetObject.addTransfer(siteName,xferTime)
+      else:
+          for request in requests:
+              for node in request["nodes"]["node"]:
+                  for dataset in request["data"]["dbs"]["dataset"]:
+                      datasetName = dataset["name"]
+                      try:
+                          datasetObject = datasetSet[datasetName]
+                      except KeyError:
+                          # not one of the datasets we're considering
+                          continue
+                      siteName = node["name"]
+                      if not re.search(r'T2.*',siteName):
+                          #not a tier 2
+                          continue
+                      try:
+                          if node["decided_by"]["decision"]=="n":
+                              # transfer was not approved
+                              continue
+                      except KeyError:
+                          # missing decision info?
+                          # continue
+                          pass
+                      try:
+                          delTime = node["decided_by"]["time_decided"]
+                      except KeyError:
+                          delTime = request["time_create"]
+                      if delTime > end:
+                          # too late
+                          continue
+                      datasetObject.addDeletion(siteName,delTime)
 
 def cleanHistories(xfers,dels,start,end):
     # used to clean up messy histories

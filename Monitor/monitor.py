@@ -54,6 +54,7 @@ DDMTimeStamps = [
                 ]
 DDMLabels = ["SummaryAll", "SummaryLastYear", "SummaryThisYear","Last3Months"]
 
+'''
 for m in range(currentMonth,12) + range(1,currentMonth):
     if currentMonth < m:
         firstDay = '%i-%.2i-01'%(currentYear-1,m)
@@ -64,6 +65,7 @@ for m in range(currentMonth,12) + range(1,currentMonth):
         lastDay = '%i-%.2i-%.2i'%(currentYear,m,daysInMonth[m])
         DDMLabels.append( "Summary%i-%.2i"%(currentYear,m) )
     DDMTimeStamps.append( (time.mktime(time.strptime(firstDay,'%Y-%m-%d')), time.mktime(time.strptime(lastDay,'%Y-%m-%d'))) )
+'''
 
 ### make html string and write it
 htmlString = '''
