@@ -103,11 +103,11 @@ def parseRequestJson(start,end,isXfer,datasetPattern,datasetSet):
     allJsons = glob.glob(os.environ.get('MONITOR_DB')+'/datasets/xferRequests_*.json')
   else:
     allJsons = glob.glob(os.environ.get('MONITOR_DB')+'/datasets/delRequests_*.json')
-    goodJsons = []
-    for fileName in allJsons:
-      timestamp = getFileTime(fileName)
-      if timestamp<end and timestamp>start:
-        goodJsons.append(fileName)
+  goodJsons = []
+  for fileName in allJsons:
+    timestamp = getFileTime(fileName)
+    if timestamp<end and timestamp>start:
+      goodJsons.append(fileName)
   for fileName in goodJsons:
       print "Parsing ",fileName
       # isXfer = True if xfer history, False if deletions
