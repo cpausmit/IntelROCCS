@@ -13,16 +13,46 @@
 </script>
 </head>
 <body>
+<font color=#000000 size=+1>
 <br>
+<table width="100%"> 
+  <tr>
+    <td>
+      <h1>
+        <a href="index.html">IntelROCCS Status</a>
+        <br>
+        <span style="font-size: 15pt">
+          [Interactive plot-making tool]
+        </span>
+      </h1>
+    </td>
+    <th>
+      <h1>
+      <span style="font-size: 15pt">
+        <a href="detox.html"> Detox </a> | 
+        <a href="crb12.html">*AOD* Usage</a> | 
+        <a href="http://t3serv012.mit.edu/IntelROCCSplots/custom.html">Interactive</a>
+        <br>
+        <a href="datasetUsage.html">AnalysisOps</a> | 
+        <a href="dataOpsUsage.html">DataOps</a>
+      </span>
+      </h1>
+    </th>
+  </tr>
+</table>
+<hr>
 <!-- <font color=#000000 size=+1>
 <h1>
 <a href="index.html">IntelROCCS Status</a>
 </h1>
 <hr>
  -->
-
+<table>
+<tr>
+  <td>
 Start date: 
-
+</td>
+<td>
 <select id="startyear">
     <option selected value = "2013"> 2013 </option>
     <option value = "2014"> 2014 </option>
@@ -43,11 +73,13 @@ Start date:
     <option value = "11"> 11 </option>
     <option value = "12"> 12 </option>
 </select>
-
-<br>
-
+</td>
+</tr>
+<tr>
+  <td>
 End date: 
-
+</td>
+<td>
 <select id="endyear">
     <option value = "2013"> 2013 </option>
     <option value = "2014"> 2014 </option>
@@ -68,15 +100,23 @@ End date:
     <option value = "11"> 11 </option>
     <option value = "12"> 12 </option>
 </select>
-
-<br>
+</td>
+</tr>
+<tr>
+  <td>
 Group:
+</td>
+<td>
 <select id="group">
     <option selected value = "AnalysisOps"> AnalysisOps </option>
+    <option value = "DataOps"> DataOps </option>
     <option value = "_" > All </option>
 </select>
-<br>
-Dataset Regex:
+</td>
+</tr>
+<tr>
+  <td>
+    Dataset Regex: </td><td>
 <select id="pattern">
     <option selected value = "ALL"> All </option>
     <option value = '/_/_/_AOD_'> *AOD* </option>   
@@ -84,14 +124,13 @@ Dataset Regex:
     <option value = '/_/_/_AODSIM'> *AODSIM </option>   
     <option value = '/_/_/MINIAOD_'> MINIAOD* </option>   
 </select>
+</td>
+</tr>
+<tr>
+  <td>
+    Site Pattern (use X as multi-character wildcard): </td><td><input type="text" id="site" value="T2X" > </td> </tr>
 
-<br>
-
-Site Pattern (use X as multi-character wildcard): <input type="text" id="site" value="T2X" > 
-
-
-<br>
-
+</table>
 <button> Go! </button>
 <hr>
 
@@ -99,8 +138,7 @@ Site Pattern (use X as multi-character wildcard): <input type="text" id="site" v
 
 <hr>
 <!-- hhmts start -->
-Modified: Fri Nov 14 2014
-<a href="http://web.mit.edu/physics/people/faculty/paus_christoph.html">Christoph Paus</a>, Sid Narayanan
+<a href="http://web.mit.edu/physics/people/faculty/paus_christoph.html">Christoph Paus</a>, <a href="mailto:sidn[at]mit[dot]edu" >Sid Narayanan </a>
 <!-- hhmts end -->
 </body>
 </html>

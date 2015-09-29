@@ -185,11 +185,18 @@ usage += "   pickleJar  - *.pkl file containing the relevant aggregated data\n"
 
 
 # decode command line parameters
+makeSummaryPlots = False
 if len(sys.argv)==5:
     sitePattern = str(sys.argv[1])
     start = max(genesis,int(sys.argv[2]))
     end = min(nowish,int(sys.argv[3]))
     jarFileName = str(sys.argv[4])
+elif len(sys.argv)==3:
+    sitePattern = sys.argv[1]
+    start = genesis
+    end = nowish
+    jarFileName = sys.argv[2]
+    makeSummaryPlots = True
 else:
     sys.stderr.write(' ERROR - wrong number of arguments\n')
     sys.stderr.write(usage)
@@ -207,9 +214,6 @@ pickleDict = pickle.load(pickleJar)
 datasetSet = pickleDict["datasetSet"]
 nSiteAccess = pickleDict["nSiteAccess"]
 
-print "Computing average number of sites"
-nAverageSites,timeOnSites = calculateAverageNumberOfSites(sitePattern,datasetSet,start,end)
-
 # last step: produce plots!
 
 stylePath = os.environ.get("MIT_ROOT_STYLE")
@@ -220,10 +224,64 @@ if rc:
 else:
     ROOT.MitRootStyle.Init()
 
+if makeSummaryPlots:
+    c11 = ROOT.TCanvas("c11","c11",800,800)
+    hVolumeFrac = ROOT.TH1F("hVolumeFrac","hVolumeFrac",5,-0.5,4.5)
+    hUsageFrac = ROOT.TH1F("hUsageFrac","hUsageFrac",5,-0.5,4.5)
+    tiers = {'AODSIM':0, 'AOD':1, 'MINIAODSIM':2,'GEN-SIM-RAW':3,'GEN-SIM-RECO':4}
+    for hist in [hUsageFrac,hVolumeFrac]:
+        xaxis = hist.GetXaxis()
+        for tier,nBin in tiers.iteritems():
+            xaxis.SetBinLabel(nBin+1,tier)
+    totalVolume=0
+    totalUsage=0
+    for datasetName,datasetObject in datasetSet.iteritems():
+        tier = datasetName.split('/')[-1]
+        datasetVolume = max(0,len(datasetObject.currentSites)*datasetObject.sizeGB)
+        datasetUsage = 0
+        for s,a in datasetObject.nAccesses.iteritems():
+            if not re.match(r'T2.*',s):
+                continue
+            for t,n in a.iteritems():
+                if (nowish-t)<(86400*30):
+                    datasetUsage+=n
+        totalVolume += datasetVolume
+        totalUsage += datasetUsage
+        if tier in tiers:
+            val = tiers[tier]
+            hVolumeFrac.Fill(val,datasetVolume)
+            hUsageFrac.Fill(val,datasetUsage)
+    hVolumeFrac.Scale(1./totalVolume)
+    hUsageFrac.Scale(1./totalUsage)
+    for hist in [hUsageFrac,hVolumeFrac]:
+        ROOT.MitRootStyle.InitHist(hist,"","",1)
+    hVolumeFrac.GetYaxis().SetTitle('volume fraction')
+    hUsageFrac.GetYaxis().SetTitle('usage fraction')
+    for hist in [hUsageFrac,hVolumeFrac]:
+        hist.SetFillColor(8)
+        hist.SetLineColor(8)
+        hist.SetFillStyle(1001)
+        hist.SetMaximum(.5)
+        hist.SetTitle('')
+        c11.Clear()
+        c11.cd()
+        c11.SetBottomMargin(.2)
+        c11.SetRightMargin(.2)
+        hist.Draw("hist")
+        if hist==hVolumeFrac:
+            c11.SaveAs(monitorDB+'/FractionVolume_%s.png'%(groupPattern))
+        else:
+            c11.SaveAs(monitorDB+'/FractionUsage_%s.png'%(groupPattern))
+    sys.exit(0)
+
+
+print "Computing average number of sites"
+nAverageSites,timeOnSites = calculateAverageNumberOfSites(sitePattern,datasetSet,start,end)
+
 '''==============================================================================
                                  our usage plots
    =============================================================================='''
-cUsage = ROOT.TCanvas("c1","c1",800,600)
+cUsage = ROOT.TCanvas("c1","c1",800,800)
 maxBin = 8
 nBins = 60.
 l = []
@@ -288,19 +346,21 @@ except KeyError:
 hUsage.Draw("hist")
 ROOT.MitRootStyle.OverlayFrame()
 ROOT.MitRootStyle.AddText("Overflow added to last bin.")
-integralTexts = ["Period: [%s, %s]\n"%( strftime("%Y-%m-%d",gmtime(start)) , strftime("%Y-%m-%d",gmtime(end)) )]
+if groupPattern == ".*":
+    groupPattern = "All"
+integralTexts = []
+integralTexts.append( "Group: %s"%(groupPattern) ) 
+integralTexts.append( "Period: [%s, %s]\n"%( strftime("%Y-%m-%d",gmtime(start)) , strftime("%Y-%m-%d",gmtime(end)) ) )
 integralTexts.append( "Average data managed: %.3f PB\n"%(totalSize/1000.) )
 # integralTexts.append( "Mean: %.3f accesses/month\n"%( meanVal ) )
 integralTexts.append( "Mean: %.3f accesses/month\n"%(hUsage.GetMean()) )
-positions = [0.8, 0.75, 0.7]
-plotTText = [None,None,None]
-for i in range(3):
-  plotTText[i] = ROOT.TText(.5,positions[i],integralTexts[i])
+positions = [0.85,0.8, 0.75, 0.7]
+plotTText = [None,None,None,None]
+for i in range(4):
+  plotTText[i] = ROOT.TText(.3,positions[i],integralTexts[i])
   plotTText[i].SetTextSize(0.04)
   plotTText[i].SetTextColor(2)
   plotTText[i].Draw()
-if groupPattern == ".*":
-    groupPattern = "All"
 try:
     cUsage.SaveAs(monitorDB+"/Usage_%s_%s.png"%(groupPattern,os.environ['MONITOR_PLOTTEXT']))
 except KeyError:
@@ -329,9 +389,9 @@ hCRB.SetTitle(titles)
 hZeroOne.SetTitle(titles)
 titles = "; Prorated Time Fraction; Data volume [TB]"
 hTime.SetTitle(titles)
-cCRB = ROOT.TCanvas("c2","c2",800,600)
-cZeroOne = ROOT.TCanvas("c3","c3",800,600)
-cTime = ROOT.TCanvas("c4","c4",800,600)
+cCRB = ROOT.TCanvas("c2","c2",800,800)
+cZeroOne = ROOT.TCanvas("c3","c3",800,800)
+cTime = ROOT.TCanvas("c4","c4",800,800)
 for datasetName,datasetObject in datasetSet.iteritems():
     if not re.match(datasetPattern,datasetName):
         continue

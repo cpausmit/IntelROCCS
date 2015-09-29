@@ -44,6 +44,7 @@ done
 # make nice histograms
 pwd
  root -q -b -l $MONITOR_BASE/plotSites.C
+ ./$MONITOR_BASE/plotSites.py
 echo "Done making site plots"
 
 cd $MONITOR_BASE
