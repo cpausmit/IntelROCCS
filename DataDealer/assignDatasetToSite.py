@@ -1,9 +1,14 @@
 #!/usr/bin/env python
 #---------------------------------------------------------------------------------------------------
 #
-# This script will find a Tier-2 appropriate to serve as the initial location for the specifified
-# dataset. It will also make sure that the sample copies on all Tier-1 disk spaces owned by
-# 'DataOps' phedex group will be signed over to the 'AnalysisOps' group.
+# This script will find a requested number of Tier-2 sites appropriate to serve as the initial
+# location(s) for the specifified dataset. It will also make sure that the sample copies on all
+# Tier-1 disk spaces owned by 'DataOps' phedex group will be signed over to the 'AnalysisOps' group.
+#
+# Injection of so called open datasets (datasets that are not yet completed and will be growing) is
+# problematic as the size of the dataset is not correct in the database. To solve this problem an
+# expected dataset size can be specified to overwrite this information. 
+# 
 #
 # Implementation: by design this should be a standalone script that will work when you copy it into
 # your directory. It is important so that it virtually runs anywhere and anyone can easily use it
@@ -539,10 +544,10 @@ def submitUpdateSubscriptionRequest(sites,datasets=[],debug=0):
 #===================================================================================================
 # Define string to explain usage of the script
 usage =  " Usage: assignDatasetToSite.py   --dataset=<name of a CMS dataset>\n"
-usage += "                 [ --nCopies=1 ]   <-- number of desired copies \n"
+usage += "                 [ --nCopies=1 ]           <-- number of desired copies \n"
 usage += "                 [ --expectedSizeGb=-1 ]   <-- open subscription to avoid small sites \n"
-usage += "                 [ --debug=0 ]\n"
-usage += "                 [ --exec ]\n"
+usage += "                 [ --debug=0 ]             <-- see various levels of debug output\n"
+usage += "                 [ --exec ]                <-- add this to execute all actions\n"
 usage += "                 [ --help ]\n\n"
 
 # Define the valid options which can be specified and check out the command line
@@ -630,6 +635,8 @@ datasets.append(dataset)
 #-----------------------------------------------------------------------------------------
 
 tier1Sites = findExistingSubscriptions(dataset,'DataOps','T1_*_Disk',debug)
+if debug>0:
+    print ' Re-assign all Tier-1 copies from DataOps to AnalysisOps space.'
 if len(tier1Sites) > 0:
     print '\n Resident under DataOps group on the following Tier-1 disks:'
     for tier1Site in tier1Sites:
@@ -642,6 +649,8 @@ if len(tier1Sites) > 0:
         submitUpdateSubscriptionRequest(tier1Sites,datasets,debug)
     else:
         print '\n -> WARNING: not doing anything .... please use  --exec  option.\n'
+else:
+    print '\n No Tier-1 copies of this dataset in DataOps space.'
 
 
 # has the dataset already been subscribed?
