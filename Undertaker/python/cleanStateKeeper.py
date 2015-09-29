@@ -147,7 +147,7 @@ class CleanStateKeeper:
         return datasets
 
     def canProceed(self):
-        if len(self.sitePendings.keys()) > 3:
+        if len(self.sitePendings.keys()) > 20:
             return False
         else :
             return True

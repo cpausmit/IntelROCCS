@@ -103,7 +103,7 @@ for iii in range(0, len(phedexGroups)):
     timePre = timeNow
     
     if requestDeletions and (phedGroup == 'AnalysisOps' or phedGroup == 'DataOps'):
-        centralManager.requestDeletions()
+        centralManager.requestDeletions(phedGroup)
 
     timeNow = time.time()
     print ' - Requesting deletions took: %d seconds'%(timeNow-timePre)

@@ -181,8 +181,8 @@ class PhedexDataHandler:
                         iscust = 1
                     if 'GenericTTbar' in datasetName:
                         iscust = 1
-		    #if 'MinBias' in datasetName:
-		    #    iscust = 1
+		    if '-PromptReco-' in datasetName and group=='DataOps':
+		        iscust = 1
 
                     dataset.updateForSite(site,size,group,files,iscust,reqtime,updtime,isdone)
 

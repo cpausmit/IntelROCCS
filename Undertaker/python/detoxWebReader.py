@@ -42,8 +42,16 @@ class DetoxWebReader:
             raise Exception(" FATAL -- Call to DeadSites failed, stopping")
 
         lines = mystring.splitlines()
+        readThatBlock = False
+        redSomeLines = False
         for li in lines:
+            if 'AnalysisOps' in li:
+                readThatBlock = True
             if li.startswith('#'):
+                if redSomeLines:
+                    readThatBlock = False
+                continue
+            if not readThatBlock:
                 continue
             items = li.split()
             siteActive = int(items[0])
@@ -55,6 +63,7 @@ class DetoxWebReader:
             if siteActive == 0:
                 continue
             self.siteSpace[siteName] = (quota,filled,lcopy)
+            redSomeLines = True
 
     def getDatasetsForSite(self,siteName):
         webServer = os.environ.get('UNDERTAKER_DETOXWEB') + '/result/'
@@ -80,9 +89,16 @@ class DetoxWebReader:
         datasets = {}
         if mystring.find('Not Found') != -1 :
             return datasets
+
+        readThatBlock = False
+        redSomeLines = False
         lines = mystring.splitlines()
         for li in lines:
+            if 'AnalysisOps' in li:
+                readThatBlock = True
             if li.startswith('#'):
+                if redSomeLines:
+                    readThatBlock = False
                 continue
             items = li.split()
             if len(items) < 5:
@@ -94,6 +110,7 @@ class DetoxWebReader:
             if reps > 1:
                 continue
             datasets[name] = (rank,size)
+            redSomeLines = True
         return datasets
 
     def getJunkDatasets(self,siteName):
@@ -201,6 +218,20 @@ class DetoxWebReader:
             nstuck = int(items[0])
             siteName = items[3]
             self.stuckAtSite[siteName] = nstuck
+
+    def getFilledwLC(self):
+        thesites = []
+        for site in self.siteSpace:
+            if site.startswith('T1_'):
+                continue
+            quota = self.siteSpace[site][0]
+            filled = self.siteSpace[site][1]
+            lcopy = self.siteSpace[site][2]
+            if filled < 0.85*quota:
+                continue
+            if lcopy > 0.9*filled :
+                thesites.append(site)
+        return thesites
 
     def getSiteSpace(self):
         return self.siteSpace

@@ -28,8 +28,8 @@ class DbInfoHandler:
         results = self.dbExecSql(sql)
         for row in results:
             siteName = row[0]
-            if "T1_" in siteName:
-                continue
+            #if "T1_" in siteName:
+            #    continue
             if siteName == 'T2_TW_Taiwan':
                 continue
             siteSizeGb = float(row[1])*1000
@@ -47,22 +47,26 @@ class DbInfoHandler:
                 print ' Site --- active, status=%d  - %s'%(self.allSites[site].getStatus(),site)
   
     def enableSite(self,site,targetQuota):
+        if site.startswith('T1_'):
+            return
         siteId = self.allSites[site].getId()
         
         print "\n !! Activating site " + site + " !!" 
         
-            # Activate site
-        if targetQuota  > self.allSites[site].getSize():
-            print "  - set quota to " + str(targetQuota) + " -" 
-            sql = 'update Quotas set SizeTb=' + str(targetQuota)
-            sql = sql + ' where SiteId=' + str(siteId) + ' limit 1'
-            self.dbExecSql(sql)
+        # Activate site
+        #if targetQuota  > self.allSites[site].getSize():
+        #    print "  - set quota to " + str(targetQuota) + " -" 
+        #    sql = 'update Quotas set SizeTb=' + str(targetQuota)
+        #    sql = sql + ' where SiteId=' + str(siteId) + ' limit 1'
+        #    self.dbExecSql(sql)
 
         sql = 'update Sites set Status=1 where SiteId=' + str(siteId) 
         sql = sql + ' limit 1'
         self.dbExecSql(sql)
 
     def disableSite(self,site):
+        if site.startswith('T1_'):
+            return
         siteId = self.allSites[site].getId()
         
         print "\n !! Disabling site " + site + " !!" 

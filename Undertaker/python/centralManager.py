@@ -34,21 +34,23 @@ class CentralManager:
 
     def findStateChanges(self):
 
+        t2sites = [k for k in self.allSites if self.allSites[k].name.startswith('T2_')]
+
         print ""
         print "W A I T I N G  R O O M:"
-        for site in sorted(self.allSites):
+        for site in sorted(t2sites):
             siteInfo = self.siteReadinessHandler.getSiteReadiness(site)
             if siteInfo.inWaitingRoom() :
                 print " - " + site
         print ""
         print "G R A V E  Y A R D:"
-        for site in sorted(self.allSites):
+        for site in sorted(t2sites):
             siteInfo = self.siteReadinessHandler.getSiteReadiness(site)
             if siteInfo.isDead() :
                 print " - " + site
 
         print "\nSites that need to be disabled:"
-        for site in sorted(self.allSites):
+        for site in sorted(t2sites):
             siteInfo = self.siteReadinessHandler.getSiteReadiness(site)
             dbStatus = self.allSites[site].getStatus()
             isDead    = siteInfo.isDead() 
@@ -59,7 +61,7 @@ class CentralManager:
                 self.sitesToDisable[site] = self.allSites[site]
 
         print "\nSites that need to be enabled:"
-        for site in sorted(self.allSites):
+        for site in sorted(t2sites):
             siteInfo = self.siteReadinessHandler.getSiteReadiness(site)
             dbStatus = self.allSites[site].getStatus()
             isDead  = siteInfo.isDead()
@@ -73,7 +75,7 @@ class CentralManager:
         
         print "\nNeed to be added into the Detox database"
         for site in self.siteReadinessHandler.getSites():     
-            if site not in self.allSites:
+            if site not in t2sites:
                 siteInfo = self.siteReadinessHandler.getSiteReadiness(site)
                 isDead  = siteInfo.isDead()
                 lastTimeDead = siteInfo.lastTimeDead()
@@ -123,49 +125,68 @@ class CentralManager:
         setsToSites = {}
         siteToSites = {}
         worstStuck = self.detoxWebReader.getWorstStuck()
-        for siteName in self.sitesToDisable:
+        lcsites = self.detoxWebReader.getFilledwLC()
+        unifiedList =  self.sitesToDisable.keys() + lcsites
+        for siteName in unifiedList:
+            if siteName.startswith('T1_'):
+                continue
             print "Re-signing datasets for SITE=" + siteName
             siteToSites[siteName] = []
             datasets = self.detoxWebReader.getDatasetsForSite(siteName)
             deprecated = self.detoxWebReader.getJunkDatasets(siteName)
+            #make sure it is not deprectaed set
+            for dset in datasets.keys():
+                if dset in deprecated:
+                    del datasets[dset]
 
-            if len(datasets.keys()) < 1:
+            #for just offloading some last copies do for half of the datasets
+            totalSets = len(datasets.keys())
+            deleted = 0
+            if siteName in lcsites:
+                for dsetIt in sorted(datasets.items(), key=lambda e: e[1][0]):
+                    dset = dsetIt[0]
+                    del datasets[dset]
+                    deleted = deleted + 1
+                    if deleted > totalSets/2:
+                        break
+                
+            totalSets = len(datasets.keys())
+            if totalSets < 1:
                 break
+
             self.dbInfoHandler.setDatasetRanks(datasets)
             for site in sorted(self.siteSpace,cmp=self.localCompare):
-                if site in self.sitesToDisable:
+                if site in unifiedList:
                     continue
                 if site in self.siteSizeShift:
                     continue
-                if site.startswith('T1_'):
-                    continue
+                #if site.startswith('T1_'):
+                #    continue
                 if site in worstStuck:
                     continue
 
                 #make sure sets do not go the dead or waiting room site
-                siteInfo = self.siteReadinessHandler.getSiteReadiness(site)
-                dbStatus = self.allSites[site].getStatus() 
-                if dbStatus != 1 or siteInfo.inWaitingRoom() or siteInfo.isDead():
-                    continue
-
+                if site.startswith('T2_'):
+                    siteInfo = self.siteReadinessHandler.getSiteReadiness(site)
+                    dbStatus = self.allSites[site].getStatus() 
+                    if dbStatus != 1 or siteInfo.inWaitingRoom() or siteInfo.isDead():
+                        continue
 
                 sizeCanTake = (self.siteSpace[site][0]*0.9 - self.siteSpace[site][1])*1000
                 addedSize = 0
                 addedSets = 0
 
-                for dset in datasets.keys():
+                for dsetIt in sorted(datasets.items(), key=lambda e: e[1][0], reverse=True):
+                    dset = dsetIt[0]
+
                     #part of the datasets might be already in pending request
                     if dset in pendingSets:
-                        del datasets[dset]
-                        continue
-                    #make sure it is not deprectaed set
-                    if dset in deprecated:
                         del datasets[dset]
                         continue
 
                     addedSize = addedSize + datasets[dset][1]
                     datasets[dset][1]
-                    if (addedSize > sizeCanTake or addedSize > 40000) and addedSets > 0:
+                    if (addedSize > sizeCanTake or addedSize > 20000) and addedSets > 0:
                         addedSize = addedSize - datasets[dset][1]
                         break
                     if site not in setsToSites:
@@ -174,7 +195,8 @@ class CentralManager:
                         setsToSites[site].append(dset)
                     del datasets[dset]
                     addedSets = addedSets + 1
-                print " - site " + site + " can take " + str(addedSize)
+                print " - site " + site + " can take " + str(sizeCanTake)
+                print " ------ will take " + str(addedSize)
                 siteToSites[siteName].append(site)
                 (quota,totalSize,lastCopy) = self.siteSpace[site]
                 totalSize = totalSize + addedSize
@@ -282,6 +304,8 @@ class CentralManager:
 
     def printResults(self):
         for site in sorted(self.allSites):
+            if site.startswith('T1_'):
+                continue
             siteInfo = self.siteReadinessHandler.getSiteReadiness(site)
             if siteInfo.hadProblems():
                 print site
