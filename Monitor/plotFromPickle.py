@@ -235,6 +235,7 @@ if makeSummaryPlots:
             xaxis.SetBinLabel(nBin+1,tier)
     totalVolume=0
     totalUsage=0
+    siteAccessDict = {}
     for datasetName,datasetObject in datasetSet.iteritems():
         tier = datasetName.split('/')[-1]
         datasetVolume = max(0,len(datasetObject.currentSites)*datasetObject.sizeGB)
@@ -242,6 +243,8 @@ if makeSummaryPlots:
         for s,a in datasetObject.nAccesses.iteritems():
             if not re.match(r'T2.*',s):
                 continue
+            if s not in siteAccessDict:
+                siteAccessDict[s] = [0,0]
             for t,n in a.iteritems():
                 if (nowish-t)<(86400*30):
                     datasetUsage+=n
@@ -255,12 +258,13 @@ if makeSummaryPlots:
     hUsageFrac.Scale(1./totalUsage)
     for hist in [hUsageFrac,hVolumeFrac]:
         ROOT.MitRootStyle.InitHist(hist,"","",1)
-    hVolumeFrac.GetYaxis().SetTitle('volume fraction')
-    hUsageFrac.GetYaxis().SetTitle('usage fraction')
+    hVolumeFrac.GetYaxis().SetTitle('current volume fraction')
+    hUsageFrac.GetYaxis().SetTitle('usage fraction (30 days)')
     for hist in [hUsageFrac,hVolumeFrac]:
         hist.SetFillColor(8)
         hist.SetLineColor(8)
         hist.SetFillStyle(1001)
+        hist.SetMinimum(0.)
         hist.SetMaximum(.5)
         hist.SetTitle('')
         c11.Clear()
@@ -272,6 +276,8 @@ if makeSummaryPlots:
             c11.SaveAs(monitorDB+'/FractionVolume_%s.png'%(groupPattern))
         else:
             c11.SaveAs(monitorDB+'/FractionUsage_%s.png'%(groupPattern))
+    c21 = ROOT.TCanvas("c21","c21",1000,600)
+
     sys.exit(0)
 
 
