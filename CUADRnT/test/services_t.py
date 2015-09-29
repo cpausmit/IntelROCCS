@@ -10,18 +10,18 @@ import unittest
 import os
 
 # package modules
-from UADR.utils.config import get_config
-from UADR.services.dbs import DBSService
-from UADR.services.crab import CRABService
-from UADR.services.intelroccs import IntelROCCSService
-from UADR.services.mit_db import MITDBService
-from UADR.services.phedex import PhEDExService
-from UADR.services.pop_db import PopDBService
+from cuadrnt.utils.config import get_config
+from cuadrnt.services.dbs import DBSService
+from cuadrnt.services.crab import CRABService
+from cuadrnt.services.intelroccs import IntelROCCSService
+from cuadrnt.services.mit_db import MITDBService
+from cuadrnt.services.phedex import PhEDExService
+from cuadrnt.services.pop_db import PopDBService
 
 # get local config file
 opt_path = os.path.join(os.path.split(os.path.dirname(os.path.realpath(__file__)))[0], 'etc')
 
-@unittest.skip("Skip Test")
+#@unittest.skip("Skip Test")
 class ServicesTests(unittest.TestCase):
     """
     A test class for service classes

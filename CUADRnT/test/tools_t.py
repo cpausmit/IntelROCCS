@@ -10,10 +10,10 @@ import unittest
 import os
 
 # package modules
-from UADR.utils.config import get_config
-from UADR.tools.sites import SiteManager
-from UADR.tools.datasets import DatasetManager
-from UADR.rankings.delta import DeltaRanking
+from cuadrnt.utils.config import get_config
+from cuadrnt.tools.sites import SiteManager
+from cuadrnt.tools.datasets import DatasetManager
+from cuadrnt.rankings.delta import DeltaRanking
 
 # get local config file
 opt_path = os.path.join(os.path.split(os.path.dirname(os.path.realpath(__file__)))[0], 'etc')
@@ -33,7 +33,7 @@ class ToolsTests(unittest.TestCase):
         "Clean up"
         pass
 
-    #@unittest.skip("Skip Test")
+    @unittest.skip("Skip Test")
     def test_managers(self):
         "Test managers"
         print ""

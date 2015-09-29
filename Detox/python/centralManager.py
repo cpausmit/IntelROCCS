@@ -509,9 +509,8 @@ class CentralManager:
             percTslc = totalSpaceLcopy/totalDisk*100
         outputFile.write("#  %-6s %-9s %-4.1f%%     %-4.1f%%        %-20s \n"\
                              %(' ',' ',percTst,percTslc,' '))
-        outputFile.write("# Total Active Quota  = %-9d \n"%(totalDisk))
         
-        outputFile.write("#------------------------------------------------------\n")
+        outputFile.write("#\n")
         outputFile.write("#  %-6d %-9d %-9d %-12d %-20s \n"\
                              %(t2Sites,totalDiskT2,totalSpaceTakenT2,totalSpaceLcopyT2,'Total T2s'))
         percTst = 100; percTslc = 100
@@ -520,7 +519,6 @@ class CentralManager:
             percTslc = totalSpaceLcopyT2/totalDiskT2*100
         outputFile.write("#  %-6s %-9s %-4.1f%%     %-4.1f%%        %-20s \n"\
                              %(' ',' ',percTst,percTslc,' '))
-        outputFile.write("# Total Active Quota  = %-9d \n"%(totalDiskT2))
         outputFile.write("#------------------------------------------------------\n")
         outputFile.close()
 
@@ -738,12 +736,12 @@ class CentralManager:
                                    self.DETOX_USAGE_MIN*sitePr.siteSizeGb()/1000))
             outputFile.write("\n")
             outputFile.write("#- S P A C E  S U M M A R Y ----------------\n\n")
-            outputFile.write("Total Space     [TB]: %8.2f\n"%(sitePr.siteSizeGb()/1000))
-            outputFile.write("Space Used      [TB]: %8.2f\n"%(sitePr.spaceTaken()/1000))
-            outputFile.write("Space to delete [TB]: %8.2f\n"%(sitePr.spaceDeleted()/1000))
-            outputFile.write("Space last CP   [TB]: %8.2f\n"%(sitePr.spaceLastCp()/1000))
-            outputFile.write("Space deprected [TB]: %8.2f\n"%(sitePr.spaceDeprecated()/1000))
-            outputFile.write("Incomplete data [TB]: %8.2f\n"%(sitePr.spaceIncomplete()/1000))
+            outputFile.write("Total Space      [TB]: %8.2f\n"%(sitePr.siteSizeGb()/1000))
+            outputFile.write("Space Used       [TB]: %8.2f\n"%(sitePr.spaceTaken()/1000))
+            outputFile.write("Space to delete  [TB]: %8.2f\n"%(sitePr.spaceDeleted()/1000))
+            outputFile.write("Space last CP    [TB]: %8.2f\n"%(sitePr.spaceLastCp()/1000))
+            outputFile.write("Space deprecated [TB]: %8.2f\n"%(sitePr.spaceDeprecated()/1000))
+            outputFile.write("Incomplete data  [TB]: %8.2f\n"%(sitePr.spaceIncomplete()/1000))
             outputFile.close()
 
             if len(sitePr.delTargets()) > 0:
@@ -891,7 +889,7 @@ class CentralManager:
         self.dbInfoHandler.updateSiteStatus(changingStatus)
 
 
-    def requestDeletions(self):
+    def requestDeletions(self,phedGroup):
         now_tstamp = datetime.datetime.now()
         numberRequests = 0
         thisRequest = None
@@ -906,8 +904,6 @@ class CentralManager:
             if len(datasets2del) < 1:
                 continue
             datasets2del = datasets2del[0:500]
-            if not site.startswith('T2_'):
-                continue
 
             totalSize = 0
             thisRequest = deletionRequest.DeletionRequest(0,site,now_tstamp)
@@ -1046,7 +1042,10 @@ class CentralManager:
             outputFile.write("# ---------------------------------------\n")
 
             for dataset in allSets:
-                outputFile.write("  %-6d %s\n" %(theRequest.getDsetRank(dataset),dataset))
+                if dataset < 1 :
+                    continue
+                name = self.dbInfoHandler.getDatasetName(dataset)
+                outputFile.write("  %-6d %s\n" %(theRequest.getDsetRank(dataset),name))
 
             outputFile.write("\n")
             counter = counter + 1

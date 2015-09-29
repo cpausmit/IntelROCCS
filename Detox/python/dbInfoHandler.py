@@ -161,7 +161,7 @@ class DbInfoHandler:
             return False
 
     def getDatasetName(self,dsetId):
-        return self.datasetName[dsetId]
+        return self.datasetNames[dsetId]
     def getDatasetSize(self,dsetId):
         return self.datasetSizes[dsetId]
     def getDatasetFiles(self,dsetId):

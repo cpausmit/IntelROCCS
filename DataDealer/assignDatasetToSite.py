@@ -635,6 +635,8 @@ datasets.append(dataset)
 #-----------------------------------------------------------------------------------------
 
 tier1Sites = findExistingSubscriptions(dataset,'DataOps','T1_*_Disk',debug)
+if debug>0:
+    print ' Re-assign all Tier-1 copies from DataOps to AnalysisOps space.'
 if len(tier1Sites) > 0:
     print '\n Resident under DataOps group on the following Tier-1 disks:'
     for tier1Site in tier1Sites:
@@ -647,6 +649,8 @@ if len(tier1Sites) > 0:
         submitUpdateSubscriptionRequest(tier1Sites,datasets,debug)
     else:
         print '\n -> WARNING: not doing anything .... please use  --exec  option.\n'
+else:
+    print '\n No Tier-1 copies of this dataset in DataOps space.'
 
 
 # has the dataset already been subscribed?

@@ -11,14 +11,14 @@ import os
 from datetime import datetime
 
 # package modules
-from UADR.utils.config import get_config
-from UADR.services.phedex import PhEDExService
-from UADR.tools.storage import StorageManager
+from cuadrnt.utils.config import get_config
+from cuadrnt.services.phedex import PhEDExService
+from cuadrnt.tools.storage import StorageManager
 
 # get local config file
 opt_path = os.path.join(os.path.split(os.path.dirname(os.path.realpath(__file__)))[0], 'etc')
 
-@unittest.skip("Skip Test")
+#@unittest.skip("Skip Test")
 class StorageTests(unittest.TestCase):
     """
     A test class for service classes
@@ -27,6 +27,7 @@ class StorageTests(unittest.TestCase):
         "Set up for test"
         self.config = get_config(path=opt_path, file_name='test.cfg')
         self.storage = StorageManager(config=self.config)
+        self.storage.drop_db()
 
     def tearDown(self):
         "Clean up"
@@ -39,19 +40,18 @@ class StorageTests(unittest.TestCase):
         expected = list()
         result = self.storage.get_data(coll=coll, pipeline=pipeline)
         self.assertEqual(result, expected)
+        self.storage.drop_db()
 
     #@unittest.skip("Skip Test")
     def test_cache(self):
         "Test storage cache"
         print ""
-        coll = 'test'
         phedex = PhEDExService(config=self.config)
         api = 'data'
         params = {'level':'block', 'dataset':'/DoubleElectron/Run2012D-22Jan2013-v1/AOD'}
         expected = '/DoubleElectron/Run2012D-22Jan2013-v1/AOD'
-        json_data = phedex.fetch(api=api, params=params, cache=False)
-        self.storage.insert_cache(coll=coll, api=api, params=params, data=json_data)
-        cache_data = self.storage.get_cache(coll=coll, api=api, params=params)
+        phedex.fetch(api=api, params=params, cache_only=True, force_cache=True)
+        cache_data = self.storage.get_cache(coll='phedex', api=api, params=params)
         try:
             result = cache_data['phedex']['dbs'][0]['dataset'][0]['name']
         except KeyError:
