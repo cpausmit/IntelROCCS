@@ -111,11 +111,13 @@ class SiteManager(object):
         """
         Get the maximum number of CPU's for site in last 30 days
         """
-        # get maximum numver of CPU's and quota
+        # get maximum number of CPU's and quota
         coll = 'site_data'
         pipeline = list()
         match = {'$match':{'name':site_name}}
         pipeline.append(match)
+        unwind = {'$unwind':'$cpu_data'}
+        pipeline.append(unwind)
         group = {'$group':{'_id':'$name', 'quota_gb':{'$max':'$quota_gb'}, 'max_cpus':{'$max':'$cpu_data.cpus'}}}
         pipeline.append(group)
         project = {'$project':{'quota_gb':1, 'max_cpus':1, '_id':0}}
@@ -125,11 +127,13 @@ class SiteManager(object):
             max_cpus = data[0]['max_cpus']
         except:
             max_cpus = 0
-        quota = data[0]['quota_gb']
+        quota = float(data[0]['quota_gb'])/10**3
         try:
             performance = float(max_cpus)/float(quota)
         except:
-            performance = 0
+            performance = 0.0
+        if not (performance > 0):
+            performance = 0.0
         return performance
 
     def get_available_storage(self, site_name):
@@ -157,5 +161,5 @@ class SiteManager(object):
         pipeline.append(project)
         data = self.storage.get_data(coll=coll, pipeline=pipeline)
         quota = data[0]['quota_gb']
-        available_gb = quota - size
+        available_gb = (0.95*quota) - size
         return available_gb
