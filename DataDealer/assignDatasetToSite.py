@@ -7,8 +7,10 @@
 #
 # Injection of so called open datasets (datasets that are not yet completed and will be growing) is
 # problematic as the size of the dataset is not correct in the database. To solve this problem an
-# expected dataset size can be specified to overwrite this information. 
+# expected dataset size can be specified to overwrite this information (ex. --expectedSizeGb=1000). 
 # 
+# Failures of any essential part of this assignment will lead to a non-zero return code. For now the
+# failure return code is always 1.
 #
 # Implementation: by design this should be a standalone script that will work when you copy it into
 # your directory. It is important so that it virtually runs anywhere and anyone can easily use it
