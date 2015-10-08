@@ -49,10 +49,10 @@ class RockerBoard(object):
         subscriptions = self.balance()
         for subscription in subscriptions:
             self.logger.info('site: %s\tdataset: %s', subscription[1], subscription[0])
-        # self.subscribe(subscriptions)
+        self.subscribe(subscriptions)
         t2 = datetime.datetime.utcnow()
         td = t2 - t1
-        self.logger.info('Update DB took %s', str(td))
+        self.logger.info('Rocker Board took %s', str(td))
 
     def balance(self):
         """
@@ -67,25 +67,45 @@ class RockerBoard(object):
             dataset_name = weighted_choice(dataset_rankings)
             if (not dataset_name) or (dataset_rankings[dataset_name] < self.min_rank):
                 break
-            unavailable_sites = self.datasets.get_sites(dataset_name)
+            size_gb = self.datasets.get_size(dataset_name)
+            unavailable_sites = set(self.datasets.get_sites(dataset_name))
+            for site_name in tmp_site_rankings.keys():
+                if (self.sites.get_available_storage(site_name) < size_gb) or (tmp_site_rankings[site_name] <= 0):
+                    unavailable_sites.add(site_name)
             for site_name in unavailable_sites:
                 try:
                     del tmp_site_rankings[site_name]
                 except:
                     continue
-            site_name = weighted_choice(site_rankings)
+            if not tmp_site_rankings:
+                break
+            site_name = weighted_choice(tmp_site_rankings)
             subscription = (dataset_name, site_name)
             subscriptions.append(subscription)
-            size_gb = self.datasets.get_size(dataset_name)
             subscribed_gb += size_gb
             avail_storage = self.sites.get_available_storage(site_name)
             self.logger.info('rank: %s\tsize: %.2f\tdataset: %s', dataset_rankings[dataset_name], size_gb, dataset_name)
-            self.logger.info('rank: %s\tstorage: %d\tdataset: %s', site_rankings[site_name], avail_storage, site_name)
+            self.logger.info('rank: %s\tstorage: %d\site: %s', site_rankings[site_name], avail_storage, site_name)
             new_avail_storage = avail_storage - self.datasets.get_size(dataset_name)
-            new_rank = site_rankings[site_name]/avail_storage*new_avail_storage
+            if new_avail_storage > 0:
+                new_rank = 0.0
+            else:
+                new_rank = (site_rankings[site_name]/avail_storage)*new_avail_storage
             site_rankings[site_name] = new_rank
             del dataset_rankings[dataset_name]
+        mini_datasets = self.miniaod_subscriptions()
+        subscriptions += mini_datasets
+        self.logger.info('Subscribed %dGB', subscribed_gb)
         return subscriptions
+
+    def mini_subscriptions(self):
+        """
+        Make sure all miniaod[sim] datasets have at least one replica at a US site
+        """
+        # get all MINIAOD[SIM] datasets which do not have a replica at a US site.
+        # get all US sites with rankings
+        # follow the same selection procedure
+        # add selection function
 
     def subscribe(self, subscriptions):
         """

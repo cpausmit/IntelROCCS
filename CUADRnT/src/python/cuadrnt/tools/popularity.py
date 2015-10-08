@@ -49,7 +49,7 @@ class PopularityManager(object):
         sitename = 'summary'
         aggr = 'day'
         n = 200000
-        orderbys = ['totcpu', 'naccess', 'nusers']
+        orderbys = ['totcpu', 'naccess']
         for i in range(0, 30, 10):
             tstart = datetime_to_string(datetime_day(datetime.datetime.utcnow() - datetime.timedelta(days=i+10)))
             tstop = datetime_to_string(datetime_day(datetime.datetime.utcnow() - datetime.timedelta(days=i)))
@@ -135,7 +135,7 @@ class PopularityManager(object):
         sitename = 'summary'
         name = dataset_name
         aggr = 'day'
-        orderbys = ['totcpu', 'naccess', 'nusers']
+        orderbys = ['totcpu', 'naccess']
         coll = 'dataset_popularity'
         for orderby in orderbys:
             params = {'sitename':sitename, 'name':name, 'aggr':aggr, 'orderby':orderby}

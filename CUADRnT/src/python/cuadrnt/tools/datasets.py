@@ -78,9 +78,10 @@ class DatasetManager(object):
             dataset_name = data[0]
             count = data[1]
             self.logger.debug('Inserting dataset number %d', count)
+            replicas = self.get_replicas(data)
             coll = 'dataset_data'
             query = {'name':dataset_name}
-            data = {'$set':{'name':dataset_name}}
+            data = {'$set':{'name':dataset_name, 'replicas':replicas}}
             self.storage.update_data(coll=coll, query=query, data=data, upsert=True)
             self.insert_phedex_data(dataset_name)
             self.insert_dbs_data(dataset_name)
@@ -163,15 +164,26 @@ class DatasetManager(object):
                 q.put((get_json(dataset_data, 'name'), count))
                 count += 1
             # update replicas
-            replicas = self.generate_replicas(dataset_data)
+            replicas = self.get_replicas(dataset_data)
             coll = 'dataset_data'
             query = {'name':dataset_name}
-            data = {'$set':{'replicas':list(replicas)}}
+            data = {'$set':{'replicas':replicas}}
             data = self.storage.update_data(coll=coll, query=query, data=data, upsert=False)
         q.join()
         deprecated_datasets = dataset_names - current_datasets
         for dataset_name in deprecated_datasets:
             self.remove_dataset(dataset_name)
+
+    def get_replicas(self, dataset_data):
+        """
+        Generator function to get all replicas of a dataset
+        """
+        replicas = list()
+        for block_data in get_json(dataset_data, 'block'):
+            for replica_data in get_json(block_data, 'replica'):
+                if get_json(replica_data, 'files') > 0:
+                    replicas.append(get_json(replica_data, 'node'))
+        return replicas
 
     def get_db_datasets(self):
         """
@@ -185,15 +197,6 @@ class DatasetManager(object):
         dataset_names = [dataset_data['name'] for dataset_data in data]
         self.logger.info('%d datasets present in database', len(dataset_names))
         return dataset_names
-
-    def generate_replicas(self, dataset_data):
-        """
-        Generator function to get all replicas of a dataset
-        """
-        for block_data in get_json(dataset_data, 'block'):
-            for replica_data in get_json(block_data, 'replica'):
-                if get_json(replica_data, 'files') > 0:
-                    yield get_json(replica_data, 'node')
 
     def remove_dataset(self, dataset_name):
         """

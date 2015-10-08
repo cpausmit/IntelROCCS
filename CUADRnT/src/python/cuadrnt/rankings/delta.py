@@ -8,6 +8,7 @@ Description: Delta ranking algorithm
 # system modules
 import logging
 import datetime
+from math import log
 
 # package modules
 from cuadrnt.utils.utils import datetime_day
@@ -38,20 +39,6 @@ class DeltaRanking(GenericRanking):
             self.storage.update_data(coll=coll, query=query, data=data, upsert=True)
             # store into dict
             dataset_rankings[dataset_name] = delta_popularity
-        # calculate average
-        pipeline = list()
-        group = {'$group':{'_id':None, 'average':{'$avg':'$delta_popularity'}}}
-        pipeline.append(group)
-        data = self.storage.get_data(coll=coll, pipeline=pipeline)
-        average = data[0]['average']
-        # apply to dict
-        coll = 'dataset_rankings'
-        for dataset_name in dataset_names:
-            rank = dataset_rankings[dataset_name] - average
-            dataset_rankings[dataset_name] = rank
-            query = {'name':dataset_name, 'date':date}
-            data = {'$set':{'name':dataset_name, 'date':date, 'delta_rank':rank}}
-            self.storage.update_data(coll=coll, query=query, data=data, upsert=True)
         return dataset_rankings
 
     def site_rankings(self):
@@ -64,18 +51,20 @@ class DeltaRanking(GenericRanking):
         site_rankings = dict()
         for site_name in site_names:
             # get popularity
-            popularity = self.get_site_popularity(site_name)
+            popularity = float(self.get_site_popularity(site_name))
             # get cpu and storage (performance)
-            performance = self.sites.get_performance(site_name)
+            performance = float(self.sites.get_performance(site_name))
             # get available storage
-            available_storage = self.sites.get_available_storage(site_name)
+            available_storage = float(self.sites.get_available_storage(site_name))
+            if available_storage <= 0:
+                available_storage = 0.0
             # insert into database
             coll = 'site_popularity'
             query = {'name':site_name, 'date':date}
             data = {'$set':{'name':site_name, 'date':date, 'delta_popularity':popularity, 'performance':performance, 'available_storage':available_storage}}
             self.storage.update_data(coll=coll, query=query, data=data, upsert=True)
             #calculate rank
-            rank = performance*available_storage*popularity
+            rank = (performance*available_storage)/popularity
             # store into dict
             site_rankings[site_name] = rank
             # insert into database
@@ -97,11 +86,11 @@ class DeltaRanking(GenericRanking):
         pipeline.append(match)
         match = {'$match':{'date':{'$gte':start_date, '$lte':end_date}}}
         pipeline.append(match)
-        group = {'$group':{'_id':'$name', 'old_popularity':{'$sum':{'$multiply':['$n_accesses', '$n_cpus', '$n_users']}}}}
+        group = {'$group':{'_id':'$name', 'old_popularity':{'$sum':{'$multiply':['$n_accesses', '$n_cpus']}}}}
         pipeline.append(group)
         data = self.storage.get_data(coll=coll, pipeline=pipeline)
         try:
-            old_pop = data[0]['old_popularity']
+            old_pop = float(data[0]['old_popularity'])
         except:
             old_pop = 0.0
         start_date = datetime_day(datetime.datetime.utcnow()) - datetime.timedelta(days=7)
@@ -111,14 +100,18 @@ class DeltaRanking(GenericRanking):
         pipeline.append(match)
         match = {'$match':{'date':{'$gte':start_date, '$lte':end_date}}}
         pipeline.append(match)
-        group = {'$group':{'_id':'$name', 'new_popularity':{'$sum': {'$multiply':['$n_accesses', '$n_cpus', '$n_users']}}}}
+        group = {'$group':{'_id':'$name', 'new_popularity':{'$sum': {'$multiply':['$n_accesses', '$n_cpus']}}}}
         pipeline.append(group)
         data = self.storage.get_data(coll=coll, pipeline=pipeline)
         try:
-            new_pop = data[0]['new_popularity']
+            new_pop = float(data[0]['new_popularity'])
         except:
             new_pop = 0.0
         delta_popularity = new_pop - old_pop
+        if delta_popularity > 1:
+            delta_popularity = log(delta_popularity)
+        else:
+            delta_popularity = 0.0
         size_gb = self.datasets.get_size(dataset_name)
         return delta_popularity/size_gb
 

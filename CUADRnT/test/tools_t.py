@@ -12,13 +12,12 @@ import os
 # package modules
 from cuadrnt.utils.config import get_config
 from cuadrnt.tools.sites import SiteManager
-from cuadrnt.tools.datasets import DatasetManager
-from cuadrnt.rankings.delta import DeltaRanking
+#from cuadrnt.tools.datasets import DatasetManager
 
 # get local config file
 opt_path = os.path.join(os.path.split(os.path.dirname(os.path.realpath(__file__)))[0], 'etc')
 
-@unittest.skip("Skip Test")
+#@unittest.skip("Skip Test")
 class ToolsTests(unittest.TestCase):
     """
     A test class for tools classes
@@ -33,19 +32,19 @@ class ToolsTests(unittest.TestCase):
         "Clean up"
         pass
 
-    @unittest.skip("Skip Test")
+    #@unittest.skip("Skip Test")
     def test_managers(self):
         "Test managers"
         print ""
         sites = SiteManager(config=self.config)
-        datasets = DatasetManager(config=self.config)
-        delta = DeltaRanking(config=self.config)
-        sites.update_sites()
-        datasets.update_datasets()
-        dataset_rankings = delta.dataset_rankings()
-        print dataset_rankings
-        site_rankings = delta.site_rankings()
-        print site_rankings
+        #datasets = DatasetManager(config=self.config)
+        #sites.update_db()
+        #datasets.update_db()
+        sites.update_cpu()
+        available_sites = sites.get_available_sites()
+        for site_name in available_sites:
+            performance = sites.get_performance(site_name)
+            print site_name, " : ", performance
 
 if __name__ == '__main__':
     unittest.main()
