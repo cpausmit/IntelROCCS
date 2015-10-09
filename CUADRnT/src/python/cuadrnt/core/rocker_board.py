@@ -93,8 +93,8 @@ class RockerBoard(object):
                 new_rank = (site_rankings[site_name]/avail_storage)*new_avail_storage
             site_rankings[site_name] = new_rank
             del dataset_rankings[dataset_name]
-        mini_datasets = self.miniaod_subscriptions()
-        subscriptions += mini_datasets
+        #mini_datasets = self.miniaod_subscriptions()
+        #subscriptions += mini_datasets
         self.logger.info('Subscribed %dGB', subscribed_gb)
         return subscriptions
 
@@ -106,6 +106,7 @@ class RockerBoard(object):
         # get all US sites with rankings
         # follow the same selection procedure
         # add selection function
+        return []
 
     def subscribe(self, subscriptions):
         """
