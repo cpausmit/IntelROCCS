@@ -81,7 +81,7 @@ class PopularityManager(object):
             dataset_name = get_json(dataset_data, 'name')
             for pop_data in get_json(dataset_data, 'data'):
                 date = pop_db_timestamp_to_datetime(pop_data[0])
-                query = {'name':dataset_name, 'data':date}
+                query = {'name':dataset_name, 'date':date}
                 popularity_data = {'name':dataset_name, 'date':date}
                 popularity_data[orderby] = pop_data[1]
                 data = {'$set':popularity_data}
