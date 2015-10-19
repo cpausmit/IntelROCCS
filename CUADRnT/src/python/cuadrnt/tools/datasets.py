@@ -45,7 +45,7 @@ class DatasetManager(object):
             worker.start()
         active_sites = self.sites.get_active_sites()
         api = 'blockreplicas'
-        params = [('node', active_sites), ('create_since', 0.0), ('complete', 'y'), ('group', 'AnalysisOps'), ('show_dataset', 'y')]
+        params = [('node', active_sites), ('create_since', 0.0), ('complete', 'y'), ('dist_complete', 'y'), ('group', 'AnalysisOps'), ('show_dataset', 'y')]
         t1 = datetime.datetime.utcnow()
         phedex_data = self.phedex.fetch(api=api, params=params)
         t2 = datetime.datetime.utcnow()
@@ -53,8 +53,8 @@ class DatasetManager(object):
         self.logger.info('Call to PhEDEx took %s', str(td))
         count = 1
         t1 = datetime.datetime.utcnow()
-        for dataset_data in self.generate_dataset_data(phedex_data):
-            q.put((get_json(dataset_data, 'name'), count))
+        for dataset_data in get_json(get_json(phedex_data, 'phedex'), 'dataset'):
+            q.put((dataset_data, count))
             count += 1
         q.join()
         t2 = datetime.datetime.utcnow()
@@ -62,12 +62,45 @@ class DatasetManager(object):
         self.logger.info('Inserting PhEDEx data took %s', str(td))
         self.logger.info('Done inserting datasets into DB')
 
-    def generate_dataset_data(self, phedex_data):
+    def update_db(self):
         """
-        Generator function to get every dataset in system
+        Get datasets currently in AnalysisOps and compare to database
+        Deactivate removed datasets and insert new
+        Update replicas
         """
+        # get all datasets in database
+        dataset_names = self.get_db_datasets()
+        dataset_names = set(dataset_names)
+        # get all active sites, only fetch replicas from these
+        active_sites = self.sites.get_active_sites()
+        api = 'blockreplicas'
+        params = [('node', active_sites), ('create_since', 0.0), ('complete', 'y'), ('group', 'AnalysisOps'), ('show_dataset', 'y')]
+        phedex_data = self.phedex.fetch(api=api, params=params)
+        current_datasets = set()
+        q = Queue.Queue()
+        for i in range(self.MAX_THREADS):
+            worker = threading.Thread(target=self.insert_dataset_data, args=(i, q))
+            worker.daemon = True
+            worker.start()
+        count = 1
         for dataset_data in get_json(get_json(phedex_data, 'phedex'), 'dataset'):
-            yield dataset_data
+            dataset_name = get_json(dataset_data, 'name')
+            current_datasets.add(dataset_name)
+            if dataset_name not in dataset_names:
+                # this is a new dataset which need to be inserted into the database
+                q.put((dataset_data, count))
+                count += 1
+            else:
+                # update replicas
+                replicas = self.get_replicas(dataset_data)
+                coll = 'dataset_data'
+                query = {'name':dataset_name}
+                data = {'$set':{'replicas':replicas}}
+                data = self.storage.update_data(coll=coll, query=query, data=data, upsert=False)
+        q.join()
+        deprecated_datasets = dataset_names - current_datasets
+        for dataset_name in deprecated_datasets:
+            self.remove_dataset(dataset_name)
 
     def insert_dataset_data(self, i, q):
         """
@@ -75,14 +108,15 @@ class DatasetManager(object):
         """
         while True:
             data = q.get()
-            dataset_name = data[0]
+            dataset_data = data[0]
             count = data[1]
             self.logger.debug('Inserting dataset number %d', count)
-            replicas = self.get_replicas(data)
+            dataset_name = get_json(dataset_data, 'name')
+            replicas = self.get_replicas(dataset_data)
             coll = 'dataset_data'
             query = {'name':dataset_name}
             data = {'$set':{'name':dataset_name, 'replicas':replicas}}
-            self.storage.update_data(coll=coll, query=query, data=data, upsert=True)
+            data = self.storage.update_data(coll=coll, query=query, data=data, upsert=True)
             self.insert_phedex_data(dataset_name)
             self.insert_dbs_data(dataset_name)
             q.task_done()
@@ -134,45 +168,6 @@ class DatasetManager(object):
         query = {'name':dataset_name}
         data = {'$set':{'ds_name':ds_name, 'physics_group':physics_group, 'data_tier':data_tier, 'creation_date':creation_date, 'ds_type':ds_type}}
         self.storage.update_data(coll=coll, query=query, data=data, upsert=False)
-
-    def update_db(self):
-        """
-        Get datasets currently in AnalysisOps and compare to database
-        Deactivate removed datasets and insert new
-        Update replicas
-        """
-        # get all datasets in database
-        dataset_names = self.get_db_datasets()
-        dataset_names = set(dataset_names)
-        # get all active sites, only fetch replicas from these
-        active_sites = self.sites.get_active_sites()
-        api = 'blockreplicas'
-        params = [('node', active_sites), ('create_since', 0.0), ('complete', 'y'), ('group', 'AnalysisOps'), ('show_dataset', 'y')]
-        phedex_data = self.phedex.fetch(api=api, params=params)
-        current_datasets = set()
-        q = Queue.Queue()
-        for i in range(self.MAX_THREADS):
-            worker = threading.Thread(target=self.insert_dataset_data, args=(i, q))
-            worker.daemon = True
-            worker.start()
-        count = 1
-        for dataset_data in self.generate_dataset_data(phedex_data):
-            dataset_name = get_json(dataset_data, 'name')
-            current_datasets.add(dataset_name)
-            if dataset_name not in dataset_names:
-                # this is a new dataset which need to be inserted into the database
-                q.put((get_json(dataset_data, 'name'), count))
-                count += 1
-            # update replicas
-            replicas = self.get_replicas(dataset_data)
-            coll = 'dataset_data'
-            query = {'name':dataset_name}
-            data = {'$set':{'replicas':replicas}}
-            data = self.storage.update_data(coll=coll, query=query, data=data, upsert=False)
-        q.join()
-        deprecated_datasets = dataset_names - current_datasets
-        for dataset_name in deprecated_datasets:
-            self.remove_dataset(dataset_name)
 
     def get_replicas(self, dataset_data):
         """

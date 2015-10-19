@@ -56,19 +56,6 @@ class SiteManager(object):
         data = {'$set':{'name':site_name, 'status':site_status, 'quota_gb':site_quota}}
         self.storage.update_data(coll=coll, query=query, data=data, upsert=True)
 
-    def get_active_sites(self):
-        """
-        Get all sites which are active, includes sites which are not available for replication
-        """
-        coll = 'site_data'
-        pipeline = list()
-        match = {'$match':{'status':{'$in':[1, 2]}}}
-        pipeline.append(match)
-        project = {'$project':{'name':1, '_id':0}}
-        pipeline.append(project)
-        sites_data = self.storage.get_data(coll=coll, pipeline=pipeline)
-        return [site_data['name'] for site_data in sites_data]
-
     def update_cpu(self):
         """
         Update maximum CPU capacity for site
@@ -94,6 +81,19 @@ class SiteManager(object):
             data = {'$push':{'cpu_data':{'date':date, 'cpus':cpus}}}
             self.storage.update_data(coll=coll, query=query, data=data)
 
+    def get_active_sites(self):
+        """
+        Get all sites which are active, includes sites which are not available for replication
+        """
+        coll = 'site_data'
+        pipeline = list()
+        match = {'$match':{'status':{'$in':[1, 2]}}}
+        pipeline.append(match)
+        project = {'$project':{'name':1, '_id':0}}
+        pipeline.append(project)
+        sites_data = self.storage.get_data(coll=coll, pipeline=pipeline)
+        return [site_data['name'] for site_data in sites_data]
+
     def get_available_sites(self):
         """
         Get all sites which are available for replication
@@ -106,6 +106,34 @@ class SiteManager(object):
         pipeline.append(project)
         data = self.storage.get_data(coll=coll, pipeline=pipeline)
         return [site['name'] for site in data]
+
+    def get_available_storage(self, site_name):
+        """
+        Get total AnalysisOps storage available at the site
+        """
+        coll = 'dataset_data'
+        pipeline = list()
+        match = {'$match':{'replicas':site_name}}
+        pipeline.append(match)
+        group = {'$group':{'_id':None, 'size_bytes':{'$sum':'$size_bytes'}}}
+        pipeline.append(group)
+        project = {'$project':{'size_bytes':1, '_id':0}}
+        pipeline.append(project)
+        data = self.storage.get_data(coll=coll, pipeline=pipeline)
+        try:
+            size = data[0]['size_bytes']/10**9
+        except:
+            return 0
+        coll = 'site_data'
+        pipeline = list()
+        match = {'$match':{'name':site_name}}
+        pipeline.append(match)
+        project = {'$project':{'quota_gb':1, '_id':0}}
+        pipeline.append(project)
+        data = self.storage.get_data(coll=coll, pipeline=pipeline)
+        quota = data[0]['quota_gb']
+        available_gb = (0.95*quota) - size
+        return available_gb
 
     def get_performance(self, site_name):
         """
@@ -137,31 +165,3 @@ class SiteManager(object):
         if not (performance > 0):
             performance = 0.0
         return performance
-
-    def get_available_storage(self, site_name):
-        """
-        Get total AnalysisOps storage available at the site
-        """
-        coll = 'dataset_data'
-        pipeline = list()
-        match = {'$match':{'replicas':site_name}}
-        pipeline.append(match)
-        group = {'$group':{'_id':None, 'size_bytes':{'$sum':'$size_bytes'}}}
-        pipeline.append(group)
-        project = {'$project':{'size_bytes':1, '_id':0}}
-        pipeline.append(project)
-        data = self.storage.get_data(coll=coll, pipeline=pipeline)
-        try:
-            size = data[0]['size_bytes']/10**9
-        except:
-            return 0
-        coll = 'site_data'
-        pipeline = list()
-        match = {'$match':{'name':site_name}}
-        pipeline.append(match)
-        project = {'$project':{'quota_gb':1, '_id':0}}
-        pipeline.append(project)
-        data = self.storage.get_data(coll=coll, pipeline=pipeline)
-        quota = data[0]['quota_gb']
-        available_gb = (0.95*quota) - size
-        return available_gb

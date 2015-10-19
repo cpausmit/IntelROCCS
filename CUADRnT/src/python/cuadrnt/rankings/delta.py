@@ -64,7 +64,10 @@ class DeltaRanking(GenericRanking):
             data = {'$set':{'name':site_name, 'date':date, 'delta_popularity':popularity, 'performance':performance, 'available_storage':available_storage}}
             self.storage.update_data(coll=coll, query=query, data=data, upsert=True)
             #calculate rank
-            rank = (performance*available_storage)/popularity
+            try:
+                rank = (performance*available_storage)/popularity
+            except:
+                rank = 0.0
             # store into dict
             site_rankings[site_name] = rank
             # insert into database
