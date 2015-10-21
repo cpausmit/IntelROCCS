@@ -80,7 +80,7 @@ class RockerBoard(object):
             if not tmp_site_rankings:
                 break
             site_name = weighted_choice(tmp_site_rankings)
-            subscription = tuple(dataset_name, site_name)
+            subscription = (dataset_name, site_name)
             subscriptions.append(subscription)
             subscribed_gb += size_gb
             avail_storage = self.sites.get_available_storage(site_name)
