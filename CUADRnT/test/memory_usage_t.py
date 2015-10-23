@@ -23,7 +23,7 @@ from cuadrnt.utils.utils import datetime_day
 opt_path = os.path.join(os.path.split(os.path.dirname(os.path.realpath(__file__)))[0], 'etc')
 logger = logging.getLogger(__name__)
 
-#@unittest.skip("Skip Test")
+@unittest.skip("Skip Test")
 class MemoryTests(unittest.TestCase):
     """
     A class to test memory usage of program

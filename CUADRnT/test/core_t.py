@@ -36,7 +36,12 @@ class CoreTests(unittest.TestCase):
         "Test rocker_board functions"
         print ""
         rocker_board = RockerBoard(config=self.config)
-        rocker_board.start()
+        subscriptions = list()
+        dataset_name = '/BBbarDMJets_scalar_Mchi-1_Mphi-1000_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/RunIISpring15DR74-Asympt25ns_MCRUN2_74_V9-v1/AODSIM'
+        site_name = 'T2_US_Wisconsin'
+        subscription = (dataset_name, site_name)
+        subscriptions.append(subscription)
+        rocker_board.subscribe(subscriptions)
 
 if __name__ == '__main__':
     unittest.main()

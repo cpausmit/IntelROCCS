@@ -10,6 +10,7 @@ import logging
 import sys
 import getopt
 import datetime
+from logging.handlers import TimedRotatingFileHandler
 
 # package modules
 from cuadrnt.utils.io_utils import export_csv
@@ -18,7 +19,6 @@ from cuadrnt.tools.datasets import DatasetManager
 from cuadrnt.tools.sites import SiteManager
 from cuadrnt.tools.storage import StorageManager
 from cuadrnt.tools.popularity import PopularityManager
-from logging.handlers import TimedRotatingFileHandler
 
 class DataAnalysis(object):
     """
@@ -43,7 +43,7 @@ class DataAnalysis(object):
         self.export_data(dataset_name)
         t2 = datetime.datetime.utcnow()
         td = t2 - t1
-        self.logger.debug('Data Analysis took %s', str(td))
+        self.logger.info('Data Analysis took %s', str(td))
 
     def initiate_data(self, dataset_name):
         """
