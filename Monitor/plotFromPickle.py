@@ -465,7 +465,7 @@ integralTexts.append( "Average data on disk: %.3f PB\n"%(totalSize/1000.) )
 positions = [0.8,0.75]
 plotTText = [None,None]
 for i in range(2):
-  plotTText[i] = ROOT.TText(.5,positions[i],integralTexts[i])
+  plotTText[i] = ROOT.TText(.3,positions[i],integralTexts[i])
   plotTText[i].SetTextSize(0.04)
   plotTText[i].SetTextColor(2)
   plotTText[i].Draw()
@@ -482,7 +482,7 @@ hZeroOne.Draw("hist")
 ROOT.MitRootStyle.OverlayFrame()
 plotTText = [None,None]
 for i in range(1):
-  plotTText[i] = ROOT.TText(.5,positions[i],integralTexts[i])
+  plotTText[i] = ROOT.TText(.3,positions[i],integralTexts[i])
   plotTText[i].SetTextSize(0.04)
   plotTText[i].SetTextColor(2)
   plotTText[i].Draw()
@@ -496,7 +496,7 @@ hTime.Draw("hist")
 ROOT.MitRootStyle.OverlayFrame()
 plotTText = [None,None]
 for i in range(1):
-  plotTText[i] = ROOT.TText(.5,positions[i],integralTexts[i])
+  plotTText[i] = ROOT.TText(.3,positions[i],integralTexts[i])
   plotTText[i].SetTextSize(0.04)
   plotTText[i].SetTextColor(2)
   plotTText[i].Draw()

@@ -6,7 +6,7 @@ import ROOT as root
 class site(object):
 	def __init__(self,l):
 		self.name=l[0]
-		self.total=float(l[1])
+		self.quota=float(l[1])
 		self.used=float(l[2])
 		self.toDelete=float(l[3])
 		self.lastCp=float(l[4])
@@ -38,7 +38,7 @@ hHigh.SetMaximum(1)
 for i in range(nSites):
 	s = siteInfos[i]
 	xaxis.SetBinLabel(i+2,s.name)
-	cpFr = s.lastCp/s.total
+	cpFr = s.lastCp/s.quota
 	if cpFr<highThreshold:
 		if cpFr<medThreshold:
 			hLow.Fill(i,cpFr)
@@ -71,7 +71,7 @@ hHigh.SetMaximum(1)
 
 for i in range(nSites):
 	s = siteInfos[i]
-	usedFr = s.used/s.total
+	usedFr = s.used/s.quota
 	if usedFr>superHighThreshold:
 		hLow.Fill(i,usedFr)
 	else:
