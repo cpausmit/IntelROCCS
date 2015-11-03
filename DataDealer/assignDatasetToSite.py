@@ -682,7 +682,7 @@ if len(siteNames) >= nCopies:
         print '\n The job is done already: EXIT!\n'
         sys.exit(0)
 else:
-    print ' Requested %d copies at Tier-2, but only %d copies found.'%(nCopies,len(siteNames))
+    print ' Requested %d copies at Tier-2. Only %d copies found.'%(nCopies,len(siteNames))
     print ' --> will find %d more sites for subscription.\n'%(nAdditionalCopies)
 
 
