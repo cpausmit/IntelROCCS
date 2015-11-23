@@ -10,6 +10,9 @@ class DatasetProperties:
 		#self.deprecated = False
 		self.trueSize = 0
 		self.trueNfiles = 0
+		self.fullOnTape = False
+		self.kickFromPool = False
+		self.daysUsedAgo = 0
 		self.siteList = []
 		self.delFromSites = []
 		self.weightAtSites = {}
@@ -35,6 +38,18 @@ class DatasetProperties:
 
 	def setId(self,	dsetId):
 		self.dbaseId = dsetId
+
+	def setFullOnTape(self,fullOnTape):
+		self.fullOnTape = fullOnTape
+
+	def isFullOnTape(self):
+		return self.fullOnTape
+
+	def setDaysSinceUsed(self,days):
+		self.daysUsedAgo = days
+
+	def daysSinceUsed(self):
+		return self.daysUsedAgo
 
 	#def setDeprecated(self,deprecated):
 	#	self.deprecated = deprecated

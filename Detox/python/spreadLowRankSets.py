@@ -59,11 +59,12 @@ class SpreadLowRankSets:
                     self.setsToSites[site].append(dset)
                 
         for site in sorted(self.setsToSites, cmp=self.compSites):
-            print "  - Subscribing to " + site + " %d TBs"%(siteAssigned[site])
-            print "  -- average assigned rank %d"%(statistics.mean(ranksAssigned[site]))
-            #print self.setsToSites[site]
-            self.submitTransferRequest(site,self.setsToSites[site])
-            break
+            if len(ranksAssigned[site]) > 0:
+                print "  - Subscribing to " + site + " %d TBs"%(siteAssigned[site])
+                print "  -- average assigned rank %d"%(statistics.mean(ranksAssigned[site]))
+                #print self.setsToSites[site]
+                self.submitTransferRequest(site,self.setsToSites[site])
+                break
 
 
     def submitTransferRequest(self,site,datasets2trans):

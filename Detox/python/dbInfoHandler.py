@@ -14,6 +14,8 @@ class DbInfoHandler:
         self.datasetSizes = {}
         self.datasetFiles = {}
         self.phedexGroups = (os.environ['DETOX_GROUP']).split(',')
+        self.phgroupIds = {}
+        self.extractGroupIds()
         self.extractAllSites()
         self.extractDatasetIds()
         self.extractDatasetSizes()
@@ -21,6 +23,26 @@ class DbInfoHandler:
     def setDatasetRanks(self,dsetRanks):
         for dset in dsetRanks:
             self.datasetRanks[dset] = dsetRanks[dset][0]
+
+    def extractGroupIds(self):
+        connection = self.getDbConnection()
+        cursor = connection.cursor()
+
+        sql = 'select GroupId,GroupName from Groups' 
+        try:
+            cursor.execute(sql)
+            results = cursor.fetchall()
+        except:
+            print ' Error(%s) -- could not retrieve sites'%(sql)
+            print sys.exc_info()
+            connection.close()
+            sys.exit(1)
+        connection.close()
+
+        for row in results:
+            groupId = int(row[0])
+            groupName = row[1]
+            self.phgroupIds[groupName] = groupId
 
     def extractAllSites(self):
         phedGroups = []
@@ -139,7 +161,7 @@ class DbInfoHandler:
         for row in results:
             dsetId = int(row[0])
             self.datasetFiles[dsetId] = int(row[1])
-            self.datasetSizes[dsetId] = int(row[2])
+            self.datasetSizes[dsetId] = float(row[2])
      
     def getAllSites(self):
         return self.allSites
@@ -172,6 +194,9 @@ class DbInfoHandler:
             return self.datasetIds[dsetName]
         else:
             return -1
+
+    def getGroupId(self,group):
+        return self.phgroupIds[group]
 
     def dbExecSql(self,sql):
         connection = self.getDbConnection()

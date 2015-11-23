@@ -20,11 +20,13 @@ class SiteProperties:
         self.datasetSizes = {}
         self.dsetIsValid = {}
         self.dsetIsCustodial = {}
+        self.dsetLastCopy = {}
         self.dsetIsPartial = {}
         self.deprecated = {}
         self.dsetReqTime = {}
         self.dsetUpdTime = {}
         self.dsetIsDone = {}
+        self.dsetNotUsedOnTape = {}
         self.wishList = []
         self.datasetsToDelete = []
         self.protectedList = []
@@ -59,6 +61,7 @@ class SiteProperties:
         space = 0
         self.wishList = []
         space2free = self.space2free
+	addedExtra = 0
         for datasetName in sorted(self.datasetRanks.keys(), cmp=self.compare):
             if space > (space2free-self.deleted):
                 break
@@ -73,6 +76,18 @@ class SiteProperties:
             if self.dsetIsCustodial[datasetName] :
                 continue
 
+            if dataPropers[datasetName].daysSinceUsed() > 540:
+                if dataPropers[datasetName].isFullOnTape():
+		    delta = (self.epochTime - self.dsetUpdTime[datasetName])/(60*60*24)
+		    if delta > 540 and addedExtra < 100 :
+                        space = space + self.datasetSizes[datasetName]
+                        self.wishList.append(datasetName)
+                        dataPropers[datasetName].kickFromPool = True
+                        #print "adding new to wish list"
+                        #print datasetName
+			addedExtra = addedExtra + 1
+                        continue
+
             #non-valid dataset can't be on deletion list
             if banInvalid == True:
                 if not self.dsetIsValid[datasetName]:
@@ -83,7 +98,7 @@ class SiteProperties:
                 space = space + self.datasetSizes[datasetName]
                 self.wishList.append(datasetName)
 
-    def hasMoreToDelete(self, dataPropers, ncopyMin, banInvalid=True):
+    def hasMoreToDelete(self, dataPropers, ncopyMin, banInvalid):
         for datasetName in sorted(self.datasetRanks.keys(), cmp=self.compare):
             if datasetName in self.datasetsToDelete:
                 continue
@@ -140,6 +155,20 @@ class SiteProperties:
             self.datasetsToDelete.remove(dset)
             self.deleted = self.deleted - self.datasetSizes[dset]
 
+    def canBeLastCopy(self,dset,banInvalid):
+        if not banInvalid:
+            return True
+            
+        #can't be partial dataset
+        if dset not in self.dsetIsPartial:
+            return False
+        if self.dsetIsPartial[dset] :
+            return False
+        #can't be non-valid dataset
+        if not self.dsetIsValid[dset]:
+            return False
+        return True
+
     def pinDataset(self,dset):
         if dset in self.datasetsToDelete:
             return False
@@ -159,12 +188,14 @@ class SiteProperties:
 
     def lastCopySpace(self,datasets,nCopyMin):
         space = 0
+        self.dsetLastCopy = {}
         for dset in self.datasetSizes.keys():
             if dset in self.datasetsToDelete:
                 continue
             dataset = datasets[dset]
             remaining = dataset.nSites() - dataset.nBeDeleted()
             if remaining <= nCopyMin:
+                self.dsetLastCopy[dset] = 1
                 space = space + self.datasetSizes[dset]
 	self.spaceLCp = space
 
@@ -225,7 +256,19 @@ class SiteProperties:
             if self.dsetIsCustodial[dset]:
                 size = size + self.datasetSizes[dset]
         return size
-    
+
+    def spaceUtouchable(self):
+        size = 0
+        for dset in self.dsetLastCopy:
+            size = size + self.datasetSizes[dset]
+
+        for dset in self.dsetIsCustodial:
+            if dset in self.dsetLastCopy:
+                continue
+            if self.dsetIsCustodial[dset]:
+                size = size + self.datasetSizes[dset]
+        return size
+
     def nsetsDeprecated(self):
         nsets = 0
         for dset in self.deprecated:

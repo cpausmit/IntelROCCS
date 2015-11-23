@@ -1,4 +1,4 @@
-#===================================================================================================
+ #===================================================================================================
 #  C L A S S
 #===================================================================================================
 import sys, os, subprocess, re, time, datetime, smtplib, MySQLdb, shutil, string, glob 
@@ -101,6 +101,16 @@ class CentralManager:
         lockedSets = self.phedexHandler.getLockedDatasets() 
 
         for dset in phedexSets:
+            if not phedexSets[dset].isFullOnTape():
+		if phedexSets[dset].group(site) == 'DataOps':
+		    creationDate = phedexSets[dset].creationTime(site)
+		    if (now-creationDate)/secsPerDay < 14:
+                        phedexSets[dset].setCustodial(site,1)
+		else:
+		    phedexSets[dset].setCustodial(site,1)
+
+	    if self.phedexHandler.isGlobalyLocked(dset):
+                phedexSets[dset].setCustodialAll(1)
             if dset in lockedSets:
                 lsites = lockedSets[dset].getLockedSites()
                 for lsite in lsites:
@@ -121,6 +131,9 @@ class CentralManager:
             lastAccessed = now
 
             if datasetName in usedSets:
+                daysago = usedSets[datasetName].ndSinceEverUseed()
+                phedexDset.setDaysSinceUsed(daysago)
+
                 if usedSets[datasetName].isOnSite(site):
                     nAccessed = usedSets[datasetName].timesUsed(site)
                     if size > 1:
@@ -132,6 +145,8 @@ class CentralManager:
 
                     if (now-creationDate)/secsPerDay > ((now-lastAccessed)/secsPerDay-nAccessed):
                         used = 1
+            else:
+                phedexDset.setDaysSinceUsed(9999)
 
             # calculate the rank of the given dataset according to its access patterns and size
 
@@ -260,11 +275,15 @@ class CentralManager:
            rank =       phedexSets[datasetName].getGlobalRank()
            trueSize =   phedexSets[datasetName].getTrueSize()
            trueNfiles = phedexSets[datasetName].getTrueNfiles()
+           fullOnTape = phedexSets[datasetName].isFullOnTape()
+           daysago =    phedexSets[datasetName].daysSinceUsed()
            self.dataPropers[datasetName] = datasetProperties.DatasetProperties(datasetName)
            self.dataPropers[datasetName].append(onSites)
            self.dataPropers[datasetName].setId(self.dbInfoHandler.getDatasetId(datasetName))
            self.dataPropers[datasetName].setTrueSize(trueSize)
            self.dataPropers[datasetName].setTrueNfiles(trueNfiles)
+           self.dataPropers[datasetName].setFullOnTape(fullOnTape)
+           self.dataPropers[datasetName].setDaysSinceUsed(daysago)
            for site in onSites:
                isDeprecated = self.deprecatedHandler.isDeprecated(datasetName,site)
                size = phedexSets[datasetName].size(site)
@@ -275,6 +294,7 @@ class CentralManager:
                updtime = phedexSets[datasetName].updTime(site)
                isdone = phedexSets[datasetName].isDone(site)
                wasUsed = phedexSets[datasetName].getIfUsed(site)
+
                self.sitePropers[site].addDataset(datasetName,rank,size,vali,part,
                                                  cust,isDeprecated,reqtime,updtime,wasUsed,isdone)
 
@@ -374,8 +394,15 @@ class CentralManager:
                 sitePr = self.sitePropers[site]
                 if sitePr.onWishList(datasetName):
                     countWishes = countWishes + 1
+            #now determine if we have enought good last copies sites
+            nGoodCopies = 0
+            for site in self.sitePropers:
+                sitePr = self.sitePropers[site]
+                if sitePr.canBeLastCopy(datasetName,banInvalid):
+                    nGoodCopies = nGoodCopies + 1
 
-            if dataPr.nSites()-dataPr.nBeDeleted() - countWishes > (ncopyMin-1):
+            #if dataPr.nSites()-dataPr.nBeDeleted() - countWishes > (ncopyMin-1):
+            if dataPr.kickFromPool or nGoodCopies-dataPr.nBeDeleted() - countWishes > (ncopyMin-1):
                 # grant wishes to all sites
                 for site in self.sitePropers.keys():
                     sitePr = self.sitePropers[site]
@@ -391,7 +418,6 @@ class CentralManager:
                     nprotected = 0
                     for site in sorted(dataPr.mySites(), cmp=self.sortByProtected):
                         sitePr = self.sitePropers[site]
-
                         if sitePr.pinDataset(datasetName):
                             nprotected = nprotected + 1
                             if nprotected >= ncopyMin :
@@ -404,15 +430,14 @@ class CentralManager:
                             sitePr = self.sitePropers[site]
                             sitePr.revokeWish(datasetName)
                             dataPr.removeDelTarget(site)
-                    else:
-                        break
-
-                for site in self.sitePropers.keys() :
-                    sitePr = self.sitePropers[site]
-                    if(sitePr.onWishList(datasetName)):
-                        added = sitePr.grantWish(datasetName)
-                        if added:
-                            dataPr.addDelTarget(site)
+                    else: 
+                        #we pinned the datasets for last copy, now we can grant remaining wishes
+                        for site in self.sitePropers.keys() :
+                            sitePr = self.sitePropers[site]
+                            if(sitePr.onWishList(datasetName)):
+                                added = sitePr.grantWish(datasetName)
+                                if added:
+                                    dataPr.addDelTarget(site)
 
     def assignToT1s(self):
         self.lowRankSpreader.assignSitePropers(self.sitePropers)
@@ -484,7 +509,7 @@ class CentralManager:
             if active != 0:
                 sitePr = self.sitePropers[site]
                 taken = sitePr.spaceTaken()/1000
-                lcopy = sitePr.spaceLastCp()/1000
+                lcopy = sitePr.spaceUtouchable()/1000
                 if 'DataOps' in phedexGroup:
                     lcopy = sitePr.spaceCustodial()/1000
                 totalDisk = totalDisk + theSite.getSize(phedexGroup)/1000
@@ -888,12 +913,123 @@ class CentralManager:
                  
         self.dbInfoHandler.updateSiteStatus(changingStatus)
 
+    def verifyBeforeDeleting(self,phedGroup):
+        #get the list od datasets that are up for deletions
+        deleteSets = {}
+        for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
+            if self.allSites[site].getId() <  1:
+                continue
+            
+            sitePr = self.sitePropers[site]
+            datasets2del = sitePr.delTargets()
+            if len(datasets2del) < 1:
+                continue
+            datasets2del = datasets2del[0:500]
+            for dset in datasets2del:
+                if dset not in deleteSets:
+                    deleteSets[dset] = []
+                deleteSets[dset].append(site)
+
+        #read in phedex file, pick only appropriate group
+        #only leave datasets that intended to be deleted somewhere
+        filename = os.environ['DETOX_PHEDEX_CACHE']
+        fileName = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS'] + '/' + filename
+        inputFile = open(fileName,'r')
+        phedexSets = {}
+        willBeAfter = {}
+        for line in inputFile.xreadlines():
+            items = line.split()
+            dset = items[0]
+            if dset not in deleteSets:
+                continue
+            group = items[1]
+            if group != phedGroup:
+                continue
+            site = items[5]
+            files = int(items[3])
+            custd = int(items[4])
+            isdone = int(items[8])
+
+            if dset not in phedexSets:
+                phedexSets[dset] = []
+                willBeAfter[dset] = []
+            phedexSets[dset].append([site,files,custd,isdone]) 
+            if site not in deleteSets[dset]: 
+                willBeAfter[dset].append([site,files,custd,isdone])
+            
+        #now we go over both sets and determine it it is in good state
+        # we will compare number of files to the nominal at all sites
+        #determine sites where dataset fully exists, count them
+        # also will determine number of sites with custodail copy and count them
+        #will find out if number of custodial copies mismatches
+        #will find out if number of last copies is below minimum
+        isGoodState = True
+        phedexInfo = self.phedexHandler.getPhedexDatasets()
+        for dset in sorted(deleteSets):
+            if self.dataPropers[dset].kickFromPool:
+                continue
+
+            nlcopyNow = nlcopyAft = 0
+            ncustdNow = ncustdAft = 0
+            trueNfiles = phedexInfo[dset].getTrueNfiles()
+            
+            maxFilesNow = 0
+            for item in phedexSets[dset]:
+                if item[2] == 1:
+                    ncustdNow = ncustdNow + 1
+                if item[3] == 1:
+                    nlcopyNow = nlcopyNow + 1
+                nfiles = item[1]
+                if nfiles > maxFilesNow:
+                    maxFilesNow = nfiles
+            maxFilesAft = 0
+            for item in willBeAfter[dset]:
+                if item[2] == 1:
+                    ncustdAft = ncustdAft + 1
+                if item[3] == 1:
+                    nlcopyAft = nlcopyAft + 1
+                nfiles = item[1]
+                if nfiles > maxFilesAft:
+                    maxFilesAft = nfiles
+            
+            #print dset
+            #print str(ncustdNow) + ' ' + str(ncustdAft) 
+            #print str(nlcopyNow) + ' ' + str(nlcopyAft)
+            #print str(trueNfiles) + ' ' + str(maxFilesNow) + ' ' + str(maxFilesAft)
+            if ncustdAft != ncustdNow:
+                isGoodState = False
+                print dset
+                print 'r1 ' + str(ncustdNow) + ' ' + str(ncustdAft)
+                print deleteSets[dset]
+                break
+            if nlcopyAft < self.DETOX_NCOPY_MIN: 
+                isGoodState = False
+                print dset
+                print 'r2 ' + str(nlcopyNow) + ' ' + str(nlcopyAft) 
+                print str(trueNfiles) + ' ' + str(maxFilesAft) + ' ' + str(maxFilesNow) 
+                print deleteSets[dset]
+                break
+            if maxFilesAft != trueNfiles or maxFilesAft < maxFilesNow:
+                isGoodState = False
+                print dset
+                print 'r3 ' + str(nlcopyNow) + ' ' + str(nlcopyAft) 
+                print str(trueNfiles) + ' ' + str(maxFilesAft) + ' ' + str(maxFilesNow) 
+                print deleteSets[dset]
+                break
+
+        if not isGoodState:
+            raise Exception('!! Deletion verification failed, stopping !!')
 
     def requestDeletions(self,phedGroup):
+        #return
         now_tstamp = datetime.datetime.now()
         numberRequests = 0
         thisRequest = None
         for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
+
+            if site == 'T2_CH_CERN':
+                continue
+            
 
             if self.allSites[site].getId() <  1:
                 continue
@@ -915,6 +1051,9 @@ class CentralManager:
             
             print " -- Number of datasets       = " + str(len(datasets2del))
             print "%s %0.2f %s" %(" -- Total size to be deleted =",totalSize/1000,"TB")
+	    if len(datasets2del) < 100 and totalSize/1000 < 1:
+		print " -- skipping request, not worth submitting"
+		continue
 
             proceed = True
             if site in self.siteRequests:
@@ -951,7 +1090,8 @@ class CentralManager:
                 size =   sitePr.dsetSize(dataset)
                 siteId = self.allSites[site].getId()
                 dsetId = self.dataPropers[dataset].getId()
-                groupID = 1
+                #groupID = 1
+                groupID =  self.dbInfoHandler.getGroupId(phedGroup)
 
                 cursor = connection.cursor()
                 sql = "insert into Requests(RequestId,RequestType,SiteId,DatasetId,Rank,GroupId,Date) " \

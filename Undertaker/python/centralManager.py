@@ -128,7 +128,7 @@ class CentralManager:
         lcsites = self.detoxWebReader.getFilledwLC()
         unifiedList =  self.sitesToDisable.keys() + lcsites
         for siteName in unifiedList:
-            if siteName.startswith('T1_'):
+            if siteName.startswith('T1_US'):
                 continue
             print "Re-signing datasets for SITE=" + siteName
             siteToSites[siteName] = []

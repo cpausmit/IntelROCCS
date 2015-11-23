@@ -11,6 +11,7 @@ class PhedexDataset:
         self.dataset = dataset
         self.trueSize = 0
         self.trueNfiles = 0
+        self.daysUsedAgo = 0
         self.siteNames = {}
         self.groupAtSite = {}
         self.sizeAtSite = {}
@@ -23,6 +24,8 @@ class PhedexDataset:
         self.usedAtSite = {}
         self.filesAtSite = {}
         self.partialAtSite = {}
+        self.tapeCompBlocks = -1
+        self.tapeSubsBlocks = -1
         self.globalRank = 9999.0
         self.epochTime = int(time.time())
 
@@ -90,6 +93,23 @@ class PhedexDataset:
                 return True
         return False
 
+    def setDaysSinceUsed(self,days):
+        self.daysUsedAgo = days
+
+    def daysSinceUsed(self):
+        return self.daysUsedAgo
+
+    def setTapeInfo(self, compl, total):
+        self.tapeCompBlocks = compl
+        self.tapeSubsBlocks = total
+
+    def isFullOnTape(self):
+        if self.tapeSubsBlocks < 1:
+            return False
+        if self.tapeCompBlocks == self.tapeSubsBlocks:
+            return True
+        return False
+
     def setValid(self,site,valid):
         if site in self.validAtSite:
             if self.validAtSite[site] == 1:
@@ -103,6 +123,10 @@ class PhedexDataset:
                 self.custodialAtSite[site] = custodial
         else:
             self.custodialAtSite[site] = custodial
+
+    def setCustodialAll(self,custodial):
+        for site in self.siteNames:
+            self.setCustodial(site,custodial)
 
     def setLocalRank(self,site,rank):
         self.rankAtSite[site] = rank
@@ -189,15 +213,15 @@ class PhedexDataset:
 
     def findIncomplete(self):
         for site,files in self.filesAtSite.items():
+            #only valid dataset can be taged as partial
+            if not self.isValid(site):
+                continue
+
+            if not self.isDone(site):
+                self.partialAtSite[site] = True
+            
             if files != self.trueNfiles:
-                #only valid dataset can be taged as partial
-                if self.isValid(site):
-                    if self.trueSize < self.sizeAtSite[site]:
-                        if self.matchesSite("T2_"):
-                            pass
-                            #print "  -- WARNING -- need correct size for " + self.dataset 
-                    else:
-                        self.partialAtSite[site] = True
+                self.partialAtSite[site] = True
 
     def printIntoLine(self):
         if(len(self.siteNames.keys()) < 1):

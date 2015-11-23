@@ -85,3 +85,16 @@ class UsedDataset:
 
     def timesUsed(self,site):
         return self.timesUsedAtSite[site]
+
+    def ndSinceEverUseed(self):
+        latest = -999
+        for site in self.siteNames:
+            date = self.lastUsed(site)
+            dateTime = date+' 00:00:01'
+            pattern = '%Y-%m-%d %H:%M:%S'
+            lastAccessed = int(time.mktime(time.strptime(dateTime, pattern)))
+
+            if lastAccessed > latest:
+                latest = lastAccessed
+
+        return (self.timeNow - latest)/(60*60*24)

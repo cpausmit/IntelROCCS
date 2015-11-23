@@ -222,14 +222,17 @@ class DetoxWebReader:
     def getFilledwLC(self):
         thesites = []
         for site in self.siteSpace:
-            if site.startswith('T1_'):
+            if site.startswith('T1_US'):
                 continue
             quota = self.siteSpace[site][0]
             filled = self.siteSpace[site][1]
             lcopy = self.siteSpace[site][2]
-            if filled < 0.85*quota:
+	    if filled < 0.85*quota:
                 continue
-            if lcopy > 0.9*filled :
+
+	    if site.startswith('T2_') and lcopy > 0.9*filled :
+                thesites.append(site)
+	    if filled > quota:
                 thesites.append(site)
         return thesites
 

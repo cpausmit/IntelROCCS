@@ -102,6 +102,9 @@ for iii in range(0, len(phedexGroups)):
     print ' - Making deletion lists took: %d seconds'%(timeNow-timePre)
     timePre = timeNow
     
+
+    if phedGroup == 'AnalysisOps':
+        centralManager.verifyBeforeDeleting(phedGroup)
     if requestDeletions and (phedGroup == 'AnalysisOps' or phedGroup == 'DataOps'):
         centralManager.requestDeletions(phedGroup)
 
@@ -115,8 +118,8 @@ for iii in range(0, len(phedexGroups)):
     #print ' - Extracting requests from database took: %d seconds'%(timeNow-timePre)
     #timePre = timeNow
 
-    if phedGroup == 'AnalysisOps':
-        centralManager.updateSiteStatus()
+    #if phedGroup == 'AnalysisOps':
+    #    centralManager.updateSiteStatus()
 
     centralManager.printResults(phedGroup,mode)
     timeNow = time.time()

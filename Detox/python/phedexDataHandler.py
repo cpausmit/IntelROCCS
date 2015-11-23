@@ -72,6 +72,7 @@ class PhedexDataHandler:
         self.runAwayGroups = {}
         self.allSites = allSites
         self.localyLocked = {}
+        self.globalyLocked = {}
         self.makeLockFile()
 
         self.lockedSets = {}
@@ -109,8 +110,16 @@ class PhedexDataHandler:
                 raise
         else:
             print "  -- reading from cache --"
-
         self.readPhedexData()
+
+        if self.newAccess:
+            try:
+                self.retrieveTapeData()
+            except:
+                raise
+        else:
+            print "  -- reading from cache --"
+        self.readTapeData()
 
     def retrievePhedexData(self,federation):
         phedexDatasets = {}
@@ -153,7 +162,9 @@ class PhedexDataHandler:
 
             user = re.findall(r"USER",datasetName)
             blocks = dset["block"]
+	   
             for block in blocks:
+                isopen = block['is_open']
                 replicas = block["replica"]
                 for siterpl in replicas:
                     group = siterpl["group"]
@@ -171,6 +182,9 @@ class PhedexDataHandler:
                     isdone = 1
                     if strdone == 'n' :
                         isdone = 0
+
+                    if isopen == 'y' and isdone == 1:
+                        print siterpl
                     cust = siterpl["custodial"]
                     reqtime = int(float(siterpl["time_create"]))
                     updtime = int(float(siterpl["time_update"]))
@@ -179,10 +193,24 @@ class PhedexDataHandler:
                     iscust = 0
                     if len(user) > 0 or cust == 'y':
                         iscust = 1
+
                     if 'GenericTTbar' in datasetName:
                         iscust = 1
-		    if '-PromptReco-' in datasetName and group=='DataOps':
-		        iscust = 1
+		    if 'HiRun2015' in datasetName:
+			iscust = 1
+
+                    if group == 'DataOps':
+                        if '-PromptReco-' in datasetName:
+                            iscust = 1
+                        elif '/RECO' in datasetName:
+                            iscust = 1
+                    elif group == 'AnalysisOps':
+                        if '/MINIAOD' in datasetName:
+                            iscust = 1
+                        if '-PromptReco-' in datasetName:
+                            iscust = 1
+                        elif '/RECO' in datasetName:
+                            iscust = 1
 
                     dataset.updateForSite(site,size,group,files,iscust,reqtime,updtime,isdone)
 
@@ -200,6 +228,81 @@ class PhedexDataHandler:
                 continue
             outputFile.write(line)
         outputFile.close()
+
+    def retrieveTapeData(self):
+        webServer = 'https://cmsweb.cern.ch/'
+        phedexBlocks = 'phedex/datasvc/json/prod/blockreplicasummary'
+        args = 'create_since=0&node=T*MSS&custodial=y'
+
+        url = '"'+webServer+phedexBlocks+'?'+args+'"'
+        cmd = 'curl -k -H "Accept: text/xml" ' + url
+
+        print ' Access phedexDb: ' + cmd
+        tmpname = os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS'] + '/tmp.txt'
+        tmpfile = open(tmpname, "w")
+
+        process = subprocess.Popen(cmd, stdout=tmpfile, stderr=subprocess.PIPE,
+                                   bufsize=4096,shell=True)
+
+        signal.signal(signal.SIGALRM, alarm_handler)
+        signal.alarm(30*60)  # 30 minutes
+        try:
+            strout, error = process.communicate()
+            tmpfile.close()
+            signal.alarm(0)
+        except Alarm:
+            print " Oops, taking too long!"
+            raise Exception(" FATAL -- Call to PhEDEx timed out, stopping")
+
+        if process.returncode != 0:
+            print " Received non-zero exit status: " + str(process.returncode)
+            raise Exception(" FATAL -- Call to PhEDEx failed, stopping")
+
+        tmpfile = open(tmpname, "r")
+        strout = tmpfile.readline()
+        tmpfile.close()
+        #os.remove(tmpname)
+        dataJson = json.loads(strout)
+        blocks = (dataJson["phedex"])["block"]
+        foundSets = {}
+        for bl in blocks:
+            complete = bl['replica'][0]['complete']
+            blname = bl['name']
+            dsetName = (blname.split('#'))[0]
+            if dsetName not in self.phedexDatasets:
+                continue
+            if dsetName not in foundSets:
+                foundSets[dsetName] = [0,0]
+            compl = foundSets[dsetName][0]
+            total = foundSets[dsetName][1]
+            total += 1
+            if complete == 'y':
+                compl += 1
+            foundSets[dsetName] = [compl,total]
+
+
+        filename = 'tape_' + os.environ['DETOX_PHEDEX_CACHE']
+        outputFile = open(os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS'] + '/'
+                          + filename, "w")
+        for dset in foundSets:
+            compl = foundSets[dset][0]
+            total = foundSets[dset][1]
+            line = str(compl) + ' ' + str(total) + ' ' + dset +'\n'
+            outputFile.write(line)
+        outputFile.close()
+
+    def readTapeData(self):
+        filename = 'tape_' + os.environ['DETOX_PHEDEX_CACHE']
+        inputFile = open(os.environ['DETOX_DB'] + '/' + os.environ['DETOX_STATUS'] + '/'
+                         + filename, "r")
+        for line in inputFile:
+            items = line.split()
+            compl = int(items[0])
+            total = int(items[1])
+            dset = items[2]
+            if dset in self.phedexDatasets:
+                self.phedexDatasets[dset].setTapeInfo(compl,total)
+        inputFile.close()
 
     def readPhedexData(self):
         filename = os.environ['DETOX_PHEDEX_CACHE']
@@ -253,6 +356,11 @@ class PhedexDataHandler:
         if site in self.localyLocked:
             if dset in self.localyLocked[site]:
                 return True
+        return False
+
+    def isGlobalyLocked(self,dset):
+        if dset in self.globalyLocked:
+            return True
         return False
 
     def getPhedexDatasetsAtSite(self,site):
@@ -351,7 +459,6 @@ class PhedexDataHandler:
 
     def getLockInformation(self, url):
         cmd = 'curl -k -H "Accept: text" ' + url
-        
         process = subprocess.Popen(cmd,stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE,shell=True)
         signal.signal(signal.SIGALRM, alarm_handler)
@@ -368,22 +475,26 @@ class PhedexDataHandler:
             raise Exception(" FATAL -- Call to Lock File failed, stopping")
         
         dataJason = json.loads(mystring)
-        for site in dataJason:
-            if site == 'lastupdate':
-                continue
-            datasets = dataJason[site]
-            for dset in datasets:
-                temphash = datasets[dset]
-                temphash['site'] = site
+        if 'globallocks' in url:
+            for dset in dataJason:
+                self.globalyLocked[dset] = 1
+        else:
+            for site in dataJason:
+                if site == 'lastupdate':
+                    continue
+                datasets = dataJason[site]
+                for dset in datasets:
+                    temphash = datasets[dset]
+                    temphash['site'] = site
+                    
+                    names = dset.split('#')
+                    datasetName = names[0]
 
-                names = dset.split('#')
-                datasetName = names[0]
-
-                if datasetName not in self.lockedSets:
-                    self.lockedSets[datasetName] = LockedDataset(datasetName)
-                    #print 'locking ' + datasetName
-                #print temphash
-                self.lockedSets[datasetName].appendEntry(temphash,dset)
+                    if datasetName not in self.lockedSets:
+                        self.lockedSets[datasetName] = LockedDataset(datasetName)
+                        #print 'locking ' + datasetName
+                    #print temphash
+                    self.lockedSets[datasetName].appendEntry(temphash,dset)
     
         for dset in self.lockedSets:
             self.lockedSets[dset].processEnrties()
@@ -401,8 +512,8 @@ class PhedexDataHandler:
         proxy = os.environ['DETOX_X509UP']
 
         #it fails connection from time to time, try 3 times
-        sleepTime= 5
-        for itry in range(0,10):
+        sleepTime = 5 
+        for itry in range(0,3):
             connection = httplib.HTTPSConnection(reqman_server,cert_file = proxy,key_file = proxy)
             # connection.set_debuglevel(1)
             headers = {"Content-type": "application/x-www-form-urlencoded",
@@ -415,9 +526,12 @@ class PhedexDataHandler:
                 break
             print '  - bad responce, retrying making local lock file'
             time.sleep(sleepTime)
-            sleepTime = sleepTime + 5
-
-        info = json.loads(response.read())
+            sleepTime = sleepTime + 10
+	try:
+            info = json.loads(response.read())
+	except:
+	    print '  - skipping local lock file'
+	    return
         data = info['result'][0]
     
         site_locks = dict()
