@@ -36,13 +36,12 @@ class UpdateDB(object):
         Begin Database Update
         """
         t1 = datetime.datetime.utcnow()
-        # self.storage.copy_db()
         self.sites.update_db()
         self.datasets.update_db()
         self.popularity.update_db()
         t2 = datetime.datetime.utcnow()
         td = t2 - t1
-        self.logger.debug('Update DB took %s', str(td))
+        self.logger.info('Update DB took %s', str(td))
 
 def main(argv):
     """

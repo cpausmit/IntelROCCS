@@ -1,0 +1,24 @@
+body {
+  margin:           0;
+  margin-left:      1em;
+  padding:          0;
+  font-size:        80%;
+  font-family:      'Lucida Grande', verdana, helvetica, arial, sans-serif;
+  line-height:      1.6em;
+}
+
+a:visited,
+a:link {
+  color: #800000;
+  text-decoration: none;
+}
+
+a:active,
+a:hover {
+  color: #4D0000;
+  text-decoration: none;
+}
+
+th {
+  text-align: right;
+}

@@ -107,7 +107,7 @@ class StorageManager(object):
                 call(["start_mongodb", self.OPT_PATH])
                 continue
             except BulkWriteError as bwe:
-                print bwe.details
+                self.logger.error('Something went wrong when inserting data in %s\n\tData: %s\nmsg: %s', coll, str(data), str(bwe.details))
             else:
                 if not result.inserted_ids:
                     self.logger.debug('No data inserted in %s\n\tData: %s', coll, str(data))

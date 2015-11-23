@@ -49,10 +49,10 @@ class RockerBoard(object):
         subscriptions = self.balance()
         for subscription in subscriptions:
             self.logger.info('site: %s\tdataset: %s', subscription[1], subscription[0])
-        # self.subscribe(subscriptions)
+        self.subscribe(subscriptions)
         t2 = datetime.datetime.utcnow()
         td = t2 - t1
-        self.logger.info('Update DB took %s', str(td))
+        self.logger.info('Rocker Board took %s', str(td))
 
     def balance(self):
         """
@@ -67,24 +67,33 @@ class RockerBoard(object):
             dataset_name = weighted_choice(dataset_rankings)
             if (not dataset_name) or (dataset_rankings[dataset_name] < self.min_rank):
                 break
-            unavailable_sites = self.datasets.get_sites(dataset_name)
+            size_gb = self.datasets.get_size(dataset_name)
+            unavailable_sites = set(self.datasets.get_sites(dataset_name))
+            for site_name in tmp_site_rankings.keys():
+                if (self.sites.get_available_storage(site_name) < size_gb) or (tmp_site_rankings[site_name] <= 0):
+                    unavailable_sites.add(site_name)
             for site_name in unavailable_sites:
                 try:
                     del tmp_site_rankings[site_name]
                 except:
                     continue
-            site_name = weighted_choice(site_rankings)
+            if not tmp_site_rankings:
+                break
+            site_name = weighted_choice(tmp_site_rankings)
             subscription = (dataset_name, site_name)
             subscriptions.append(subscription)
-            size_gb = self.datasets.get_size(dataset_name)
             subscribed_gb += size_gb
             avail_storage = self.sites.get_available_storage(site_name)
             self.logger.info('rank: %s\tsize: %.2f\tdataset: %s', dataset_rankings[dataset_name], size_gb, dataset_name)
-            self.logger.info('rank: %s\tstorage: %d\tdataset: %s', site_rankings[site_name], avail_storage, site_name)
+            self.logger.info('rank: %s\tstorage: %d\site: %s', site_rankings[site_name], avail_storage, site_name)
             new_avail_storage = avail_storage - self.datasets.get_size(dataset_name)
-            new_rank = site_rankings[site_name]/avail_storage*new_avail_storage
+            if new_avail_storage > 0:
+                new_rank = 0.0
+            else:
+                new_rank = (site_rankings[site_name]/avail_storage)*new_avail_storage
             site_rankings[site_name] = new_rank
             del dataset_rankings[dataset_name]
+        self.logger.info('Subscribed %dGB', subscribed_gb)
         return subscriptions
 
     def subscribe(self, subscriptions):
@@ -106,7 +115,7 @@ class RockerBoard(object):
             comments = 'This dataset is predicted to become popular and has therefore been automatically replicated by cuadrnt'
             api = 'subscribe'
             params = [('node', site_name), ('data', data), ('level','dataset'), ('move', 'n'), ('custodial', 'n'), ('group', 'AnalysisOps'), ('request_only', 'n'), ('no_mail', 'n'), ('comments', comments)]
-            json_data = self.phedex.fetch(api=api, params=params, cache=False)
+            json_data = self.phedex.fetch(api=api, params=params, method='post')
             # insert into db
             group_name = 'AnalysisOps'
             request_id = 0
@@ -124,10 +133,10 @@ class RockerBoard(object):
                 pipeline = list()
                 match = {'$match':{'name':dataset_name, 'date':date}}
                 pipeline.append(match)
-                project = {'$project':{'delta_rank':1, '_id':0}}
+                project = {'$project':{'delta_popularity':1, '_id':0}}
                 pipeline.append(project)
                 data = self.storage.get_data(coll=coll, pipeline=pipeline)
-                dataset_rank = data[0]['delta_rank']
+                dataset_rank = data[0]['delta_popularity']
                 query = "INSERT INTO Requests(RequestId, RequestType, DatasetId, SiteId, GroupId, Rank, Date) SELECT %s, %s, Datasets.DatasetId, Sites.SiteId, Groups.GroupId, %s, %s FROM Datasets, Sites, Groups WHERE Datasets.DatasetName=%s AND Sites.SiteName=%s AND Groups.GroupName=%s"
                 values = (request_id, request_type, dataset_rank, request_created, dataset_name, site_name, group_name)
                 self.mit_db.query(query=query, values=values, cache=False)

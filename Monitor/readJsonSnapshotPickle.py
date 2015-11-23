@@ -23,6 +23,14 @@ import getAccessInfo
 genesis=1378008000
 # genesis=int(time.mktime(time.strptime("2014-09-01","%Y-%m-%d")))
 nowish = time.time()
+sPerYear = 365*24*60*60
+# cache transfers/deletions older than 1 year
+phedexTime = genesis+((nowish-genesis)/sPerYear)*sPerYear
+if int((phedexTime-genesis)/sPerYear)<3:
+  # correction for when this problem was discovered
+  phedexTime=1443482180
+
+print "phedexTime =",phedexTime
 
 # get the dataset pattern to consider (careful the pattern will be translated, better implementation
 # should be done at some point)
@@ -116,13 +124,11 @@ def processFile(fileName,debug=0):
             nAccessed[key] += value
         else:
             nAccessed[key] = value
-
     # return the datasets
     return (nSkipped, nAccessed)
 
 def addData(nAllAccessed,nAccessed,debug=0):
     # adding a hash array (nAccessed) to the mother of all hash arrays (nAllAccessed)
-
     # loop through the hash array
     for key in nAccessed:
         # add the entries to our all access hash array
@@ -130,7 +136,6 @@ def addData(nAllAccessed,nAccessed,debug=0):
             nAllAccessed[key] += nAccessed[key]
         else:
             nAllAccessed[key] = nAccessed[key]
-
     # return the updated all hash array
     return nAllAccessed
 
@@ -141,7 +146,6 @@ def addSites(nSites,nAccessed,debug=0):
     # loop through the hash array
     for key in nAccessed:
         # add the entries to our all access hash array
-
         if key in nSites:
             nSites[key] += 1
         else:
@@ -184,6 +188,7 @@ def findDatasetCreationTime(dataset,fileName,cTimes,debug=0):
 
     if dataset in cTimes:
         return cTimes[dataset]
+    return genesis
     cmd = os.environ.get('MONITOR_BASE') + \
         '/das_client.py --format=plain --limit=0 --query="dataset=' + dataset + \
         ' | grep dataset.creation_time " '
@@ -268,10 +273,8 @@ def calculateDatasetMovement(sitePattern,datasetSet,cTimes={}):
     predictedDatasetsOnSites={}
     for datasetName in datasetSet:
         predictedDatasetsOnSites[datasetName]=set([])
-    fileName = os.environ.get('MONITOR_DB') + '/datasets/' + 'delRequests_%i'%(int(genesis))+'.json'
-    parseRequestJson(fileName,genesis,nowish,False,datasetPattern,datasetSet)
-    fileName = os.environ.get('MONITOR_DB') + '/datasets/' + 'xferRequests_%i'%(int(genesis))+'.json'
-    parseRequestJson(fileName,genesis,nowish,True,datasetPattern,datasetSet)
+    parseRequestJson(genesis,nowish,False,datasetPattern,datasetSet)
+    parseRequestJson(genesis,nowish,True,datasetPattern,datasetSet)
 
     # match the intervals from the phedex history to the requested time interval
     #===========================================================================
@@ -433,7 +436,7 @@ for line in phedexFile:
     phedexSize+=float(l[2])
     datasetObject = None
 print "Phedex Size: ",phedexSize
-getJsonFile("del",genesis) # all deletions
+getJsonFile("del",phedexTime) # all deletions
 delDatasetSet=getDeletions(genesis,nowish,datasetPattern,groupPattern)
 updateByKey(datasetSet,delDatasetSet)
 # remove blacklisted datasets
@@ -531,7 +534,7 @@ nAll = 0
 nAllAccess = 0
 sizeTotalGb = 0.
 nFilesTotal = 0
-findDatasetHistoryAll(genesis)
+findDatasetHistoryAll(phedexTime)
 counter=0
 for key in datasetSet:
     counter+=1

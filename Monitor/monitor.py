@@ -54,61 +54,11 @@ DDMTimeStamps = [
                 ]
 DDMLabels = ["SummaryAll", "SummaryLastYear", "SummaryThisYear","Last3Months"]
 
-for m in range(currentMonth,12) + range(1,currentMonth):
-    if currentMonth < m:
-        firstDay = '%i-%.2i-01'%(currentYear-1,m)
-        lastDay = '%i-%.2i-%.2i'%(currentYear-1,m,daysInMonth[m])
-        DDMLabels.append( "Summary%i-%.2i"%(currentYear-1,m) )
-    else:
-        firstDay = '%i-%.2i-01'%(currentYear,m)
-        lastDay = '%i-%.2i-%.2i'%(currentYear,m,daysInMonth[m])
-        DDMLabels.append( "Summary%i-%.2i"%(currentYear,m) )
-    DDMTimeStamps.append( (time.mktime(time.strptime(firstDay,'%Y-%m-%d')), time.mktime(time.strptime(lastDay,'%Y-%m-%d'))) )
-
-### make html string and write it
-htmlString = '''
-<html>
-<head><title> IntelROCCS Status</title>
-<link rel="stylesheet" type="text/css" href="plotstyle.css">
-</head>
-
-<body>
-<br>
-<font color=#000000 size=+1>
-<h1>
-<a href="index.html">IntelROCCS Status</a>
-<span style="font-size: 15pt">
-  <a href="detox.html">  [Cache Release (Detox)] </a>
-</span>
-<span style="font-size: 15pt">
-  <a href="datasetUsage.html">[Dataset Usage]</a>
-</span>
-</h1>
-<hr>
-
-'''
-
-for i in range(1,len(DDMLabels)):
-    label = DDMLabels[i]
-    htmlString+='<img src="Usage_AnalysisOps_%s.png" alt="%s" width="400">\n'%(label,label)
-    if i and i%3==0:
-        htmlString+="<br>\n"
-
-htmlString += '''
-<hr>
-Modified: %s by script
-<a href="http://web.mit.edu/physics/people/faculty/paus_christoph.html">Christoph Paus</a>, Sid Narayanan
-</body>
-</html>
-'''%(time.strftime("%Y-%m-%d %H:%M",time.gmtime()))
-with open(os.environ['MONITOR_DB']+'/datasetUsage.html','w') as htmlFile:
-    htmlFile.write(htmlString)
-
-### done with html nonsense
-
 os.environ['MONITOR_PATTERN'] = DDMPattern
 os.environ['MONITOR_GROUP'] = DDMGroup
 os.system('./readJsonSnapshotPickle.py T2*')
+
+os.system('./plotFromPickle.py T2* %s'%('${MONITOR_DB}/monitorCache${MONITOR_GROUP}.pkl'))
 
 for i in range(len(DDMTimeStamps)):
     os.environ['MONITOR_PLOTTEXT'] = DDMLabels[i]
@@ -119,39 +69,6 @@ for i in range(len(DDMTimeStamps)):
 
 
 DataOpsGroup = 'DataOps'
-
-### make html string and write it
-htmlString = '''
-<html>
-<head><title> IntelROCCS Status</title>
-<link rel="stylesheet" type="text/css" href="plotstyle.css">
-</head>
-
-<body>
-<br>
-<font color=#000000 size=+1>
-<h1>
-<a href="index.html">IntelROCCS Status</a>
-
-'''
-
-for i in range(1,len(DDMLabels)):
-    label = DDMLabels[i]
-    htmlString+='<img src="Usage_DataOps_%s.png" alt="%s" width="400">\n'%(label,label)
-    if i and i%3==0:
-        htmlString+="<br>\n"
-
-htmlString += '''
-<hr>
-Modified: %s by script
-<a href="http://web.mit.edu/physics/people/faculty/paus_christoph.html">Christoph Paus</a>, Sid Narayanan
-</body>
-</html>
-'''%(time.strftime("%Y-%m-%d %H:%M",time.gmtime()))
-with open(os.environ['MONITOR_DB']+'/dataOpsUsage.html','w') as htmlFile:
-    htmlFile.write(htmlString)
-
-### done with html nonsense
 
 os.environ['MONITOR_PATTERN'] = DDMPattern
 os.environ['MONITOR_GROUP'] = DataOpsGroup

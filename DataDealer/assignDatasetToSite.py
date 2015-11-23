@@ -7,8 +7,10 @@
 #
 # Injection of so called open datasets (datasets that are not yet completed and will be growing) is
 # problematic as the size of the dataset is not correct in the database. To solve this problem an
-# expected dataset size can be specified to overwrite this information. 
+# expected dataset size can be specified to overwrite this information (ex. --expectedSizeGb=1000). 
 # 
+# Failures of any essential part of this assignment will lead to a non-zero return code. For now the
+# failure return code is always 1.
 #
 # Implementation: by design this should be a standalone script that will work when you copy it into
 # your directory. It is important so that it virtually runs anywhere and anyone can easily use it
@@ -285,18 +287,7 @@ def testLocalSetup(dataset,debug=0):
 
     if not validProxy:
         print ' Error - no X509_USER_PROXY, please check. EXIT!'
-        sys.exit(0)
-
-    ## check das_client.py tool
-    #cmd = 'which das_client.py'
-    #for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
-    #    line    = line[:-1]
-    #if line != "":
-    #    if debug > 0:
-    #        print ' Using das_client.py from: ' + line
-    #else:
-    #    print ' Error - das_client.py in your path, find it and add it to PATH. EXIT!'
-    #    sys.exit(1)
+        sys.exit(1)
 
 def convertSizeToGb(sizeTxt):
 
@@ -480,11 +471,17 @@ def chooseMatchingSite(tier2Sites,nSites,sizeGb,debug):
     return sites,quotas,lastCps
 
 def submitSubscriptionRequests(sites,datasets=[],debug=0):
+    # submit the subscription requests
+
+    # keep track of the return code
+    rc = 0
+
     # make sure we have datasets to subscribe
     if len(datasets) < 1:
+        rc = 1
         print " ERROR - Trying to submit empty request for "
         print sites
-        return
+        return rc
 
     phedex = phedexApi()
 
@@ -492,8 +489,9 @@ def submitSubscriptionRequests(sites,datasets=[],debug=0):
     check,data = phedex.xmlData(datasets=datasets,instance='prod')
 
     if check:
+        rc = 1
         print " ERROR - phedexApi.xmlData failed"
-        return
+        return rc
     message = 'IntelROCCS -- Automatic Dataset Subscription by Computing Operations.'
 
     # here the request is really sent to each requested site
@@ -505,20 +503,27 @@ def submitSubscriptionRequests(sites,datasets=[],debug=0):
         check,response = phedex.subscribe(node=site,data=data,comments=message,group='AnalysisOps',
                           instance='prod')
         if check:
+            rc = 1
             print " ERROR - phedexApi.subscribe failed for Tier2: " + site
             print response
             continue
 
+    return rc
+
 def submitUpdateSubscriptionRequest(sites,datasets=[],debug=0):
     # submit the request for an update of the subscription
+
+    # keep track of potential failures
+    rc = 0
 
     # check our paramters for phedex call
     group  = 'AnalysisOps'
     # make sure we have datasets to subscribe
     dataset = 'EMPTY'
     if len(datasets) < 1:
+        rc = 1
         print " ERROR - Trying to submit empty update subscription request for " + site
-        return
+        return rc
     else:
         dataset = datasets[0]
         
@@ -535,9 +540,12 @@ def submitUpdateSubscriptionRequest(sites,datasets=[],debug=0):
         check,response = phedex.updateSubscription(node=site,dataset=dataset,group=group,
                                instance='prod')
         if check:
+            rc = 1
             print " ERROR - phedexApi.updateSubscription failed for site: " + site
             print response
             continue
+
+    return rc
 
 #===================================================================================================
 #  M A I N
@@ -646,7 +654,9 @@ if len(tier1Sites) > 0:
     # update subscription at Tier-1 sites
     if exe:
         # make AnalysisOps the owner of all copies at Tier-1 site(s)
-        submitUpdateSubscriptionRequest(tier1Sites,datasets,debug)
+        rc = submitUpdateSubscriptionRequest(tier1Sites,datasets,debug)
+        if rc != 0:
+            sys.exit(1)
     else:
         print '\n -> WARNING: not doing anything .... please use  --exec  option.\n'
 else:
@@ -672,7 +682,7 @@ if len(siteNames) >= nCopies:
         print '\n The job is done already: EXIT!\n'
         sys.exit(0)
 else:
-    print ' Requested %d copies at Tier-2, but only %d copies found.'%(nCopies,len(siteNames))
+    print ' Requested %d copies at Tier-2. Only %d copies found.'%(nCopies,len(siteNames))
     print ' --> will find %d more sites for subscription.\n'%(nAdditionalCopies)
 
 
@@ -709,12 +719,16 @@ if not exe:
 # subscribe them
 if exe:
     # make subscriptions to Tier-2 site(s)
-    submitSubscriptionRequests(sites,datasets)
+    rc = submitSubscriptionRequests(sites,datasets)
+    if rc != 0:
+        sys.exit(1)
 
     # make special subscription for /MINIAOD* to T2_CH_CERN
     if isMiniAod:
         cern = [ 'T2_CH_CERN' ]
         submitSubscriptionRequests(cern,datasets)    
+        if rc != 0:
+            sys.exit(1)
 
 else:
     print '\n -> WARNING: not doing anything .... please use  --exec  option.\n'
