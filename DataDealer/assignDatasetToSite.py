@@ -574,6 +574,7 @@ except getopt.GetoptError, ex:
 debug = 0
 dataset = ''
 nCopies = 1
+destination = []
 exe = False
 expectedSizeGb = -1
 isMiniAod = False
@@ -589,6 +590,8 @@ for opt, arg in opts:
         nCopies = int(arg)
     if opt == "--expectedSizeGb":
         expectedSizeGb = int(arg)
+    if opt == "--destination":
+        destination = arg.split(",")
     if opt == "--debug":
         debug = int(arg)
     if opt == "--exec":
@@ -705,6 +708,10 @@ for siteName in siteNames:
 # choose a site randomly and exclude sites that are too small
 
 sites,quotas,lastCps = chooseMatchingSite(tier2Sites,nAdditionalCopies,sizeGb,debug)
+
+if destination:
+    print "overriding destination with",destination
+    sites = destination
 
 if not exe:
     print ''
