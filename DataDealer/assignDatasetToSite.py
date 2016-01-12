@@ -313,7 +313,7 @@ def convertSizeToGb(sizeTxt):
             sizeGb = sizeGb*1000.
         else:
             print ' ERROR - Could not identify size. EXIT!'
-            sys.exit(0)
+            sys.exit(1)
 
     # return the size in GB as a float
     return sizeGb
