@@ -182,7 +182,7 @@ class phedexApi:
         return 0, xml_data
 
     def subscribe(self, node='', data='', level='dataset', priority='low', move='n', static='n',
-                  custodial='n', group='AnalysisOps', timeStart='', requestOnly='n', noMail='n',
+                  custodial='n', group='AnalysisOps', timeStart='', requestOnly='n', noMail='y',
                   comments='', format='json', instance='prod'):
         """
         _subscribe_
