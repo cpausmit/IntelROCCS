@@ -554,12 +554,13 @@ def submitUpdateSubscriptionRequest(sites,datasets=[],debug=0):
 usage =  " Usage: assignDatasetToSite.py   --dataset=<name of a CMS dataset>\n"
 usage += "                 [ --nCopies=1 ]           <-- number of desired copies \n"
 usage += "                 [ --expectedSizeGb=-1 ]   <-- open subscription to avoid small sites \n"
+usage += "                 [ --destination=... ]     <-- coma separated list of destination sites \n"
 usage += "                 [ --debug=0 ]             <-- see various levels of debug output\n"
 usage += "                 [ --exec ]                <-- add this to execute all actions\n"
 usage += "                 [ --help ]\n\n"
 
 # Define the valid options which can be specified and check out the command line
-valid = ['dataset=','debug=','nCopies=','expectedSizeGb=','exec','help']
+valid = ['dataset=','debug=','nCopies=','expectedSizeGb=','destination=', 'exec','help']
 try:
     opts, args = getopt.getopt(sys.argv[1:], "", valid)
 except getopt.GetoptError, ex:
