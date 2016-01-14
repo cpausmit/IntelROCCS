@@ -74,6 +74,9 @@ hHigh.SetMaximum(1)
 
 for i in range(nSites):
   s = siteInfos[i]
+  if s.quota==0:
+    # misread line
+    continue
   usedFr = s.used/s.quota
   if usedFr>superHighThreshold:
     hLow.Fill(i,usedFr)
