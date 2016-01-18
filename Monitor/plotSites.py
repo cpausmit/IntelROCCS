@@ -10,6 +10,8 @@ class site(object):
     self.used=float(l[2])
     self.toDelete=float(l[3])
     self.lastCp=float(l[4])
+  def str(self):
+    return '%s %i %i %i %i'%(self.name,int(self.quota),int(self.used),int(self.toDelete),int(self,lastCp))
 
 fileName = os.environ.get('SITE_MONITOR_FILE')
 monitorDB = os.environ.get('MONITOR_DB')

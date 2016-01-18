@@ -28,15 +28,17 @@ echo ""
 echo "Extracting log file monitoring data from DETOX_DB = $DETOX_DB."
 echo ""
 
+DETOX_WEB=/home/cmsprod/public_html/IntelROCCS/Detox/result/
+
 # find present site quotas
-for site in `ls -1 $DETOX_DB/$DETOX_RESULT | grep ^T[0-3]`
+for site in `ls -1 $DETOX_WEB | grep ^T[0-3]`
 do
 
 #  echo " Analyzing site : $site"
-  quota=`grep 'Total Space' $DETOX_DB/$DETOX_RESULT/$site/Summary.txt|cut -d: -f2|tr -d ' ' | head -n 1`
-  used=`grep 'Space Used' $DETOX_DB/$DETOX_RESULT/$site/Summary.txt|cut -d: -f2|tr -d ' ' | head -n 1`
-  toDelete=`grep 'Space to delete' $DETOX_DB/$DETOX_RESULT/$site/Summary.txt|cut -d: -f2|tr -d ' ' | head -n 1`
-  lastCp=`grep 'Space last CP' $DETOX_DB/$DETOX_RESULT/$site/Summary.txt|cut -d: -f2|tr -d ' ' | head -n 1`
+  quota=`grep 'Total Space' $DETOX_WEB/$site/Summary.txt|cut -d: -f2|tr -d ' ' | head -n 1`
+  used=`grep 'Space Used' $DETOX_WEB/$site/Summary.txt|cut -d: -f2|tr -d ' ' | head -n 1`
+  toDelete=`grep 'Space to delete' $DETOX_WEB/$site/Summary.txt|cut -d: -f2|tr -d ' ' | head -n 1`
+  lastCp=`grep 'Space last CP' $DETOX_WEB/$site/Summary.txt|cut -d: -f2|tr -d ' ' | head -n 1`
   echo "$site $quota $used $toDelete $lastCp" >> $SITE_MONITOR_FILE
 
 done
@@ -46,7 +48,7 @@ pwd
  root -q -b -l $MONITOR_BASE/plotSites.C
  $MONITOR_BASE/plotSites.py
 echo "Done making site plots"
-
+exit
 cd $MONITOR_BASE
 
 ./monitor.py 
