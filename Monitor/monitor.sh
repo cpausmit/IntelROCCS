@@ -48,7 +48,6 @@ pwd
  root -q -b -l $MONITOR_BASE/plotSites.C
  $MONITOR_BASE/plotSites.py
 echo "Done making site plots"
-exit
 cd $MONITOR_BASE
 
 ./monitor.py 
