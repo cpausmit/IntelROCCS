@@ -56,48 +56,6 @@ def getJsonFile(requestType,start,debug=False):
 def getFileTime(s):
   return int(s.split('/')[-1].split('_')[1].split('.')[0])
 
-def getDeletions(start,end,datasetPattern,groupPattern):
-    # returns all deleted datasets in the requests which match the pattern and are in relevant group
-    allJsons = glob.glob(os.environ.get('MONITOR_DB')+'/datasets/delRequests_*.json')
-    goodJsons = []
-    for fileName in allJsons:
-      timestamp = getFileTime(fileName)
-      if timestamp<end and timestamp>start:
-        goodJsons.append(fileName)
-    datasetSet={}
-    for delFileName in goodJsons:
-      print "Parsing ",delFileName
-      with open(delFileName) as dataFile:
-        data = json.load(dataFile)
-      requests = data["phedex"]["request"]
-      for request in requests:
-          for dataset in request["data"]["dbs"]["dataset"]:
-              datasetName = dataset["name"]
-              requestedBy = request["requested_by"]["name"]
-              try:
-                  if datasetName in datasetSet:
-                      # we have already accounted for it
-                      continue
-                  if re.match(".*BUNNIES.*",datasetName):
-                      # ignore T0 datasets
-                      continue
-                  if not(groupPattern=="AnalysisOps" or groupPattern=="DataOps"):
-                      if re.match(datasetPattern,datasetName):
-                          datasetSet[datasetName] = Dataset(datasetName)
-                          datasetObject = datasetSet[datasetName]
-                          datasetObject.isDeleted = True
-                          datasetObject = None
-                  elif re.match(datasetPattern,datasetName) and (requestedBy=="Maxim Goncharov" or requestedBy=="Christoph Paus"):
-                      datasetSet[datasetName] = Dataset(datasetName)
-                      datasetObject = datasetSet[datasetName]
-                      datasetObject.isDeleted = True
-                      datasetObject = None
-              except TypeError:
-                  print "weird"
-                  pass
-    return datasetSet
-
-
 def parseRequestJson(start,end,isXfer,datasetPattern,datasetSet):
   if isXfer:
     allJsons = glob.glob(os.environ.get('MONITOR_DB')+'/datasets/xferRequests_*.json')

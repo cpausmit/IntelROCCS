@@ -13,6 +13,7 @@ import cPickle as pickle
 import ROOT
 from array import array
 from Dataset import *
+from operator import itemgetter
 
 genesis=1378008000
 nowish = time.time()
@@ -226,9 +227,10 @@ else:
 
 if makeSummaryPlots:
     c11 = ROOT.TCanvas("c11","c11",800,800)
-    hVolumeFrac = ROOT.TH1F("hVolumeFrac","hVolumeFrac",5,-0.5,4.5)
-    hUsageFrac = ROOT.TH1F("hUsageFrac","hUsageFrac",5,-0.5,4.5)
-    tiers = {'AODSIM':0, 'AOD':1, 'MINIAODSIM':2,'GEN-SIM-RAW':3,'GEN-SIM-RECO':4}
+    nTiers=7
+    hVolumeFrac = ROOT.TH1F("hVolumeFrac","hVolumeFrac",nTiers,-0.5,nTiers-.5)
+    hUsageFrac = ROOT.TH1F("hUsageFrac","hUsageFrac",nTiers,-0.5,nTiers-.5)
+    tiers = {'AODSIM':0, 'AOD':1, 'MINIAODSIM':2,'MINIAOD':3,'GEN-SIM-RAW':4,'GEN-SIM-RECO':5,'Other':6}
     for hist in [hUsageFrac,hVolumeFrac]:
         xaxis = hist.GetXaxis()
         for tier,nBin in tiers.iteritems():
@@ -250,6 +252,8 @@ if makeSummaryPlots:
                     datasetUsage+=n
         totalVolume += datasetVolume
         totalUsage += datasetUsage
+        if tier not in tiers:
+          tier = 'Other'
         if tier in tiers:
             val = tiers[tier]
             hVolumeFrac.Fill(val,datasetVolume)
@@ -260,6 +264,7 @@ if makeSummaryPlots:
         ROOT.MitRootStyle.InitHist(hist,"","",1)
     hVolumeFrac.GetYaxis().SetTitle('current volume fraction')
     hUsageFrac.GetYaxis().SetTitle('usage fraction (30 days)')
+#    hUsageFrac.SetNormFactor()
     for hist in [hUsageFrac,hVolumeFrac]:
         hist.SetFillColor(8)
         hist.SetLineColor(8)
