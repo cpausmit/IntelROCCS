@@ -685,6 +685,25 @@ if len(tier1Sites) > 0:
         print '\n -> WARNING: not doing anything .... please use  --exec  option.\n'
 else:
     print '\n No Tier-1 full copies of this dataset in DataOps space.'
+tier2Sites = findExistingSubscriptions(dataset,'DataOps','T2_*',debug)
+if debug>0:
+    print ' Re-assign all Tier-2 copies from DataOps to AnalysisOps space.'
+if len(tier2Sites) > 0:
+    print '\n Resident in full under DataOps group on the following Tier-2 disks:'
+    for tier2Site in tier2Sites:
+        print ' --> ' + tier2Site
+    print ''
+
+    # update subscription at Tier-1 sites
+    if exe:
+        # make AnalysisOps the owner of all copies at Tier-1 site(s)
+        rc = submitUpdateSubscriptionRequest(tier2Sites,datasets,debug)
+        if rc != 0:
+            sys.exit(1)
+    else:
+        print '\n -> WARNING: not doing anything .... please use  --exec  option.\n'
+else:
+    print '\n No Tier-2 full copies of this dataset in DataOps space.'
 
 
 # has the dataset already been subscribed?
