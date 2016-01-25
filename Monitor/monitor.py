@@ -59,7 +59,6 @@ os.environ['MONITOR_GROUP'] = DDMGroup
 #os.system('./readJsonSnapshotPickle.py T2*')
 
 os.system('./plotFromPickle.py T2* %s'%('${MONITOR_DB}/monitorCache${MONITOR_GROUP}.pkl'))
-sys.exit(-1)
 
 for i in range(len(DDMTimeStamps)):
     os.environ['MONITOR_PLOTTEXT'] = DDMLabels[i]

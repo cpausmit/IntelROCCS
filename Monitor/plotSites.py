@@ -10,6 +10,7 @@ class site(object):
     self.used=float(l[2])
     self.toDelete=float(l[3])
     self.lastCp=float(l[4])
+    self.status=1
   def str(self):
     return '%s %i %i %i %i'%(self.name,int(self.quota),int(self.used),int(self.toDelete),int(self,lastCp))
 
@@ -27,78 +28,107 @@ nSites = len(siteInfos)
 
 # last cp fraction
 hLow = root.TH1F("hLow","hLow",nSites+1,-1.5,nSites-0.5)
-hMed = root.TH1F("hMed","hMed",nSites+1,-1.5,nSites-0.5)
 hHigh = root.TH1F("hHigh","hHigh",nSites+1,-1.5,nSites-0.5)
+hAverage = root.TH1F("hAve","hAve",nSites+1,-1.5,nSites-0.5)
+legend = root.TLegend(0.6,0.8,.9,.9)
 medThreshold=0.5
 highThreshold=0.7
 xaxis = hHigh.GetXaxis()
 hHigh.GetYaxis().SetTitle('last copy fraction')
 hHigh.SetTitle('')
 xaxis.SetBinLabel(1,' ')
-hHigh.SetMaximum(1)
+hHigh.SetMaximum(1.5)
 
-for i in range(nSites):
+with open(os.getenv('DETOX_DB')+'/SitesInfo.txt') as fSitesInfo:
+  started=False
+  for line in fSitesInfo:
+    if line.find('#')>=0:
+      if started:
+        break
+      else:
+        continue
+    ll = line.strip().split()
+    for site in siteInfos:
+      if site.name==ll[-1]:
+        site.status=int(ll[0])
+
+num=0.
+denom=0
+for i in xrange(nSites):
   s = siteInfos[i]
-  if s.quota==0:
-    # misread line
-    continue
   xaxis.SetBinLabel(i+2,s.name)
+  if s.quota==0 or s.status==0:
+    continue
   cpFr = s.lastCp/s.quota
+  num+=s.lastCp
+  denom+=s.quota
   if cpFr<highThreshold:
-    if cpFr<medThreshold:
-      hLow.Fill(i,cpFr)
-    else:
-      hMed.Fill(i,cpFr)
+    hLow.Fill(i,cpFr)
   else:
     hHigh.Fill(i,cpFr)
+  i+=1
+average=num/denom
+for iB in xrange(1,nSites+2):
+  hAverage.SetBinContent(iB,average)
 
-c = root.TCanvas('c','c',1000,600)
+c = root.TCanvas('c','c',1500,900)
 c.SetBottomMargin(.3)
-for hist,color in zip([hLow,hMed,hHigh],[8,5,2]):
+for hist,color in zip([hLow,hHigh],[8,2]):
   hist.SetFillColor(color)
   hist.SetLineColor(color)
 hHigh.SetStats(0)
 hHigh.Draw("hist")
-hMed.Draw("hist same")
 hLow.Draw("hist same")
-
+hAverage.Draw("hist same")
+legend.AddEntry(hHigh,"last copy > 0.7","f")
+legend.AddEntry(hLow,"last copy < 0.7","f")
+legend.AddEntry(hAverage,"weighted average","l")
+legend.Draw()
 c.SaveAs(monitorDB+'/lastCpFractionSites.png')
 
 
 hLow.Reset()
-hMed.Reset()
 hHigh.Reset()
+legend = root.TLegend(0.6,0.8,.9,.9)
+hAverage.Reset()
 medThreshold=0.5
 highThreshold=0.7
 superHighThreshold=0.9
 hHigh.GetYaxis().SetTitle('used fraction')
-hHigh.SetMaximum(1)
+hHigh.SetMaximum(1.5)
 
-for i in range(nSites):
+num=0.
+denom=0
+for i in xrange(nSites):
   s = siteInfos[i]
-  if s.quota==0:
-    # misread line
+  if s.quota==0 or s.status==0:
     continue
   usedFr = s.used/s.quota
+  num+=s.used
+  denom+=s.quota
   if usedFr>superHighThreshold:
     hLow.Fill(i,usedFr)
   else:
     if usedFr<highThreshold:
-      if usedFr<medThreshold:
-        hLow.Fill(i,usedFr)
-      else:
-        hMed.Fill(i,usedFr)
+      hLow.Fill(i,usedFr)
     else:
       hHigh.Fill(i,usedFr)
+average=num/denom
+for iB in xrange(1,nSites+2):
+  hAverage.SetBinContent(iB,average)
 
 c.Clear()
 c.SetBottomMargin(.3)
-for hist,color in zip([hLow,hMed,hHigh],[2,5,8]):
+for hist,color in zip([hLow,hHigh],[2,8]):
   hist.SetFillColor(color)
   hist.SetLineColor(color)
 hHigh.SetStats(0)
 hHigh.Draw("hist")
-hMed.Draw("hist same")
 hLow.Draw("hist same")
+hAverage.Draw("hist same")
+legend.AddEntry(hLow,"used>0.9 or <0.8","f")
+legend.AddEntry(hHigh,"0.8<used<0.9","f")
+legend.AddEntry(hAverage,"weighted average","l")
+legend.Draw()
 
 c.SaveAs(monitorDB+'/usedSites.png')

@@ -59,4 +59,3 @@ cp findDatasetProperties.py ${MONITOR_DB}
 cp Dataset.py ${MONITOR_DB}
 cp plotFromPickle.py ${MONITOR_DB}
 
-exit 0
