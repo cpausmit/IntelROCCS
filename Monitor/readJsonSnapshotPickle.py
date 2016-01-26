@@ -437,7 +437,6 @@ for line in phedexFile:
     datasetObject = None
 print "Phedex Size: ",phedexSize
 getJsonFile("del",phedexTime) # all deletions
-updateByKey(datasetSet,delDatasetSet)
 # remove blacklisted datasets
 blacklistFile = open(os.environ.get('MONITOR_DB')+'/datasets/blacklist.log','r')
 blacklistSet = set(map(lambda x : x.split()[0], list(blacklistFile)))
