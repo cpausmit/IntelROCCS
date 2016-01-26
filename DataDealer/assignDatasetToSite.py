@@ -8,6 +8,12 @@
 # Injection of so called open datasets (datasets that are not yet completed and will be growing) is
 # problematic as the size of the dataset is not correct in the database. To solve this problem an
 # expected dataset size can be specified to overwrite this information (ex. --expectedSizeGb=1000). 
+#
+# The feature to assign a fixed location(s) has been added to the script to allow for an intelligent
+# process to distribute the data on a non-random basis. This feature has to be used with care
+# because usual an analysis of the space situation will in most cases select the same site and a
+# site can quickly get overloaded. The intelligent script behind this must make sure the sites are
+# properly chosen to avoid lopsided distribution.
 # 
 # Failures of any essential part of this assignment will lead to a non-zero return code. For now the
 # failure return code is always 1.
