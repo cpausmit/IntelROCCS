@@ -182,7 +182,7 @@ class phedexApi:
         return 0, xml_data
 
     def subscribe(self, node='', data='', level='dataset', priority='low', move='n', static='n',
-                  custodial='n', group='AnalysisOps', timeStart='', requestOnly='n', noMail='n',
+                  custodial='n', group='AnalysisOps', timeStart='', requestOnly='n', noMail='y',
                   comments='', format='json', instance='prod'):
         """
         _subscribe_
@@ -313,7 +313,7 @@ def convertSizeToGb(sizeTxt):
             sizeGb = sizeGb*1000.
         else:
             print ' ERROR - Could not identify size. EXIT!'
-            sys.exit(0)
+            sys.exit(1)
 
     # return the size in GB as a float
     return sizeGb
@@ -554,12 +554,13 @@ def submitUpdateSubscriptionRequest(sites,datasets=[],debug=0):
 usage =  " Usage: assignDatasetToSite.py   --dataset=<name of a CMS dataset>\n"
 usage += "                 [ --nCopies=1 ]           <-- number of desired copies \n"
 usage += "                 [ --expectedSizeGb=-1 ]   <-- open subscription to avoid small sites \n"
+usage += "                 [ --destination=... ]     <-- coma separated list of destination sites \n"
 usage += "                 [ --debug=0 ]             <-- see various levels of debug output\n"
 usage += "                 [ --exec ]                <-- add this to execute all actions\n"
 usage += "                 [ --help ]\n\n"
 
 # Define the valid options which can be specified and check out the command line
-valid = ['dataset=','debug=','nCopies=','expectedSizeGb=','exec','help']
+valid = ['dataset=','debug=','nCopies=','expectedSizeGb=','destination=', 'exec','help']
 try:
     opts, args = getopt.getopt(sys.argv[1:], "", valid)
 except getopt.GetoptError, ex:
@@ -574,6 +575,7 @@ except getopt.GetoptError, ex:
 debug = 0
 dataset = ''
 nCopies = 1
+destination = []
 exe = False
 expectedSizeGb = -1
 isMiniAod = False
@@ -589,6 +591,8 @@ for opt, arg in opts:
         nCopies = int(arg)
     if opt == "--expectedSizeGb":
         expectedSizeGb = int(arg)
+    if opt == "--destination":
+        destination = arg.split(",")
     if opt == "--debug":
         debug = int(arg)
     if opt == "--exec":
@@ -705,6 +709,10 @@ for siteName in siteNames:
 # choose a site randomly and exclude sites that are too small
 
 sites,quotas,lastCps = chooseMatchingSite(tier2Sites,nAdditionalCopies,sizeGb,debug)
+
+if destination:
+    print "overriding destination with",destination
+    sites = destination
 
 if not exe:
     print ''
