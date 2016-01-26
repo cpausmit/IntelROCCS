@@ -56,7 +56,7 @@ DDMLabels = ["SummaryAll", "SummaryLastYear", "SummaryThisYear","Last3Months"]
 
 os.environ['MONITOR_PATTERN'] = DDMPattern
 os.environ['MONITOR_GROUP'] = DDMGroup
-#os.system('./readJsonSnapshotPickle.py T2*')
+os.system('./readJsonSnapshotPickle.py T2*')
 
 os.system('./plotFromPickle.py T2* %s'%('${MONITOR_DB}/monitorCache${MONITOR_GROUP}.pkl'))
 
