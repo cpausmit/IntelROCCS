@@ -271,6 +271,8 @@ class HTTPSGridAuthHandler(urllib2.HTTPSHandler):
 #  H E L P E R S
 #===================================================================================================
 def testLocalSetup(dataset,debug=0):
+    # The local setup needs a number of things to be present. Make sure all is there, or complain.
+
     # check the input parameters
     if dataset == '':
         print ' ERROR - no dataset specified. EXIT!\n'
@@ -296,6 +298,7 @@ def testLocalSetup(dataset,debug=0):
         sys.exit(1)
 
 def convertSizeToGb(sizeTxt):
+    # Size text comes in funny shapes. Make sure to convert it properly.
 
     # first make sure string has proper basic format
     if len(sizeTxt) < 3:
@@ -325,7 +328,9 @@ def convertSizeToGb(sizeTxt):
     return sizeGb
 
 def findExistingSubscriptions(dataset,group='AnalysisOps',sitePattern='T2*',debug=0):
+    # Find existing subscriptions of full datasets at sites matching the pattern
 
+    # speak with phedex interface
     conn = httplib.HTTPSConnection('cmsweb.cern.ch', \
                                    cert_file = os.getenv('X509_USER_PROXY'), \
                                    key_file = os.getenv('X509_USER_PROXY'))
@@ -333,19 +338,25 @@ def findExistingSubscriptions(dataset,group='AnalysisOps',sitePattern='T2*',debu
                           %(group,sitePattern,dataset))
     r2 = conn.getresponse()
     result = json.loads(r2.read())['phedex']
-    siteNames = []
 
+    # loop overall datasets to find all sites the given dataset is on
+    siteNames = []
     for dataset in result['dataset']:
 
+        # make sure this is a subscription
         if not 'subscription' in dataset:
             continue
 
         for sub in dataset['subscription']:
+
+            # make sure this is a full dataset subscription
             if sub['level'] != "DATASET":
                 continue
             
+            # this is one of the sites the dataset is one
             siteName = sub['node']
 
+            # make sure not to enter the site twice
             if siteName in siteNames: 
                 if debug:
                     print ' Site already in list. Skip!'
@@ -353,43 +364,10 @@ def findExistingSubscriptions(dataset,group='AnalysisOps',sitePattern='T2*',debu
                 siteNames.append( sub['node'] )
 
     return siteNames
-                   
-
-"""
-    webServer = 'https://cmsweb.cern.ch/'
-    phedexBlocks = 'phedex/datasvc/xml/prod/blockreplicas?subscribed=y&group=%s&node=%s&dataset=%s'\
-               %(group,sitePattern,dataset)
-    url = '"'+webServer+phedexBlocks + '"'
-    cmd = 'curl -k -H "Accept: text/xml" ' + url + ' 2> /dev/null'
-
-    #cert = os.environ.get('X509_USER_PROXY')
-    #cmd = 'curl --cert ' + cert + ' -k -H "Accept: text/xml" ' + url + ' 2> /dev/null'
-
-    if debug > 1:
-        print ' Access phedexDb: ' + cmd
-
-    # setup the shell command
-    siteNames = []
-    for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
-        if debug > 1:
-            print ' LINE: ' + line
-        # find the potential T2s
-        try:
-            sublines = re.split("<replica\ ",line)
-            for subline in sublines[1:]:
-                siteName = (re.findall(r"node='(\S+)'",subline))[0]
-                if siteName in siteNames:
-                    if debug>0:
-                        print ' Site already in list. Skip!'
-                else:
-                    siteNames.append(siteName)
-        except:
-            siteName = ''
-
-    return siteNames
-"""
 
 def getActiveSites(debug=0):
+    # find the list of sites to consider for subscription
+
     # hardcoded fallback
     tier2Base = [ 'T2_AT_Vienna','T2_BR_SPRACE','T2_CH_CSCS','T2_DE_DESY','T2_DE_RWTH',
                   'T2_ES_CIEMAT','T2_ES_IFCA',
@@ -405,7 +383,6 @@ def getActiveSites(debug=0):
     sites = []
 
     # get the active site list
-    #cmd  = 'wget http://t3serv001.mit.edu/~cmsprod/IntelROCCS/Detox/ActiveSites.txt'
     cmd  = 'wget http://t3serv001.mit.edu/~cmsprod/IntelROCCS/Detox/SitesInfo.txt'
     cmd += ' -O - 2> /dev/null | grep -v "#" | grep T2_ | tr -s " "'
     for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
