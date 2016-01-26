@@ -270,7 +270,6 @@ if makeSummaryPlots:
         hist.SetLineColor(8)
         hist.SetFillStyle(1001)
         hist.SetMinimum(0.)
-        hist.SetMaximum(.5)
         hist.SetTitle('')
         c11.Clear()
         c11.cd()
