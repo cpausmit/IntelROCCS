@@ -319,8 +319,27 @@ def convertSizeToGb(sizeTxt):
     return sizeGb
 
 def findExistingSubscriptions(dataset,group='AnalysisOps',sitePattern='T2*',debug=0):
+    conn  =  httplib.HTTPSConnection('cmsweb.cern.ch', cert_file = os.getenv('X509_USER_PROXY'), key_file = os.getenv('X509_USER_PROXY'))
+    r1=conn.request("GET",'/phedex/datasvc/json/prod/subscriptions?group=%s&node=%s&block=%s%%23*&collapse=y'\
+                        %(group,sitePattern,dataset))
+    r2=conn.getresponse()
+    result = json.loads(r2.read())['phedex']
+    siteNames = []
+    for dataset in result['dataset']:
+        if not 'subscription' in dataset: continue
+        for sub in dataset['subscription']:
+            if sub['level'] != "DATASET" : continue
+            
+            siteName = sub['node']
+            if siteName in siteNames: 
+                if debug>0:        
+                    print ' Site already in list. Skip!'
+                else:
+                    siteNames.append( sub['node'] )
+    return siteNames
+                   
 
-    webServer = 'https://cmsweb.cern.ch/'
+"""    webServer = 'https://cmsweb.cern.ch/'
     phedexBlocks = 'phedex/datasvc/xml/prod/blockreplicas?subscribed=y&group=%s&node=%s&dataset=%s'\
                %(group,sitePattern,dataset)
     url = '"'+webServer+phedexBlocks + '"'
@@ -351,6 +370,7 @@ def findExistingSubscriptions(dataset,group='AnalysisOps',sitePattern='T2*',debu
             siteName = ''
 
     return siteNames
+"""
 
 def getActiveSites(debug=0):
     # hardcoded fallback
@@ -650,7 +670,7 @@ tier1Sites = findExistingSubscriptions(dataset,'DataOps','T1_*_Disk',debug)
 if debug>0:
     print ' Re-assign all Tier-1 copies from DataOps to AnalysisOps space.'
 if len(tier1Sites) > 0:
-    print '\n Resident under DataOps group on the following Tier-1 disks:'
+    print '\n Resident in full under DataOps group on the following Tier-1 disks:'
     for tier1Site in tier1Sites:
         print ' --> ' + tier1Site
     print ''
@@ -664,7 +684,26 @@ if len(tier1Sites) > 0:
     else:
         print '\n -> WARNING: not doing anything .... please use  --exec  option.\n'
 else:
-    print '\n No Tier-1 copies of this dataset in DataOps space.'
+    print '\n No Tier-1 full copies of this dataset in DataOps space.'
+tier2Sites = findExistingSubscriptions(dataset,'DataOps','T2_*',debug)
+if debug>0:
+    print ' Re-assign all Tier-2 copies from DataOps to AnalysisOps space.'
+if len(tier2Sites) > 0:
+    print '\n Resident in full under DataOps group on the following Tier-2 disks:'
+    for tier2Site in tier2Sites:
+        print ' --> ' + tier2Site
+    print ''
+
+    # update subscription at Tier-1 sites
+    if exe:
+        # make AnalysisOps the owner of all copies at Tier-1 site(s)
+        rc = submitUpdateSubscriptionRequest(tier2Sites,datasets,debug)
+        if rc != 0:
+            sys.exit(1)
+    else:
+        print '\n -> WARNING: not doing anything .... please use  --exec  option.\n'
+else:
+    print '\n No Tier-2 full copies of this dataset in DataOps space.'
 
 
 # has the dataset already been subscribed?
