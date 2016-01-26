@@ -325,27 +325,38 @@ def convertSizeToGb(sizeTxt):
     return sizeGb
 
 def findExistingSubscriptions(dataset,group='AnalysisOps',sitePattern='T2*',debug=0):
-    conn  =  httplib.HTTPSConnection('cmsweb.cern.ch', cert_file = os.getenv('X509_USER_PROXY'), key_file = os.getenv('X509_USER_PROXY'))
-    r1=conn.request("GET",'/phedex/datasvc/json/prod/subscriptions?group=%s&node=%s&block=%s%%23*&collapse=y'\
-                        %(group,sitePattern,dataset))
-    r2=conn.getresponse()
+
+    conn = httplib.HTTPSConnection('cmsweb.cern.ch', \
+                                   cert_file = os.getenv('X509_USER_PROXY'), \
+                                   key_file = os.getenv('X509_USER_PROXY'))
+    r1 = conn.request("GET",'/phedex/datasvc/json/prod/subscriptions?group=%s&node=%s&block=%s%%23*&collapse=y'\
+                          %(group,sitePattern,dataset))
+    r2 = conn.getresponse()
     result = json.loads(r2.read())['phedex']
     siteNames = []
+
     for dataset in result['dataset']:
-        if not 'subscription' in dataset: continue
+
+        if not 'subscription' in dataset:
+            continue
+
         for sub in dataset['subscription']:
-            if sub['level'] != "DATASET" : continue
+            if sub['level'] != "DATASET":
+                continue
             
             siteName = sub['node']
+
             if siteName in siteNames: 
-                if debug>0:        
+                if debug:
                     print ' Site already in list. Skip!'
-                else:
-                    siteNames.append( sub['node'] )
+            else:
+                siteNames.append( sub['node'] )
+
     return siteNames
                    
 
-"""    webServer = 'https://cmsweb.cern.ch/'
+"""
+    webServer = 'https://cmsweb.cern.ch/'
     phedexBlocks = 'phedex/datasvc/xml/prod/blockreplicas?subscribed=y&group=%s&node=%s&dataset=%s'\
                %(group,sitePattern,dataset)
     url = '"'+webServer+phedexBlocks + '"'
@@ -736,7 +747,8 @@ if len(siteNames) >= nCopies:
         print '\n SUCCESS - The job is done already: EXIT!\n'
         sys.exit(0)
 else:
-    print ' Requested %d copies at Tier-2. Only %d copies found.'%(nCopies,len(siteNames))
+    print ''
+    print ' Only %d copies found in AnalysisOps space. Requested %d copies at Tier-2.'%(len(siteNames),nCopies)
     print ' --> will find %d more sites for subscription.\n'%(nAdditionalCopies)
 
 
