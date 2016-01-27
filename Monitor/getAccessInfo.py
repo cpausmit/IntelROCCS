@@ -22,6 +22,9 @@ def get(sites=None,startTime=1378008000):
           if (endTime - tStart > 3*sPerDay) and (os.path.exists(os.environ['MONITOR_DB']+'/sitesInfo/'+site+'/'+time.strftime("%Y-%m-%d",time.gmtime(tStart)))):
             # always refresh anything within last 3 days in case there was a reporting failure
             continue
+          if (endTime - tStart > 7*sPerDay):
+            # if it was over a week, just give up on refreshing it for all sites
+            continue
           pop_base_url = "https://cmsweb.cern.ch/popdb/"
           args  = '/popularity/DSStatInTimeWindow/' 
           args += '?&sitename=' + site.replace('_Disk','')

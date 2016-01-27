@@ -20,38 +20,56 @@ genesis=1378008000
 #  H E L P E R S
 #===================================================================================================
 
-def findDatasetHistoryAll(start=-1,debug=False):
+def findDatasetHistoryAll(start=-1,debug=False,sites=None):
     if start==-1:
         start = int(time.time()) - 86400 # 24 hours ago if not specified
-    getJsonFile("del",start)
-    getJsonFile("xfer",start)
+    getJsonFile("del",start,debug,sites)
+    getJsonFile("xfer",start,debug,sites)
 
-def getJsonFile(requestType,start,debug=False):
-    if requestType=="del":
-        fileName = "delRequests_%i.json"%(start)
-        requestType="deleterequests"
-    elif requestType=="xfer":
-        fileName = "xferRequests_%i.json"%(start)
-        requestType="transferrequests"
-    else:
-        sys.stderr.write("unknown request type: %s\n"%(requestType))
-        # sys.exit(1)
-    # make a reasonable file name
-    fileName = os.environ.get('MONITOR_DB') + '/datasets/' + fileName
+def getJsonFile(rawRequestType,start,debug=False,sites=None):
+  certPath = os.environ['USERCERT']
+  keyPath = os.environ['USERKEY']
+  if sites==None:
+    sites = ['T2_BE_IIHE','T2_ES_IFCA','T2_IT_Pisa','T2_RU_PNPI','T2_US_Caltech','T2_BE_UCL','T2_FI_HIP',
+        'T2_IT_Rome','T2_RU_RRC_KI','T2_US_Florida','T2_BR_SPRACE','T2_FR_CCIN2P3','T2_KR_KNU','T2_RU_SINP',
+        'T2_US_MIT','T2_BR_UERJ','T2_FR_GRIF_IRFU','T2_PK_NCP','T2_TH_CUNSTDA','T2_US_Nebraska','T2_CH_CERN',
+        'T2_FR_GRIF_LLR','T2_PL_Swierk','T2_TR_METU','T2_US_Purdue','T2_CH_CSCS','T2_FR_IPHC','T2_PL_Warsaw',
+        'T2_TW_Taiwan','T2_US_UCSD','T2_CN_Beijing','T2_GR_Ioannina','T2_PT_NCG_Lisbon','T2_UA_KIPT','T2_US_Wisconsin',
+        'T2_DE_DESY','T2_HU_Budapest','T2_RU_IHEP','T2_UK_London_Brunel','T2_DE_RWTH','T2_IN_TIFR','T2_RU_INR','T2_UK_London_IC',
+        'T2_EE_Estonia','T2_IT_Bari','T2_RU_ITEP','T2_UK_SGrid_Bristol','T2_AT_Vienna','T2_ES_CIEMAT','T2_IT_Legnaro',
+        'T2_RU_JINR','T2_UK_SGrid_RALPP']
+    sites += ["T1_UK_RAL_Disk", "T1_US_FNAL_Disk", "T1_IT_CNAF_Disk", "T1_DE_KIT_Disk", "T1_RU_JINR_Disk", "T1_FR_CCIN2P3_Disk", "T1_ES_PIC_Disk"]
+  for site in sites:
+      fileName=""
+      if rawRequestType=="del":
+          fileName = "delRequests_%i_%s.json"%(start,site)
+          requestType="deleterequests"
+      elif rawRequestType=="xfer":
+          fileName = "xferRequests_%i_%s.json"%(start,site)
+          requestType="transferrequests"
+      else:
+          sys.stderr.write("unknown request type: %s\n"%(rawRequestType))
+          # sys.exit(1)
+      # make a reasonable file name
+      fileName = os.environ.get('MONITOR_DB') + '/datasets/' + fileName
 
-    # test whether the file exists and it was just created
-    if os.path.exists(fileName) and abs(os.path.getmtime(fileName) - time.time()) < 24*60*60 and not(os.stat(fileName).st_size==0):
-        sys.stderr.write("getJsonFile(%s,%i): file already exists!\n"%(requestType,start))
-        return
-    else:        # check failed so need to go to the source
-        if os.path.exists(fileName):
-            os.remove(fileName) # in case the last download was corrupted and wget can't overwrite it
-        cmd = 'wget --no-check-certificate -O ' + fileName + \
-              ' https://cmsweb.cern.ch/phedex/datasvc/json/prod/%s?create_since=%i'%(requestType,int(start))
-        print ' CMD: ' + cmd
-        for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
-            print line
-        return
+      # test whether the file exists and it was just created
+      if os.path.exists(fileName) and abs(os.path.getmtime(fileName) - time.time()) < 24*60*60 and not(os.stat(fileName).st_size==0):
+          sys.stderr.write("getJsonFile(%s,%i): file already exists!\n"%(requestType,start))
+          continue
+      else:        # check failed so need to go to the source
+          if os.path.exists(fileName):
+              os.remove(fileName) # in case the last download was corrupted and wget can't overwrite it
+          urlpath = 'https://cmsweb.cern.ch/phedex/datasvc/json/prod/%s?create_since=%i&node=%s'%(requestType,int(start),site)
+
+          flags = '--ca-directory=/home/snarayan/certs --certificate=%s --private-key=%s'%(certPath,keyPath)
+          cmd = "wget -O %s %s '%s'"%(fileName,flags,urlpath)
+      #    cmd = 'wget --no-check-certificate -O ' + fileName + \
+      #          ' https://cmsweb.cern.ch/phedex/datasvc/json/prod/%s?create_since=%i&node=%s'%(requestType,int(start),site)
+          print ' CMD: ' + cmd
+          for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
+              print line
+  return
 
 def getFileTime(s):
   return int(s.split('/')[-1].split('_')[1].split('.')[0])

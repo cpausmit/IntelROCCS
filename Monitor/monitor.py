@@ -82,9 +82,9 @@ for i in range(len(DDMTimeStamps)):
 
 ### ''' see our bee '''
 
-CRBPattern = '/_/_/_AOD_'
-CRBPatterns = ['/_/_/_AOD$', '/_/_/_AODSIM', '/_/_/_AOD_','/_/_/MINIAOD_']
-CRBPatternLabels = ['AOD', 'AODSIM', 'AllAOD','MINIAOD']
+CRBPattern = '/_/_/_AOD_|/_/_/RECO$'
+CRBPatterns = ['/_/_/_AOD$', '/_/_/_AODSIM', '/_/_/_AOD_','/_/_/MINIAOD_','/_/_/REC0$']
+CRBPatternLabels = ['AOD', 'AODSIM', 'AllAOD','MINIAOD','RECO']
 CRBGroup = '_'
 CRBTimeStamps = []
 CRBLabels = ["CRBSummary12Months","CRBSummary6Months","CRBSummary3Months"]
@@ -94,11 +94,11 @@ for period in [12,6,3]:
 
 os.environ['MONITOR_PATTERN'] = CRBPattern
 os.environ['MONITOR_GROUP'] = CRBGroup
-os.system('./readJsonSnapshotPickle.py T2*')
+os.system('./readJsonSnapshotPickle.py T[12]*')
 
 for i in range(len(CRBTimeStamps)):
     timeStamp = CRBTimeStamps[i]
     for j in range(len(CRBPatterns)):
         os.environ['MONITOR_PATTERN'] = CRBPatterns[j]
         os.environ['MONITOR_PLOTTEXT'] = CRBLabels[i]+'_'+CRBPatternLabels[j]
-        os.system('./plotFromPickle.py T2* %i %i %s'%( timeStamp[0], timeStamp[1], '${MONITOR_DB}/monitorCacheAll.pkl' ))
+        os.system('./plotFromPickle.py T[12]* %i %i %s'%( timeStamp[0], timeStamp[1], '${MONITOR_DB}/monitorCacheAll.pkl' ))

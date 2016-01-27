@@ -17,7 +17,6 @@ from operator import itemgetter
 
 genesis=1378008000
 nowish = time.time()
-
 try:
     monitorDB = os.environ['MONITOR_DB']
     datasetPattern = os.environ['MONITOR_PATTERN']

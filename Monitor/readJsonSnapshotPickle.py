@@ -24,13 +24,6 @@ genesis=1378008000
 # genesis=int(time.mktime(time.strptime("2014-09-01","%Y-%m-%d")))
 nowish = time.time()
 sPerYear = 365*24*60*60
-# cache transfers/deletions older than 1 year
-phedexTime = genesis+((nowish-genesis)/sPerYear)*sPerYear
-if int((phedexTime-genesis)/sPerYear)<3:
-  # correction for when this problem was discovered
-  phedexTime=1443482180
-
-print "phedexTime =",phedexTime
 
 # get the dataset pattern to consider (careful the pattern will be translated, better implementation
 # should be done at some point)
@@ -94,7 +87,7 @@ def processFile(fileName,debug=0):
             data = json.load(data_file)
     except ValueError:
         # if the file doesn't exist, then there were no accesses that day
-        print fileName
+    #    print fileName
         return (0,{})
 
     # generic full print (careful this can take very long)
@@ -436,7 +429,7 @@ for line in phedexFile:
     phedexSize+=float(l[2])
     datasetObject = None
 print "Phedex Size: ",phedexSize
-getJsonFile("del",phedexTime) # all deletions
+getJsonFile("del",genesis) # all deletions
 # remove blacklisted datasets
 blacklistFile = open(os.environ.get('MONITOR_DB')+'/datasets/blacklist.log','r')
 blacklistSet = set(map(lambda x : x.split()[0], list(blacklistFile)))
@@ -532,7 +525,7 @@ nAll = 0
 nAllAccess = 0
 sizeTotalGb = 0.
 nFilesTotal = 0
-findDatasetHistoryAll(phedexTime)
+findDatasetHistoryAll(genesis)
 counter=0
 for key in datasetSet:
     counter+=1
