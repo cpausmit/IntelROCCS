@@ -13,7 +13,7 @@ nowish = time.time()
 # remove old log files
 logPeriod = int((nowish/1000000)%10)
 logBlock = int((nowish/10000000))
-os.system('rm $MONITOR_DB/monitor-%i[^%i%i]*'%(logBlock,logPeriod,logPeriod-1))
+#os.system('rm $MONITOR_DB/monitor-%i[^%i%i]*'%(logBlock,logPeriod,logPeriod-1))
 
 def addTime(timeStruct,addTuple):
     '''
@@ -36,7 +36,7 @@ def addTime(timeStruct,addTuple):
                                                        timeStruct.tm_min,
                                                        timeStruct.tm_sec),
                             "%Y-%m-%d %H:%M:%S")
-
+print " STARTING "
 daysInMonth = [-1,31,28,31,30,31,30,31,31,30,31,30,31]
 currentDate = time.gmtime()
 
@@ -56,6 +56,9 @@ DDMLabels = ["SummaryAll", "SummaryLastYear", "SummaryThisYear","Last3Months"]
 
 os.environ['MONITOR_PATTERN'] = DDMPattern
 os.environ['MONITOR_GROUP'] = DDMGroup
+
+print DDMGroup, DDMPattern
+
 os.system('./readJsonSnapshotPickle.py T2*')
 
 os.system('./plotFromPickle.py T2* %s'%('${MONITOR_DB}/monitorCache${MONITOR_GROUP}.pkl'))
