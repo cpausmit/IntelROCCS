@@ -49,8 +49,9 @@ pwd
  $MONITOR_BASE/plotSites.py
 echo "Done making site plots"
 cd $MONITOR_BASE
+pwd
 
-./monitor.py 
+python monitor.py 
 
 # copy things for plotting interactively
 # rsync will put them on the web 
