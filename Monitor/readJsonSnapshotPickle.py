@@ -181,6 +181,7 @@ def findDatasetCreationTime(dataset,fileName,cTimes,debug=0):
 
     if dataset in cTimes:
         return cTimes[dataset]
+    return genesis
     cmd = os.environ.get('MONITOR_BASE') + \
         '/das_client.py --format=plain --limit=0 --query="dataset=' + dataset + \
         ' | grep dataset.creation_time " '
