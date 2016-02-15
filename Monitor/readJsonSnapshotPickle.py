@@ -181,7 +181,6 @@ def findDatasetCreationTime(dataset,fileName,cTimes,debug=0):
 
     if dataset in cTimes:
         return cTimes[dataset]
-    return genesis
     cmd = os.environ.get('MONITOR_BASE') + \
         '/das_client.py --format=plain --limit=0 --query="dataset=' + dataset + \
         ' | grep dataset.creation_time " '
@@ -278,9 +277,8 @@ def calculateDatasetMovement(sitePattern,datasetSet,cTimes={}):
         datasetMovement = datasetObject.movement
         for siteName in datasetMovement:
             start = max(genesis,cTime)
-            if not re.match(sitePattern,siteName):                   # only requested sites
+            if not re.match(sitePattern,siteName) or re.match(r'$X',siteName):                   # only requested sites
                 # print ' WARNING - no site match. ' + siteName
-                # need to deal with XT2_TW_Taiwain
                 continue
 
             datasetMovement[siteName][0].sort()            # sort lists to match items

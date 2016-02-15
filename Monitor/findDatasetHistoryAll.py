@@ -91,12 +91,8 @@ def parseRequestJson(start,end,isXfer,datasetPattern,datasetSet):
           try:
               data = json.load(dataFile)
           except ValueError:
-            print "Warning, JSON was corrupted - reloading"
-              # json is not loadable
-            if isXfer:
-               getJsonFile("xfer",start)
-            else:
-               getJsonFile("del",start)
+            print "Warning, JSON was corrupted - skipping %s"%(fileName)
+            continue
       requests = data["phedex"]["request"]
       if isXfer:
           for request in requests:
@@ -109,9 +105,9 @@ def parseRequestJson(start,end,isXfer,datasetPattern,datasetSet):
                           # not one of the datasets we're considering
                           continue
                       siteName = node["name"]
-                      if not re.search(r'T2.*',siteName):
-                          #not a tier 2
-                          continue
+#                      if not re.search(r'T2.*',siteName):
+#                          #not a tier 2
+#                          continue
                       try:
                           if node["decided_by"]["decision"]=="n":
                               # transfer was not approved
@@ -139,9 +135,9 @@ def parseRequestJson(start,end,isXfer,datasetPattern,datasetSet):
                           # not one of the datasets we're considering
                           continue
                       siteName = node["name"]
-                      if not re.search(r'T2.*',siteName):
-                          #not a tier 2
-                          continue
+#                      if not re.search(r'T2.*',siteName):
+#                          #not a tier 2
+#                          continue
                       try:
                           if node["decided_by"]["decision"]=="n":
                               # transfer was not approved

@@ -280,7 +280,6 @@ if makeSummaryPlots:
         else:
             c11.SaveAs(monitorDB+'/FractionUsage_%s.png'%(groupPattern))
     c21 = ROOT.TCanvas("c21","c21",1000,600)
-
     sys.exit(0)
 
 
@@ -340,8 +339,11 @@ for datasetName,datasetObject in datasetSet.iteritems():
     nEntries += 1
     hUsage.Fill(min(maxBin,value),weight)
 #totalSize = hUsage.Integral()
-meanVal = meanVal/sumWeight
 print "Found %i datasets, corresponding to an average volume of %3f PB"%(nEntries,float(totalSize)/1000.)
+if (sumWeight==0):
+  sumWeight=1;
+  totalSize=1;
+meanVal = meanVal/sumWeight
 hUsage.Scale(1./float(totalSize))
 maxy = hUsage.GetMaximum()
 hUsage.SetMaximum(maxy*10.)
@@ -410,15 +412,15 @@ for datasetName,datasetObject in datasetSet.iteritems():
     sizeGB = datasetObject.sizeGB
     for siteName in datasetObject.movement:
         if not re.match(sitePattern,siteName): 
-            # maybe we should get rid of this functionality to speed things up
             continue
         timeOnSite = timeOnSites[datasetName][siteName]
+#        print timeOnSite
         value = 0
         if siteName in datasetObject.nAccesses:
             for utime,n in datasetObject.nAccesses[siteName].iteritems():
                 if utime <= end and utime >= start:
-                    value += min(float(n)/datasetObject.nFiles , 14.5)
-            fillValue = max(1,value)
+                    value += float(n)/datasetObject.nFiles
+            fillValue = min(max(1,value), 14.5)
             # if value < 1:
             #     print value,fillValue
         if value == 0:
@@ -427,6 +429,9 @@ for datasetName,datasetObject in datasetSet.iteritems():
             else:
                 fillValue = -1
         weight = float(sizeGB * timeOnSite)/1000.
+#        print datasetObject
+#        print fillValue,weight
+#        sys.exit(-1)
         hCRB.Fill(fillValue,weight)
         if (fillValue == 0) or (fillValue == 1):
             hZeroOne.Fill(value,weight)

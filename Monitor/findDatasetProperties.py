@@ -146,7 +146,7 @@ def findDatasetProperties(dataset,short=False):
 
     # first make sure not to analyze any weird data (require /*/*/* name pattern)
     if not re.search(r'/.*/.*/.*',dataset,re.S):
-        sys.stderr.write(' Error: Dataset does NOT match expected pattern\n')
+        sys.stderr.write(' Error: Dataset %s does NOT match expected pattern\n'%(dataset))
         sys.exit(0)
 
     # test whether we know this dataset already
@@ -159,7 +159,7 @@ def findDatasetProperties(dataset,short=False):
             + '/das_client.py --format=plain --limit=0 --query="file dataset=' \
             + dataset + ' | sum(file.size), count(file.name)" | sort -u'
         # if debug>-1:
-        sys.stdout.write(' CMD: ' + cmd+"\n")
+#        sys.stdout.write(' CMD: ' + cmd+"\n")
         nFiles = 0
         sizeGb = 0.
         try:
@@ -176,6 +176,7 @@ def findDatasetProperties(dataset,short=False):
                     sizeGb = convertSizeToGb(size)
         except:
             sys.stderr.write(' Error: output data not compliant.\n')
+            sys.stderr.write(' CMD: ' + cmd+"\n")
             with open(os.environ.get('MONITOR_DB')+'/datasets/blacklist.log','a') as blacklistFile:
                 print "WARNING blacklisting ",dataset
                 blacklistFile.write("%s\n"%(dataset))
@@ -196,4 +197,4 @@ def findDatasetProperties(dataset,short=False):
     # else:
     #     print ' nFiles:%d  size:%.1f GB [average file size:%.3f GB] -- dataset:%s'\
     #           %(nFiles,sizeGb,averageSizeGb,dataset)
-    return nFiles,sizeGb,averageSizeGb
+    return int(nFiles),sizeGb,averageSizeGb
