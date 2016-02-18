@@ -55,7 +55,7 @@ def getJsonFile(rawRequestType,start,debug=False,sites=None):
 
       # test whether the file exists and it was just created
       if os.path.exists(fileName) and abs(os.path.getmtime(fileName) - time.time()) < 24*60*60 and not(os.stat(fileName).st_size==0):
-          sys.stderr.write("getJsonFile(%s,%i): file already exists!\n"%(requestType,start))
+#          sys.stderr.write("getJsonFile(%s,%i): file already exists!\n"%(requestType,start))
           continue
       else:        # check failed so need to go to the source
           if os.path.exists(fileName):
@@ -74,18 +74,15 @@ def getJsonFile(rawRequestType,start,debug=False,sites=None):
 def getFileTime(s):
   return int(s.split('/')[-1].split('_')[1].split('.')[0])
 
-def parseRequestJson(start,end,isXfer,datasetPattern,datasetSet):
+def parseRequestJson(start,end,isXfer,datasetPattern,datasetSet,sitePattern=r'.*'):
   if isXfer:
-    allJsons = glob.glob(os.environ.get('MONITOR_DB')+'/datasets/xferRequests_*.json')
+    goodJsons = glob.glob(os.environ.get('MONITOR_DB')+'/datasets/xferRequests_*.json')
   else:
-    allJsons = glob.glob(os.environ.get('MONITOR_DB')+'/datasets/delRequests_*.json')
-  goodJsons = []
-  for fileName in allJsons:
-    timestamp = getFileTime(fileName)
-    if timestamp<end and timestamp>start:
-      goodJsons.append(fileName)
+    goodJsons = glob.glob(os.environ.get('MONITOR_DB')+'/datasets/delRequests_*.json')
   for fileName in goodJsons:
       print "Parsing ",fileName
+      if not re.search(sitePattern,fileName):
+        continue
       # isXfer = True if xfer history, False if deletions
       with open(fileName) as dataFile:
           try:
@@ -105,9 +102,6 @@ def parseRequestJson(start,end,isXfer,datasetPattern,datasetSet):
                           # not one of the datasets we're considering
                           continue
                       siteName = node["name"]
-#                      if not re.search(r'T2.*',siteName):
-#                          #not a tier 2
-#                          continue
                       try:
                           if node["decided_by"]["decision"]=="n":
                               # transfer was not approved

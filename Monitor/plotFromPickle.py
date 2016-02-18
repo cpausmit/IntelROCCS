@@ -237,12 +237,18 @@ if makeSummaryPlots:
     totalVolume=0
     totalUsage=0
     siteAccessDict = {}
+    miniaodSizeNoRepl=0
+    miniaodSizeRepl=0
     for datasetName,datasetObject in datasetSet.iteritems():
         tier = datasetName.split('/')[-1]
         datasetVolume = max(0,len(datasetObject.currentSites)*datasetObject.sizeGB)
+        if tier.find('MINIAOD')>=0 and len(datasetObject.currentSites)>0:
+#          print datasetName,datasetObject.sizeGB
+          miniaodSizeNoRepl += datasetObject.sizeGB
+          miniaodSizeRepl += datasetVolume
         datasetUsage = 0
         for s,a in datasetObject.nAccesses.iteritems():
-            if not re.match(r'T2.*',s):
+            if not re.match(sitePattern,s):
                 continue
             if s not in siteAccessDict:
                 siteAccessDict[s] = [0,0]
@@ -279,6 +285,8 @@ if makeSummaryPlots:
             c11.SaveAs(monitorDB+'/FractionVolume_%s.png'%(groupPattern))
         else:
             c11.SaveAs(monitorDB+'/FractionUsage_%s.png'%(groupPattern))
+    print "no replication  ",miniaodSizeNoRepl
+    print "with replication",miniaodSizeRepl
     c21 = ROOT.TCanvas("c21","c21",1000,600)
     sys.exit(0)
 
@@ -414,7 +422,7 @@ for datasetName,datasetObject in datasetSet.iteritems():
         if not re.match(sitePattern,siteName): 
             continue
         timeOnSite = timeOnSites[datasetName][siteName]
-#        print timeOnSite
+        # print timeOnSite
         value = 0
         if siteName in datasetObject.nAccesses:
             for utime,n in datasetObject.nAccesses[siteName].iteritems():

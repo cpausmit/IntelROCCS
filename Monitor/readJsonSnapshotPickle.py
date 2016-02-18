@@ -113,7 +113,7 @@ def processFile(fileName,debug=0):
 
         # here is where we assign the values to the hash (checking if duplicates are registered)
         if key in nAccessed:
-            print ' WARNING - suspicious entry - the entry exists already (continue)'
+            print ' WARNING - suspicious entry - the entry exists already (continue)',key
             nAccessed[key] += value
         else:
             nAccessed[key] = value
@@ -266,8 +266,8 @@ def calculateDatasetMovement(sitePattern,datasetSet,cTimes={}):
     predictedDatasetsOnSites={}
     for datasetName in datasetSet:
         predictedDatasetsOnSites[datasetName]=set([])
-    parseRequestJson(genesis,nowish,False,datasetPattern,datasetSet)
-    parseRequestJson(genesis,nowish,True,datasetPattern,datasetSet)
+    parseRequestJson(genesis,nowish,False,datasetPattern,datasetSet,sitePattern)
+    parseRequestJson(genesis,nowish,True,datasetPattern,datasetSet,sitePattern)
 
     # match the intervals from the phedex history to the requested time interval
     #===========================================================================
@@ -278,7 +278,7 @@ def calculateDatasetMovement(sitePattern,datasetSet,cTimes={}):
         datasetMovement = datasetObject.movement
         for siteName in datasetMovement:
             start = max(genesis,cTime)
-            if not re.match(sitePattern,siteName) or re.match(r'$X',siteName):                   # only requested sites
+            if not re.match(sitePattern,siteName) or re.search(r'$X',siteName):                   # only requested sites
                 # print ' WARNING - no site match. ' + siteName
                 continue
 
@@ -317,6 +317,7 @@ def calculateDatasetMovement(sitePattern,datasetSet,cTimes={}):
                     newStart = max(cTime,genesis)
                     if nowish-newStart > 0:
                         datasetMovement[datasetName][siteName] = ([newStart],[])
+        datasetObject.movement = datasetMovement
         datasetMovement = None
 
 
