@@ -725,7 +725,10 @@ if len(siteNames) >= nCopies:
         sys.exit(0)
 else:
     print ''
-    print ' Only %d copies found in AnalysisOps space. Requested %d copies at Tier-2.'%(len(siteNames),nCopies)
+    print ' Only %d copies found in AnalysisOps space.'%(len(siteNames))
+    for siteName in siteNames:
+        print ' --> ' + siteName
+    print ' Requested %d copies at Tier-2.'%(nCopies)
     print ' --> will find %d more sites for subscription.\n'%(nAdditionalCopies)
 
 
