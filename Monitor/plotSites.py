@@ -28,11 +28,12 @@ nSites = len(siteInfos)
 
 # last cp fraction
 hLow = root.TH1F("hLow","hLow",nSites+1,-1.5,nSites-0.5)
+hMed = root.TH1F("hMed","hMed",nSites+1,-1.5,nSites-0.5)
 hHigh = root.TH1F("hHigh","hHigh",nSites+1,-1.5,nSites-0.5)
 hAverage = root.TH1F("hAve","hAve",nSites+1,-1.5,nSites-0.5)
 legend = root.TLegend(0.6,0.8,.9,.9)
-medThreshold=0.5
-highThreshold=0.7
+medThreshold=0.7
+highThreshold=0.9
 xaxis = hHigh.GetXaxis()
 hHigh.GetYaxis().SetTitle('last copy fraction')
 hHigh.SetTitle('')
@@ -63,7 +64,10 @@ for i in xrange(nSites):
   num+=s.lastCp
   denom+=s.quota
   if cpFr<highThreshold:
-    hLow.Fill(i,cpFr)
+    if cpFr<medThreshold:
+      hLow.Fill(i,cpFr)
+    else:
+      hMed.Fill(i,cpFr)
   else:
     hHigh.Fill(i,cpFr)
   i+=1
@@ -73,14 +77,16 @@ for iB in xrange(1,nSites+2):
 
 c = root.TCanvas('c','c',1500,900)
 c.SetBottomMargin(.3)
-for hist,color in zip([hLow,hHigh],[8,2]):
+for hist,color in zip([hLow,hMed,hHigh],[8,5,2]):
   hist.SetFillColor(color)
   hist.SetLineColor(color)
 hHigh.SetStats(0)
 hHigh.Draw("hist")
+hMed.Draw('hist same')
 hLow.Draw("hist same")
 hAverage.Draw("hist same")
-legend.AddEntry(hHigh,"last copy > 0.7","f")
+legend.AddEntry(hHigh,"last copy > 0.9","f")
+legend.AddEntry(hMed,'0.7 > last copy > 0.9','f')
 legend.AddEntry(hLow,"last copy < 0.7","f")
 legend.AddEntry(hAverage,"weighted average","l")
 legend.Draw()
@@ -89,11 +95,12 @@ c.SaveAs(monitorDB+'/lastCpFractionSites.png')
 
 hLow.Reset()
 hHigh.Reset()
+hMed.Reset()
 legend = root.TLegend(0.6,0.8,.9,.9)
 hAverage.Reset()
-medThreshold=0.5
-highThreshold=0.7
-superHighThreshold=0.9
+lowThreshold=0.5
+medThreshold=0.95
+highThreshold=0.99
 hHigh.GetYaxis().SetTitle('used fraction')
 hHigh.SetMaximum(1.5)
 
@@ -106,28 +113,30 @@ for i in xrange(nSites):
   usedFr = s.used/s.quota
   num+=s.used
   denom+=s.quota
-  if usedFr>superHighThreshold:
-    hLow.Fill(i,usedFr)
+  if usedFr>highThreshold or usedFr<lowThreshold:
+    hHigh.Fill(i,usedFr)
   else:
-    if usedFr<highThreshold:
+    if usedFr<medThreshold:
       hLow.Fill(i,usedFr)
     else:
-      hHigh.Fill(i,usedFr)
+      hMed.Fill(i,usedFr)
 average=num/denom
 for iB in xrange(1,nSites+2):
   hAverage.SetBinContent(iB,average)
 
 c.Clear()
 c.SetBottomMargin(.3)
-for hist,color in zip([hLow,hHigh],[2,8]):
+for hist,color in zip([hLow,hMed,hHigh],[8,5,2]):
   hist.SetFillColor(color)
   hist.SetLineColor(color)
 hHigh.SetStats(0)
 hHigh.Draw("hist")
+hMed.Draw('hist same')
 hLow.Draw("hist same")
 hAverage.Draw("hist same")
-legend.AddEntry(hLow,"used>0.9 or <0.7","f")
-legend.AddEntry(hHigh,"0.7<used<0.9","f")
+legend.AddEntry(hLow,"0.5 < used < 0.95","f")
+legend.AddEntry(hMed,"0.95 < used < 0.99","f")
+legend.AddEntry(hHigh,"used > 0.99 or < 0.5","f")
 legend.AddEntry(hAverage,"weighted average","l")
 legend.Draw()
 

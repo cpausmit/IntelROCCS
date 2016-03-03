@@ -29,6 +29,8 @@ def addTime(timeStruct,addTuple):
     elif addTuple[1] > 0 and month + addTuple[1] > 12:
         _year += 1
     _month = (_month + addTuple[1])%12
+    if _month==0:
+      _month=12
     return time.strptime("%i-%.2i-%.2i %.2i:%.2i:%.2i"%(_year,
                                                        _month,
                                                        timeStruct.tm_mday,
