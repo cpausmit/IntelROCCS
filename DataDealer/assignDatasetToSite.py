@@ -574,7 +574,7 @@ usage += "                 [ --exec ]                <-- add this to execute all
 usage += "                 [ --help ]\n\n"
 
 # Define the valid options which can be specified and check out the command line
-valid = ['dataset=','debug=','nCopies=','expectedSizeGb=','destination=', 'exec','help']
+valid = ['dset=','dataset=','debug=','nCopies=','expectedSizeGb=','destination=', 'exec','help']
 try:
     opts, args = getopt.getopt(sys.argv[1:], "", valid)
 except getopt.GetoptError, ex:
@@ -587,6 +587,7 @@ except getopt.GetoptError, ex:
 # --------------------------------------------------------------------------------------------------
 # Set defaults for each command line parameter/option
 debug = 0
+dset = ''
 dataset = ''
 nCopies = 1
 destination = []
@@ -599,6 +600,9 @@ for opt, arg in opts:
     if opt == "--help":
         print usage
         sys.exit(0)
+    if opt == "--dset":
+        dset = arg
+        dataset = '/' + dset.replace('+','/')
     if opt == "--dataset":
         dataset = arg
     if opt == "--nCopies":
