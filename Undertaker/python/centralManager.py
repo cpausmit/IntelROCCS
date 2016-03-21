@@ -127,9 +127,15 @@ class CentralManager:
         worstStuck = self.detoxWebReader.getWorstStuck()
         lcsites = self.detoxWebReader.getFilledwLC()
         unifiedList =  self.sitesToDisable.keys() + lcsites
-        for siteName in unifiedList:
-            if siteName.startswith('T1_US'):
-                continue
+	pending = self.cleanStateKeeper.siteDeletions.keys()
+	print unifiedList
+        for siteName in reversed(unifiedList):
+	    #if siteName == 'T2_RU_IHEP': pass
+	    #else:   continue
+	    if siteName in pending:
+		continue
+            #if siteName.startswith('T1_US'):
+            #    continue
             print "Re-signing datasets for SITE=" + siteName
             siteToSites[siteName] = []
             datasets = self.detoxWebReader.getDatasetsForSite(siteName)
@@ -160,8 +166,6 @@ class CentralManager:
                     continue
                 if site in self.siteSizeShift:
                     continue
-                #if site.startswith('T1_'):
-                #    continue
                 if site in worstStuck:
                     continue
 
@@ -171,10 +175,11 @@ class CentralManager:
                     dbStatus = self.allSites[site].getStatus() 
                     if dbStatus != 1 or siteInfo.inWaitingRoom() or siteInfo.isDead():
                         continue
-
-                sizeCanTake = (self.siteSpace[site][0]*0.9 - self.siteSpace[site][1])*1000
+                sizeCanTake = (self.siteSpace[site][0]*0.88 - self.siteSpace[site][1])*1000
                 addedSize = 0
                 addedSets = 0
+		if sizeCanTake < 30000:
+		    continue
 
                 for dsetIt in sorted(datasets.items(), key=lambda e: e[1][0], reverse=True):
                     dset = dsetIt[0]
@@ -186,7 +191,7 @@ class CentralManager:
 
                     addedSize = addedSize + datasets[dset][1]
                     datasets[dset][1]
-                    if (addedSize > sizeCanTake or addedSize > 20000) and addedSets > 0:
+                    if (addedSize > sizeCanTake or addedSize > 30000) and addedSets > 0:
                         addedSize = addedSize - datasets[dset][1]
                         break
                     if site not in setsToSites:
@@ -291,16 +296,12 @@ class CentralManager:
         return self.cleanStateKeeper.canProceed()
 
     def localCompare(self,a,b):
-        sa = self.siteSpace[a]
-        sb = self.siteSpace[b]
-        #lastCopyPercA = sa[2]/sa[0]
-        #lastCopyPercB = sb[2]/sb[0]
-        spaceFreeA = sa[0]-sa[1]
-        spaceFreeB = sb[0]-sb[1]
-        if spaceFreeA >= spaceFreeB:
-            return -1
-        else:
-            return 1
+        sa = self.siteSpace[b]
+        sb = self.siteSpace[a]
+        percA = sa[1]/sa[0]
+        percB = sb[1]/sb[0]
+        if percA < percB: return 1
+        else:             return -1
 
     def printResults(self):
         for site in sorted(self.allSites):

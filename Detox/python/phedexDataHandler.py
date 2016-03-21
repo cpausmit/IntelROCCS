@@ -138,7 +138,7 @@ class PhedexDataHandler:
                                    bufsize=4096,shell=True)
 
         signal.signal(signal.SIGALRM, alarm_handler)
-        signal.alarm(30*60)  # 30 minutes
+        signal.alarm(45*60)  # 30 minutes
         try:
             strout, error = process.communicate()
             tmpfile.close()
@@ -160,7 +160,7 @@ class PhedexDataHandler:
         for dset in datasets:
             datasetName = dset["name"]
 
-            user = re.findall(r"USER",datasetName)
+            user = re.findall(r"USERR",datasetName)
             blocks = dset["block"]
 	   
             for block in blocks:
@@ -196,21 +196,21 @@ class PhedexDataHandler:
 
                     if 'GenericTTbar' in datasetName:
                         iscust = 1
-		    if 'HiRun2015' in datasetName:
-			iscust = 1
+		    #if 'HiRun2015' in datasetName:
+		    #	iscust = 1
 
                     if group == 'DataOps':
                         if '-PromptReco-' in datasetName:
                             iscust = 1
-                        elif '/RECO' in datasetName:
+                        if '/RECO' in datasetName:
                             iscust = 1
-                    elif group == 'AnalysisOps':
-                        if '/MINIAOD' in datasetName:
-                            iscust = 1
-                        if '-PromptReco-' in datasetName:
-                            iscust = 1
-                        elif '/RECO' in datasetName:
-                            iscust = 1
+                    #elif group == 'AnalysisOps':
+                        #if '/MINIAOD' in datasetName:
+                        #    iscust = 1
+                        #if '-PromptReco-' in datasetName and '/RECO' not in datasetName:
+                        #    iscust = 1
+                        #elif '/RECO' in datasetName:
+                        #    iscust = 1
 
                     dataset.updateForSite(site,size,group,files,iscust,reqtime,updtime,isdone)
 
@@ -319,6 +319,8 @@ class PhedexDataHandler:
         for line in inputFile.xreadlines():
             items = line.split()
             datasetName = items[0]
+            if datasetName == '/ZH_HToZZ_4LFilter_M170_13TeV_powheg2-minlo-HZJ_JHUgenV6_pythia8/RunIIFall15DR76-PU25nsData2015v1_76X_mcRun2_asymptotic_v12-v1/AODSIM':
+	        continue
             group = items[1]
             siteName = items[5]
             size = float(items[2])
@@ -458,9 +460,14 @@ class PhedexDataHandler:
             print ' %3d %6.2f TB'%(siteSets[site],siteSizes[site]) + ": " + site
 
     def getLockInformation(self, url):
-        cmd = 'curl -k -H "Accept: text" ' + url
+        proxy = os.environ['DETOX_X509UP']
+        if 't0wmadatasvc' in url:
+            cmd = 'curl -k -H "Accept: application/xml" ' + url + ' --cacert ' + proxy + ' --pubkey ' + proxy
+        else:
+            cmd = 'curl -k -H "Accept: text" ' + url
         process = subprocess.Popen(cmd,stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE,shell=True)
+        #print cmd
         signal.signal(signal.SIGALRM, alarm_handler)
         signal.alarm(10*60)  # 10 minutes
         try:
@@ -474,6 +481,15 @@ class PhedexDataHandler:
             print " Received non-zero exit status: " + str(process.returncode)
             raise Exception(" FATAL -- Call to Lock File failed, stopping")
         
+        if 't0wmadatasvc' in url:
+            subarray = mystring.split('"')
+            for line in subarray:
+                if line.startswith('/'):
+                    dset = line
+                    self.globalyLocked[dset] = 1
+            return
+
+
         dataJason = json.loads(mystring)
         if 'globallocks' in url:
             for dset in dataJason:

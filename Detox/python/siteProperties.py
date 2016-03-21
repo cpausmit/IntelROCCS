@@ -37,6 +37,7 @@ class SiteProperties:
         self.space2free = 0
         self.deleted = 0
         self.protected = 0
+        self.globalDsetIndex = 0
         self.epochTime = int(time.time())
 
     def addDataset(self,dset,rank,size,valid,partial,custodial,depr,reqtime,updtime,wasused,isdone):
@@ -62,7 +63,12 @@ class SiteProperties:
         self.wishList = []
         space2free = self.space2free
 	addedExtra = 0
+	counter = 0
         for datasetName in sorted(self.datasetRanks.keys(), cmp=self.compare):
+            counter = counter + 1
+	    if counter < self.globalDsetIndex:
+		continue
+
             if space > (space2free-self.deleted):
                 break
             
@@ -76,17 +82,31 @@ class SiteProperties:
             if self.dsetIsCustodial[datasetName] :
                 continue
 
-            if dataPropers[datasetName].daysSinceUsed() > 540:
-                if dataPropers[datasetName].isFullOnTape():
-		    delta = (self.epochTime - self.dsetUpdTime[datasetName])/(60*60*24)
-		    if delta > 540 and addedExtra < 100 :
-                        space = space + self.datasetSizes[datasetName]
-                        self.wishList.append(datasetName)
-                        dataPropers[datasetName].kickFromPool = True
-                        #print "adding new to wish list"
-                        #print datasetName
-			addedExtra = addedExtra + 1
-                        continue
+            #if dataPropers[datasetName].daysSinceUsed() > 540:
+            if dataPropers[datasetName].isFullOnTape():
+		#delta = (self.epochTime - self.dsetUpdTime[datasetName])/(60*60*24)
+	    	if dataPropers[datasetName].getGlobalRank() > 500:
+		#if delta > 500:
+                    space = space + self.datasetSizes[datasetName]
+                    self.wishList.append(datasetName)
+                    dataPropers[datasetName].kickFromPool = True
+                    print "exp at " + self.name + ": " + datasetName 
+                    #print datasetName
+		    #addedExtra = addedExtra + 1
+                    continue
+
+	    if "/RECO" in datasetName:
+		delta = (self.epochTime - self.dsetUpdTime[datasetName])/(60*60*24)
+	        #if dataPropers[datasetName].daysSinceUsed() > 180 and delta>180:
+		if delta > 180:
+		    space = space + self.datasetSizes[datasetName]
+                    self.wishList.append(datasetName)
+                    dataPropers[datasetName].kickFromPool = True
+                    print "RECO " + self.name + ": " + datasetName
+                    continue
+		else:
+		    continue
+
 
             #non-valid dataset can't be on deletion list
             if banInvalid == True:
@@ -98,8 +118,22 @@ class SiteProperties:
                 space = space + self.datasetSizes[datasetName]
                 self.wishList.append(datasetName)
 
+	self.globalDsetIndex = counter
+
     def hasMoreToDelete(self, dataPropers, ncopyMin, banInvalid):
+	counter = 0
+        if self.globalDsetIndex >= len(self.datasetRanks.keys()):
+            return False
         for datasetName in sorted(self.datasetRanks.keys(), cmp=self.compare):
+	    counter = counter + 1
+	    if counter < self.globalDsetIndex:
+                continue
+
+	    if '/MINIAOD' in datasetName:
+                    ncopyMinTemp = 3
+	    else:
+		    ncopyMinTemp = ncopyMin
+
             if datasetName in self.datasetsToDelete:
                 continue
             if datasetName in self.protectedList:
@@ -115,7 +149,7 @@ class SiteProperties:
                 continue
 
             dataPr = dataPropers[datasetName]
-            if dataPr.nSites() <= ncopyMin:
+            if dataPr.nSites() <= ncopyMinTemp:
                 continue
 
             return True

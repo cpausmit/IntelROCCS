@@ -50,7 +50,7 @@ def readMatchPhedex():
 
         if datasetName not in deprecated:
             continue
-        if group != 'AnalysisOps' and group != 'DataOps':
+        if group != 'AnalysisOps':
             continue
 
         #if group != 'caf-comm':
@@ -124,9 +124,9 @@ line  = sys.stdin.readline()
 line = line.rstrip()
 if line == 'Y':
     for site in sorted(siteDsets):
-        if 'T2_' not in site: continue
-        if site.startswith('T2_DE'):
-            continue
+        #if 'T2_' not in site: continue
+        #if site.startswith('T2_DE'):
+        #    continue
         if site.startswith('T2_CH'):
             continue
         setsToDelete = siteDsets[site]
