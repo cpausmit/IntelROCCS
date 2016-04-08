@@ -59,3 +59,6 @@ for k in keys:
     cell.set('updated','yes')
 
 tree.write('/tmp/xlstempl/xl/worksheets/sheet2.xml')
+
+os.system('cd /tmp/xlstempl/; find . -type f | xargs zip new.xlsx; cd -')
+os.system('mv /tmp/xlstempl/new.xlsx %s/xls/%s.xlsx'%(monitordb,label))
