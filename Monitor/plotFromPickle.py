@@ -453,6 +453,12 @@ try:
 except KeyError:
     pass
 
+if 'All' in pickleJar:
+    fSave = ROOT.TFile(re.sub('pkl','root',pickleJar),'UPDATE')
+    histName = 'h_'+os.environ['MONITOR_PLOTTEXT']
+    fSave.WriteTObject(hCRB,histName,"Overwrite")
+    fSave.Close()
+
 xaxis = hCRB.GetXaxis()
 xaxis.SetBinLabel(1,"0 old")
 xaxis.SetBinLabel(2,"0 new")

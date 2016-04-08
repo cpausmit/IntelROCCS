@@ -84,7 +84,6 @@ for i in range(len(DDMTimeStamps)):
     os.system('./plotFromPickle.py T2* %i %i %s'%( timeStamp[0], timeStamp[1], '${MONITOR_DB}/monitorCache${MONITOR_GROUP}.pkl' ))
 
 
-
 ### ''' see our bee '''
 
 CRBPattern = '/_/_/_AOD_|/_/_/RECO$'
@@ -101,9 +100,11 @@ os.environ['MONITOR_PATTERN'] = CRBPattern
 os.environ['MONITOR_GROUP'] = CRBGroup
 os.system('./readJsonSnapshotPickle.py T[12]*')
 
+os.system('rm -f ${MONITOR_DB}/monitorCacheAll.root')
 for i in range(len(CRBTimeStamps)):
     timeStamp = CRBTimeStamps[i]
     for j in range(len(CRBPatterns)):
         os.environ['MONITOR_PATTERN'] = CRBPatterns[j]
         os.environ['MONITOR_PLOTTEXT'] = CRBLabels[i]+'_'+CRBPatternLabels[j]
         os.system('./plotFromPickle.py T[12]* %i %i %s'%( timeStamp[0], timeStamp[1], '${MONITOR_DB}/monitorCacheAll.pkl' ))
+os.system('./generateXls.py T12_current')
