@@ -1,0 +1,80 @@
+CUADRnT - CMS Usage Analytics and Data Replication Tools
+========================================================
+
+"Quadrant" -> /ˈkwädrənt/
+
+A collection of tools to analyze data usage behavior in the CMS experiment and make intelligent decisions to replicate data based on learned information. Collects information from a number of CMS tools including but not limited to PhEDEx, Popularity DB, and CRAB3. Also includes a visualization tool for easier understanding of current system status and past system usage.
+
+Goal is to not only recognize, but predict popularity of a dataset based on previous user behavior using machine learning. System is kept balanced using a novel algorithm called "Rocker Board Algorithm" which distributes workload throughout the whole system, "balancing the rocker board", to avoid unbalanced force distribution which could cause it to "tip".
+
+
+Requirements
+============
+
+Programs:
+* Python 2.7
+* mongodb >= 3.0
+* MySQL >= 5.7
+
+Python modules:
+* pymongo
+* MySQLdb
+
+
+Setup
+=====
+
+For development you can create a virtual environment for Python 2.7
+Create Python 2.7 virtual environment:
+~$ virtualenv -p python2.7 py27env
+~$ source py27env/bin/activate
+
+Install python modules:
+~$ pip install pymongo
+~$ pip install MySQL-python
+
+However when running the actual program you need to make sure python2.7 is installed and the modules are installed for python2.7.
+~$ pip2.7 install pymongo
+~$ pip2.7 install MySQL-python
+
+
+INSTALL
+=======
+
+IMPORTANT! - You must update /etc/setup.cfg 'username' and 'group' values to the username and group of that user for the user which will run the scripts. This is needed to correctly set up permissions for log and data paths.
+Also you should set the maximum amount of GB which can be subscribed in one iteration. You can here also tweak your thresholds and maximum number of replicas.
+To avoid having to install the package again if you change the config file simply edit the config file in the folder /var/opt/cuadrnt.
+
+Install package by running as sudo:
+~$ python setup.py install
+
+Run tests as user which will run the code
+~$ python setup.py test
+
+mongodb server does not have to be started explivitly as this is taken care of in storage module. However if needed a bin file start_mongodb is installed and can be executed from the command line.
+
+The mongodb server however is not automatically stopped as to not risk issues with other running services. Therefore a bin file stop_mongodb is install which can be executed from the command line to stop server.
+Can change the bin file to change where database is stored.
+
+
+Run
+===
+
+NOTE! - The current version does not have Machine Learning activated as this feature is still a work in progress. A proof of concept has been done but to fully utilize it some more work should be done.
+
+Initialize the database:
+~$ initiate
+
+Copy the crontab commands into your crontab:
+~$ crontab -e
+
+```
+SHELL=/bin/bash
+PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin
+0 0 * * * voms-proxy-init -voms cms:/cms -valid 24:30
+0 * * * * update_cpu >> /var/log/cuadrnt/errors.log 2>&1
+0 1 * * * update_db >> /var/log/cuadrnt/errors.log 2>&1
+0 8 * * * rocker_board >> /var/log/cuadrnt/errors.log 2>&1
+```
+
+This is where you set how often you want to run the rocker board algorithm.

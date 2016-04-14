@@ -12,8 +12,8 @@ import datetime
 import logging
 
 # package modules
-from cuadrnt.services.phedex import PhEDExService
-from cuadrnt.services.pop_db import PopDBService
+from cuadrnt.data_management.services.phedex import PhEDExService
+from cuadrnt.data_management.services.pop_db import PopDBService
 from cuadrnt.utils.test_utils import total_size_of
 from cuadrnt.utils.config import get_config
 from cuadrnt.utils.utils import datetime_to_string
