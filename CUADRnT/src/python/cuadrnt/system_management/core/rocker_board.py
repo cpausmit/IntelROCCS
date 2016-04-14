@@ -57,14 +57,7 @@ class RockerBoard(object):
         self.logger.info('SUBSCRIPTIONS')
         for subscription in subscriptions:
             self.logger.info('site: %s\tdataset: %s', subscription[1], subscription[0])
-        # site_storage = self.rankings.get_site_storage_rankings(subscriptions)
-        # deletions = self.clean(dataset_rankings, site_storage)
-        # self.logger.info('DELETIONS')
-        # for deletion in deletions:
-        #     self.logger.info('site: %s\tdataset: %s', deletion[1], deletion[0])
-        #self.delete(deletions)
-        self.subscribe(subscriptions)
-        # self.datasets.update_replicas(subscriptions, deletions)
+        # self.subscribe(subscriptions)
         t2 = datetime.datetime.utcnow()
         td = t2 - t1
         self.logger.info('Rocker Board took %s', str(td))
@@ -119,37 +112,6 @@ class RockerBoard(object):
         self.logger.info('Subscribed %dGB', subscribed_gb)
         return subscriptions
 
-    def clean(self, dataset_rankings, site_rankings):
-        """
-        Suggest deletions based on dataset and site rankings
-        """
-        deletions = list()
-        deleted_gb = 0
-        while(site_rankings):
-            tmp_site_rankings = dict()
-            dataset = min(dataset_rankings.iteritems(), key=operator.itemgetter(1))
-            dataset_name = dataset[0]
-            size_gb = self.datasets.get_size(dataset_name)
-            available_sites = set(self.datasets.get_sites(dataset_name))
-            for site_name in available_sites:
-                try:
-                    tmp_site_rankings[site_name] = site_rankings[site_name]
-                except:
-                    continue
-            if not tmp_site_rankings:
-                del dataset_rankings[dataset_name]
-                continue
-            site_name = weighted_choice(tmp_site_rankings)
-            deletion = (dataset_name, site_name)
-            deletions.append(deletion)
-            deleted_gb += size_gb
-            site_rankings[site_name] -= size_gb
-            dataset_rankings[dataset_name] += 1
-            if site_rankings[site_name] <= 0:
-                del site_rankings[site_name]
-        self.logger.info('Deleted %dGB', deleted_gb)
-        return deletions
-
     def subscribe(self, subscriptions):
         """
         Make subscriptions to phedex
@@ -180,51 +142,6 @@ class RockerBoard(object):
                 request_created = timestamp_to_datetime(request['request_timestamp'])
             except:
                 self.logger.warning('Subscription did not succeed\n\tSite:%s\n\tDatasets: %s', str(site_name), str(dataset_names))
-                continue
-            for dataset_name in dataset_names:
-                coll = 'dataset_rankings'
-                date = datetime_day(datetime.datetime.utcnow())
-                pipeline = list()
-                match = {'$match':{'name':dataset_name, 'date':date}}
-                pipeline.append(match)
-                project = {'$project':{'delta_rank':1, '_id':0}}
-                pipeline.append(project)
-                data = self.storage.get_data(coll=coll, pipeline=pipeline)
-                dataset_rank = data[0]['delta_rank']
-                query = "INSERT INTO Requests(RequestId, RequestType, DatasetId, SiteId, GroupId, Rank, Date) SELECT %s, %s, Datasets.DatasetId, Sites.SiteId, Groups.GroupId, %s, %s FROM Datasets, Sites, Groups WHERE Datasets.DatasetName=%s AND Sites.SiteName=%s AND Groups.GroupName=%s"
-                values = (request_id, request_type, dataset_rank, request_created, dataset_name, site_name, group_name)
-                self.mit_db.query(query=query, values=values, cache=False)
-
-    def delete(self, deletions):
-        """
-        Make deletions to phedex
-        deletions = [(dataset_name, site_name), ...]
-        """
-        new_deletions = dict()
-        for deletion in deletions:
-            dataset_name = deletion[0]
-            site_name = deletion[1]
-            try:
-                new_deletions[site_name].append(dataset_name)
-            except:
-                new_deletions[site_name] = list()
-                new_deletions[site_name].append(dataset_name)
-        for site_name, dataset_names in new_deletions.items():
-            data = self.phedex.generate_xml(dataset_names)
-            comments = 'This dataset is predicted to become less popular and has therefore been automatically deleted by cuadrnt'
-            api = 'delete'
-            params = [('node', site_name), ('data', data), ('level','dataset'), ('rm_subscriptions', 'y'), ('comments', comments)]
-            json_data = self.phedex.fetch(api=api, params=params, method='post')
-            # insert into db
-            group_name = 'AnalysisOps'
-            request_id = 0
-            request_type = 1
-            try:
-                request = json_data['phedex']
-                request_id = request['request_created'][0]['id']
-                request_created = timestamp_to_datetime(request['request_timestamp'])
-            except:
-                self.logger.warning('Deletion did not succeed\n\tSite:%s\n\tDatasets: %s', str(site_name), str(dataset_names))
                 continue
             for dataset_name in dataset_names:
                 coll = 'dataset_rankings'
