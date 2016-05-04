@@ -196,6 +196,10 @@ class PhedexDataHandler:
 
                     if 'GenericTTbar' in datasetName:
                         iscust = 1
+		    if 'TOTEM' in datasetName:
+			if 'Run2015D' in datasetName:
+			    if 'RECO' in datasetName:
+				iscust = 1
 		    #if 'HiRun2015' in datasetName:
 		    #	iscust = 1
 
@@ -319,8 +323,6 @@ class PhedexDataHandler:
         for line in inputFile.xreadlines():
             items = line.split()
             datasetName = items[0]
-            if datasetName == '/ZH_HToZZ_4LFilter_M170_13TeV_powheg2-minlo-HZJ_JHUgenV6_pythia8/RunIIFall15DR76-PU25nsData2015v1_76X_mcRun2_asymptotic_v12-v1/AODSIM':
-	        continue
             group = items[1]
             siteName = items[5]
             size = float(items[2])

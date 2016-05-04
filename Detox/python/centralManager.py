@@ -906,26 +906,26 @@ class CentralManager:
         for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
             theSite = self.allSites[site]
             active = theSite.getStatus()
-            if active == 0: 
+            if active == 0 or active ==2 : 
                 continue
 
             sitePr = self.sitePropers[site]
             (speed,volume,stuck) = sitePr.getDownloadStats()
             nstuckAtSite[site] = int(stuck)
         stmean,strms = self.getMeanValue(nstuckAtSite,3,0.5)
-        # set status=2 to all sites that are above 3xrms threshold
+        # set status=2 to all sites that are above 4xrms threshold
         changingStatus = {}
         for site in sorted(self.allSites):
             theSite = self.allSites[site]
             if site.startswith("T1_"):
                 continue
             active = theSite.getStatus()
-            if active == 0: 
+            if active == 0 or active == 2: 
                 continue
 
             shouldBe = 1
-            if site in nstuckAtSite and abs(stmean -  nstuckAtSite[site]) > 3*strms:
-                if nstuckAtSite[site] > 4:
+            if site in nstuckAtSite and abs(stmean -  nstuckAtSite[site]) > 4*strms:
+                if nstuckAtSite[site] > 20:
                     shouldBe = 2
             if shouldBe != active:
                  print (" -- %-16s status changing: %1d --> %1d"%(site,active,shouldBe))
