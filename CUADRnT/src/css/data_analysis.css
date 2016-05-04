@@ -1,0 +1,35 @@
+text {
+    font: 10px sans-serif;
+    text-anchor: middle;
+    fill: grey;
+}
+
+path { 
+    stroke: steelblue;
+    stroke-width: 2;
+    fill: none;
+}
+
+.axis text {
+  font: 10px sans-serif;
+}
+
+.axis path,
+.axis line {
+    fill: none;
+    stroke: grey;
+    stroke-width: 1;
+    shape-rendering: crispEdges;
+}
+
+.classification {
+    fill: orange;
+}
+
+#access_line {
+    stroke: lightgreen;
+}
+
+#cpu_line {
+    stroke: steelblue;
+}

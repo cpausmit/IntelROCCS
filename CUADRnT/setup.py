@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python
 """
 Standard python setup.py file for cuadrnt package
 To build     : python setup.py build
@@ -9,9 +9,9 @@ To run tests : python setup.py test
 """
 
 # system modules
-import logging
+#import logging
 import os
-import re
+#import re
 import sys
 import pwd
 import grp
@@ -19,48 +19,48 @@ import shutil
 import ConfigParser
 from subprocess import call
 from os.path import join as pjoin
-from unittest import TextTestRunner, TestLoader
+# from unittest import TextTestRunner, TestLoader
 from setuptools import setup
 from distutils.cmd import Command
 from distutils.dir_util import mkpath
-from logging.handlers import TimedRotatingFileHandler
+#from logging.handlers import TimedRotatingFileHandler
 
-version = '1.0'  # TODO: (10) Set up automatic versioning system
-required_python_version = '2.7'
+version = '2.0'
+#required_python_version = '2.7'
 
-class TestCommand(Command):
-    """
-    Class to handle unit tests
-    """
-    user_options = []
+# class TestCommand(Command):
+#     """
+#     Class to handle unit tests
+#     """
+#     user_options = []
 
-    def initialize_options(self):
-        """Init method"""
-        log_path = '/var/log/cuadrnt'
-        log_file = 'cuadrnt-test.log'
-        file_name = '%s/%s' % (log_path, log_file)
-        self.logger = logging.getLogger()
-        self.logger.setLevel(logging.DEBUG)
-        handler = TimedRotatingFileHandler(file_name, when='h', interval=1, backupCount=2)
-        formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s:%(funcName)s:%(lineno)d: %(message)s', datefmt='%H:%M')
-        handler.setFormatter(formatter)
-        self.logger.addHandler(handler)
-        self.test_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'test')
+#     def initialize_options(self):
+#         """Init method"""
+#         log_path = '/var/log/cuadrnt'
+#         log_file = 'cuadrnt-test.log'
+#         file_name = '%s/%s' % (log_path, log_file)
+#         self.logger = logging.getLogger()
+#         self.logger.setLevel(logging.DEBUG)
+#         handler = TimedRotatingFileHandler(file_name, when='h', interval=1, backupCount=2)
+#         formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s:%(funcName)s:%(lineno)d: %(message)s', datefmt='%H:%M')
+#         handler.setFormatter(formatter)
+#         self.logger.addHandler(handler)
+#         self.test_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'test')
 
-    def finalize_options(self):
-        """Finalize method"""
-        self.tests = TestLoader().discover(start_dir=self.test_dir, pattern='*_t.py')
+#     def finalize_options(self):
+#         """Finalize method"""
+#         self.tests = TestLoader().discover(start_dir=self.test_dir, pattern='*_t.py')
 
-    def run(self):
-        """
-        Finds all the tests modules in test/, and runs them.
-        """
-        TextTestRunner(verbosity=2).run(self.tests)
-        # remove test pyc files
-        pyc_re = re.compile('^.*.pyc$')
-        for file_ in os.listdir(self.test_dir):
-            if pyc_re.match(file_):
-                os.remove('%s/%s' % (self.test_dir, file_))
+#     def run(self):
+#         """
+#         Finds all the tests modules in test/, and runs them.
+#         """
+#         TextTestRunner(verbosity=2).run(self.tests)
+#         # remove test pyc files
+#         pyc_re = re.compile('^.*.pyc$')
+#         for file_ in os.listdir(self.test_dir):
+#             if pyc_re.match(file_):
+#                 os.remove('%s/%s' % (self.test_dir, file_))
 
 class CleanCommand(Command):
     """
@@ -157,9 +157,9 @@ def main(argv):
     """
     name = 'cuadrnt'
 
-    if not sys.version[:3] == required_python_version:
-        print "I'm sorry, but %s %s requires Python %s." % (name, version, required_python_version)
-        sys.exit(1)
+    # if not sys.version[:3] == required_python_version:
+    #     print "I'm sorry, but %s %s requires Python %s." % (name, version, required_python_version)
+    #     sys.exit(1)
 
     # get setup config file
     config_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'etc/setup.cfg')
@@ -178,11 +178,16 @@ def main(argv):
     install_requires = [
         'setuptools',
         'pymongo',
-        'MySQL-python'
+        'MySQL-python',
+        'sklearn',
     ]
+    # numpy should also be installed but seems to be some bug in setuptools to install it
     packages = find_packages('src/python')
-    data_files = [('/usr/local/bin', find_files('bin')),
-                  ('/var/opt/cuadrnt', find_files('etc'))]
+    data_files = [
+        ('/usr/local/bin', find_files('bin')),
+        ('/var/opt/cuadrnt', find_files('etc')),
+        ('/var/lib/cuadrnt', find_files('data'))
+    ]
     scripts = []
     cms_license = 'CMS experiment software'
     classifiers = [
@@ -196,15 +201,9 @@ def main(argv):
         'Topic :: System :: Distributed Computing'
     ]
 
-    # Make sure the permissions are correct for folders
-    uid = pwd.getpwnam(username).pw_uid
-    gid = grp.getgrnam(group).gr_gid
+    # Make sure folders exist
     mkpath('/var/lib/cuadrnt')
     mkpath('/var/log/cuadrnt')
-    os.chown('/var/lib/cuadrnt', uid, gid)
-    os.chown('/var/log/cuadrnt', uid, gid)
-
-    # TODO: Install requirements
 
     setup(
         name=name,
@@ -219,12 +218,28 @@ def main(argv):
         requires=['python (>=2.7)'],
         install_requires=install_requires,
         classifiers=classifiers,
-        cmdclass={'test':TestCommand, 'clean':CleanCommand, 'doc':DocCommand},
+        cmdclass={'clean':CleanCommand, 'doc':DocCommand},
         author=author,
         author_email=author_email,
         url=url,
         license=cms_license,
     )
+
+    # Make sure the permissions are correct for folders
+    uid = pwd.getpwnam(username).pw_uid
+    gid = grp.getgrnam(group).gr_gid
+    path = '/var/lib/cuadrnt'
+    for root, dirs, files in os.walk(path):
+        for momo in dirs:
+            os.chown(os.path.join(root, momo), uid, gid)
+        for momo in files:
+            os.chown(os.path.join(root, momo), uid, gid)
+    path = '/var/log/cuadrnt'
+    for root, dirs, files in os.walk(path):
+        for momo in dirs:
+            os.chown(os.path.join(root, momo), uid, gid)
+        for momo in files:
+            os.chown(os.path.join(root, momo), uid, gid)
 
 if __name__ == "__main__":
     main(sys.argv[1:])

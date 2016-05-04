@@ -8,6 +8,7 @@ Description: Test class for all utils functions
 # system modules
 import unittest
 import os
+import json
 import datetime
 from bson.objectid import ObjectId
 
@@ -16,6 +17,7 @@ from cuadrnt.utils.config import get_config
 from cuadrnt.utils.db_utils import get_object_id
 from cuadrnt.utils.db_utils import datetime_to_object_id
 from cuadrnt.utils.io_utils import export_csv
+from cuadrnt.utils.io_utils import export_json
 from cuadrnt.utils.utils import check_tool
 from cuadrnt.utils.utils import weighted_choice
 from cuadrnt.utils.utils import daterange
@@ -78,11 +80,27 @@ class UtilsTests(unittest.TestCase):
         headers = ('foo', 'bar')
         data = [('Bjorn', 'Barrefors')]
         export_file = '%s/%s.csv' % (path, file_name)
-        export_csv(file_name=file_name, path=path, headers=headers, data=data)
+        export_csv(headers=headers, data=data, path=path, file_name=file_name)
         expected = 'foo,bar\nBjorn,Barrefors\n'
-        fs = open(export_file, 'r')
-        result = fs.read()
+        fd = open(export_file, 'r')
+        result = fd.read()
+        fd.close()
         self.assertEqual(result, expected)
+        os.remove(export_file)
+
+    #@unittest.skip("Skip Test")
+    def test_export_json(self):
+        "Test export_json function"
+        file_name = 'test'
+        path = '/var/lib/cuadrnt'
+        data = [{'foo':'bar'}]
+        export_file = '%s/%s.json' % (path, file_name)
+        export_json(data=data, path=path, file_name=file_name)
+        expected = 'bar'
+        fd = open(export_file, 'r')
+        result = json.load(fd)
+        fd.close()
+        self.assertEqual(result['foo'], expected)
         os.remove(export_file)
 
     #@unittest.skip("Skip Test")
