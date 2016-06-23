@@ -22,8 +22,8 @@ def getRow(histName):
     'RECO' : [23,24,25]
   }
   ll = histName.split('_')
-  tier = ll[1]
-  period = ll[2]
+  tier = ll[2]
+  period = ll[1]
   if '3Months' in period:
     iM = 0
   elif '6Months' in period:
@@ -33,7 +33,7 @@ def getRow(histName):
   return rows[tier][iM]
 
 os.system('rm -rf /tmp/xlstempl')
-os.system('cp -r %s/templ/ /tmp/xlstempl')
+os.system('cp -r %s/templ/ /tmp/xlstempl'%(monitorbase))
 
 tree = ET.parse('/tmp/xlstempl/xl/worksheets/sheet2.xml')
 root = tree.getroot()
@@ -48,12 +48,13 @@ keys = fIn.GetListOfKeys()
 for k in keys:
   if not('TH1' in k.GetClassName()):
     continue
-  name = key.GetName()
+  name = k.GetName()
   hist = fIn.Get(name)
   row = getRow(name)
-  for iB in xrange(1,hist.GetNbinsX()):
+  for iB in xrange(1,hist.GetNbinsX()+1):
     column = ascii_uppercase[iB]
     val = hist.GetBinContent(iB)
+    print name,iB,val
     cell = cells['%s%i'%(column,row)]
     cell.text = str(val)
     cell.set('updated','yes')

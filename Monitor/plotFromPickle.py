@@ -453,8 +453,8 @@ try:
 except KeyError:
     pass
 
-if 'All' in pickleJar:
-    fSave = ROOT.TFile(re.sub('pkl','root',pickleJar),'UPDATE')
+if 'All' in jarFileName or True:
+    fSave = ROOT.TFile(re.sub('pkl','root',jarFileName),'UPDATE')
     histName = 'h_'+os.environ['MONITOR_PLOTTEXT']
     fSave.WriteTObject(hCRB,histName,"Overwrite")
     fSave.Close()
