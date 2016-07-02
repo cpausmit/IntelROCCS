@@ -61,14 +61,14 @@ os.environ['MONITOR_GROUP'] = DDMGroup
 
 print DDMGroup, DDMPattern
 
-os.system('./readJsonSnapshotPickle.py T2*')
+# os.system('./readJsonSnapshotPickle.py T2*')
 
-os.system('./plotFromPickle.py T2* %s'%('${MONITOR_DB}/monitorCache${MONITOR_GROUP}.pkl'))
+# os.system('./plotFromPickle.py T2* %s'%('${MONITOR_DB}/monitorCache${MONITOR_GROUP}.pkl'))
 
 for i in range(len(DDMTimeStamps)):
     os.environ['MONITOR_PLOTTEXT'] = DDMLabels[i]
     timeStamp = DDMTimeStamps[i]
-    os.system('./plotFromPickle.py T2* %i %i %s'%( timeStamp[0], timeStamp[1], '${MONITOR_DB}/monitorCache${MONITOR_GROUP}.pkl' ))
+    # os.system('./plotFromPickle.py T2* %i %i %s'%( timeStamp[0], timeStamp[1], '${MONITOR_DB}/monitorCache${MONITOR_GROUP}.pkl' ))
 ### DataOps
 
 
@@ -76,12 +76,12 @@ DataOpsGroup = 'DataOps'
 
 os.environ['MONITOR_PATTERN'] = DDMPattern
 os.environ['MONITOR_GROUP'] = DataOpsGroup
-os.system('./readJsonSnapshotPickle.py T2*')
+# os.system('./readJsonSnapshotPickle.py T2*')
 
 for i in range(len(DDMTimeStamps)):
     os.environ['MONITOR_PLOTTEXT'] = DDMLabels[i]
     timeStamp = DDMTimeStamps[i]
-    os.system('./plotFromPickle.py T2* %i %i %s'%( timeStamp[0], timeStamp[1], '${MONITOR_DB}/monitorCache${MONITOR_GROUP}.pkl' ))
+    # os.system('./plotFromPickle.py T2* %i %i %s'%( timeStamp[0], timeStamp[1], '${MONITOR_DB}/monitorCache${MONITOR_GROUP}.pkl' ))
 
 
 ''' CRB-style plots '''
@@ -98,7 +98,7 @@ for period in [12,6,3]:
 
 os.environ['MONITOR_PATTERN'] = CRBPattern
 os.environ['MONITOR_GROUP'] = CRBGroup
-os.system('./readJsonSnapshotPickle.py T[12]*')
+# os.system('./readJsonSnapshotPickle.py T[12]*')
 
 os.system('rm -f ${MONITOR_DB}/monitorCacheAll.root')
 for i in range(len(CRBTimeStamps)):
