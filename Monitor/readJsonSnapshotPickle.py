@@ -188,7 +188,6 @@ def findDatasetCreationTime(dataset,fileName,cTimes,debug=0):
     cmd = 'curl -k -H "Accept: application/json" --cert %s --key %s "https://cmsweb.cern.ch/dbs/prod/global/DBSReader/blocks?dataset=%s&detail=true"'%(certpath,keypath,dataset)
     print cmd
     for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
-      print line
       payload = json.load(StringIO(line))
     creation = 0
     for block in payload:
