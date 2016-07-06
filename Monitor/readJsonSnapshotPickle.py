@@ -181,7 +181,22 @@ def findDatasetCreationTime(dataset,fileName,cTimes,debug=0):
 
     if dataset in cTimes:
         return cTimes[dataset]
-    return genesis
+    # query dbs
+    cmd = 'curl -k -H "Accept: application/json" --cert /home/snarayan/.globus/usercert.pem --key /home/snarayan/.globus/userkey.pem "https://cmsweb.cern.ch/dbs/prod/global/DBSReader/blocks?dataset=%s&detail=true"'%dataset
+    for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
+      payload = json.load(StringIO(line))
+    creation = 0
+    for block in payload:
+      creation = max(creation,block['creation_date'])
+    if creation==0:
+      return genesis
+    else:
+      with open(fileName,'a') as dataFile:
+          dataFile.write("%s %i\n"%(dataset,creation))
+      cTimes[dataset] = creation
+      return creation
+    #return genesis
+    '''
     cmd = os.environ.get('MONITOR_BASE') + \
         '/das_client.py --format=plain --limit=0 --query="dataset=' + dataset + \
         ' | grep dataset.creation_time " '
@@ -201,6 +216,7 @@ def findDatasetCreationTime(dataset,fileName,cTimes,debug=0):
                 dataFile.write("%s %i\n"%(dataset,cTime))
             cTimes[dataset] = cTime
             return cTime
+    '''
 
 def readDatasetCreationTimes(fileName,debug=0):
     # read the creation time for each dataset from a given file

@@ -33,8 +33,8 @@ def getRow(histName):
     iM = 2
   return rows[tier][iM]
 
-os.system('rm -rf /tmp/xlstempl')
-os.system('cp -r %s/templ/ /tmp/xlstempl'%(monitorbase))
+os.system('rm -rf /tmp/%s/xlstempl/'%(os.environ['USER'])
+os.system('cp -r %s/templ/ /tmp/%s/xlstempl'%(monitorbase,os.environ['USER']))
 
 tree = ET.parse('/tmp/xlstempl/xl/worksheets/sheet2.xml')
 root = tree.getroot()
