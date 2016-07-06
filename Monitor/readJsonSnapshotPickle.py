@@ -19,6 +19,7 @@ import findDatasetProperties as fDP
 import cPickle as pickle
 from Dataset import *
 import getAccessInfo
+from StringIO import StringIO
 
 genesis=1378008000
 # genesis=int(time.mktime(time.strptime("2014-09-01","%Y-%m-%d")))
