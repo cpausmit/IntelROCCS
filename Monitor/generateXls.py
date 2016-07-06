@@ -7,11 +7,12 @@ import xml.etree.ElementTree as ET
 from string import ascii_uppercase
 
 label = argv[1]
+xlstempl = argv[2]
 
 monitordb = os.environ['MONITOR_DB']+'/'
 monitorbase = os.environ['MONITOR_BASE']+'/'
 
-fIn = TFile(monitordb+'monitorCacheAll.root')
+fIn = TFile(xlstempl)
 
 def getRow(histName):
   rows = {
@@ -19,7 +20,7 @@ def getRow(histName):
     'AOD' : [8,9,10],
     'AODSIM' : [13,14,15],
     'MINIAOD' : [18,19,20],
-    'RECO' : [23,24,25]
+    # 'RECO' : [23,24,25]
   }
   ll = histName.split('_')
   tier = ll[2]
@@ -50,11 +51,14 @@ for k in keys:
     continue
   name = k.GetName()
   hist = fIn.Get(name)
-  row = getRow(name)
+  try:
+    row = getRow(name)
+  except KeyError:
+    continue
   for iB in xrange(1,hist.GetNbinsX()+1):
     column = ascii_uppercase[iB]
     val = hist.GetBinContent(iB)
-    print name,iB,val
+    # print name,iB,val
     cell = cells['%s%i'%(column,row)]
     cell.text = str(val)
     cell.set('updated','yes')
@@ -62,4 +66,13 @@ for k in keys:
 tree.write('/tmp/xlstempl/xl/worksheets/sheet2.xml')
 
 os.system('cd /tmp/xlstempl/; find . -type f | xargs zip new.xlsx; cd -')
-os.system('mv /tmp/xlstempl/new.xlsx %s/xls/%s.xlsx'%(monitordb,label))
+
+# for testing
+cpcmd = 'cp /tmp/xlstempl/new.xlsx ~/xls/%s.xlsx'%(label)
+print cpcmd
+os.system(cpcmd)
+
+mvcmd = 'mv /tmp/xlstempl/new.xlsx %s/xls/%s.xlsx'%(monitordb,label)
+print mvcmd
+os.system(mvcmd)
+

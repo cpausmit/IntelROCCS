@@ -6,6 +6,8 @@ Wrapper script that reads the binaries and makes the standard plots
 import os
 import sys
 import time
+import plotFromPickle
+import cPickle as pickle
 
 genesis=1378008000
 nowish = time.time()
@@ -13,7 +15,8 @@ nowish = time.time()
 # remove old log files
 logPeriod = int((nowish/1000000)%10)
 logBlock = int((nowish/10000000))
-#os.system('rm $MONITOR_DB/monitor-%i[^%i%i]*'%(logBlock,logPeriod,logPeriod-1))
+monitordb = os.environ['MONITOR_DB']
+os.system('rm -f $MONITOR_DB/monitor-%i[^%i%i]*'%(logBlock,logPeriod,logPeriod-1))
 
 def addTime(timeStruct,addTuple):
     '''
@@ -59,8 +62,6 @@ DDMLabels = ["SummaryAll", "SummaryLastYear", "SummaryThisYear","Last3Months"]
 os.environ['MONITOR_PATTERN'] = DDMPattern
 os.environ['MONITOR_GROUP'] = DDMGroup
 
-print DDMGroup, DDMPattern
-
 os.system('./readJsonSnapshotPickle.py T2*')
 
 os.system('./plotFromPickle.py T2* %s'%('${MONITOR_DB}/monitorCache${MONITOR_GROUP}.pkl'))
@@ -86,25 +87,65 @@ for i in range(len(DDMTimeStamps)):
 
 ''' CRB-style plots '''
 
-CRBPattern = '/_/_/_AOD_|/_/_/RECO$'
-CRBPatterns = ['/_/_/_AOD$', '/_/_/_AODSIM', '/_/_/_AOD_','/_/_/MINIAOD_','/_/_/REC0$']
-CRBPatternLabels = ['AOD', 'AODSIM', 'AllAOD','MINIAOD','RECO']
+# CRBPattern = '/_/_/_AOD_|/_/_/RECO$'
+# CRBPatterns = ['/_/_/_AOD$', '/_/_/_AODSIM', '/_/_/_AOD_','/_/_/MINIAOD_','/_/_/REC0$']
+# CRBPatternLabels = ['AOD', 'AODSIM', 'AllAOD','MINIAOD','RECO']
+CRBPattern = '/_/_/_AOD_'
+CRBPatterns = ['/_/_/_AOD$', '/_/_/_AODSIM', '/_/_/_AOD_','/_/_/MINIAOD_']
+CRBPatternLabels = ['AOD', 'AODSIM', 'AllAOD','MINIAOD']
 CRBGroup = '_'
 CRBTimeStamps = []
 CRBLabels = ["CRBSummary12Months","CRBSummary6Months","CRBSummary3Months"]
-for period in [12,6,3]:
-    startTime = nowish - period*86400*30 # approximately 'period' number of months ago
-    CRBTimeStamps.append((startTime,nowish))
-
 os.environ['MONITOR_PATTERN'] = CRBPattern
 os.environ['MONITOR_GROUP'] = CRBGroup
 os.system('./readJsonSnapshotPickle.py T[12]*')
 
-os.system('rm -f ${MONITOR_DB}/monitorCacheAll.root')
-for i in range(len(CRBTimeStamps)):
-    timeStamp = CRBTimeStamps[i]
-    for j in range(len(CRBPatterns)):
-        os.environ['MONITOR_PATTERN'] = CRBPatterns[j]
-        os.environ['MONITOR_PLOTTEXT'] = CRBLabels[i]+'_'+CRBPatternLabels[j]
-        os.system('./plotFromPickle.py T[12]* %i %i %s'%( timeStamp[0], timeStamp[1], '${MONITOR_DB}/monitorCacheAll.pkl' ))
-os.system('./generateXls.py T12_current')
+def stampToString(stamp):
+    return time.strftime('%Y-%m-%d',time.gmtime(stamp))
+
+with open(monitordb+'/monitorCacheAll.pkl','rb') as cachefile:
+    crbcache = pickle.load(cachefile)
+
+def makeCRBPlots(endStamp,crbLabel):
+    CRBTimeStamps = []
+    for period in [12,6,3]:
+        startTime = endStamp - period*86400*30 # approximately 'period' number of months ago
+        CRBTimeStamps.append((startTime,endStamp))
+    os.system('rm -f ${MONITOR_DB}/monitorCacheAll_T12_%s.root'%(crbLabel))
+    os.system('rm -f ${MONITOR_DB}/monitorCacheAll_T2_%s.root'%(crbLabel))
+    for i in range(len(CRBTimeStamps)):
+        timeStamp = CRBTimeStamps[i]
+        for j in range(len(CRBPatterns)):
+            print '\n=========================\n',stampToString(timeStamp[0]),'-',stampToString(timeStamp[1]),'\n========================='
+            os.environ['MONITOR_PATTERN'] = CRBPatterns[j]
+            os.environ['MONITOR_PLOTTEXT'] = CRBLabels[i]+'_'+CRBPatternLabels[j]+'_'+crbLabel
+            plotFromPickle.makeActualPlots('T2*',timeStamp[0],timeStamp[1],crbcache,'T2_'+crbLabel,'${MONITOR_DB}/monitorCacheAll_T2_%s.root'%(crbLabel)) 
+            plotFromPickle.makeActualPlots('T[12]*',timeStamp[0],timeStamp[1],crbcache,'T12_'+crbLabel,'${MONITOR_DB}/monitorCacheAll_T12_%s.root'%(crbLabel)) 
+    os.system('./generateXls.py T12_%s ${MONITOR_DB}/monitorCacheAll_T12_%s.root'%(crbLabel,crbLabel))
+    os.system('./generateXls.py T2_%s ${MONITOR_DB}/monitorCacheAll_T2_%s.root'%(crbLabel,crbLabel))
+
+makeCRBPlots(nowish,'current')
+iY=0
+notDone = True
+with open(os.environ['MONITOR_BASE']+'/html/xls.html','r') as inhtml:
+    oldlines = list(inhtml)
+while notDone:
+    year = 2015+iY
+    for month in [3,6,9,12]:
+        endStamp = time.mktime(time.strptime('%i-%i-%i'%(year,month,daysInMonth[month]),'%Y-%m-%d'))
+        if endStamp>nowish:
+            notDone = False
+            break
+        crblabel = 'ending_%4i-%.2i'%(year,month)
+        makeCRBPlots(endStamp,crblabel)
+        newlines = []
+        for line in oldlines:
+            newlines.append(line)
+            if '!--' in line:
+                newlines.append('  <tr>  <td> Ending %4i-%.2i </td> <td> <a href="xls/T2_%s.xlsx">T2_%s.xlsx</a> </td> <td> <a href="xls/T12_%s.xlsx">T12_%s.xlsx</a></td> </tr>'%(year,month,crblabel,crblabel,crblabel,crblabel))
+        oldlines = newlines
+    iY += 1
+with open(os.environ['MONITOR_WEB']+'/xls.html','w') as outhtml:
+    for line in oldlines:
+        outhtml.write(line)
+

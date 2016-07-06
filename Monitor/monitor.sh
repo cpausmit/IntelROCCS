@@ -16,6 +16,7 @@ fi
 mkdir -p    $MONITOR_DB
 cd $MONITOR_DB #preventing temp files from being created in weird places
 rm -f $MONITOR_DB/*png # clean up old images, will be replaced shortly
+rm -f $MONITOR_DB/*.C # clean up old images, will be replaced shortly
 # are we interested in nSites or nSitesAv
 # define relevant environment variables
 export MIT_ROOT_STYLE=/home/cmsprod/MitRootStyle/MitRootStyle.C
@@ -28,7 +29,8 @@ echo ""
 echo "Extracting log file monitoring data from DETOX_DB = $DETOX_DB."
 echo ""
 
-DETOX_WEB=/home/cmsprod/public_html/IntelROCCS/Detox/result/
+export DETOX_WEB=/home/cmsprod/public_html/IntelROCCS/Detox/result/
+export MONITOR_WEB=/home/cmsprod/public_html/IntelROCCS/Monitor/
 
 # find present site quotas
 for site in `ls -1 $DETOX_WEB | grep ^T[0-3]`

@@ -2,7 +2,9 @@
 import subprocess, os, glob, time
 from sys import exit # debugging
 
-def get(sites=None,startTime=1378008000):
+starttime = time.mktime(time.strptime('2014-06-01','%Y-%m-%d'))
+
+def get(sites=None,startTime=starttime):
   certPath = os.environ['USERCERT']
   keyPath = os.environ['USERKEY']
   endTime = int(time.time())
@@ -19,8 +21,8 @@ def get(sites=None,startTime=1378008000):
     sites += ["T1_UK_RAL_Disk", "T1_US_FNAL_Disk", "T1_IT_CNAF_Disk", "T1_DE_KIT_Disk", "T1_RU_JINR_Disk", "T1_FR_CCIN2P3_Disk", "T1_ES_PIC_Disk"]
   for site in sites:
       for tStart in range(startTime,endTime,sPerDay):
-          if (endTime - tStart > 3*sPerDay) and (os.path.exists(os.environ['MONITOR_DB']+'/sitesInfo/'+site+'/'+time.strftime("%Y-%m-%d",time.gmtime(tStart)))):
-            # always refresh anything within last 3 days in case there was a reporting failure
+          if (endTime - tStart > 2*sPerDay) and (os.path.exists(os.environ['MONITOR_DB']+'/sitesInfo/'+site+'/'+time.strftime("%Y-%m-%d",time.gmtime(tStart)))):
+            # always refresh anything within last 2 days in case there was a reporting failure
             continue
           if (endTime - tStart > 7*sPerDay):
             # if it was over a week, just give up on refreshing it for all sites

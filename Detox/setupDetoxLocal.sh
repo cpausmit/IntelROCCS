@@ -8,10 +8,10 @@
 
 export DETOX_DB="/home/maxi/IntelROCCS/Detox"
 
-export DETOX_SITESTORAGE_SERVER="t3btch039.mit.edu"
+export DETOX_SITESTORAGE_SERVER="t3serv012.mit.edu"
 export DETOX_SITESTORAGE_DB="IntelROCCS"
 export DETOX_SITESTORAGE_USER="cmsSiteDb"
-export DETOX_SITESTORAGE_PW="db78user?Cms"
+export DETOX_SITESTORAGE_PW="12dynamO?Cms"
 
 # sub directories
 
