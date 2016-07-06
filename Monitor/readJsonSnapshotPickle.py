@@ -345,7 +345,7 @@ def calculateDatasetMovement(sitePattern,datasetSet,cTimes={}):
                 if len(datasetMovement[siteName][0])==0:
                     newStart = max(cTime,genesis)
                     if nowish-newStart > 0:
-                        datasetMovement[datasetName][siteName] = ([newStart],[])
+                        datasetMovement[siteName] = ([newStart],[])
         datasetObject.movement = datasetMovement
         datasetMovement = None
 

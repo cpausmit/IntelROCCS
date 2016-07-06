@@ -8,7 +8,6 @@ import sys
 import time
 import plotFromPickle
 import cPickle as pickle
-
 genesis=1378008000
 nowish = time.time()
 
@@ -63,7 +62,6 @@ os.environ['MONITOR_PATTERN'] = DDMPattern
 os.environ['MONITOR_GROUP'] = DDMGroup
 
 os.system('./readJsonSnapshotPickle.py T2*')
-
 os.system('./plotFromPickle.py T2* %s'%('${MONITOR_DB}/monitorCache${MONITOR_GROUP}.pkl'))
 
 for i in range(len(DDMTimeStamps)):
@@ -87,12 +85,12 @@ for i in range(len(DDMTimeStamps)):
 
 ''' CRB-style plots '''
 
-# CRBPattern = '/_/_/_AOD_|/_/_/RECO$'
-# CRBPatterns = ['/_/_/_AOD$', '/_/_/_AODSIM', '/_/_/_AOD_','/_/_/MINIAOD_','/_/_/REC0$']
-# CRBPatternLabels = ['AOD', 'AODSIM', 'AllAOD','MINIAOD','RECO']
-CRBPattern = '/_/_/_AOD_'
-CRBPatterns = ['/_/_/_AOD$', '/_/_/_AODSIM', '/_/_/_AOD_','/_/_/MINIAOD_']
-CRBPatternLabels = ['AOD', 'AODSIM', 'AllAOD','MINIAOD']
+CRBPattern = '/_/_/_AOD_|/_/_/RECO$'
+CRBPatterns = ['/_/_/RECO$', '/_/_/_AOD$', '/_/_/_AODSIM', '/_/_/_AOD_','/_/_/MINIAOD_']
+CRBPatternLabels = ['RECO', 'AOD', 'AODSIM', 'AllAOD','MINIAOD']
+#CRBPattern = '/_/_/_AOD_'
+#CRBPatterns = ['/_/_/_AOD$', '/_/_/_AODSIM', '/_/_/_AOD_','/_/_/MINIAOD_']
+#CRBPatternLabels = ['AOD', 'AODSIM', 'AllAOD','MINIAOD']
 CRBGroup = '_'
 CRBTimeStamps = []
 CRBLabels = ["CRBSummary12Months","CRBSummary6Months","CRBSummary3Months"]
@@ -113,20 +111,23 @@ def makeCRBPlots(endStamp,crbLabel):
         CRBTimeStamps.append((startTime,endStamp))
     os.system('rm -f ${MONITOR_DB}/monitorCacheAll_T12_%s.root'%(crbLabel))
     os.system('rm -f ${MONITOR_DB}/monitorCacheAll_T2_%s.root'%(crbLabel))
+    os.system('rm -f ${MONITOR_DB}/monitorCacheAll_T1_%s.root'%(crbLabel))
     for i in range(len(CRBTimeStamps)):
         timeStamp = CRBTimeStamps[i]
         for j in range(len(CRBPatterns)):
             print '\n=========================\n',stampToString(timeStamp[0]),'-',stampToString(timeStamp[1]),'\n========================='
             os.environ['MONITOR_PATTERN'] = CRBPatterns[j]
             os.environ['MONITOR_PLOTTEXT'] = CRBLabels[i]+'_'+CRBPatternLabels[j]+'_'+crbLabel
-            plotFromPickle.makeActualPlots('T2*',timeStamp[0],timeStamp[1],crbcache,'T2_'+crbLabel,'${MONITOR_DB}/monitorCacheAll_T2_%s.root'%(crbLabel)) 
-            plotFromPickle.makeActualPlots('T[12]*',timeStamp[0],timeStamp[1],crbcache,'T12_'+crbLabel,'${MONITOR_DB}/monitorCacheAll_T12_%s.root'%(crbLabel)) 
+            print 'T1'; plotFromPickle.makeActualPlots('T1*',timeStamp[0],timeStamp[1],crbcache,'T1_'+crbLabel,'${MONITOR_DB}/monitorCacheAll_T1_%s.root'%(crbLabel)) 
+            print 'T2'; plotFromPickle.makeActualPlots('T2*',timeStamp[0],timeStamp[1],crbcache,'T2_'+crbLabel,'${MONITOR_DB}/monitorCacheAll_T2_%s.root'%(crbLabel)) 
+            print 'T[12]'; plotFromPickle.makeActualPlots('T[12]*',timeStamp[0],timeStamp[1],crbcache,'T12_'+crbLabel,'${MONITOR_DB}/monitorCacheAll_T12_%s.root'%(crbLabel)) 
     os.system('./generateXls.py T12_%s ${MONITOR_DB}/monitorCacheAll_T12_%s.root'%(crbLabel,crbLabel))
     os.system('./generateXls.py T2_%s ${MONITOR_DB}/monitorCacheAll_T2_%s.root'%(crbLabel,crbLabel))
+    os.system('./generateXls.py T1_%s ${MONITOR_DB}/monitorCacheAll_T1_%s.root'%(crbLabel,crbLabel))
 
 makeCRBPlots(nowish,'current')
 iY=0
-notDone = True
+notDone=True
 with open(os.environ['MONITOR_BASE']+'/html/xls.html','r') as inhtml:
     oldlines = list(inhtml)
 while notDone:
@@ -142,7 +143,7 @@ while notDone:
         for line in oldlines:
             newlines.append(line)
             if '!--' in line:
-                newlines.append('  <tr>  <td> Ending %4i-%.2i </td> <td> <a href="xls/T2_%s.xlsx">T2_%s.xlsx</a> </td> <td> <a href="xls/T12_%s.xlsx">T12_%s.xlsx</a></td> </tr>'%(year,month,crblabel,crblabel,crblabel,crblabel))
+                newlines.append('  <tr>  <td> Ending %4i-%.2i </td> <td> <a href="xls/T1_%s.xlsx">T1_%s.xlsx</a> </td> <td> <a href="xls/T2_%s.xlsx">T2_%s.xlsx</a> </td> <td> <a href="xls/T12_%s.xlsx">T12_%s.xlsx</a></td> </tr>'%(year,month,crblabel,crblabel,crblabel,crblabel,crblabel,crblabel))
         oldlines = newlines
     iY += 1
 with open(os.environ['MONITOR_WEB']+'/xls.html','w') as outhtml:

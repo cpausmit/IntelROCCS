@@ -20,7 +20,7 @@ def getRow(histName):
     'AOD' : [8,9,10],
     'AODSIM' : [13,14,15],
     'MINIAOD' : [18,19,20],
-    # 'RECO' : [23,24,25]
+    'RECO' : [23,24,25]
   }
   ll = histName.split('_')
   tier = ll[2]
@@ -33,10 +33,10 @@ def getRow(histName):
     iM = 2
   return rows[tier][iM]
 
-os.system('rm -rf /tmp/%s/xlstempl/'%(os.environ['USER'])
+os.system('rm -rf /tmp/%s/xlstempl/'%(os.environ['USER']))
 os.system('cp -r %s/templ/ /tmp/%s/xlstempl'%(monitorbase,os.environ['USER']))
 
-tree = ET.parse('/tmp/xlstempl/xl/worksheets/sheet2.xml')
+tree = ET.parse('/tmp/%s/xlstempl/xl/worksheets/sheet2.xml'%(os.environ['USER']))
 root = tree.getroot()
 
 cells = {}
@@ -63,16 +63,13 @@ for k in keys:
     cell.text = str(val)
     cell.set('updated','yes')
 
-tree.write('/tmp/xlstempl/xl/worksheets/sheet2.xml')
+user = os.environ['USER']
 
-os.system('cd /tmp/xlstempl/; find . -type f | xargs zip new.xlsx; cd -')
+tree.write('/tmp/%s/xlstempl/xl/worksheets/sheet2.xml'%user)
 
-# for testing
-cpcmd = 'cp /tmp/xlstempl/new.xlsx ~/xls/%s.xlsx'%(label)
-print cpcmd
-os.system(cpcmd)
+os.system('cd /tmp/%s/xlstempl/; find . -type f | xargs zip new.xlsx; cd -'%user)
 
-mvcmd = 'mv /tmp/xlstempl/new.xlsx %s/xls/%s.xlsx'%(monitordb,label)
+mvcmd = 'mv /tmp/%s/xlstempl/new.xlsx %s/xls/%s.xlsx'%(user,monitordb,label)
 print mvcmd
 os.system(mvcmd)
 

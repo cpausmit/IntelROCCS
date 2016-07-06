@@ -53,7 +53,7 @@ echo "Done making site plots"
 cd $MONITOR_BASE
 pwd
 
-python monitor.py 
+python ${MONITOR_BASE}/monitor.py 
 
 # copy things for plotting interactively
 # rsync will put them on the web 
