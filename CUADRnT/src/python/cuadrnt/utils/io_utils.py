@@ -7,11 +7,12 @@ Description: Useful I/O functions
 
 # system modules
 import logging
+import json
 
 # Get module specific logger
 logger = logging.getLogger(__name__)
 
-def export_csv(headers=tuple(), data=list(), file_name='data', path='/var/lib/cuadrnt'):
+def export_csv(headers=tuple(), data=list(), path='/var/lib/cuadrnt', file_name='data'):
     """
     Export data to <path>/<file_name>.csv
     Headers format: (header_1, header_2, ...)
@@ -35,4 +36,14 @@ def export_csv(headers=tuple(), data=list(), file_name='data', path='/var/lib/cu
             row_str += '%s,' % (field)
         row_str = row_str[:-1] + '\n'
         fd.write(row_str)
+    fd.close()
+
+def export_json(data, path='/var/lib/cuadrnt', file_name='data'):
+    """
+    Export JSON data to a file using dump
+    """
+    export_file = '%s/%s.json' % (path, file_name)
+    logger.debug('Exporting to file: %s', export_file)
+    fd = open(export_file, 'w')
+    json.dump(data, fd)
     fd.close()

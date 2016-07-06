@@ -28,14 +28,17 @@ export DETOX_DATASETS_TO_DELETE=RankedDatasets.txt
 
 
 # PhEDEx group that is considered 
-export DETOX_GROUP='AnalysisOps','DataOps','caf-comm','caf-alca','local'
+export DETOX_GROUP='AnalysisOps','DataOps','caf-comm','caf-alca','local','IB-RelVal'
 
 #Lock file locations for DataOps group
 
 export DETOX_LOCKFILES=\
 'https://cmst2.web.cern.ch/cmst2/unified/globallocks.json',\
-'https://cmst1.web.cern.ch/CMST1/lockedData/lockTestSamples.json'
-#'https://cmst2.web.cern.ch/cmst2/unified/datalocks.json',\
+'https://cmst2.web.cern.ch/cmst2/unified-testbed/globallocks.json',\
+'https://cmst1.web.cern.ch/CMST1/lockedData/lockTestSamples.json',\
+'https://cmsweb.cern.ch/t0wmadatasvc/prod/dataset_locked',\
+'https://cmsweb.cern.ch/t0wmadatasvc/replayone/dataset_locked',\
+'https://cmsweb.cern.ch/t0wmadatasvc/replaytwo/dataset_locked'
 
 # Parameters for cleaning
 

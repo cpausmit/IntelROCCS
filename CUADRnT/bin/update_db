@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 if [ $# -eq 1 ]; then
-    python2.7 -m cuadrnt.core.update_db "--log=$1"
+    python2.7 -m cuadrnt.data_management.core.update_db "--log=$1"
 else
-    python2.7 -m cuadrnt.core.update_db
+    python2.7 -m cuadrnt.data_management.core.update_db
 fi

@@ -100,7 +100,7 @@ def pop_db_timestamp_to_datetime(timestamp):
 
 def datetime_remove_timezone(datetime_):
     """
-    Popularity DB stores timestamps padded with 3 extra zeros
+    Datetime objects might sometimes be stored with timezone information
     """
     return datetime_.replace(tzinfo=None)
 

@@ -91,8 +91,11 @@ class CentralManager:
             raise Exception(" FATAL -- Bad proxy file " + os.environ['DETOX_X509UP'])
 
     def rankDatasetsLocally(self):
+	mislocked = {}
         for site in sorted(self.allSites):
             self.rankLocallyAtSite(site)
+	for dset in mislocked:
+	    print dset
 
     def rankLocallyAtSite(self,site):
         secsPerDay = 60*60*24
@@ -107,7 +110,12 @@ class CentralManager:
 		    if (now-creationDate)/secsPerDay < 14:
                         phedexSets[dset].setCustodial(site,1)
 		else:
-		    phedexSets[dset].setCustodial(site,1)
+		    if 'MINIAOD' not in dset and phedexSets[dset].group(site) == 'AnalysisOps':
+			#if 'USER' in dset or 'RECO' in dset or self.phedexHandler.isGlobalyLocked(dset):
+			 #   pass
+			#else:
+			#    mislocked[dset] = 1
+		        phedexSets[dset].setCustodial(site,1)
 
 	    if self.phedexHandler.isGlobalyLocked(dset):
                 phedexSets[dset].setCustodialAll(1)
@@ -284,6 +292,7 @@ class CentralManager:
            self.dataPropers[datasetName].setTrueNfiles(trueNfiles)
            self.dataPropers[datasetName].setFullOnTape(fullOnTape)
            self.dataPropers[datasetName].setDaysSinceUsed(daysago)
+	   self.dataPropers[datasetName].setGlobalRank(rank)
            for site in onSites:
                isDeprecated = self.deprecatedHandler.isDeprecated(datasetName,site)
                size = phedexSets[datasetName].size(site)
@@ -330,6 +339,8 @@ class CentralManager:
        while oneMoreIteration:
            oneMoreIteration = False
            for site in sorted(self.allSites.keys()):
+	       if site == 'T2_CH_CERN':
+		   continue
                if self.allSites[site].getStatus() == 0:
                    continue
                sitePr = self.sitePropers[site]
@@ -339,7 +350,7 @@ class CentralManager:
                        oneMoreIteration = True
                        break
            if oneMoreIteration:
-               if totalIters > 10 :
+               if totalIters > 200 :
                    oneMoreIteration = False
                    break
                print " Iterating unifying deletion lists"
@@ -388,6 +399,14 @@ class CentralManager:
             self.sitePropers[site].makeWishList(self.dataPropers,ncopyMin,banInvalid)
 
         for datasetName in self.dataPropers:
+	    if phedexGroup == 'AnalysisOps':
+		if '/MINIAOD' in datasetName:
+		    ncopyMinTemp = 3
+		else:
+		    ncopyMinTemp = ncopyMin 
+	    else:
+		    ncopyMinTemp = ncopyMin
+
             dataPr = self.dataPropers[datasetName]
             countWishes = 0
             for site in self.sitePropers:
@@ -402,7 +421,7 @@ class CentralManager:
                     nGoodCopies = nGoodCopies + 1
 
             #if dataPr.nSites()-dataPr.nBeDeleted() - countWishes > (ncopyMin-1):
-            if dataPr.kickFromPool or nGoodCopies-dataPr.nBeDeleted() - countWishes > (ncopyMin-1):
+            if dataPr.kickFromPool or nGoodCopies-dataPr.nBeDeleted() - countWishes > (ncopyMinTemp-1):
                 # grant wishes to all sites
                 for site in self.sitePropers.keys():
                     sitePr = self.sitePropers[site]
@@ -420,12 +439,12 @@ class CentralManager:
                         sitePr = self.sitePropers[site]
                         if sitePr.pinDataset(datasetName):
                             nprotected = nprotected + 1
-                            if nprotected >= ncopyMin :
+                            if nprotected >= ncopyMinTemp :
                                 break
 
                     #here could not find last copy site
                     #need to remove this dataset from all sites
-                    if nprotected < ncopyMin:
+                    if nprotected < ncopyMinTemp:
                         for site in dataPr.mySites():
                             sitePr = self.sitePropers[site]
                             sitePr.revokeWish(datasetName)
@@ -656,7 +675,7 @@ class CentralManager:
         totalSets = 0
         totalTrueSize = 0
         totalDiskSize = 0
-        outputFile = open(os.environ['DETOX_DB'] + "/IncompleteSummary.txt",mode)
+        outputFile = open(os.environ['DETOX_DB'] + "/StuckSetsSummary.txt",mode)
         if mode == 'w':
             outputFile.write('#- ' + today + " " + ttime + "\n\n")
             outputFile.write("#- I N C O M P L E T E  D A T A S E T S ----\n\n")
@@ -675,7 +694,8 @@ class CentralManager:
                     continue
             for dset in sitePr.allSets():
                 dataPr = self.dataPropers[dset]
-                if sitePr.isPartial(dset):
+                #if sitePr.isPartial(dset):
+		if sitePr.dsetIsStuck(dset):
                     delta = dataPr.getTrueSize() - sitePr.dsetSize(dset)
                     incompleteSpace = incompleteSpace + delta
                     trueSize = trueSize + dataPr.getTrueSize()/1000
@@ -764,7 +784,7 @@ class CentralManager:
             outputFile.write("Total Space      [TB]: %8.2f\n"%(sitePr.siteSizeGb()/1000))
             outputFile.write("Space Used       [TB]: %8.2f\n"%(sitePr.spaceTaken()/1000))
             outputFile.write("Space to delete  [TB]: %8.2f\n"%(sitePr.spaceDeleted()/1000))
-            outputFile.write("Space last CP    [TB]: %8.2f\n"%(sitePr.spaceLastCp()/1000))
+            outputFile.write("Space last CP    [TB]: %8.2f\n"%(sitePr.spaceUtouchable()/1000))
             outputFile.write("Space deprecated [TB]: %8.2f\n"%(sitePr.spaceDeprecated()/1000))
             outputFile.write("Incomplete data  [TB]: %8.2f\n"%(sitePr.spaceIncomplete()/1000))
             outputFile.close()
@@ -886,26 +906,26 @@ class CentralManager:
         for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
             theSite = self.allSites[site]
             active = theSite.getStatus()
-            if active == 0: 
+            if active == 0 or active ==2 : 
                 continue
 
             sitePr = self.sitePropers[site]
             (speed,volume,stuck) = sitePr.getDownloadStats()
             nstuckAtSite[site] = int(stuck)
         stmean,strms = self.getMeanValue(nstuckAtSite,3,0.5)
-        # set status=2 to all sites that are above 3xrms threshold
+        # set status=2 to all sites that are above 4xrms threshold
         changingStatus = {}
         for site in sorted(self.allSites):
             theSite = self.allSites[site]
             if site.startswith("T1_"):
                 continue
             active = theSite.getStatus()
-            if active == 0: 
+            if active == 0 or active == 2: 
                 continue
 
             shouldBe = 1
-            if site in nstuckAtSite and abs(stmean -  nstuckAtSite[site]) > 3*strms:
-                if nstuckAtSite[site] > 4:
+            if site in nstuckAtSite and abs(stmean -  nstuckAtSite[site]) > 4*strms:
+                if nstuckAtSite[site] > 20:
                     shouldBe = 2
             if shouldBe != active:
                  print (" -- %-16s status changing: %1d --> %1d"%(site,active,shouldBe))
@@ -968,6 +988,7 @@ class CentralManager:
         for dset in sorted(deleteSets):
             if self.dataPropers[dset].kickFromPool:
                 continue
+	    if dset == '/WGJJToLNu_EWK_QCD_TuneCUETP8M1_13TeV-madgraph-pythia8/RunIIFall15DR76-PU25nsData2015v1_76X_mcRun2_asymptotic_v12-v1/AODSIM' : continue
 
             nlcopyNow = nlcopyAft = 0
             ncustdNow = ncustdAft = 0
@@ -1027,8 +1048,11 @@ class CentralManager:
         thisRequest = None
         for site in sorted(self.sitePropers.keys(), key=str.lower, reverse=False):
 
-            if site == 'T2_CH_CERN':
-                continue
+            #if site == 'T2_CH_CERN':
+	    #	if phedGroup == 'AnalysisOps':
+            #        continue
+	    #if site == 'T1_DE_KIT_Disk':
+	#	continue
             
 
             if self.allSites[site].getId() <  1:

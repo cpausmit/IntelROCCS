@@ -1,7 +1,0 @@
-#!/usr/bin/env bash
-
-if [ $# -eq 1 ]; then
-    python2.7 -m cuadrnt.core.miniaod_analysis "--log=$1"
-else
-    python2.7 -m cuadrnt.core.miniaod_analysis
-fi

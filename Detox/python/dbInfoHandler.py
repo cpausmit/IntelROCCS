@@ -245,11 +245,12 @@ class DbInfoHandler:
 
     def getDbConnection(self,db=os.environ.get('DETOX_SITESTORAGE_DB')):
         # configuration
-        server = os.environ.get('DETOX_SITESTORAGE_SERVER')
-        user = os.environ.get('DETOX_SITESTORAGE_USER')
-        pw = os.environ.get('DETOX_SITESTORAGE_PW')
+        #server = os.environ.get('DETOX_SITESTORAGE_SERVER')
+        #user = os.environ.get('DETOX_SITESTORAGE_USER')
+        #pw = os.environ.get('DETOX_SITESTORAGE_PW')
         # open database connection
-        connection = MySQLdb.connect(host=server,db=db, user=user,passwd=pw)
+        #connection = MySQLdb.connect(host=server,db=db, user=user,passwd=pw)
+   	connection = MySQLdb.connect(read_default_file="/etc/my.cnf",read_default_group="mysql-ddm",db="IntelROCCS")
         # prepare a cursor object using cursor() method
         return connection
 
