@@ -182,7 +182,9 @@ def findDatasetCreationTime(dataset,fileName,cTimes,debug=0):
     if dataset in cTimes:
         return cTimes[dataset]
     # query dbs
-    cmd = 'curl -k -H "Accept: application/json" --cert /home/snarayan/.globus/usercert.pem --key /home/snarayan/.globus/userkey.pem "https://cmsweb.cern.ch/dbs/prod/global/DBSReader/blocks?dataset=%s&detail=true"'%dataset
+    keypath = os.environ['USERKEY']
+    certpath = os.environ['USERCERT']
+    cmd = 'curl -k -H "Accept: application/json" --cert %s --key %s "https://cmsweb.cern.ch/dbs/prod/global/DBSReader/blocks?dataset=%s&detail=true"'%(dataset,certpath,keypath)
     for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
       payload = json.load(StringIO(line))
     creation = 0
