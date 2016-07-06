@@ -17,17 +17,18 @@ def getDbCursor():
     user = os.environ.get('DETOX_SITESTORAGE_USER')
     pw = os.environ.get('DETOX_SITESTORAGE_PW')
     # open database connection
-    db = MySQLdb.connect(host=server,db=db, user=user,passwd=pw)
+    db = MySQLdb.connect(read_default_file = '/etc/my.cnf', read_default_group = 'mysql-ddm', db = 'IntelROCCS')
     # prepare a cursor object using cursor() method
     return db.cursor()
 
-def getDatasetId(dataset):
+def getDatasetId(dataset,cursor=None):
     dbId = -1                          # initialize the id (-1 -> invalid)
     # get access to the database
-    cursor = getDbCursor()
+    if not cursor:
+      cursor = getDbCursor()
     sql = "select * from Datasets where DatasetName='" + dataset + "'"
     # go ahead and try
-    print sql
+    #print sql
     try:
         cursor.execute(sql)
         results = cursor.fetchall()
@@ -73,12 +74,12 @@ def addDatasetProperties(dbId,nFiles,sizeGb):
         return False
     return True
 
-def checkDatabase(dataset):
+def checkDatabase(dataset,cursor=None):
 
     nFiles = -1
     sizeGb = 0.
     # get access to the database
-    dbId = getDatasetId(dataset)
+    dbId = getDatasetId(dataset,cursor)
     if dbId==-1:
         print dataset,dbId
         if (addDataset(dataset)):
@@ -86,7 +87,7 @@ def checkDatabase(dataset):
         else:
             sys.stderr.write(" Error: Dataset %s addition failed.\n"%(dataset))
             sys.exit(1)
-        dbId = getDatasetId(dataset)
+        dbId = getDatasetId(dataset,cursor)
 
     # make sure we have a valid id to continue
     if dbId==-1:
@@ -94,7 +95,8 @@ def checkDatabase(dataset):
         sys.exit(3)
 
     # define sql
-    cursor = getDbCursor()
+    if not cursor:
+      cursor = getDbCursor()
     sql = "select * from DatasetProperties where DatasetId=" + str(dbId)
     print sql
     # go ahead and try
@@ -140,7 +142,7 @@ def convertSizeToGb(sizeTxt):
 #  M A I N
 #===================================================================================================
 
-def findDatasetProperties(dataset,short=False):
+def findDatasetProperties(dataset,short=False,cursor=None):
 
     debug = 0
 

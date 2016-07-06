@@ -210,7 +210,7 @@ def readDatasetCreationTimes(fileName,debug=0):
         return creationTimes
     dataFile = open(fileName,'r')
     for line in dataFile.readlines():
-        line=re.split('[ \n]',line)
+        line=re.split('[ \t\n]',line)
         try:
             creationTimes[line[0]] = int(line[1])
         except:
@@ -228,7 +228,10 @@ def getDbCursor():
     user = os.environ.get('DETOX_SITESTORAGE_USER')
     pw = os.environ.get('DETOX_SITESTORAGE_PW')
     # open database connection
-    db = MySQLdb.connect(host=server,db=db, user=user,passwd=pw)
+    print 'server="%s", db="%s", user="%s", passwd="%s"'%(server,db,user,pw)
+    #server='localhost'
+    db = MySQLdb.connect(read_default_file = '/etc/my.cnf', read_default_group = 'mysql-ddm', db = 'IntelROCCS')
+    #db = MySQLdb.connect(host=server,db=db, user=user,passwd=pw)
     # prepare a cursor object using cursor() method
     return db.cursor()
 
@@ -271,8 +274,13 @@ def calculateDatasetMovement(sitePattern,datasetSet,cTimes={}):
 
     # match the intervals from the phedex history to the requested time interval
     #===========================================================================
+    nDatasets = len(datasetSet)
+    datasetCounter=0
     for datasetName,datasetObject in datasetSet.iteritems():
         # don't penalize a dataset for not existing
+        if datasetCounter%10000==0:
+          print datasetCounter,'/',nDatasets
+        datasetCounter += 1
         cTime = findDatasetCreationTime(datasetName,creationTimeCache,cTimes)
         datasetObject.cTime = cTime
         datasetMovement = datasetObject.movement
@@ -431,10 +439,12 @@ for line in phedexFile:
 print "Phedex Size: ",phedexSize
 getJsonFile("del",genesis) # all deletions
 # remove blacklisted datasets
+print 'removing blacklist...'
 blacklistFile = open(os.environ.get('MONITOR_DB')+'/datasets/blacklist.log','r')
 blacklistSet = set(map(lambda x : x.split()[0], list(blacklistFile)))
 removeByKey(datasetSet,blacklistSet)
 
+print 'analyzing accesses...'
 for fileName in sorted(files):
     if debug>0:
         print ' Analyzing: ' + fileName
@@ -459,6 +469,7 @@ for fileName in sorted(files):
         except KeyError:
             pass
 
+print 'analyzing unaccessed datasets...'
 # --------------------------------------------------------------------------------------------------
 # add all datasets that are in phedex but have never been used
 # --------------------------------------------------------------------------------------------------
@@ -521,17 +532,20 @@ pickleDict["nSiteAccess"] = nSiteAccess
 # --------------------------------------------------------------------------------------------------
 # create summary information and potentially print the contents
 # --------------------------------------------------------------------------------------------------
+print 'checking dataset history...'
 nAll = 0
 nAllAccess = 0
 sizeTotalGb = 0.
 nFilesTotal = 0
 findDatasetHistoryAll(genesis)
+
+print 'checking dataset properties...'
 counter=0
 for key in datasetSet:
     counter+=1
     if sizeAnalysis:
         if not key in fileNumbers:
-            print counter
+            print counter,'/',len(datasetSet)
             # update the dataset properties
             (nFiles,sizeGb) = findDatasetSize(key)
             # add to our memory
@@ -556,8 +570,10 @@ for d in fileNumbers:
 
 
 # load creation time cache
+print 'checking creation times...'
 creationTimes=readDatasetCreationTimes(creationTimeCache)
 # figure out properly the movement of the datasets
+print 'calculating movement...'
 calculateDatasetMovement(siterx,datasetSet,creationTimes)
 
 for k,v in datasetSet.iteritems():

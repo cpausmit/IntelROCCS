@@ -55,8 +55,11 @@ do
     #stdbuf -o0 -e0 $MONITOR_BASE/monitor.sh                            >> $logFile 2>&1
 
     # ensure that the log information is updated (WARNING - hardwired, need something more general)
-    rsync -Cavz --delete /local/cmsprod/IntelROCCS/Monitor \
+    # do NOT copy massive caches into web area
+    rsync -ClptgoDvz --delete /local/cmsprod/IntelROCCS/Monitor \
                          /home/cmsprod/public_html/IntelROCCS >& /dev/null
+    rsync -ClptgoDvz --delete /local/cmsprod/IntelROCCS/Monitor/xls \
+                         /home/cmsprod/public_html/IntelROCCS/xls >& /dev/null
     # make pickle info available on web
     rsync -Cavz --delete /local/cmsprod/IntelROCCS/Monitor/monitorCacheAll.pkl \
                          /local/IntelROCCSplots/ >& /dev/null

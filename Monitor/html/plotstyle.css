@@ -22,3 +22,7 @@ a:hover {
 th {
   text-align: right;
 }
+
+th#left {
+  text-align: left;
+}
