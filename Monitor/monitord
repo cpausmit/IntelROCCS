@@ -56,10 +56,10 @@ do
 
     # ensure that the log information is updated (WARNING - hardwired, need something more general)
     # do NOT copy massive caches into web area
-    rsync -ClptgoDvz --delete /local/cmsprod/IntelROCCS/Monitor \
-                         /home/cmsprod/public_html/IntelROCCS >& /dev/null
-    rsync -ClptgoDvz --delete /local/cmsprod/IntelROCCS/Monitor/xls \
-                         /home/cmsprod/public_html/IntelROCCS/xls >& /dev/null
+    rsync -ClptgoDvzd  /local/cmsprod/IntelROCCS/Monitor/ \
+                         /home/cmsprod/public_html/IntelROCCS/Monitor/ >& /dev/null
+    rsync -ClptgoDvzd /local/cmsprod/IntelROCCS/Monitor/xls/ \
+                         /home/cmsprod/public_html/IntelROCCS/Monitor/xls/ >& /dev/null
     # make pickle info available on web
     rsync -Cavz --delete /local/cmsprod/IntelROCCS/Monitor/monitorCacheAll.pkl \
                          /local/IntelROCCSplots/ >& /dev/null

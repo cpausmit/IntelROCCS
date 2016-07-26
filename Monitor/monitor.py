@@ -149,4 +149,5 @@ while notDone:
 with open(os.environ['MONITOR_WEB']+'/xls.html','w') as outhtml:
     for line in oldlines:
         outhtml.write(line)
+system('cp %s/xls.html %s/xls.html'%(os.environ['MONITOR_WEB'],os.environ['MONITOR_DB']))
 
