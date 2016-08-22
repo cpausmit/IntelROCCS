@@ -407,7 +407,6 @@ def makeActualPlots(sitePattern,start,end,jarFile,crbLabel='',rootFile='',makeSu
     cCRB = ROOT.TCanvas("c2","c2",800,800)
     cZeroOne = ROOT.TCanvas("c3","c3",800,800)
     cTime = ROOT.TCanvas("c4","c4",800,800)
-    txtfile = open(os.environ['MONITOR_PLOTTEXT']+'.txt','w')
     for datasetName,datasetObject in datasetSet.iteritems():
         if datasetObject.cTime>end:
           continue
@@ -435,7 +434,6 @@ def makeActualPlots(sitePattern,start,end,jarFile,crbLabel='',rootFile='',makeSu
                     fillValue = 0
                 else:
                     fillValue = -1
-            txtfile.write('%10f %20s %s\n'%(timeOnSite,siteName,datasetName))
             weight = float(sizeGB * timeOnSite)/1000.
     #        print datasetObject
     #        print fillValue,weight
@@ -452,7 +450,6 @@ def makeActualPlots(sitePattern,start,end,jarFile,crbLabel='',rootFile='',makeSu
     except KeyError:
         pass
 
-    txtfile.close()
     if crbLabel!='':
         print 'Updating',rootFile
         fSave = ROOT.TFile(rootFile,'UPDATE')

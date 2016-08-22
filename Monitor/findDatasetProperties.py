@@ -161,7 +161,7 @@ def findDatasetProperties(dataset,short=False,cursor=None):
             + '/das_client.py --format=plain --limit=0 --query="file dataset=' \
             + dataset + ' | sum(file.size), count(file.name)" | sort -u'
         # if debug>-1:
-#        sys.stdout.write(' CMD: ' + cmd+"\n")
+        sys.stdout.write(' CMD: ' + cmd+"\n")
         nFiles = 0
         sizeGb = 0.
         try:
