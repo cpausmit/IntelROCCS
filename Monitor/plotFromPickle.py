@@ -100,15 +100,21 @@ def calculateAverageNumberOfSites(sitePattern,datasetSet,fullStart,end,datasetPa
     # match the intervals from the phedex history to the requested time interval
     #===========================================================================
     for datasetName,datasetObject in datasetSet.iteritems():
+        verb = (datasetName=='/GluGluZH_HToWW_M120_13TeV_powheg_pythia8/RunIIFall15MiniAODv1-PU25nsData2015v1_76X_mcRun2_asymptotic_v12-v1/MINIAODSIM')
 
         if not re.match(datasetPattern,datasetName):
             continue
             
         # don't penalize a dataset for not existing
         cTime = datasetObject.cTime
-        start = max(fullStart,cTime)
+        #start = max(fullStart,cTime)
+        start = fullStart
 
         interval = end - start
+
+        if verb:
+          print fullStart,end,start,cTime,interval
+          
         if not datasetName in nSites:
             nSites[datasetName] = 0
             timeOnSites[datasetName] = {}
@@ -120,6 +126,10 @@ def calculateAverageNumberOfSites(sitePattern,datasetSet,fullStart,end,datasetPa
 
             xfers = movement[0]
             dels = movement[1]
+            if verb:
+              print siteName
+              print '\t',xfers
+              print '\t',dels
             lenXfer = len(xfers)
             lenDel  = len(dels)
             if lenDel == lenXfer - 1:
@@ -150,8 +160,11 @@ def calculateAverageNumberOfSites(sitePattern,datasetSet,fullStart,end,datasetPa
                     siteSum += float(tDel - tXfer)/float(interval)
                 else:                                            # have ensured tXfer > tDel
                     continue
-            timeOnSites[datasetName][siteName] += siteSum
-            nSites[datasetName] += siteSum
+            if verb:
+              print '\t',siteSum
+            if siteSum>0:
+              timeOnSites[datasetName][siteName] += siteSum
+              nSites[datasetName] += siteSum
 
     n     = 0
     nSkip =  0
@@ -381,7 +394,7 @@ def makeActualPlots(sitePattern,start,end,jarFile,crbLabel='',rootFile='',makeSu
     ROOT.gPad.SetLogy(0) 
     hCRB = ROOT.TH1F("CRBUsage","Data Usage",17,-1.5,15.5)
     hZeroOne = ROOT.TH1F("CRBZeroOne","Zero and One Bin",100,0,1.);
-    hTime = ROOT.TH1F("time","time",100,0,1.);
+    hTime = ROOT.TH1F("time","time",100,-0.1,1.1);
     if not rc:
         ROOT.MitRootStyle.InitHist(hCRB,"","",kBlack) 
         ROOT.MitRootStyle.InitHist(hZeroOne,"","",kBlack) 
@@ -394,6 +407,7 @@ def makeActualPlots(sitePattern,start,end,jarFile,crbLabel='',rootFile='',makeSu
     cCRB = ROOT.TCanvas("c2","c2",800,800)
     cZeroOne = ROOT.TCanvas("c3","c3",800,800)
     cTime = ROOT.TCanvas("c4","c4",800,800)
+    txtfile = open(os.environ['MONITOR_PLOTTEXT']+'.txt','w')
     for datasetName,datasetObject in datasetSet.iteritems():
         if datasetObject.cTime>end:
           continue
@@ -421,6 +435,7 @@ def makeActualPlots(sitePattern,start,end,jarFile,crbLabel='',rootFile='',makeSu
                     fillValue = 0
                 else:
                     fillValue = -1
+            txtfile.write('%10f %20s %s\n'%(timeOnSite,siteName,datasetName))
             weight = float(sizeGB * timeOnSite)/1000.
     #        print datasetObject
     #        print fillValue,weight
@@ -428,8 +443,7 @@ def makeActualPlots(sitePattern,start,end,jarFile,crbLabel='',rootFile='',makeSu
             hCRB.Fill(fillValue,weight)
             if (fillValue == 0) or (fillValue == 1):
                 hZeroOne.Fill(value,weight)
-            if timeOnSite:
-                hTime.Fill(timeOnSite,sizeGB/1000.)
+            hTime.Fill(timeOnSite,sizeGB/1000.)
     try:
         histColor = os.environ['MONITOR_COLOR']
         hCRB.SetLineColor(histColor)
@@ -438,11 +452,13 @@ def makeActualPlots(sitePattern,start,end,jarFile,crbLabel='',rootFile='',makeSu
     except KeyError:
         pass
 
+    txtfile.close()
     if crbLabel!='':
         print 'Updating',rootFile
         fSave = ROOT.TFile(rootFile,'UPDATE')
         histName = 'h_'+os.environ['MONITOR_PLOTTEXT']
         fSave.WriteTObject(hCRB,histName,"Overwrite")
+        fSave.WriteTObject(hTime,histName+'_time','Overwrite')
         fSave.Close()
 
     xaxis = hCRB.GetXaxis()

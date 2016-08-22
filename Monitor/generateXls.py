@@ -65,11 +65,11 @@ for k in keys:
 
 user = os.environ['USER']
 
-tree.write('/tmp/%s/xlstempl/xl/worksheets/sheet2.xml'%user)
+tree.write('/tmp/xlstempl/xl/worksheets/sheet2.xml')
 
-os.system('cd /tmp/%s/xlstempl/; find . -type f | xargs zip new.xlsx; cd -'%user)
+os.system('cd /tmp/xlstempl/; find . -type f | xargs zip new.xlsx; cd -')
 
-mvcmd = 'mv /tmp/%s/xlstempl/new.xlsx %s/xls/%s.xlsx'%(user,monitordb,label)
+mvcmd = 'mv /tmp/xlstempl/new.xlsx %s/xls/%s.xlsx'%(monitordb,label)
 print mvcmd
 os.system(mvcmd)
 
