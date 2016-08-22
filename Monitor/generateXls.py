@@ -33,10 +33,14 @@ def getRow(histName):
     iM = 2
   return rows[tier][iM]
 
-os.system('rm -rf /tmp/%s/xlstempl/'%(os.environ['USER']))
-os.system('cp -r %s/templ/ /tmp/%s/xlstempl'%(monitorbase,os.environ['USER']))
 
-tree = ET.parse('/tmp/%s/xlstempl/xl/worksheets/sheet2.xml'%(os.environ['USER']))
+user = os.environ['USER']
+
+os.system('mkdir -p /tmp/%s/'%user)
+os.system('rm -rf /tmp/%s/xlstempl/'%(user))
+os.system('cp -r %s/templ/ /tmp/%s/xlstempl'%(monitorbase,user))
+
+tree = ET.parse('/tmp/%s/xlstempl/xl/worksheets/sheet2.xml'%(user))
 root = tree.getroot()
 
 cells = {}
@@ -63,13 +67,11 @@ for k in keys:
     cell.text = str(val)
     cell.set('updated','yes')
 
-user = os.environ['USER']
+tree.write('/tmp/%s/xlstempl/xl/worksheets/sheet2.xml'%user)
 
-tree.write('/tmp/xlstempl/xl/worksheets/sheet2.xml')
+os.system('cd /tmp/%s/xlstempl/; find . -type f | xargs zip new.xlsx; cd -'%user)
 
-os.system('cd /tmp/xlstempl/; find . -type f | xargs zip new.xlsx; cd -')
-
-mvcmd = 'mv /tmp/xlstempl/new.xlsx %s/xls/%s.xlsx'%(monitordb,label)
+mvcmd = 'mv /tmp/%s/xlstempl/new.xlsx %s/xls/%s.xlsx'%(user,monitordb,label)
 print mvcmd
 os.system(mvcmd)
 
