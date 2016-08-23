@@ -62,7 +62,7 @@ for k in keys:
   for iB in xrange(1,hist.GetNbinsX()+1):
     column = ascii_uppercase[iB]
     val = hist.GetBinContent(iB)
-    # print name,iB,val
+    # print iB,column,val,name,row
     cell = cells['%s%i'%(column,row)]
     cell.text = str(val)
     cell.set('updated','yes')

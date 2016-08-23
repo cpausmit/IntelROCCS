@@ -186,9 +186,13 @@ def findDatasetCreationTime(dataset,fileName,cTimes,debug=0):
     keypath = os.environ['USERKEY']
     certpath = os.environ['USERCERT']
     cmd = 'curl -k -H "Accept: application/json" --cert %s --key %s "https://cmsweb.cern.ch/dbs/prod/global/DBSReader/blocks?dataset=%s&detail=true"'%(certpath,keypath,dataset)
-    print cmd
+    payload = None
     for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
       payload = json.load(StringIO(line))
+      try:
+        payload = json.load(StringIO(line))
+      except ValueError:
+        return genesis
     creation = 0
     for block in payload:
       creation = max(creation,block['creation_date'])
@@ -199,28 +203,6 @@ def findDatasetCreationTime(dataset,fileName,cTimes,debug=0):
           dataFile.write("%s %i\n"%(dataset,creation))
       cTimes[dataset] = creation
       return creation
-    #return genesis
-    '''
-    cmd = os.environ.get('MONITOR_BASE') + \
-        '/das_client.py --format=plain --limit=0 --query="dataset=' + dataset + \
-        ' | grep dataset.creation_time " '
-    print cmd
-    for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
-        try:
-            cTime = time.mktime(time.strptime(line,'%Y-%m-%d %H:%M:%S\n'))
-            with open(fileName,'a') as dataFile:
-                dataFile.write("%s %i\n"%(dataset,cTime))
-            cTimes[dataset] = cTime
-            return cTime
-        except ValueError:
-            # bad response; assume it was always there
-            print line
-            cTime = genesis
-            with open(fileName,'a') as dataFile:
-                dataFile.write("%s %i\n"%(dataset,cTime))
-            cTimes[dataset] = cTime
-            return cTime
-    '''
 
 def readDatasetCreationTimes(fileName,debug=0):
     # read the creation time for each dataset from a given file

@@ -455,7 +455,7 @@ def makeActualPlots(sitePattern,start,end,jarFile,crbLabel='',rootFile='',makeSu
         fSave = ROOT.TFile(rootFile,'UPDATE')
         histName = 'h_'+os.environ['MONITOR_PLOTTEXT']
         fSave.WriteTObject(hCRB,histName,"Overwrite")
-        fSave.WriteTObject(hTime,histName+'_time','Overwrite')
+        # fSave.WriteTObject(hTime,histName+'_time','Overwrite')
         fSave.Close()
 
     xaxis = hCRB.GetXaxis()
