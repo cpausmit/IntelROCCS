@@ -1,156 +1,218 @@
-#!/usr/bin/python
-'''
-Wrapper script that reads the binaries and makes the standard plots
-'''
+#!/usr/bin/env python
 
 import os
-import sys
-import time
-import plotFromPickle
+import re, glob, time, json, pprint
 import cPickle as pickle
-genesis=1378008000
-nowish = time.time()
+import multiprocessing as mp
 
-# remove old log files
-logPeriod = int((nowish/1000000)%10)
-logBlock = int((nowish/10000000))
-monitordb = os.environ['MONITOR_DB']
-os.system('rm -f $MONITOR_DB/monitor-%i[^%i%i]*'%(logBlock,logPeriod,logPeriod-1))
+from Dataset import Dataset,Request
+import dynamoDB
+import requestParse
+import getRequests
+import plotFromPickle
+import generateXls
 
-def addTime(timeStruct,addTuple):
-    '''
-        take timeStruct and add (y,m) in addTuple
-        return properly formatted timeStruct
-        will add day functionality later
-    '''
-    _year = timeStruct.tm_year
-    _month = timeStruct.tm_mon
-    _year=_year+addTuple[0]
-    if addTuple[1] < 0 and _month < -addTuple[1]:
-        _year -= 1
-    elif addTuple[1] > 0 and month + addTuple[1] > 12:
-        _year += 1
-    _month = (_month + addTuple[1])%12
-    if _month==0:
-      _month=12
-    return time.strptime("%i-%.2i-%.2i %.2i:%.2i:%.2i"%(_year,
-                                                       _month,
-                                                       timeStruct.tm_mday,
-                                                       timeStruct.tm_hour,
-                                                       timeStruct.tm_min,
-                                                       timeStruct.tm_sec),
-                            "%Y-%m-%d %H:%M:%S")
-print " STARTING "
-daysInMonth = [-1,31,28,31,30,31,30,31,31,30,31,30,31]
-currentDate = time.gmtime()
+if __name__=="__main__":
 
-currentYear = currentDate.tm_year
-currentMonth = currentDate.tm_mon
-currentDay = currentDate.tm_mday
+    # global config
+    class Stopwatch():
+        def __init__(self):
+            self.start = time.time()
+        def report(self):
+            now = time.time()
+            print '=> %.2f seconds elapsed'%(now-self.start)
+            self.start = now
+     
+    repl = { 'X' : '.*' , '12' : '[12]' } # used for messing with regexes
+    def fix_regex(s):
+        for k,v in repl.iteritems():
+            s = s.replace(k,v)
+        return s
 
-DDMPattern = '(?!/_/_/USER_)'
-DDMGroup = 'AnalysisOps'
-DDMTimeStamps = [
-                (genesis,nowish),
-                (time.mktime(time.strptime('%i-01-01'%(currentYear-1),'%Y-%m-%d')), time.mktime(time.strptime('%i-12-31'%(currentYear-1),'%Y-%m-%d'))),
-                (time.mktime(time.strptime('%i-01-01'%(currentYear),'%Y-%m-%d')), time.time()),
-                (time.mktime(addTime(time.gmtime(),(0,-3))), time.time())
-                ]
-DDMLabels = ["SummaryAll", "SummaryLastYear", "SummaryThisYear","Last3Months"]
+    monitor_db = os.getenv('MONITOR_DB')
+    os.system('mkdir -p %s/requests/'%monitor_db)
 
-os.environ['MONITOR_PATTERN'] = DDMPattern
-os.environ['MONITOR_GROUP'] = DDMGroup
+    dataset_pattern = os.getenv('MONITOR_DATASETS')
+    site_pattern = os.getenv('MONITOR_SITES')
+    dataset_regex = fix_regex(dataset_pattern)
+    site_regex = fix_regex(site_pattern)
 
-os.system('./readJsonSnapshotPickle.py T2*')
-os.system('./plotFromPickle.py T2* %s'%('${MONITOR_DB}/monitorCache${MONITOR_GROUP}.pkl'))
+    refresh_cache = int(os.getenv('REFRESH_CACHE'))
+    refresh_pickle = os.getenv('REFRESH_PICKLE')
+    if refresh_pickle:
+        refresh_pickle = int(refresh_pickle)
+    else:
+        refresh_pickle = 1
+    refresh_plots = os.getenv('REFRESH_PLOTS')
+    if refresh_plots:
+        refresh_plots = int(refresh_plots)
+    else:
+        refresh_plots = 1
 
-for i in range(len(DDMTimeStamps)):
-    os.environ['MONITOR_PLOTTEXT'] = DDMLabels[i]
-    timeStamp = DDMTimeStamps[i]
-    os.system('./plotFromPickle.py T2* %i %i %s'%( timeStamp[0], timeStamp[1], '${MONITOR_DB}/monitorCache${MONITOR_GROUP}.pkl' ))
-### DataOps
+    NPROC = os.getenv('MONITOR_THREADS') # do NOT use >1 thread in prod
+    NPROC = int(NPROC) if NPROC else 1
+
+    genesis=1378008000
+    nowish = time.time()
+    sPerYear = 365*24*60*60
 
 
-DataOpsGroup = 'DataOps'
+    ### MAIN ### 
 
-os.environ['MONITOR_PATTERN'] = DDMPattern
-os.environ['MONITOR_GROUP'] = DataOpsGroup
-os.system('./readJsonSnapshotPickle.py T2*')
+    ### CATALOGING ###
+    datasets = None
+    sw = Stopwatch()
 
-for i in range(len(DDMTimeStamps)):
-    os.environ['MONITOR_PLOTTEXT'] = DDMLabels[i]
-    timeStamp = DDMTimeStamps[i]
-    os.system('./plotFromPickle.py T2* %i %i %s'%( timeStamp[0], timeStamp[1], '${MONITOR_DB}/monitorCache${MONITOR_GROUP}.pkl' ))
+    if refresh_pickle:
+        print 'Building the request history cache'
+        # build the request history
+        if refresh_cache:
+            existing = glob.glob('%s/requests/requests_*json'%(monitor_db))
+            last = max([int(x.split('/')[-1]
+                             .replace('.json','')
+                             .replace('requests_transfer_','')
+                             .replace('requests_delete_',''))
+                        for x in existing])
+            for rt in ['transfer','delete']:
+                os.system('rm -f %s/requests/requests_%s_%i.json/'%(monitor_db,rt,last)) # always refresh the last one
+                for i in xrange(last,last+20): # unlikely to have 20*100 new requests in the last cycle
+                    getRequests.request(which=rt,idx=i,nper=100,outdir=monitor_db+'/requests/')
+            
+
+        print 'Loading interesting datasets'
+        # load all interesting datasets
+        cursor = dynamoDB.getDbCursor()
+        table_dump = dynamoDB.getDatasetsAndProps(cursor)
+        datasets = {}
+        for name,nfiles,size,dt in table_dump:
+            if not re.match(dataset_regex,name.split('/')[-1]):
+                continue
+            ds = Dataset(name)
+            ds.nFiles = int(nfiles)
+            ds.sizeGB = size/(10.**9)
+            ds.cTime = time.mktime(dt.timetuple())
+            datasets[name] = ds
+
+        sw.report()
+        print 'Considering %i relevant datasets'%(len(datasets))
+
+        print 'Importing transfer history'
+        # import phedex history
+        pool = mp.Pool(processes=NPROC)
+        all_transfers = pool.map(requestParse.parseTransfer, 
+                                     glob.glob(monitor_db+'/requests/requests_transfer_*.json'))
+        for reqs in all_transfers:
+            for d in reqs:
+                if not d in datasets:
+                    continue
+                for t,s in reqs[d]:
+                    if not re.match(site_regex,s):
+                        continue
+                    datasets[d].addTransfer(s,t)
+        sw.report()
+
+        print 'Importing deletion history'
+        all_deletions = pool.map(requestParse.parseDeletion, 
+                                     glob.glob(monitor_db+'/requests/requests_delete_*.json'))
+        for reqs in all_deletions:
+            for d in reqs:
+                if not d in datasets:
+                    continue
+                for t,s in reqs[d]:
+                    if not re.match(site_regex,s):
+                        continue
+                    datasets[d].addDeletion(s,t)
+        sw.report()
+
+        print 'Sorting history'
+        # organize the history
+        for name,d in datasets.iteritems():
+            d.sortRequests()
+        sw.report()
+
+        print 'Importing CRAB+xrootd accesses'
+        # import access history
+        all_accesses = dynamoDB.getDatasetsAccesses(cursor)
+        for name,node,dt,n in all_accesses:
+            if name not in datasets:
+                continue
+            if not re.match(site_regex,node):
+                continue
+            timestamp = time.mktime(dt.timetuple())
+            datasets[name].addAccesses(node,n,timestamp)
+        sw.report()
+
+        print 'Exporting to pickle'
+
+        pickleJar = open('monitorCache_'+ site_pattern + '_' + dataset_pattern + '.pkl',"wb")
+        pickle.dump(datasets,pickleJar,2) 
+        pickleJar.close() 
+        sw.report()
 
 
-''' CRB-style plots '''
+    # after everything is done, draw plots
+    if refresh_plots:
+        if not datasets:
+            datasets = pickle.load(open('monitorCache_'+ site_pattern + '_' + dataset_pattern + '.pkl',"rb"))
 
-CRBPattern = '/_/_/_AOD_|/_/_/RECO$'
-CRBPatterns = ['/_/_/RECO$', '/_/_/_AOD$', '/_/_/_AODSIM', '/_/_/_AOD_','/_/_/MINIAOD_']
-CRBPatternLabels = ['RECO', 'AOD', 'AODSIM', 'AllAOD','MINIAOD']
-#CRBPattern = '/_/_/_AOD_'
-#CRBPatterns = ['/_/_/_AOD$', '/_/_/_AODSIM', '/_/_/_AOD_','/_/_/MINIAOD_']
-#CRBPatternLabels = ['AOD', 'AODSIM', 'AllAOD','MINIAOD']
-CRBGroup = '_'
-CRBTimeStamps = []
-CRBLabels = ["CRBSummary12Months","CRBSummary6Months","CRBSummary3Months"]
-os.environ['MONITOR_PATTERN'] = CRBPattern
-os.environ['MONITOR_GROUP'] = CRBGroup
-os.system('./readJsonSnapshotPickle.py T[12]*')
+        plot_site_patterns = ['T1_X','T2_X','T12X']
 
-def stampToString(stamp):
-    return time.strftime('%Y-%m-%d',time.gmtime(stamp))
+        if 'AOD' in dataset_pattern:
+            plot_dataset_patterns = ['XAODX','MINIAODX','XAODSIM','XAOD']
+        else:
+            plot_dataset_patterns = ['RECO']
 
-with open(monitordb+'/monitorCacheAll.pkl','rb') as cachefile:
-    crbcache = pickle.load(cachefile)
+        intervals = [3,6,12]
+        last_day = [-1,31,28,31,30,31,30,31,31,30,31,30,31]
+        now = time.time()
+        date = time.gmtime(now)
+        end_dates = [date]
 
-def makeCRBPlots(endStamp,crbLabel):
-    CRBTimeStamps = []
-    for period in [12,6,3]:
-        startTime = endStamp - period*86400*30 # approximately 'period' number of months ago
-        CRBTimeStamps.append((startTime,endStamp))
-    os.system('rm -f ${MONITOR_DB}/monitorCacheAll_T12_%s.root'%(crbLabel))
-    os.system('rm -f ${MONITOR_DB}/monitorCacheAll_T2_%s.root'%(crbLabel))
-    os.system('rm -f ${MONITOR_DB}/monitorCacheAll_T1_%s.root'%(crbLabel))
-    for i in range(len(CRBTimeStamps)):
-        timeStamp = CRBTimeStamps[i]
-        for j in range(len(CRBPatterns)):
-            print '\n=========================\n',stampToString(timeStamp[0]),'-',stampToString(timeStamp[1]),'\n========================='
-            os.environ['MONITOR_PATTERN'] = CRBPatterns[j]
-            os.environ['MONITOR_PLOTTEXT'] = CRBLabels[i]+'_'+CRBPatternLabels[j]+'_'+crbLabel
-            print 'T1'; plotFromPickle.makeActualPlots('T1*',timeStamp[0],timeStamp[1],crbcache,'T1_'+crbLabel,'${MONITOR_DB}/monitorCacheAll_T1_%s.root'%(crbLabel)) 
-            print 'T2'; plotFromPickle.makeActualPlots('T2*',timeStamp[0],timeStamp[1],crbcache,'T2_'+crbLabel,'${MONITOR_DB}/monitorCacheAll_T2_%s.root'%(crbLabel)) 
-            print 'T[12]'; plotFromPickle.makeActualPlots('T[12]*',timeStamp[0],timeStamp[1],crbcache,'T12_'+crbLabel,'${MONITOR_DB}/monitorCacheAll_T12_%s.root'%(crbLabel)) 
-    os.system('./generateXls.py T12_%s ${MONITOR_DB}/monitorCacheAll_T12_%s.root'%(crbLabel,crbLabel))
-    os.system('./generateXls.py T2_%s ${MONITOR_DB}/monitorCacheAll_T2_%s.root'%(crbLabel,crbLabel))
-    os.system('./generateXls.py T1_%s ${MONITOR_DB}/monitorCacheAll_T1_%s.root'%(crbLabel,crbLabel))
+        year = 2015
+        month = 3
+        new_date = time.strptime('%i-%i-%i'%(year,month,last_day[month]),'%Y-%m-%d')
+        while new_date < date:
+            end_dates.append(new_date)
+            if month==12:
+                year += 1
+                month = 3
+            else:
+                month += 3
+            new_date = time.strptime('%i-%i-%i'%(year,month,last_day[month]),'%Y-%m-%d')
 
-makeCRBPlots(nowish,'current')
-iY=0
-notDone=True
-with open(os.environ['MONITOR_BASE']+'/html/xls.html','r') as inhtml:
-    oldlines = list(inhtml)
-while notDone:
-    year = 2015+iY
-    for month in [3,6,9,12]:
-        endStamp = time.mktime(time.strptime('%i-%i-%i'%(year,month,daysInMonth[month]),'%Y-%m-%d'))
-        if endStamp>nowish:
-            notDone = False
-            break
-        crblabel = 'ending_%4i-%.2i'%(year,month)
-        makeCRBPlots(endStamp,crblabel)
-        newlines = []
-        for line in oldlines:
-            newlines.append(line)
-            if '!--' in line:
-                newlines.append('  <tr>  <td> Ending %4i-%.2i </td> <td> <a href="xls/T1_%s.xlsx">T1_%s.xlsx</a> </td> <td> <a href="xls/T2_%s.xlsx">T2_%s.xlsx</a> </td> <td> <a href="xls/T12_%s.xlsx">T12_%s.xlsx</a></td> </tr>'%(year,month,crblabel,crblabel,crblabel,crblabel,crblabel,crblabel))
-        oldlines = newlines
-    iY += 1
-with open(os.environ['MONITOR_WEB']+'/xls.html','w') as outhtml:
-    for line in oldlines:
-        outhtml.write(line)
-with open(os.environ['MONITOR_DB']+'/xls.html','w') as outhtml:
-    for line in oldlines:
-        outhtml.write(line)
-os.system('cp %s/xls.html %s/xls.html'%(os.environ['MONITOR_WEB'],os.environ['MONITOR_DB']))
+        for plot_dataset_pattern in plot_dataset_patterns:
+            for plot_site_pattern in plot_site_patterns:
+                for end_date in end_dates:
+                    end = time.mktime(end_date)
+                    str_end_time = time.strftime('%Y-%m-%d',end_date)
+                    for interval in intervals:
+                        start = end - interval*86400*30
+                        plot_dataset_regex = fix_regex(plot_dataset_pattern)
+                        plot_site_regex = fix_regex(plot_site_pattern)
+                        plot_title = plot_site_pattern + '_' + plot_dataset_pattern
+                        label = '%s_%iMonths'%(plot_title,interval)
+                        crb_label = '%s_ending_%s'%(label,str_end_time)
+                        plotFromPickle.makeActualPlots(plot_site_regex,
+                                                       plot_dataset_regex,
+                                                       start,
+                                                       end,
+                                                       #'monitorCache_'+site_pattern+'_'+dataset_pattern+'.pkl',
+                                                       datasets,
+                                                       crb_label,
+                                                       label,
+                                                       plot_site_pattern+'_'+str_end_time+'.root',
+                                                       monitor_db)
+    
+            
+
+
+
+
+
+
+
+
+
+
+
 
