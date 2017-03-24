@@ -6,7 +6,7 @@
 #---------------------------------------------------------------------------------------------------
 # main directories
 
-export MONITOR_DB=${PWD}"/log/IntelROCCS/Monitor"
+export MONITOR_DB="/local/cmsprod/IntelROCCS/Monitor/"
 #export DETOX_DB=${PWD}"/log/IntelROCCS/Detox"
 
 export MONITOR_SITESTORAGE_SERVER="t3serv012.mit.edu"
@@ -26,7 +26,7 @@ export MONITOR_X509UP=/tmp/x509up_u5410
 
 # Local logging database config file
 
-export MONITOR_MYSQL_CONFIG=/etc/myIntelROCCS.cnf
+export MONITOR_MYSQL_CONFIG=/etc/my.cnf
 
 # Paths
 
