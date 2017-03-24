@@ -58,10 +58,10 @@ fi
 cp /usr/local/IntelROCCS/Monitor/sysv/monitord /etc/init.d/
 
 # copy html files
-cp ../IntelROCCS/Monitor/html/*html /home/cmsprod/public_html/IntelROCCS/Monitor
 cp ../IntelROCCS/Monitor/html/*html $MONITOR_DB
-cp ../IntelROCCS/Monitor/html/*css /home/cmsprod/public_html/IntelROCCS/Monitor
 cp ../IntelROCCS/Monitor/html/*css $MONITOR_DB
+chown ${INTELROCCS_USER}:${INTELROCCS_GROUP} -R $MONITOR_DB
+
 
 # start new server
 /etc/init.d/monitord status
