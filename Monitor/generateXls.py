@@ -104,7 +104,7 @@ for end_date in end_dates:
         str_end_time = 'today'
     else:
         str_end_time = time.strftime('%Y-%m-%d',end_date)
-    newlines.append('  <tr>  <td> Ending {0} </td> <td> <a href="xls/T1_{0}.xlsx">T1_X_{0}.xlsx</a> </td> <td> <a href="xls/T2_X_{0}.xlsx">T2_X_{0}.xlsx</a> </td> <td> <a href="xls/T12_X_{0}.xlsx">T12_X_{0}.xlsx</a></td> </tr> \n'.format(str_end_time))
+    newlines.append('  <tr>  <td> Ending {0} </td> <td> <a href="xls/T1_X_{0}.xlsx">T1_X_{0}.xlsx</a> </td> <td> <a href="xls/T2_X_{0}.xlsx">T2_X_{0}.xlsx</a> </td> <td> <a href="xls/T12_X_{0}.xlsx">T12_X_{0}.xlsx</a></td> </tr> \n'.format(str_end_time))
     for xls_site_pattern in xls_site_patterns:
         write_xls(xls_site_pattern+'_'+str_end_time,monitor_db,monitor_base+'/templ/')
 
