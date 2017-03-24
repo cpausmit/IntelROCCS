@@ -10,7 +10,6 @@ import dynamoDB
 import requestParse
 import getRequests
 import plotFromPickle
-import generateXls
 
 if __name__=="__main__":
 
@@ -51,6 +50,7 @@ if __name__=="__main__":
 
     NPROC = os.getenv('MONITOR_THREADS') # do NOT use >1 thread in prod
     NPROC = int(NPROC) if NPROC else 1
+    print NPROC
 
     genesis=1378008000
     nowish = time.time()
@@ -184,7 +184,15 @@ if __name__=="__main__":
             for plot_site_pattern in plot_site_patterns:
                 for end_date in end_dates:
                     end = time.mktime(end_date)
-                    str_end_time = time.strftime('%Y-%m-%d',end_date)
+                    if end_date == end_dates[0]:
+                        # always refresh the daily file
+                        str_end_time = 'today'
+                        root_label = plot_site_pattern+'_today'+'.root'
+                    else:
+                        str_end_time = time.strftime('%Y-%m-%d',end_date)
+                        root_label = plot_site_pattern+'_'+str_end_time+'.root'
+                        if os.path.isfile(monitor_db+'/'+root_label):
+                            continue
                     for interval in intervals:
                         start = end - interval*86400*30
                         plot_dataset_regex = fix_regex(plot_dataset_pattern)
@@ -200,19 +208,7 @@ if __name__=="__main__":
                                                        datasets,
                                                        crb_label,
                                                        label,
-                                                       plot_site_pattern+'_'+str_end_time+'.root',
+                                                       root_label,
                                                        monitor_db)
     
             
-
-
-
-
-
-
-
-
-
-
-
-

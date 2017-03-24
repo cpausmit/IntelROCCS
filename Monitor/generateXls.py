@@ -5,6 +5,7 @@ from ROOT import TH1F, TFile
 import os
 import xml.etree.ElementTree as ET
 from string import ascii_uppercase
+import time
 
 def getRow(histName):
     rows = {
@@ -15,8 +16,12 @@ def getRow(histName):
         'RECO' : [23,24,25]
     }
     ll = histName.split('_')
-    tier = ll[2]
-    period = ll[3]
+    if 'T12' in histName:
+        tier = ll[2]
+        period = ll[3]
+    else:
+        tier = ll[3]
+        period = ll[4]
     if '3Months' in period:
         iM = 0
     elif '6Months' in period:
@@ -25,7 +30,7 @@ def getRow(histName):
         iM = 2
     return rows[tier][iM]
 
-def write_xls(label,outdir,templdir)
+def write_xls(label,outdir,templdir):
     fIn = TFile(label+'.root')
 
     user = os.environ['USER']
@@ -52,7 +57,7 @@ def write_xls(label,outdir,templdir)
         try:
             row = getRow(name)
         except KeyError:
-            print name
+            print 'could not find',name
             continue
         for iB in xrange(1,hist.GetNbinsX()+1):
             column = ascii_uppercase[iB]
@@ -69,4 +74,45 @@ def write_xls(label,outdir,templdir)
     mvcmd = 'mv /tmp/%s/xlstempl/new.xlsx %s/xls/%s.xlsx'%(user,outdir,label)
     print mvcmd
     os.system(mvcmd)
+
+
+xls_site_patterns = ['T1_X','T2_X','T12X']
+monitor_db = os.getenv('MONITOR_DB')
+monitor_base = os.getenv('MONITOR_BASE')
+
+
+last_day = [-1,31,28,31,30,31,30,31,31,30,31,30,31]
+now = time.time()
+date = time.gmtime(now)
+end_dates = [date]
+
+year = 2015
+month = 3
+new_date = time.strptime('%i-%i-%i'%(year,month,last_day[month]),'%Y-%m-%d')
+while new_date < date:
+    end_dates.append(new_date)
+    if month==12:
+        year += 1
+        month = 3
+    else:
+        month += 3
+    new_date = time.strptime('%i-%i-%i'%(year,month,last_day[month]),'%Y-%m-%d')
+
+newlines = []
+for end_date in end_dates:
+    if end_date==end_dates[0]:
+        str_end_time = 'today'
+    else:
+        str_end_time = time.strftime('%Y-%m-%d',end_date)
+    newlines.append('  <tr>  <td> Ending {0} </td> <td> <a href="xls/T1_{0}.xlsx">T1_X_{0}.xlsx</a> </td> <td> <a href="xls/T2_X_{0}.xlsx">T2_X_{0}.xlsx</a> </td> <td> <a href="xls/T12_X_{0}.xlsx">T12_X_{0}.xlsx</a></td> </tr> \n'.format(str_end_time))
+    for xls_site_pattern in xls_site_patterns:
+        write_xls(xls_site_pattern+'_'+str_end_time,monitor_db,monitor_base+'/templ/')
+
+with open(monitor_base+'/html/xls.html','r') as inhtml:
+    with open(monitor_db+'/xls.html','w') as outhtml:
+        for line in inhtml:
+            outhtml.write(line)
+            if '!--' in line:
+                for newline in newlines:
+                    outhtml.write(newline)
 

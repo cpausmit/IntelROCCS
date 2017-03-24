@@ -60,14 +60,6 @@ do
                          /home/cmsprod/public_html/IntelROCCS/Monitor/ >& /dev/null
     rsync -ClptgoDvzd /local/cmsprod/IntelROCCS/Monitor/xls/ \
                          /home/cmsprod/public_html/IntelROCCS/Monitor/xls/ >& /dev/null
-    # make pickle info available on web
-    rsync -Cavz --delete /local/cmsprod/IntelROCCS/Monitor/monitorCacheAll.pkl \
-                         /local/IntelROCCSplots/ >& /dev/null
-    rsync -Cavz --delete /local/cmsprod/IntelROCCS/Monitor/monitorCacheAnalysisOps.pkl \
-                         /local/IntelROCCSplots/ >& /dev/null
-    rsync -Cavz --delete /local/cmsprod/IntelROCCS/Monitor/monitorCacheDataOps.pkl \
-                         /local/IntelROCCSplots/ >& /dev/null
-
 
     sleep $wait
   done

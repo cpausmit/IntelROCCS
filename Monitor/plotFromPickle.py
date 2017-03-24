@@ -114,6 +114,7 @@ def makeActualPlots(site_pattern,dataset_pattern,start,end,jar_file,crb_label,hi
     plotTText = [None,None]
     for i in range(1):
         plotTText[i] = ROOT.TText(.3,positions[i],integralTexts[i])
+        plotTText[i].SetNDC()
         plotTText[i].SetTextSize(0.04)
         plotTText[i].SetTextColor(2)
         plotTText[i].Draw()
@@ -124,6 +125,7 @@ def makeActualPlots(site_pattern,dataset_pattern,start,end,jar_file,crb_label,hi
     plotTText = [None,None]
     for i in range(1):
         plotTText[i] = ROOT.TText(.3,positions[i],integralTexts[i])
+        plotTText[i].SetNDC()
         plotTText[i].SetTextSize(0.04)
         plotTText[i].SetTextColor(2)
         plotTText[i].Draw()
