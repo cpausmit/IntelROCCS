@@ -8,12 +8,6 @@
 # Injection of so called open datasets (datasets that are not yet completed and will be growing) is
 # problematic as the size of the dataset is not correct in the database. To solve this problem an
 # expected dataset size can be specified to overwrite this information (ex. --expectedSizeGb=1000). 
-#
-# The feature to assign a fixed location(s) has been added to the script to allow for an intelligent
-# process to distribute the data on a non-random basis. This feature has to be used with care
-# because usual an analysis of the space situation will in most cases select the same site and a
-# site can quickly get overloaded. The intelligent script behind this must make sure the sites are
-# properly chosen to avoid lopsided distribution.
 # 
 # Failures of any essential part of this assignment will lead to a non-zero return code. For now the
 # failure return code is always 1.
@@ -31,7 +25,7 @@
 # Unit test:
 #   ./assignDatasetToSite.py --nCopies=2 --dataset=/DoubleElectron/Run2012A-22Jan2013-v1/AOD
 #---------------------------------------------------------------------------------------------------
-import os, sys, subprocess, getopt, re, random, urllib, urllib2, httplib, json
+import os, sys, subprocess, getopt, re, random, urllib, urllib2, httplib, json, time
 from dbs.apis.dbsClient import DbsApi
 
 #===================================================================================================
@@ -74,16 +68,20 @@ class phedexApi:
         1 -- Status, 0 = everything went well, 1 = something went wrong
         2 -- IF status == 0 : HTTP response ELSE : Error message
         """
+        #print "call",time.asctime()
         data = urllib.urlencode(values)
+        #print "encode",time.asctime()
         opener = urllib2.build_opener(HTTPSGridAuthHandler())
+        #print "auth",time.asctime()
         request = urllib2.Request(url, data)
+        #print "request",time.asctime()
         try:
             response = opener.open(request)
         except urllib2.HTTPError, e:
-            return 1, " ERROR - urllib2.HTTPError %s \n  URL: %s\n  VALUES: %s"%\
-                   (e.read,str(url),str(values))
+            return 1, " Error - urllib2.HTTPError %s \n  URL: %s\n  VALUES: %s"%\
+                   (e.read(),str(url),str(values))
         except urllib2.URLError, e:
-            return 1, " ERROR - urllib2.URLError %s \n  URL: %s\n  VALUES: %s"%\
+            return 1, " Error - urllib2.URLError %s \n  URL: %s\n  VALUES: %s"%\
                    (e.args,str(url),str(values))
         return 0, response
 
@@ -109,13 +107,13 @@ class phedexApi:
         data  -- json structure if json format, xml structure if xml format
         """
         if not (dataset or block or fileName):
-            return 1, " ERROR - Need to pass at least one of dataset/block/fileName"
+            return 1, " Error - Need to pass at least one of dataset/block/fileName"
         values = { 'dataset' : dataset, 'block' : block, 'file' : fileName,
                    'level' : level, 'create_since' : createSince }
         dataURL = urllib.basejoin(self.phedexBase, "%s/%s/data"%(format, instance))
         check, response = self.phedexCall(dataURL, values)
         if check:
-            return 1, " ERROR - Data call failed"
+            return 1, " Error - Data call failed"
         if format == "json":
             try:
                 data = json.load(response)
@@ -123,7 +121,7 @@ class phedexApi:
                 # This usually means that PhEDEx didn't like the URL
                 return 1, " ERROR - ValueError in call to url %s : %s"%(dataURL, str(e))
             if not data:
-                return 1, " ERROR - no json data available"
+                return 1, " Error - no json data available"
         else:
             data = response.read()
         return 0, data
@@ -167,17 +165,17 @@ class phedexApi:
         xml   -- the converted data now represented as an xml structure
         """
         if not datasets:
-            return 1, " ERROR - need to pass at least one of dataset."
+            return 1, " Error - need to pass at least one of dataset."
         xml = '<data version="2">'
         xml = '%s<%s name="https://cmsweb.cern.ch/dbs/%s/global/DBSReader">'\
               % (xml, 'dbs', instance)
         for dataset in datasets:
             check, response = self.data(dataset=dataset, level='file', instance=instance)
             if check:
-                return 1, " ERROR"
+                return 1, " Error"
             data = response.get('phedex').get('dbs')
             if not data:
-                return 1, " ERROR"
+                return 1, " Error"
             xml = "%s<%s" % (xml, 'dataset')
             data = data[0].get('dataset')
             xml = self.parse(data[0], xml)
@@ -195,7 +193,7 @@ class phedexApi:
         Set up subscription call to PhEDEx API.
         """
         if not (node and data):
-            return 1, "ERROR - subscription: node and data needed."
+            return 1, "Error - subscription: node and data needed."
         values = { 'node' : node, 'data' : data, 'level' : level, 'priority' : priority,
                    'move' : move, 'static' : static, 'custodial' : custodial, 'group' : group,
                    'time_start' : timeStart, 'request_only' : requestOnly, 'no_mail' : noMail,
@@ -203,7 +201,7 @@ class phedexApi:
         subscriptionURL = urllib.basejoin(self.phedexBase, "%s/%s/subscribe" % (format, instance))
         check, response = self.phedexCall(subscriptionURL, values)
         if check:
-            return 1, "ERROR - subscription: check not zero"
+            return 1, "Error - subscription: check not zero"
         return 0, response
 
     def delete(self, node='', data='', level='dataset', rmSubscriptions='y',
@@ -213,13 +211,13 @@ class phedexApi:
         Set up subscription call to PhEDEx API.
         """
         if not (node and data):
-            return 1, " ERROR - need to pass both node and data"
+            return 1, " Error - need to pass both node and data"
         values = { 'node' : node, 'data' : data, 'level' : level,
                    'rm_subscriptions' : rmSubscriptions, 'comments' : comments }
         deleteURL = urllib.basejoin(self.phedexBase, "%s/%s/delete" % (format, instance))
         check, response = self.phedexCall(deleteURL, values)
         if check:
-            return 1, " ERROR - self.phedexCall with response: " + response
+            return 1, " Error - self.phedexCall with response: " + response
         return 0, response
     
     def updateSubscription(self, node='', dataset='', group='AnalysisOps',
@@ -230,7 +228,7 @@ class phedexApi:
         """
         name = "updatesubscription"
         if not (node and dataset):
-            return 1, "ERROR - %s: node and dataset are needed."%(name)
+            return 1, "Error - %s: node and dataset are needed."%(name)
         values = {'node' : node, 'dataset' : dataset, 'group' : group}
         url = urllib.basejoin(self.phedexBase, "%s/%s/%s" % (format,instance,name))
         check, response = self.phedexCall(url, values)
@@ -271,11 +269,9 @@ class HTTPSGridAuthHandler(urllib2.HTTPSHandler):
 #  H E L P E R S
 #===================================================================================================
 def testLocalSetup(dataset,debug=0):
-    # The local setup needs a number of things to be present. Make sure all is there, or complain.
-
     # check the input parameters
     if dataset == '':
-        print ' ERROR - no dataset specified. EXIT!\n'
+        print ' Error - no dataset specified. EXIT!\n'
         print usage
         sys.exit(1)
 
@@ -294,11 +290,10 @@ def testLocalSetup(dataset,debug=0):
 	    validProxy = True
 
     if not validProxy:
-        print ' ERROR - no X509_USER_PROXY, please check. EXIT!'
+        print ' Error - no X509_USER_PROXY, please check. EXIT!'
         sys.exit(1)
 
 def convertSizeToGb(sizeTxt):
-    # Size text comes in funny shapes. Make sure to convert it properly.
 
     # first make sure string has proper basic format
     if len(sizeTxt) < 3:
@@ -328,47 +323,60 @@ def convertSizeToGb(sizeTxt):
     return sizeGb
 
 def findExistingSubscriptions(dataset,group='AnalysisOps',sitePattern='T2*',debug=0):
-    # Find existing subscriptions of full datasets at sites matching the pattern
-
-    # speak with phedex interface
-    conn = httplib.HTTPSConnection('cmsweb.cern.ch', \
-                                   cert_file = os.getenv('X509_USER_PROXY'), \
-                                   key_file = os.getenv('X509_USER_PROXY'))
-    subsc = '/phedex/datasvc/json/prod/subscriptions'
-    r1 = conn.request("GET",subsc + '?group=%s&node=%s&block=%s%%23*&collapse=y' \
-                          %(group,sitePattern,dataset))
-    r2 = conn.getresponse()
+    conn  =  httplib.HTTPSConnection('cmsweb.cern.ch', cert_file = os.getenv('X509_USER_PROXY'), key_file = os.getenv('X509_USER_PROXY'))
+    r1=conn.request("GET",'/phedex/datasvc/json/prod/subscriptions?group=%s&node=%s&block=%s%%23*&collapse=y'%(group,sitePattern,dataset))
+    r2=conn.getresponse()
     result = json.loads(r2.read())['phedex']
-
-    # loop overall datasets to find all sites the given dataset is on
     siteNames = []
+    #print result['dataset']
     for dataset in result['dataset']:
-
-        # make sure this is a subscription
-        if not 'subscription' in dataset:
-            continue
-
+        if not 'subscription' in dataset: continue
         for sub in dataset['subscription']:
-
-            # make sure this is a full dataset subscription
-            if sub['level'] != "DATASET":
-                continue
+            if sub['level'] != "DATASET" : continue
             
-            # this is one of the sites the dataset is on
             siteName = sub['node']
-
-            # make sure not to enter the site twice
             if siteName in siteNames: 
-                if debug:
+                if debug>0:        
                     print ' Site already in list. Skip!'
             else:
                 siteNames.append( sub['node'] )
+    return siteNames
+                   
+
+"""    webServer = 'https://cmsweb.cern.ch/'
+    phedexBlocks = 'phedex/datasvc/xml/prod/blockreplicas?subscribed=y&group=%s&node=%s&dataset=%s'\
+               %(group,sitePattern,dataset)
+    url = '"'+webServer+phedexBlocks + '"'
+    cmd = 'curl -k -H "Accept: text/xml" ' + url + ' 2> /dev/null'
+
+    #cert = os.environ.get('X509_USER_PROXY')
+    #cmd = 'curl --cert ' + cert + ' -k -H "Accept: text/xml" ' + url + ' 2> /dev/null'
+
+    if debug > 1:
+        print ' Access phedexDb: ' + cmd
+
+    # setup the shell command
+    siteNames = []
+    for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
+        if debug > 1:
+            print ' LINE: ' + line
+        # find the potential T2s
+        try:
+            sublines = re.split("<replica\ ",line)
+            for subline in sublines[1:]:
+                siteName = (re.findall(r"node='(\S+)'",subline))[0]
+                if siteName in siteNames:
+                    if debug>0:
+                        print ' Site already in list. Skip!'
+                else:
+                    siteNames.append(siteName)
+        except:
+            siteName = ''
 
     return siteNames
+"""
 
 def getActiveSites(debug=0):
-    # find the list of sites to consider for subscription
-
     # hardcoded fallback
     tier2Base = [ 'T2_AT_Vienna','T2_BR_SPRACE','T2_CH_CSCS','T2_DE_DESY','T2_DE_RWTH',
                   'T2_ES_CIEMAT','T2_ES_IFCA',
@@ -384,6 +392,7 @@ def getActiveSites(debug=0):
     sites = []
 
     # get the active site list
+    #cmd  = 'wget http://t3serv001.mit.edu/~cmsprod/IntelROCCS/Detox/ActiveSites.txt'
     cmd  = 'wget http://t3serv001.mit.edu/~cmsprod/IntelROCCS/Detox/SitesInfo.txt'
     cmd += ' -O - 2> /dev/null | grep -v "#" | grep T2_ | tr -s " "'
     for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
@@ -447,9 +456,8 @@ def chooseMatchingSite(tier2Sites,nSites,sizeGb,debug):
 
     nTrials = 0
 
+    fraction_usable_quota = 0.1
     while len(sites) < nSites:
-        # we should put into the random choice the size of the site to ensure larger sites to
-        # be hit more often (NEXT PROJECT)
         iRan = random.randint(0,len(tier2Sites)-1)
         site = tier2Sites[iRan]
         # not elegant or reliable (should use database directly)
@@ -470,24 +478,26 @@ def chooseMatchingSite(tier2Sites,nSites,sizeGb,debug):
             f = line.split(' ')
             lastCp = float(f[-1]) * 1000.  # make sure it is GB
 
-        if sizeGb < 0.1*quota:
+        if sizeGb < fraction_usable_quota*quota:
             sites.append(site)
             quotas.append(quota)
             lastCps.append(lastCp)
             tier2Sites.remove(site)
+        else:
+            fraction_usable_quota += 0.05
 
         if debug > 0:
-            print ' Trying to fit %.1f GB into Tier-2 [%d]: %s with quota of %.1f GB (use 0.1 max)'%\
-                  (sizeGb,iRan,site,quota)
+            print ' Trying to fit %.1f GB into Tier-2 [%d]: %s with quota of %.1f GB (use %.3f max)'%\
+                  (sizeGb,iRan,site,quota,fraction_usable_quota)
 
         if nTrials > 20:
-            print ' ERROR - not enough matching sites could be found. Dataset too big? EXIT!'
+            print ' Error - not enough matching sites could be found. Dataset too big? EXIT!'
             sys.exit(1)
 
         nTrials += 1
     return sites,quotas,lastCps
 
-def submitSubscriptionRequests(sites,datasets=[],debug=0):
+def submitSubscriptionRequests(sites,datasets=[],debug=0, group='AnalysisOps'):
     # submit the subscription requests
 
     # keep track of the return code
@@ -515,9 +525,9 @@ def submitSubscriptionRequests(sites,datasets=[],debug=0):
     for site in sites:
         if debug>-1:
             print " --> phedex.subscribe(node=%s,data=....,comments=%s', \ "%(site,message)
-            print "                      group='AnalysisOps',instance='prod')"
+            print "                      group=%s,instance='prod')"%group
 
-        check,response = phedex.subscribe(node=site,data=data,comments=message,group='AnalysisOps',
+        check,response = phedex.subscribe(node=site,data=data,comments=message,group=group,
                           instance='prod')
         if check:
             rc = 1
@@ -527,14 +537,13 @@ def submitSubscriptionRequests(sites,datasets=[],debug=0):
 
     return rc
 
-def submitUpdateSubscriptionRequest(sites,datasets=[],debug=0):
+def submitUpdateSubscriptionRequest(sites,datasets=[],debug=0,group='AnalysisOps'):
     # submit the request for an update of the subscription
 
     # keep track of potential failures
     rc = 0
 
     # check our paramters for phedex call
-    group  = 'AnalysisOps'
     # make sure we have datasets to subscribe
     dataset = 'EMPTY'
     if len(datasets) < 1:
@@ -560,187 +569,10 @@ def submitUpdateSubscriptionRequest(sites,datasets=[],debug=0):
             rc = 1
             print " ERROR - phedexApi.updateSubscription failed for site: " + site
             print response
+            print time.asctime()
             continue
 
     return rc
-
-def assignOneDataset(dataset,nCopies,expectedSizeGb,destination,exe=0,debug=0):
-    # make assignment of exatly one dataset, the status returned is 0 if all worked, 1 is it did not
-    # work for whatever reason (there will be a printout)
-
-    isMiniAod = False
-
-    # Say what dataset we are looking at
-    #-----------------------------------
-    
-    print '\n DATASET: ' + dataset
-    f = dataset.split("/")
-    if len(f) > 3:
-        tier = f[3]
-        if 'MINIAOD' in tier:
-            print ' MINIAOD* identified, consider extra T2_CH_CERN copy.'
-            isMiniAod = True
-    
-    # size of provided dataset
-    #-------------------------
-    
-    # instantiate an API
-    dbsapi = DbsApi(url='https://cmsweb.cern.ch/dbs/prod/global/DBSReader')
-    
-    # first test whether dataset is valid
-    dbsList = dbsapi.listDatasets(dataset = dataset, dataset_access_type = 'VALID')
-    datasetInvalid = False
-    if dbsList == []:
-        datasetInvalid = True
-        print ' ERROR - Dataset does not exist or is invalid. EXIT!\n'
-        return 1
-    
-    # determine size and number of files
-    size = str(sum([block['file_size'] for block in dbsapi.listBlockSummaries(dataset = dataset)]))+'UB'
-    sizeGb = convertSizeToGb(size)
-    
-    # in case this is an open subscription we need to adjust sizeGb to the expected size
-    if expectedSizeGb > 0:
-        sizeGb = expectedSizeGb
-    
-    print ' SIZE:    %.1f GB'%(sizeGb)
-    
-    # prepare subscription list
-    datasets = []
-    datasets.append(dataset)
-    
-    
-    # first make sure this dataset is not owned by DataOps group anymore at the Tier-1 site(s)
-    #-----------------------------------------------------------------------------------------
-    
-    tier1Sites = findExistingSubscriptions(dataset,'DataOps','T1_*_Disk',debug)
-    if debug>0:
-        print ' Re-assign all Tier-1 copies from DataOps to AnalysisOps space.'
-    
-    if len(tier1Sites) > 0:
-        print '\n Resident in full under DataOps group on the following Tier-1 disks:'
-        for tier1Site in tier1Sites:
-            print ' --> ' + tier1Site
-        print ''
-    
-        # update subscription at Tier-1 sites
-        if exe:
-            # make AnalysisOps the owner of all copies at Tier-1 site(s)
-            rc = submitUpdateSubscriptionRequest(tier1Sites,datasets,debug)
-            if rc != 0:
-                print ' ERROR - Could not update subscription (DataOps->AnalysisOps) at Tier-1. EXIT!'
-                return 1
-        else:
-            print '\n -> WARNING: not doing anything .... please use  --exec  option.\n'
-    else:
-        print '\n No Tier-1 full copies of this dataset in DataOps space.'
-    
-    tier2Sites = findExistingSubscriptions(dataset,'DataOps','T2_*',debug)
-    
-    if debug>0:
-        print ' Re-assign all Tier-2 copies from DataOps to AnalysisOps space.'
-    if len(tier2Sites) > 0:
-        print '\n Resident in full under DataOps group on the following Tier-2 disks:'
-        for tier2Site in tier2Sites:
-            print ' --> ' + tier2Site
-        print ''
-    
-        # update subscription at Tier-1 sites
-        if exe:
-            # make AnalysisOps the owner of all copies at Tier-2 site(s)
-            rc = submitUpdateSubscriptionRequest(tier2Sites,datasets,debug)
-            if rc != 0:
-                print ' ERROR - Could not update subscription (DataOps->AnalysisOps) at Tier-2. EXIT!'
-                return 1
-        else:
-            print '\n -> WARNING: not doing anything .... please use  --exec  option.\n'
-    else:
-        print '\n No Tier-2 full copies of this dataset in DataOps space.'
-    
-    
-    # has the dataset already been subscribed?
-    #-----------------------------------------
-    # - no test that the complete dataset has been subscribed (could be just one block?)
-    # - we test all Tier2s and check there is at least one block subscribed no completed bit required
-    #
-    # --> need to verify this is sufficient
-    
-    siteNames = findExistingSubscriptions(dataset,'AnalysisOps','T2_*',debug)
-    nAdditionalCopies = nCopies - len(siteNames)
-    
-    if len(siteNames) >= nCopies:
-        print '\n Already subscribed on Tier-2:'
-        for siteName in siteNames:
-            print ' --> ' + siteName
-    
-        if not isMiniAod:
-            print '\n SUCCESS - The job is done already: EXIT!\n'
-            return 0
-    else:
-        print ''
-        print ' Only %d copies found in AnalysisOps space.'%(len(siteNames))
-        for siteName in siteNames:
-            print ' --> ' + siteName
-        print ' Requested %d copies at Tier-2.'%(nCopies)
-        print ' --> will find %d more sites for subscription.\n'%(nAdditionalCopies)
-    
-    
-    # find a sufficient matching site
-    #--------------------------------
-    
-    # find all dynamically managed sites
-    tier2Sites = getActiveSites(debug)
-    
-    # remove the already used sites
-    for siteName in siteNames:
-        if debug>0:
-            print ' Removing ' + siteName
-        try:
-            tier2Sites.remove(siteName)
-        except:
-            if debug>0:
-                print ' Site is not in list: ' + siteName
-    
-    # choose a site randomly and exclude sites that are too small
-    
-    sites,quotas,lastCps = chooseMatchingSite(tier2Sites,nAdditionalCopies,sizeGb,debug)
-    
-    if destination:
-        print " INFO - overriding destination with ",destination
-        sites = destination
-    
-    if not exe:
-        print ''
-        print ' SUCCESS - Found requested %d matching Tier-2 sites'%(len(sites))
-        for i in range(len(sites)):
-            print '           - %-20s (quota: %.1f TB lastCp: %.1f TB)'\
-                %(sites[i],quotas[i]/1000.,lastCps[i]/1000.)
-    
-    # make phedex subscription
-    #-------------------------
-    
-    # subscribe them
-    if exe:
-        # make subscriptions to Tier-2 site(s)
-        rc = submitSubscriptionRequests(sites,datasets)
-        if rc != 0:
-            print ' ERROR - Could not make subscription at Tier-2. EXIT!'
-            return 1
-    
-        # make special subscription for /MINIAOD* to T2_CH_CERN
-        if isMiniAod:
-            cern = [ 'T2_CH_CERN' ]
-            submitSubscriptionRequests(cern,datasets)    
-            if rc != 0:
-                print ' ERROR - Could not make subscription at CERN Tier-2. EXIT!'
-                return 1
-    
-    else:
-        print '\n -> WARNING: not doing anything .... please use  --exec  option.\n'
-        if isMiniAod:
-            print ' INFO: extra copy to T2_CH_CERN activated.'
-    
-    return status
 
 #===================================================================================================
 #  M A I N
@@ -773,6 +605,8 @@ nCopies = 1
 destination = []
 exe = False
 expectedSizeGb = -1
+isMiniAod = False
+group='AnalysisOps'
 
 # Read new values from the command line
 for opt, arg in opts:
@@ -791,21 +625,177 @@ for opt, arg in opts:
         debug = int(arg)
     if opt == "--exec":
         exe = True
+    if opt == "--group":
+        group = arg
+
+## in the meantime in casablanca
+#debug=1
 
 # inspecting the local setup
 #---------------------------
 
+start_time = time.mktime(time.gmtime())
 testLocalSetup(dataset,debug)
 
-# loop through the list of given datasets (all parameters are carried through)
-status = 0 
-for dset in dataset.split(","):
-    # adjust for compact dataset format
-    if dset[0] != '/':
-        dset = '/' + dset.replace('+','/')
-    print ' Work on dataset: ' + dset
-    status = assignOneDataset(dset,nCopies,expectedSizeGb,destination,exe,debug)
-    
-    print '\n Status of assignment: %d (%s)\n'%(status,dset)
+# Say what dataset we are looking at
+#-----------------------------------
 
-sys.exit(0)
+print '\n DATASET: ' + dataset
+f = dataset.split("/")
+if len(f) > 3:
+    tier = f[3]
+    if 'MINIAOD' in tier:
+        print ' MINIAOD* identified, consider extra T2_CH_CERN copy.'
+        isMiniAod = True
+
+# size of provided dataset
+#-------------------------
+
+# instantiate an API
+dbsapi = DbsApi(url='https://cmsweb.cern.ch/dbs/prod/global/DBSReader')
+
+# first test whether dataset is valid
+dbsList = dbsapi.listDatasets(dataset = dataset, dataset_access_type = 'VALID')
+datasetInvalid = False
+if dbsList == []:
+    datasetInvalid = True
+    print ' Dataset does not exist or is invalid. Exit now!\n'
+    sys.exit(1)
+
+# determine size and number of files
+size = str(sum([block['file_size'] for block in dbsapi.listBlockSummaries(dataset = dataset)]))+'UB'
+sizeGb = convertSizeToGb(size)
+
+# in case this is an open subscription we need to adjust sizeGb to the expected size
+if expectedSizeGb > 0:
+    sizeGb = expectedSizeGb
+
+print ' SIZE:    %.1f GB'%(sizeGb)
+
+# prepare subscription list
+datasets = []
+datasets.append(dataset)
+
+
+# first make sure this dataset is not owned by DataOps group anymore at the Tier-1 site(s)
+#-----------------------------------------------------------------------------------------
+
+tier1Sites = findExistingSubscriptions(dataset,'DataOps','T1_*_Disk',debug)
+if debug>0:
+    print ' Re-assign all Tier-1 copies from DataOps to AnalysisOps space.'
+if len(tier1Sites) > 0:
+    print '\n Resident in full under DataOps group on the following Tier-1 disks:'
+    for tier1Site in tier1Sites:
+        print ' --> ' + tier1Site
+    print ''
+
+    # update subscription at Tier-1 sites
+    if exe:
+        # make AnalysisOps the owner of all copies at Tier-1 site(s)
+        rc = submitUpdateSubscriptionRequest(tier1Sites,datasets,debug)
+        if rc != 0:
+            sys.exit(1)
+    else:
+        print '\n -> WARNING: not doing anything .... please use  --exec  option.\n'
+else:
+    print '\n No Tier-1 full copies of this dataset in DataOps space.'
+tier2Sites = findExistingSubscriptions(dataset,'DataOps','T2_*',debug)
+if debug>0:
+    print ' Re-assign all Tier-2 copies from DataOps to AnalysisOps space.'
+if len(tier2Sites) > 0:
+    print '\n Resident in full under DataOps group on the following Tier-2 disks:'
+    for tier2Site in tier2Sites:
+        print ' --> ' + tier2Site
+    print ''
+
+    # update subscription at Tier-1 sites
+    if exe:
+        # make AnalysisOps the owner of all copies at Tier-1 site(s)
+        rc = submitUpdateSubscriptionRequest(tier2Sites,datasets,debug, group=group)
+        if rc != 0:
+            sys.exit(1)
+    else:
+        print '\n -> WARNING: not doing anything .... please use  --exec  option.\n'
+else:
+    print '\n No Tier-2 full copies of this dataset in DataOps space.'
+
+
+# has the dataset already been subscribed?
+#-----------------------------------------
+# - no test that the complete dataset has been subscribed (could be just one block?)
+# - we test all Tier2s and check there is at least one block subscribed no completed bit required
+#
+# --> need to verify this is sufficient
+
+siteNames = findExistingSubscriptions(dataset,'AnalysisOps','T2_*',debug)
+nAdditionalCopies = nCopies - len(siteNames)
+
+if len(siteNames) >= nCopies:
+    print '\n Already subscribed on Tier-2:'
+    for siteName in siteNames:
+        print ' --> ' + siteName
+
+    if not isMiniAod:
+        print '\n The job is done already: EXIT!\n'
+        sys.exit(0)
+else:
+    print ' Requested %d copies at Tier-2. Only %d copies found.'%(nCopies,len(siteNames))
+    print ' --> will find %d more sites for subscription.\n'%(nAdditionalCopies)
+
+
+# find a sufficient matching site
+#--------------------------------
+
+# find all dynamically managed sites
+tier2Sites = getActiveSites(debug)
+
+# remove the already used sites
+for siteName in siteNames:
+    if debug>0:
+        print ' Removing ' + siteName
+    try:
+        tier2Sites.remove(siteName)
+    except:
+        if debug>0:
+            print ' Site is not in list: ' + siteName
+
+# choose a site randomly and exclude sites that are too small
+
+sites,quotas,lastCps = chooseMatchingSite(tier2Sites,nAdditionalCopies,sizeGb,debug)
+
+if destination:
+    print "overriding destination with",destination
+    sites = destination
+
+if not exe:
+    print ''
+    print ' SUCCESS - Found requested %d matching Tier-2 sites'%(len(sites))
+    for i in range(len(sites)):
+        print '           - %-20s (quota: %.1f TB lastCp: %.1f TB)'\
+            %(sites[i],quotas[i]/1000.,lastCps[i]/1000.)
+
+# make phedex subscription
+#-------------------------
+
+# subscribe them
+if exe:
+    # make subscriptions to Tier-2 site(s)
+    rc = submitSubscriptionRequests(sites,datasets, group)
+    if rc != 0:
+        sys.exit(1)
+
+    # make special subscription for /MINIAOD* to T2_CH_CERN
+    if isMiniAod:
+        cern = [ 'T2_CH_CERN' ]
+        submitSubscriptionRequests(cern,datasets, group)    
+        if rc != 0:
+            sys.exit(1)
+
+else:
+    print '\n -> WARNING: not doing anything .... please use  --exec  option.\n'
+    if isMiniAod:
+        print ' INFO: extra copy to T2_CH_CERN activated.'
+
+stop_time = time.mktime(time.gmtime())
+
+print "total elapsed",stop_time-start_time
